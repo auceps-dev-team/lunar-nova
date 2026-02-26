@@ -59,7 +59,7 @@ function AppContent() {
           If the user is not on the /whatsapp-hub route, we hide it via CSS to prevent
           memory/DOM destruction in Electron.
         */}
-        <div style={{ display: isWhatsApp ? 'block' : 'none', height: '100%' }}>
+        <div style={{ display: isWhatsApp ? 'flex' : 'none', flexDirection: 'column', flex: 1, minHeight: 0 }}>
           <WorkArea instances={instances} activeId={activeId} />
         </div>
 
