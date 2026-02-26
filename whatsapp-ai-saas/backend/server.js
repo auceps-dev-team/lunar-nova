@@ -15,61 +15,50 @@ app.use(express.json());
 // API route to get WhatsApp instances status
 app.get('/api/instances', async (req, res) => {
     try {
-        // Fetch the webSocketDebuggerUrl from the Electron Remote Debugging endpoint
+        // Fetch all targets to specifically find isolated webviews
         const fetch = (await import('node-fetch')).default;
-        const response = await fetch('http://127.0.0.1:8315/json/version');
-        const json = await response.json();
-        const wsEndpoint = json.webSocketDebuggerUrl;
+        const response = await fetch('http://127.0.0.1:8315/json');
+        const targets = await response.json();
 
-        // Connect to the running Electron app via Chrome DevTools Protocol
-        const browser = await chromium.connectOverCDP(wsEndpoint);
+        const whatsappTargets = targets.filter(t => t.url.includes('web.whatsapp.com'));
 
-        // Get all available contexts/pages (including our webviews)
-        const contexts = browser.contexts();
-        let whatsappPages = [];
+        for (const target of whatsappTargets) {
+            try {
+                // Connect directly to the specific webview target
+                const browser = await chromium.connectOverCDP(target.webSocketDebuggerUrl);
+                const page = browser.contexts()[0].pages()[0];
 
-        for (const context of contexts) {
-            const pages = context.pages();
-            for (const page of pages) {
-                const url = page.url();
-                if (url.includes('web.whatsapp.com')) {
-                    whatsappPages.push(page);
+                // Listen to basic WhatsApp DOM events (incoming messages)
+                await page.evaluate(() => {
+                    if (window.whatsAppObserverAttached) return;
+                    window.whatsAppObserverAttached = true;
 
-                    // Listen to basic WhatsApp DOM events (incoming messages)
-                    // WhatsApp uses a specific class prefix for message rows 'message-in'
-                    // We can evaluate a script on the page to observe changes
-                    await page.evaluate(() => {
-                        if (window.whatsAppObserverAttached) return;
-                        window.whatsAppObserverAttached = true;
-
-                        console.log('[Orchestrator] Attached DOM Observer for new messages');
-                        // Basic MutationObserver targeting the chat list or active chat
-                        const observer = new MutationObserver((mutations) => {
-                            mutations.forEach((mutation) => {
-                                if (mutation.addedNodes.length) {
-                                    mutation.addedNodes.forEach((node) => {
-                                        if (node.nodeType === Node.ELEMENT_NODE && node.outerHTML.includes('message-in')) {
-                                            console.log('[Orchestrator Event] New incoming message detected!');
-                                            // In Step 4 we will send this back to the Middleware
-                                        }
-                                    });
-                                }
-                            });
+                    console.log('[Orchestrator] Attached DOM Observer for new messages');
+                    const observer = new MutationObserver((mutations) => {
+                        mutations.forEach((mutation) => {
+                            if (mutation.addedNodes.length) {
+                                mutation.addedNodes.forEach((node) => {
+                                    if (node.nodeType === Node.ELEMENT_NODE && node.outerHTML.includes('message-in')) {
+                                        console.log('[Orchestrator Event] New incoming message detected!');
+                                    }
+                                });
+                            }
                         });
-                        observer.observe(document.body, { childList: true, subtree: true });
-                    }).catch(err => console.error('Failed to attach observer:', err));
-                }
+                    });
+                    observer.observe(document.body, { childList: true, subtree: true });
+                }).catch(err => console.error('Failed to attach observer:', err));
+
+                await browser.close();
+            } catch (err) {
+                console.error('Error connecting to target CDP:', err);
             }
         }
 
         res.json({
             status: 'success',
-            active_instances: whatsappPages.length,
+            active_instances: whatsappTargets.length,
             message: 'Connected to Electron CDP successfully',
         });
-
-        // We close the CDP connection after checking to free resources
-        await browser.close();
 
     } catch (error) {
         console.error('CDP Connection Error:', error);
@@ -86,29 +75,18 @@ app.get('/api/context/:instance_id', async (req, res) => {
 
     try {
         const fetch = (await import('node-fetch')).default;
-        const response = await fetch('http://127.0.0.1:8315/json/version');
-        const json = await response.json();
+        const response = await fetch('http://127.0.0.1:8315/json');
+        const targets = await response.json();
 
-        const browser = await chromium.connectOverCDP(json.webSocketDebuggerUrl);
-        const contexts = browser.contexts();
+        // Find the specific webview
+        const whatsappTarget = targets.find(t => t.url.includes('web.whatsapp.com'));
 
-        let targetPage = null;
-        for (const context of contexts) {
-            for (const page of context.pages()) {
-                if (page.url().includes('web.whatsapp.com')) {
-                    // For now, we take the first available page.
-                    // In a multi-tenant setup, Playwright CDP requires tagging pages to match instance_ids.
-                    targetPage = page;
-                    break;
-                }
-            }
-            if (targetPage) break;
-        }
-
-        if (!targetPage) {
-            await browser.close();
+        if (!whatsappTarget) {
             return res.status(404).json({ error: 'WhatsApp instance not found.' });
         }
+
+        const browser = await chromium.connectOverCDP(whatsappTarget.webSocketDebuggerUrl);
+        const targetPage = browser.contexts()[0].pages()[0];
 
         // Extremely safe DOM Parsing: no clicks, no interactions.
         // We only extract the text content from the active conversation panel.

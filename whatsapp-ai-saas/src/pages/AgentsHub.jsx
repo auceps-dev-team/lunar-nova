@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import useAppStore from '../store';
 
 const AgentsHub = () => {
     const [activeAgent, setActiveAgent] = useState('creative');
     const [inputFocus, setInputFocus] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const fileInputRef = useRef(null);
 
     // Get resilient chat history from global store
     const agentChats = useAppStore(state => state.agentChats);
@@ -194,39 +195,60 @@ const AgentsHub = () => {
                 </div>
 
                 <div style={{ padding: '16px', borderTop: '1px solid var(--border-color)' }}>
-                    <div style={{ display: 'flex', gap: '12px', position: 'relative' }}>
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end', position: 'relative' }}>
+
+                        {/* Hidden file input */}
                         <input
-                            type="text"
+                            type="file"
+                            ref={fileInputRef}
+                            style={{ display: 'none' }}
+                            onChange={(e) => {
+                                if (e.target.files[0]) {
+                                    alert(`File attached: ${e.target.files[0].name} (File upload to Gemini is currently a UI stub.)`);
+                                }
+                            }}
+                        />
+
+                        {/* Attachment Button */}
+                        <button
+                            className="btn-icon"
+                            title="Attach File"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={isLoading}
+                        >
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
+                        </button>
+
+                        <textarea
                             value={inputFocus}
                             onChange={(e) => setInputFocus(e.target.value)}
-                            onKeyDown={handleKeyDown}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault();
+                                    handleSendMessage();
+                                }
+                            }}
                             disabled={isLoading}
-                            placeholder="Message the agent..."
+                            placeholder="Message the agent... (Shift+Enter for new line)"
+                            rows="2"
                             style={{
                                 flex: 1,
                                 background: 'var(--bg-color)',
                                 border: '1px solid var(--border-color)',
-                                padding: '14px 16px',
+                                padding: '12px 16px',
                                 borderRadius: '8px',
                                 color: 'var(--text-primary)',
-                                outline: 'none'
+                                outline: 'none',
+                                resize: 'none',
+                                fontFamily: 'inherit',
+                                fontSize: '14px'
                             }}
                         />
                         <button
+                            className="btn-primary"
                             onClick={handleSendMessage}
                             disabled={isLoading || !inputFocus.trim()}
-                            style={{
-                                background: isLoading || !inputFocus.trim() ? 'var(--border-color)' : 'var(--primary-color)',
-                                color: '#fff',
-                                border: 'none',
-                                borderRadius: '8px',
-                                padding: '0 20px',
-                                cursor: isLoading || !inputFocus.trim() ? 'not-allowed' : 'pointer',
-                                fontWeight: 500,
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '8px'
-                            }}>
+                        >
                             Send
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
                         </button>
