@@ -21,18 +21,62 @@ const WorkArea = ({ instances, activeId }) => {
         setIsCopilotLoading(true);
         setCopilotProposals([]);
         try {
-            // 1. Get readable Context safely
-            const ctxRes = await fetch(`http://localhost:3000/api/context/${activeId}`);
-            const ctxData = await ctxRes.json();
+            // 1. Get readable Context safely using Electron's native Webview API rather than CDP
+            const activeWebview = document.querySelector(`.webview-container.active webview`);
+            if (!activeWebview) throw new Error('Webview element not found in DOM.');
 
-            if (ctxData.status === 'success') {
+            const contextExtractionScript = `
+                (function() {
+                    try {
+                        const result = { contactName: 'Unknown', messages: [] };
+                        
+                        // Extract Contact Name safely
+                        const headerTitle = document.querySelector('header span[dir="auto"]') || document.querySelector('[data-testid="conversation-info-header"] span');
+                        if (headerTitle) result.contactName = headerTitle.textContent || 'Unknown';
+
+                        // Extract Messages (Fallback for newer WhatsApp Layouts)
+                        let messageNodes = Array.from(document.querySelectorAll('div.message-in, div.message-out'));
+                        if (messageNodes.length === 0) {
+                            messageNodes = Array.from(document.querySelectorAll('[data-id]')).filter(el => {
+                                const id = el.getAttribute('data-id');
+                                return id && (id.includes('true_') || id.includes('false_'));
+                            });
+                        }
+                        
+                        messageNodes = messageNodes.slice(-15);
+
+                        messageNodes.forEach(node => {
+                            const textNode = node.querySelector('.selectable-text, .copyable-text');
+                            const timeNode = node.querySelector('[data-icon="msg-time"], .copyable-text[data-pre-plain-text]');
+                            
+                            let text = textNode ? textNode.textContent : (node.innerText || '').trim();
+
+                            if (text && text.length > 0) {
+                                const isOut = node.classList?.contains('message-out') || (node.getAttribute('data-id') && node.getAttribute('data-id').includes('true_'));
+                                result.messages.push({
+                                    sender: isOut ? 'You' : result.contactName,
+                                    text: text,
+                                    time: timeNode ? (timeNode.parentElement?.textContent || timeNode.textContent || 'Unknown') : 'Unknown'
+                                });
+                            }
+                        });
+                        return result;
+                    } catch (e) {
+                        return { error: e.toString() };
+                    }
+                })();
+            `;
+
+            const ctxDataContext = await activeWebview.executeJavaScript(contextExtractionScript);
+
+            if (ctxDataContext && !ctxDataContext.error && ctxDataContext.messages && ctxDataContext.messages.length > 0) {
                 // 2. Process via Gemini Assistive Copilot
                 const geminiRes = await fetch('http://localhost:3000/api/gemini/copilot', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         instance_id: activeId,
-                        chatContext: ctxData.context
+                        chatContext: ctxDataContext
                     })
                 });
                 const geminiData = await geminiRes.json();
@@ -41,11 +85,11 @@ const WorkArea = ({ instances, activeId }) => {
                     incrementCopilotReplies(geminiData.proposals.length || 1);
                 }
             } else {
-                alert(ctxData.error || 'Could not extract context. Please open a chat.');
+                alert('Could not extract context. Please make sure a chat is open with visible messages.');
             }
         } catch (error) {
             console.error('Copilot Error:', error);
-            alert('Failed to connect to Orchestrator service.');
+            alert('Failed to extract context. Ensure WhatsApp is fully loaded.');
         }
         setIsCopilotLoading(false);
     };

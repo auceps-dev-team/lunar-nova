@@ -8,9 +8,10 @@ import Dashboard from './pages/Dashboard';
 import AgentsHub from './pages/AgentsHub';
 import TasksMap from './pages/TasksMap';
 
+import InvoiceBuilder from './pages/InvoiceBuilder';
+
 // Placeholder Pages for Phase 2
 const Profile = () => <div className="page-content"><h2>Account Space</h2><p>Coming Soon...</p></div>;
-const InvoiceBuilder = () => <div className="page-content"><h2>Invoice Builder</h2><p>Coming Soon...</p></div>;
 const ToolsBox = () => <div className="page-content"><h2>Tools</h2><p>Coming Soon...</p></div>;
 
 import useAppStore from './store';
