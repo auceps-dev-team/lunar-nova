@@ -471,7 +471,7 @@ body {
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: var(--primary-hover);
+  background: var(--accent-hover);
   transform: translateY(-1px);
 }
 

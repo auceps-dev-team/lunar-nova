@@ -7,6 +7,7 @@ const WorkArea = ({ instances, activeId }) => {
     const [activePlaywrightSessions, setActivePlaywrightSessions] = useState(0);
     const [copilotProposals, setCopilotProposals] = useState([]);
     const [isCopilotLoading, setIsCopilotLoading] = useState(false);
+    const [copiedIndex, setCopiedIndex] = useState(null);
 
     // Zustand Global Actions
     const incrementCopilotReplies = useAppStore(state => state.incrementCopilotReplies);
@@ -15,6 +16,12 @@ const WorkArea = ({ instances, activeId }) => {
     useEffect(() => {
         setCopilotProposals([]);
     }, [activeId]);
+
+    const handleCopy = (text, index) => {
+        navigator.clipboard.writeText(text);
+        setCopiedIndex(index);
+        setTimeout(() => setCopiedIndex(null), 2000);
+    };
 
     const generateProposals = async () => {
         if (!activeId || orchestratorStatus !== 'Connected') return;
@@ -228,8 +235,31 @@ const WorkArea = ({ instances, activeId }) => {
                             {copilotProposals.length > 0 && (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '300px', overflowY: 'auto' }}>
                                     {copilotProposals.map((reply, i) => (
-                                        <div key={i} style={{ padding: '10px 12px', background: '#f1f5f9', borderRadius: 8, fontSize: 13, color: '#334155', border: '1px solid #e2e8f0', cursor: 'pointer' }} title="Click to copy">
+                                        <div
+                                            key={i}
+                                            onClick={() => handleCopy(reply, i)}
+                                            style={{
+                                                padding: '12px',
+                                                background: copiedIndex === i ? '#ecfdf5' : '#f1f5f9',
+                                                borderRadius: 8,
+                                                fontSize: 13,
+                                                color: '#334155',
+                                                border: copiedIndex === i ? '1px solid #10b981' : '1px solid #e2e8f0',
+                                                cursor: 'pointer',
+                                                position: 'relative',
+                                                transition: 'all 0.2s',
+                                                paddingRight: '36px'
+                                            }}
+                                            title="Click to copy"
+                                        >
                                             {reply}
+                                            <div style={{ position: 'absolute', right: '12px', top: '12px', color: copiedIndex === i ? '#10b981' : '#94a3b8' }}>
+                                                {copiedIndex === i ? (
+                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                                ) : (
+                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                                )}
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
