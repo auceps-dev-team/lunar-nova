@@ -2,12 +2,17 @@ import React from 'react';
 import useAppStore from '../store';
 
 const Dashboard = () => {
-    // Mock data for Phase 2 implementation
+    // Get live data from Zustand Persist store
+    const instances = useAppStore(state => state.instances);
+    const copilotCount = useAppStore(state => state.copilotRepliesGenerated);
+
+    const activeInstancesCount = instances.filter(i => i.status !== 'offline').length || instances.length;
+
     const metrics = [
-        { title: "Active WhatsApp Instances", value: "1", trend: "+1", color: "#10b981" },
-        { title: "Copilot Replies Suggested", value: "1,204", trend: "+14%", color: "#3b82f6" },
-        { title: "Automated Invoices Generated", value: "24", trend: "+5%", color: "#8b5cf6" },
-        { title: "Tasks Completed", value: "89", trend: "+2%", color: "#f59e0b" },
+        { title: "Active WhatsApp Instances", value: activeInstancesCount, trend: "Live", color: "#10b981" },
+        { title: "Copilot Replies Suggested", value: copilotCount.toLocaleString(), trend: "Tracked", color: "#3b82f6" },
+        { title: "Automated Invoices Generated", value: "0", trend: "0%", color: "#8b5cf6" },
+        { title: "Tasks Completed", value: "0", trend: "0%", color: "#f59e0b" },
     ];
 
     return (

@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
+import useAppStore from '../store';
 
 const AgentsHub = () => {
     const [activeAgent, setActiveAgent] = useState('creative');
     const [inputFocus, setInputFocus] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [chats, setChats] = useState({
-        creative: [{ sender: 'agent', text: 'Hello! I am your Visual & Creative Agent. How can I assist you with your workload today?' }],
-        legal: [{ sender: 'agent', text: 'Hello! I am your Legal & Admin Agent. How can I assist you with your workload today?' }],
-        copywriter: [{ sender: 'agent', text: 'Bonjour ! Je suis l\'Experte en Copywriting de Vente et SDR Senior. Donnez-moi une CIBLE et un OBJECTIF, je vous rédige 3 approches irrésistibles.' }]
-    });
+
+    // Get resilient chat history from global store
+    const agentChats = useAppStore(state => state.agentChats);
+    const updateAgentChat = useAppStore(state => state.updateAgentChat);
 
     const agents = [
         {
@@ -35,7 +35,7 @@ const AgentsHub = () => {
     ];
 
     const currentAgent = agents.find(a => a.id === activeAgent);
-    const currentChat = chats[activeAgent] || [];
+    const currentChat = agentChats[activeAgent] || [];
 
     const handleSendMessage = async () => {
         if (!inputFocus.trim() || isLoading) return;
@@ -44,7 +44,7 @@ const AgentsHub = () => {
         setInputFocus('');
 
         const updatedChat = [...currentChat, { sender: 'user', text: userMsg }];
-        setChats(prev => ({ ...prev, [activeAgent]: updatedChat }));
+        updateAgentChat(activeAgent, updatedChat);
         setIsLoading(true);
 
         try {
@@ -56,10 +56,7 @@ const AgentsHub = () => {
             const data = await res.json();
 
             if (data.status === 'success') {
-                setChats(prev => ({
-                    ...prev,
-                    [activeAgent]: [...updatedChat, { sender: 'agent', text: data.response }]
-                }));
+                updateAgentChat(activeAgent, [...updatedChat, { sender: 'agent', text: data.response }]);
             }
         } catch (error) {
             console.error('Agent chat error', error);

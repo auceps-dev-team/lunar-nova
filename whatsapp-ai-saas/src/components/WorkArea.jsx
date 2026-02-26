@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import useAppStore from '../store';
 import '../styles/global.css';
 
 const WorkArea = ({ instances, activeId }) => {
@@ -6,6 +7,9 @@ const WorkArea = ({ instances, activeId }) => {
     const [activePlaywrightSessions, setActivePlaywrightSessions] = useState(0);
     const [copilotProposals, setCopilotProposals] = useState([]);
     const [isCopilotLoading, setIsCopilotLoading] = useState(false);
+
+    // Zustand Global Actions
+    const incrementCopilotReplies = useAppStore(state => state.incrementCopilotReplies);
 
     // Reset proposals when switching tabs
     useEffect(() => {
@@ -34,6 +38,7 @@ const WorkArea = ({ instances, activeId }) => {
                 const geminiData = await geminiRes.json();
                 if (geminiData.status === 'success') {
                     setCopilotProposals(geminiData.proposals);
+                    incrementCopilotReplies(geminiData.proposals.length || 1);
                 }
             } else {
                 alert(ctxData.error || 'Could not extract context. Please open a chat.');

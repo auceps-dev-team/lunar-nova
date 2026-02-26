@@ -1,6 +1,9 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 
+// Mute CSP warning in development
+process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true';
+
 // Enable Remote Debugging for Playwright Orchestrator (CDP)
 app.commandLine.appendSwitch('remote-debugging-port', '8315');
 

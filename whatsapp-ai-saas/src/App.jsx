@@ -13,12 +13,22 @@ const Profile = () => <div className="page-content"><h2>Account Space</h2><p>Com
 const InvoiceBuilder = () => <div className="page-content"><h2>Invoice Builder</h2><p>Coming Soon...</p></div>;
 const ToolsBox = () => <div className="page-content"><h2>Tools</h2><p>Coming Soon...</p></div>;
 
+import useAppStore from './store';
 import './styles/global.css';
 
 function AppContent() {
-  const [instances, setInstances] = useState([]);
+  const instances = useAppStore(state => state.instances);
+  const setInstances = useAppStore(state => state.setInstances);
+
   const [activeId, setActiveId] = useState(null);
   const location = useLocation();
+
+  // On mount, if instances exist from persist but no active tab is selected, select the first
+  React.useEffect(() => {
+    if (instances.length > 0 && !activeId) {
+      setActiveId(instances[0].id);
+    }
+  }, [instances, activeId]);
 
   const handleAddInstance = () => {
     const id = `wa-tab-${Date.now()}`;
