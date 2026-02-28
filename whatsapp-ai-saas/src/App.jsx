@@ -52,42 +52,44 @@ function AppContent() {
   const isWhatsApp = location.pathname === '/whatsapp-hub' || location.pathname === '/';
 
   return (
-    <div className="app-container">
-      <Sidebar
-        instances={instances}
-        activeId={activeId}
-        onSelect={setActiveId}
-        onAdd={handleAddInstance}
-        onRemove={handleRemoveInstance}
-        currentPath={location.pathname}
-      />
+    <div className="bg-background-light text-text-main font-body h-screen w-screen overflow-hidden p-4">
+      <div className="flex h-full w-full gap-4 max-w-[1800px] mx-auto">
+        <Sidebar
+          instances={instances}
+          activeId={activeId}
+          onSelect={setActiveId}
+          onAdd={handleAddInstance}
+          onRemove={handleRemoveInstance}
+          currentPath={location.pathname}
+        />
 
-      <div className="main-content">
-        <Topbar activeInstance={isWhatsApp ? activeInstance : null} currentTitle={location.pathname} />
+        <main className="flex-1 flex flex-col bg-surface rounded-lg shadow-soft overflow-hidden min-w-[400px] relative">
+          <Topbar activeInstance={isWhatsApp ? activeInstance : null} currentTitle={location.pathname} />
 
-        {/*
-          CRITICAL: We ALWAYS render the WorkArea (which holds the <webview> tags).
-          If the user is not on the /whatsapp-hub route, we hide it via CSS to prevent
-          memory/DOM destruction in Electron.
-        */}
-        <div style={{ display: isWhatsApp ? 'flex' : 'none', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-          <WorkArea instances={instances} activeId={activeId} />
-        </div>
-
-        {/* Standard React Routing for text/UI-based pages */}
-        {!isWhatsApp && (
-          <div className="scrollable-content" style={{ height: '100%', padding: '24px' }}>
-            <Routes>
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/agents" element={<AgentsHub />} />
-              <Route path="/tasks" element={<TasksMap />} />
-              <Route path="/invoice-builder" element={<InvoiceBuilder />} />
-              <Route path="/tools" element={<ToolsBox />} />
-            </Routes>
+          {/*
+            CRITICAL: We ALWAYS render the WorkArea (which holds the <webview> tags).
+            If the user is not on the /whatsapp-hub route, we hide it via CSS to prevent
+            memory/DOM destruction in Electron.
+          */}
+          <div className="flex-1 min-h-0 flex flex-col" style={{ display: isWhatsApp ? 'flex' : 'none' }}>
+            <WorkArea instances={instances} activeId={activeId} />
           </div>
-        )}
 
+          {/* Standard React Routing for text/UI-based pages */}
+          {!isWhatsApp && (
+            <div className="overflow-y-auto p-6 flex-1 bg-surface">
+              <Routes>
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/agents" element={<AgentsHub />} />
+                <Route path="/tasks" element={<TasksMap />} />
+                <Route path="/invoice-builder" element={<InvoiceBuilder />} />
+                <Route path="/tools" element={<ToolsBox />} />
+              </Routes>
+            </div>
+          )}
+
+        </main>
       </div>
     </div>
   );
