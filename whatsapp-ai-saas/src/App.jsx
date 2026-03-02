@@ -46,6 +46,10 @@ function AppContent() {
     if (window.electronAPI) window.electronAPI.removeInstance(id);
   };
 
+  const handleUpdateInstance = (id, updates) => {
+    setInstances(instances.map(inst => inst.id === id ? { ...inst, ...updates } : inst));
+  };
+
   const activeInstance = instances.find(inst => inst.id === activeId);
 
   // Check if we are currently on the WhatsApp route
@@ -60,6 +64,7 @@ function AppContent() {
           onSelect={setActiveId}
           onAdd={handleAddInstance}
           onRemove={handleRemoveInstance}
+          onUpdate={handleUpdateInstance}
           currentPath={location.pathname}
         />
 

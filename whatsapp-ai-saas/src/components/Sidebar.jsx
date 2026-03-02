@@ -1,8 +1,43 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import '../styles/global.css';
 
-const Sidebar = ({ instances, activeId, onSelect, onAdd, onRemove, currentPath }) => {
+const INSTANCE_ICONS = {
+    phone: <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>,
+    briefcase: <path d="M20 7h-4V5l-2-2h-4L8 5v2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2zm-6 0h-4V5h4v2z"></path>,
+    user: <g><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></g>,
+    star: <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>,
+    message: <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+};
+
+const INSTANCE_COLORS = [
+    { name: 'green', value: '#22c55e', shadow: 'rgba(34,197,94,0.6)' },
+    { name: 'blue', value: '#3b82f6', shadow: 'rgba(59,130,246,0.6)' },
+    { name: 'purple', value: '#a855f7', shadow: 'rgba(168,85,247,0.6)' },
+    { name: 'orange', value: '#f97316', shadow: 'rgba(249,115,22,0.6)' },
+    { name: 'pink', value: '#ec4899', shadow: 'rgba(236,72,153,0.6)' }
+];
+
+const Sidebar = ({ instances, activeId, onSelect, onAdd, onRemove, onUpdate, currentPath }) => {
+    const [editingId, setEditingId] = useState(null);
+    const [editForm, setEditForm] = useState({ name: '', color: '', icon: '' });
+
+    const handleEditClick = (e, instance) => {
+        e.stopPropagation();
+        setEditingId(instance.id);
+        setEditForm({
+            name: instance.name || '',
+            color: instance.color || 'green',
+            icon: instance.icon || 'phone'
+        });
+    };
+
+    const handleSaveEdit = (e, id) => {
+        e.stopPropagation();
+        onUpdate(id, editForm);
+        setEditingId(null);
+    };
+
     return (
         <aside className="flex w-[260px] flex-col bg-sidebar-dark rounded-lg shadow-soft overflow-hidden shrink-0 text-white">
             <div className="p-5 flex items-center gap-3 border-b border-white/10">
@@ -54,49 +89,100 @@ const Sidebar = ({ instances, activeId, onSelect, onAdd, onRemove, currentPath }
                     </button>
                 </div>
 
-                {instances.map((instance) => (
-                    <div
-                        key={instance.id}
-                        className={`group flex items-center justify-between px-3 py-2.5 rounded-lg border transition-colors cursor-pointer ${activeId === instance.id
-                            ? 'bg-white/5 border-white/5 text-white'
-                            : 'border-transparent text-gray-400 hover:bg-white/5 hover:text-white'
-                            }`}
-                        onClick={() => {
-                            if (currentPath !== '/whatsapp-hub' && currentPath !== '/') {
-                                // Instead of a normal Link, we trigger the click, but the user expects to stay on the route or go to hub?
-                                // Usually selecting an instance forces you to the hub or simply activates it.
-                                // We'll let the user decide but standard is activation.
-                            }
-                            onSelect(instance.id);
-                        }}
-                    >
-                        <Link
-                            to="/whatsapp-hub"
-                            className="flex items-center gap-3 flex-1 min-w-0"
-                            onClick={(e) => {
-                                // Default Link behavior works, just ensure we trigger selection
+                {instances.map((instance) => {
+                    const isEditing = editingId === instance.id;
+                    const activeColorObj = INSTANCE_COLORS.find(c => c.name === (instance.color || 'green')) || INSTANCE_COLORS[0];
+                    const IconPath = INSTANCE_ICONS[instance.icon || 'phone'] || INSTANCE_ICONS.phone;
+
+                    if (isEditing) {
+                        return (
+                            <div key={instance.id} className="bg-white/10 p-3 rounded-lg border border-white/20 flex flex-col gap-3">
+                                <input
+                                    type="text"
+                                    value={editForm.name}
+                                    onChange={e => setEditForm({ ...editForm, name: e.target.value })}
+                                    className="bg-sidebar-dark border border-white/20 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-primary w-full"
+                                    placeholder="Instance Name"
+                                />
+                                <div className="flex flex-col gap-2 border-t border-white/10 pt-2">
+                                    <div className="flex flex-wrap gap-2">
+                                        {INSTANCE_COLORS.map(c => (
+                                            <div
+                                                key={c.name}
+                                                onClick={() => setEditForm({ ...editForm, color: c.name })}
+                                                className={`size-4 rounded-full cursor-pointer transition-transform ${editForm.color === c.name ? 'scale-125 ring-2 ring-white shadow-soft' : 'opacity-50 hover:opacity-100'}`}
+                                                style={{ backgroundColor: c.value }}
+                                            />
+                                        ))}
+                                    </div>
+                                    <div className="flex flex-wrap gap-1 mt-1">
+                                        {Object.keys(INSTANCE_ICONS).map(iconName => (
+                                            <div
+                                                key={iconName}
+                                                onClick={() => setEditForm({ ...editForm, icon: iconName })}
+                                                className={`p-1 rounded cursor-pointer transition-colors ${editForm.icon === iconName ? 'bg-white/20 text-white shadow-soft' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                                            >
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                    {INSTANCE_ICONS[iconName]}
+                                                </svg>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="flex gap-2">
+                                    <button onClick={(e) => { e.stopPropagation(); setEditingId(null); }} className="flex-1 py-1 text-xs text-gray-300 hover:bg-white/10 rounded">Cancel</button>
+                                    <button onClick={(e) => handleSaveEdit(e, instance.id)} className="flex-1 py-1 text-xs bg-primary text-white rounded hover:bg-primary/90">Save</button>
+                                </div>
+                            </div>
+                        );
+                    }
+
+                    return (
+                        <div
+                            key={instance.id}
+                            className={`group flex items-center justify-between px-3 py-2.5 rounded-lg border transition-colors cursor-pointer ${activeId === instance.id
+                                ? 'bg-white/5 border-white/5 text-white'
+                                : 'border-transparent text-gray-400 hover:bg-white/5 hover:text-white'
+                                }`}
+                            onClick={() => {
+                                onSelect(instance.id);
                             }}
                         >
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-                            <span className="text-sm font-medium truncate">{instance.name}</span>
-                        </Link>
-
-                        <div className="flex items-center gap-2">
-                            {activeId === instance.id && (
-                                <span className="size-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span>
-                            )}
-                            <button
-                                className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 transition-all p-1"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onRemove(instance.id);
-                                }}
+                            <Link
+                                to="/whatsapp-hub"
+                                className="flex items-center gap-3 flex-1 min-w-0"
                             >
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6L6 18M6 6l12 12"></path></svg>
-                            </button>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                                    {IconPath}
+                                </svg>
+                                <span className="text-sm font-medium truncate">{instance.name}</span>
+                            </Link>
+
+                            <div className="flex items-center gap-2">
+                                {activeId === instance.id && (
+                                    <span className="size-2 rounded-full" style={{ backgroundColor: activeColorObj.value, boxShadow: `0 0 8px ${activeColorObj.shadow}` }}></span>
+                                )}
+                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button
+                                        className="text-gray-500 hover:text-white transition-colors p-[2px]"
+                                        onClick={(e) => handleEditClick(e, instance)}
+                                    >
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                                    </button>
+                                    <button
+                                        className="text-gray-500 hover:text-red-400 transition-colors p-[2px]"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onRemove(instance.id);
+                                        }}
+                                    >
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6L6 18M6 6l12 12"></path></svg>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
             </nav>
 
             <div className="p-4 border-t border-white/10 mt-auto">

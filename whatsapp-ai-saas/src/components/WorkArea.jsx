@@ -8,6 +8,10 @@ const WorkArea = ({ instances, activeId }) => {
     const [copilotProposals, setCopilotProposals] = useState([]);
     const [isCopilotLoading, setIsCopilotLoading] = useState(false);
     const [copiedIndex, setCopiedIndex] = useState(null);
+    const [chatInput, setChatInput] = useState('');
+    const [chatHistory, setChatHistory] = useState([
+        { role: 'agent', text: 'Hello! I am WhatCopilote. Click "Analyze Current Chat" to generate replies, or type a custom request below.' }
+    ]);
 
     // Zustand Global Actions
     const incrementCopilotReplies = useAppStore(state => state.incrementCopilotReplies);
@@ -15,6 +19,9 @@ const WorkArea = ({ instances, activeId }) => {
     // Reset proposals when switching tabs
     useEffect(() => {
         setCopilotProposals([]);
+        setChatHistory([
+            { role: 'agent', text: 'Hello! I am WhatCopilote. Click "Analyze Current Chat" to generate replies, or type a custom request below.' }
+        ]);
     }, [activeId]);
 
     const handleCopy = (text, index) => {
@@ -90,6 +97,11 @@ const WorkArea = ({ instances, activeId }) => {
                 if (geminiData.status === 'success') {
                     setCopilotProposals(geminiData.proposals);
                     incrementCopilotReplies(geminiData.proposals.length || 1);
+                    setChatHistory(prev => [
+                        ...prev,
+                        { role: 'user', text: 'Analyze Current Chat' },
+                        { role: 'agent', text: 'I analyzed the active WhatsApp conversation. Here are some suggested replies:', proposals: geminiData.proposals }
+                    ]);
                 }
             } else {
                 alert('Could not extract context. Please make sure a chat is open with visible messages.');
@@ -99,6 +111,21 @@ const WorkArea = ({ instances, activeId }) => {
             alert('Failed to extract context. Ensure WhatsApp is fully loaded.');
         }
         setIsCopilotLoading(false);
+    };
+
+    const handleSendMessage = (e) => {
+        e.preventDefault();
+        if (!chatInput.trim()) return;
+
+        setChatHistory(prev => [...prev, { role: 'user', text: chatInput }]);
+        const userMsg = chatInput;
+        setChatInput('');
+        setIsCopilotLoading(true);
+
+        setTimeout(() => {
+            setChatHistory(prev => [...prev, { role: 'agent', text: `You asked: "${userMsg}". Since I'm essentially reading the DOM, I can provide conversational help based on context soon.` }]);
+            setIsCopilotLoading(false);
+        }, 1000);
     };
 
     useEffect(() => {
@@ -182,31 +209,27 @@ const WorkArea = ({ instances, activeId }) => {
                         <h3>Instance status</h3>
                     </div>
                     <div className="card-body">
-                        {orchestratorStatus === 'Connected' && (
-                            <div style={{ background: '#eef2ff', borderRadius: '8px', padding: '12px', display: 'flex', gap: '12px', alignItems: 'flex-start', marginBottom: '16px' }}>
-                                <div style={{ background: '#e0e7ff', color: '#4f46e5', padding: '6px 10px', borderRadius: '8px', display: 'flex', flexShrink: 0, justifyContent: 'center', alignItems: 'center' }}>
-                                    <span style={{ fontSize: '18px', fontWeight: 500, fontFamily: 'monospace' }}>qr_code_2</span>
+                        {orchestratorStatus === 'Connected' ? (
+                            <div style={{ background: '#eef2ff', borderRadius: '8px', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px rgba(16, 185, 129, 0.4)' }}></span>
+                                    <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 'bold', color: '#1e1b4b' }}>WhatsApp Connection Active</h4>
                                 </div>
-                                <div style={{ flex: 1, minWidth: 0, display: 'flex', flexWrap: 'wrap' }}>
-                                    <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 'bold', color: '#1e1b4b', width: '100%' }}>WhatsApp Connection Active</h4>
-                                    <p style={{ margin: '4px 0 0 0', fontSize: '11px', color: '#4f46e5', lineHeight: 1.5, letterSpacing: '0.1px', wordBreak: 'break-word', whiteSpace: 'normal' }}>
-                                        Instance {activeInstance?.name || '1'} is connected and syncing messages in real-time.
-                                    </p>
+                                <p style={{ margin: 0, fontSize: '11px', color: '#4f46e5', paddingLeft: '16px', lineHeight: 1.4 }}>
+                                    Instance <strong>{activeInstance?.name || '1'}</strong> is connected and syncing messages.
+                                </p>
+                            </div>
+                        ) : (
+                            <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px', border: '1px solid #e2e8f0' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                    <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 'bold', color: '#64748b' }}>Offline or Disconnected</h4>
+                                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#cbd5e1' }}></span>
                                 </div>
+                                <p style={{ margin: 0, fontSize: '11px', color: '#64748b', lineHeight: 1.5 }}>
+                                    Please start the Orchestrator backend to connect to the DOM and sync messages.
+                                </p>
                             </div>
                         )}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                            <span className="info-text">Orchestrator Link</span>
-                            <span className={`badge ${orchestratorStatus === 'Connected' ? 'active' : 'disabled'}`}>
-                                {orchestratorStatus}
-                            </span>
-                        </div>
-                        <p className="info-text" style={{ fontSize: 13, lineHeight: '1.6' }}>
-                            {orchestratorStatus === 'Connected'
-                                ? `Playwright is tracking ${activePlaywrightSessions} active WhatsApp tabs safely.`
-                                : 'Start the Node.js Orchestrator to enable Google Gemini automation features.'
-                            }
-                        </p>
                     </div>
                 </div>
 
@@ -215,58 +238,125 @@ const WorkArea = ({ instances, activeId }) => {
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0b9f84" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 9l1.25-2.75L23 5l-2.75-1.25L19 1l-1.25 2.75L15 5l2.75 1.25L19 9zm-7.5.5L9 4 6.5 9.5 1 12l5.5 2.5L9 20l2.5-5.5L17 12l-5.5-2.5zM19 15l-1.25 2.75L15 19l2.75 1.25L19 23l1.25-2.75L23 19l-2.75-1.25L19 15z"></path></svg>
                         <h3>WhatCopilote</h3>
                     </div>
-                    <div className="card-body">
-                        <button
-                            className="btn-primary"
-                            style={{ width: '100%', marginBottom: 16 }}
-                            onClick={generateProposals}
-                            disabled={isCopilotLoading || orchestratorStatus !== 'Connected'}
-                        >
-                            {isCopilotLoading ? (
-                                <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                                    <span className="pulse" style={{ position: 'relative', width: 8, height: 8 }}></span> Analyzing...
-                                </span>
-                            ) : 'Generate AI Replies'}
-                        </button>
+                    <div className="card-body" style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '12px 16px' }}>
 
-                        {copilotProposals.length > 0 && (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '300px', overflowY: 'auto' }}>
-                                {copilotProposals.map((reply, i) => (
-                                    <div
-                                        key={i}
-                                        onClick={() => handleCopy(reply, i)}
-                                        style={{
-                                            padding: '12px',
-                                            background: copiedIndex === i ? '#ecfdf5' : '#f1f5f9',
-                                            borderRadius: 8,
-                                            fontSize: 13,
-                                            color: '#334155',
-                                            border: copiedIndex === i ? '1px solid #10b981' : '1px solid #e2e8f0',
-                                            cursor: 'pointer',
-                                            position: 'relative',
-                                            transition: 'all 0.2s',
-                                            paddingRight: '36px'
-                                        }}
-                                        title="Click to copy"
-                                    >
-                                        {reply}
-                                        <div style={{ position: 'absolute', right: '12px', top: '12px', color: copiedIndex === i ? '#10b981' : '#94a3b8' }}>
-                                            {copiedIndex === i ? (
-                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                            ) : (
-                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                                            )}
-                                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', gap: '8px' }}>
+                            <button
+                                className="btn-primary"
+                                style={{ flex: 1, padding: '10px' }}
+                                onClick={generateProposals}
+                                disabled={isCopilotLoading || orchestratorStatus !== 'Connected'}
+                            >
+                                {isCopilotLoading ? (
+                                    <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                                        <span className="pulse" style={{ position: 'relative', width: 8, height: 8 }}></span> Analyzing...
+                                    </span>
+                                ) : (
+                                    <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                                        Analyze Chat
+                                    </span>
+                                )}
+                            </button>
+                        </div>
+
+                        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px', paddingBottom: '16px', paddingRight: '6px', minHeight: '280px' }} className="sidebar-scroll">
+                            {chatHistory.map((msg, i) => (
+                                <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
+                                    <div style={{
+                                        maxWidth: '85%',
+                                        padding: '10px 14px',
+                                        borderRadius: '12px',
+                                        fontSize: '13px',
+                                        background: msg.role === 'user' ? '#10b981' : '#f1f5f9',
+                                        color: msg.role === 'user' ? '#fff' : '#1e293b',
+                                        borderBottomRightRadius: msg.role === 'user' ? '2px' : '12px',
+                                        borderBottomLeftRadius: msg.role === 'agent' ? '2px' : '12px',
+                                        lineHeight: 1.5
+                                    }}>
+                                        {msg.text}
                                     </div>
-                                ))}
-                            </div>
-                        )}
 
-                        {copilotProposals.length === 0 && !isCopilotLoading && (
-                            <p className="info-text" style={{ fontSize: 13, textAlign: 'center', marginTop: 10 }}>
-                                Open a conversation in WhatsApp and click generate to get reply suggestions.
-                            </p>
-                        )}
+                                    {msg.proposals && (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px', width: '100%' }}>
+                                            {msg.proposals.map((reply, j) => {
+                                                const id = `${i}-${j}`;
+                                                return (
+                                                    <div
+                                                        key={j}
+                                                        onClick={() => handleCopy(reply, id)}
+                                                        style={{
+                                                            padding: '10px 12px',
+                                                            background: copiedIndex === id ? '#ecfdf5' : '#ffffff',
+                                                            borderRadius: 8,
+                                                            fontSize: 12,
+                                                            color: '#334155',
+                                                            border: copiedIndex === id ? '1px solid #10b981' : '1px solid #e2e8f0',
+                                                            cursor: 'pointer',
+                                                            position: 'relative',
+                                                            transition: 'all 0.2s',
+                                                            paddingRight: '30px',
+                                                            boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                                                            lineHeight: 1.4
+                                                        }}
+                                                        title="Click to copy"
+                                                    >
+                                                        {reply}
+                                                        <div style={{ position: 'absolute', right: '8px', top: '10px', color: copiedIndex === id ? '#10b981' : '#94a3b8' }}>
+                                                            {copiedIndex === id ? (
+                                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                                            ) : (
+                                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+
+                        <form onSubmit={handleSendMessage} style={{ marginTop: 'auto', paddingTop: '12px', borderTop: '1px solid #e2e8f0', position: 'relative' }}>
+                            <input
+                                type="text"
+                                value={chatInput}
+                                onChange={(e) => setChatInput(e.target.value)}
+                                placeholder="Ask WhatCopilote..."
+                                style={{
+                                    width: '100%',
+                                    padding: '10px 40px 10px 12px',
+                                    borderRadius: '8px',
+                                    border: '1px solid #cbd5e1',
+                                    fontSize: '13px',
+                                    outline: 'none',
+                                    transition: 'border-color 0.2s'
+                                }}
+                            />
+                            <button
+                                type="submit"
+                                disabled={!chatInput.trim() || isCopilotLoading}
+                                style={{
+                                    position: 'absolute',
+                                    right: '6px',
+                                    top: '16px',
+                                    background: chatInput.trim() ? '#10b981' : '#e2e8f0',
+                                    color: chatInput.trim() ? '#fff' : '#94a3b8',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    width: '28px',
+                                    height: '28px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    cursor: chatInput.trim() ? 'pointer' : 'default',
+                                    transition: 'background 0.2s'
+                                }}
+                            >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                            </button>
+                        </form>
                     </div>
                 </div>
 
