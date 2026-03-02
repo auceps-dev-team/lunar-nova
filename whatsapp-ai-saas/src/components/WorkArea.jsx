@@ -201,9 +201,9 @@ const WorkArea = ({ instances, activeId }) => {
             </div>
 
             {/* Right Side: Session Info & AI Agent Status (Old Design Restored) */}
-            <aside className="side-panel w-[320px] shrink-0">
+            <aside className="w-[320px] shrink-0 flex flex-col gap-4 h-full">
 
-                <div className="card">
+                <div className="card shrink-0">
                     <div className="card-header">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0b9f84" strokeWidth="2"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg>
                         <h3>Instance status</h3>
@@ -233,14 +233,14 @@ const WorkArea = ({ instances, activeId }) => {
                     </div>
                 </div>
 
-                <div className="card">
-                    <div className="card-header">
+                <div className="card flex-1 flex flex-col min-h-0">
+                    <div className="card-header shrink-0">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0b9f84" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 9l1.25-2.75L23 5l-2.75-1.25L19 1l-1.25 2.75L15 5l2.75 1.25L19 9zm-7.5.5L9 4 6.5 9.5 1 12l5.5 2.5L9 20l2.5-5.5L17 12l-5.5-2.5zM19 15l-1.25 2.75L15 19l2.75 1.25L19 23l1.25-2.75L23 19l-2.75-1.25L19 15z"></path></svg>
                         <h3>WhatCopilote</h3>
                     </div>
-                    <div className="card-body" style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '12px 16px' }}>
+                    <div className="card-body flex-1 flex flex-col min-h-0" style={{ padding: '12px 16px' }}>
 
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', gap: '8px' }}>
+                        <div className="shrink-0" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', gap: '8px' }}>
                             <button
                                 className="btn-primary"
                                 style={{ flex: 1, padding: '10px' }}
@@ -253,14 +253,14 @@ const WorkArea = ({ instances, activeId }) => {
                                     </span>
                                 ) : (
                                     <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 9l1.25-2.75L23 5l-2.75-1.25L19 1l-1.25 2.75L15 5l2.75 1.25L19 9zm-7.5.5L9 4 6.5 9.5 1 12l5.5 2.5L9 20l2.5-5.5L17 12l-5.5-2.5zM19 15l-1.25 2.75L15 19l2.75 1.25L19 23l1.25-2.75L23 19l-2.75-1.25L19 15z"></path></svg>
                                         Analyze Chat
                                     </span>
                                 )}
                             </button>
                         </div>
 
-                        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px', paddingBottom: '16px', paddingRight: '6px', minHeight: '280px' }} className="sidebar-scroll">
+                        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px', paddingBottom: '16px', paddingRight: '6px' }} className="sidebar-scroll">
                             {chatHistory.map((msg, i) => (
                                 <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
                                     <div style={{
@@ -318,7 +318,7 @@ const WorkArea = ({ instances, activeId }) => {
                             ))}
                         </div>
 
-                        <form onSubmit={handleSendMessage} style={{ marginTop: 'auto', paddingTop: '12px', borderTop: '1px solid #e2e8f0', position: 'relative' }}>
+                        <form onSubmit={handleSendMessage} className="shrink-0" style={{ marginTop: 'auto', paddingTop: '12px', borderTop: '1px solid #e2e8f0', position: 'relative' }}>
                             <input
                                 type="text"
                                 value={chatInput}
