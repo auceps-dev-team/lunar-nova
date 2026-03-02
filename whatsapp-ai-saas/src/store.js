@@ -12,6 +12,17 @@ const useAppStore = create(
             instances: [],
             copilotRepliesGenerated: 0,
 
+            userProfile: {
+                isAuthenticated: false,
+                authMethod: null, // 'email' or 'google'
+                firstName: '',
+                lastName: '',
+                email: '',
+                phone: '',
+                companyName: '',
+                address: ''
+            },
+
             // --- Agent Chats ---
             agentChats: {
                 creative: [{ sender: 'agent', text: 'Hello! I am your Visual & Creative Agent. How can I assist you with your workload today?' }],
@@ -20,6 +31,14 @@ const useAppStore = create(
             },
 
             // --- Actions ---
+            updateUserProfile: (updates) => set((state) => ({
+                userProfile: { ...state.userProfile, ...updates }
+            })),
+
+            logoutUser: () => set((state) => ({
+                userProfile: { ...state.userProfile, isAuthenticated: false, authMethod: null }
+            })),
+
             setActiveWhatsAppContext: (context) => set({ activeWhatsAppContext: context }),
 
             setInstances: (newInstances) => set({ instances: newInstances }),
