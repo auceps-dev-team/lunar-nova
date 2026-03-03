@@ -20,7 +20,7 @@ Output a strict JSON object matching this schema:
   "proposed_replies": [ "Reply 1", "Reply 2", "Reply 3" ]
 }`;
 
-async function generateProposals(chatContext) {
+async function generateProposals(chatContext, modelParam) {
     if (!chatContext || !chatContext.messages || chatContext.messages.length === 0) {
         return { proposed_replies: [] };
     }
@@ -33,7 +33,7 @@ async function generateProposals(chatContext) {
 
     try {
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: modelParam || 'gemini-1.5-pro',
             contents: formattedChat,
             config: {
                 systemInstruction: systemInstruction,

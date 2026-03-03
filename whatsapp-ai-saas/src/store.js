@@ -23,6 +23,14 @@ const useAppStore = create(
                 address: ''
             },
 
+            // --- Global Settings ---
+            appSettings: {
+                theme: 'light',
+                language: 'en',
+                model: 'gemini-1.5-pro',
+                allowAiRead: true
+            },
+
             // --- Agent Chats ---
             agentChats: {
                 creative: [{ sender: 'agent', text: 'Hello! I am your Visual & Creative Agent. How can I assist you with your workload today?' }],
@@ -31,6 +39,10 @@ const useAppStore = create(
             },
 
             // --- Actions ---
+            updateSettings: (updates) => set((state) => ({
+                appSettings: { ...state.appSettings, ...updates }
+            })),
+
             updateUserProfile: (updates) => set((state) => ({
                 userProfile: { ...state.userProfile, ...updates }
             })),

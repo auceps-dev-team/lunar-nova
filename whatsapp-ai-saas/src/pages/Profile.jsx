@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useGoogleLogin } from '@react-oauth/google';
 import useAppStore from '../store';
 
 const Profile = () => {
@@ -21,20 +22,49 @@ const Profile = () => {
     const [isSaving, setIsSaving] = useState(false);
     const [saveMessage, setSaveMessage] = useState('');
 
-    const handleLoginSubmit = (e, method = 'email') => {
+    const handleEmailSubmit = (e) => {
         e.preventDefault();
-        // Mock authentication
         updateUserProfile({
             isAuthenticated: true,
-            authMethod: method,
-            email: method === 'email' ? loginForm.email : 'user@google.com'
+            authMethod: 'email',
+            email: loginForm.email
         });
 
         setProfileForm(prev => ({
             ...prev,
-            email: method === 'email' ? loginForm.email : 'user@google.com'
+            email: loginForm.email
         }));
     };
+
+    const loginWithGoogle = useGoogleLogin({
+        onSuccess: async (tokenResponse) => {
+            try {
+                const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                    headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+                });
+                const userInfo = await res.json();
+
+                updateUserProfile({
+                    isAuthenticated: true,
+                    authMethod: 'google',
+                    email: userInfo.email,
+                    firstName: userInfo.given_name || userProfile.firstName,
+                    lastName: userInfo.family_name || userProfile.lastName,
+                });
+
+                setProfileForm(prev => ({
+                    ...prev,
+                    email: userInfo.email,
+                    firstName: userInfo.given_name || prev.firstName,
+                    lastName: userInfo.family_name || prev.lastName,
+                }));
+            } catch (error) {
+                console.error("Failed to fetch Google user info:", error);
+                alert("Failed to retrieve Google profile data.");
+            }
+        },
+        onError: (error) => console.error('Google Login Failed', error)
+    });
 
     const handleProfileSubmit = (e) => {
         e.preventDefault();
@@ -69,7 +99,7 @@ const Profile = () => {
                     </div>
 
                     <button
-                        onClick={(e) => handleLoginSubmit(e, 'google')}
+                        onClick={() => loginWithGoogle()}
                         className="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-gray-700 font-medium hover:bg-gray-50 transition-colors mb-6"
                     >
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -86,7 +116,7 @@ const Profile = () => {
                         <span className="bg-white px-3 text-xs text-gray-500 relative z-10">OR</span>
                     </div>
 
-                    <form onSubmit={(e) => handleLoginSubmit(e, 'email')} className="space-y-4">
+                    <form onSubmit={handleEmailSubmit} className="space-y-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
                             <input

@@ -5,6 +5,7 @@ import '../styles/global.css';
 const WorkArea = ({ instances, activeId }) => {
     const [orchestratorStatus, setOrchestratorStatus] = useState('Checking...');
     const [activePlaywrightSessions, setActivePlaywrightSessions] = useState(0);
+    const appSettings = useAppStore(state => state.appSettings) || {};
     const [copilotProposals, setCopilotProposals] = useState([]);
     const [isCopilotLoading, setIsCopilotLoading] = useState(false);
     const [copiedIndex, setCopiedIndex] = useState(null);
@@ -32,6 +33,12 @@ const WorkArea = ({ instances, activeId }) => {
 
     const generateProposals = async () => {
         if (!activeId || orchestratorStatus !== 'Connected') return;
+
+        if (appSettings.allowAiRead === false) {
+            alert("AI Context Reading is disabled in Settings. Enable it to analyze chats.");
+            return;
+        }
+
         setIsCopilotLoading(true);
         setCopilotProposals([]);
         try {
@@ -90,7 +97,8 @@ const WorkArea = ({ instances, activeId }) => {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         instance_id: activeId,
-                        chatContext: ctxDataContext
+                        chatContext: ctxDataContext,
+                        model: appSettings.model || 'gemini-1.5-pro'
                     })
                 });
                 const geminiData = await geminiRes.json();

@@ -172,7 +172,7 @@ app.get('/api/context/:instance_id', async (req, res) => {
 app.post('/api/gemini/copilot', async (req, res) => {
     // Requires instance_id for DB logging in a multi-tenant environment. 
     // Usually passed as part of the request. Let's assume frontend passes it.
-    const { instance_id, chatContext } = req.body;
+    const { instance_id, chatContext, model } = req.body;
 
     if (!chatContext) {
         return res.status(400).json({ error: 'Missing chat context.' });
@@ -183,7 +183,7 @@ app.post('/api/gemini/copilot', async (req, res) => {
         // Create an MD5 hash of the last 3 messages to use as a cache key.
         // This prevents excessive API billing if user spams the button without new messages.
         const contextFingerprint = chatContext.contactName + '_' +
-            chatContext.messages.slice(-3).map(m => m.text).join('|');
+            chatContext.messages.slice(-3).map(m => m.text).join('|') + '_' + (model || 'gemini-1.5-pro');
 
         const cacheKey = 'copilot:' + crypto.createHash('md5').update(contextFingerprint).digest('hex');
 
@@ -199,7 +199,7 @@ app.post('/api/gemini/copilot', async (req, res) => {
 
         // Generate via Gemini
         console.log(`[Cache Miss] Generating new proposals for ${chatContext.contactName}`);
-        const proposalsObj = await generateProposals(chatContext);
+        const proposalsObj = await generateProposals(chatContext, model);
         const proposals = proposalsObj.proposed_replies || [];
 
         // Cache for 60 seconds

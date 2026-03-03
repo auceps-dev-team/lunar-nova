@@ -1,17 +1,23 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
+import useAppStore from '../store';
+import { getTranslation as t } from '../locales';
 import '../styles/global.css';
 
 const Topbar = ({ activeInstance, currentTitle }) => {
+    const language = useAppStore(state => state.appSettings?.language) || 'en';
+
     const getFormattedTitle = () => {
-        if (!currentTitle || currentTitle === '/') return 'WhatsApp Hub';
-        if (currentTitle === '/whatsapp-hub') return activeInstance ? activeInstance.name : 'WhatsApp Hub';
-        if (currentTitle === '/dashboard') return 'Dashboard & Analytics';
-        if (currentTitle === '/agents') return 'AI Agents Hub';
-        if (currentTitle === '/tasks') return 'Task Management';
-        if (currentTitle === '/invoice-builder') return 'Invoice Builder';
-        if (currentTitle === '/tools') return 'Tools';
-        if (currentTitle === '/profile') return 'Account Strategy & Billing';
-        return 'Workspace';
+        if (!currentTitle || currentTitle === '/') return t(language, 'whatsappHub');
+        if (currentTitle === '/whatsapp-hub') return activeInstance ? activeInstance.name : t(language, 'whatsappHub');
+        if (currentTitle === '/dashboard') return t(language, 'dashboard');
+        if (currentTitle === '/agents') return t(language, 'agentsHub');
+        if (currentTitle === '/tasks') return t(language, 'tasks');
+        if (currentTitle === '/invoice-builder') return t(language, 'invoiceBuilder');
+        if (currentTitle === '/tools') return t(language, 'tools');
+        if (currentTitle === '/profile') return t(language, 'accountStrategy');
+        if (currentTitle === '/settings') return t(language, 'appSettings');
+        return t(language, 'workspace');
     };
 
     return (
@@ -40,10 +46,10 @@ const Topbar = ({ activeInstance, currentTitle }) => {
             </div>
 
             <div className="flex items-center gap-3">
-                <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors shadow-sm bg-white">
+                <Link to="/settings" className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors shadow-sm bg-white">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-                    Settings
-                </button>
+                    {t(language, 'settings')}
+                </Link>
             </div>
         </header>
     );
