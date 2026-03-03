@@ -21,7 +21,7 @@ const Topbar = ({ activeInstance, currentTitle }) => {
     };
 
     return (
-        <header className="h-[72px] px-6 flex items-center justify-between border-b border-gray-100 bg-white z-10 shrink-0">
+        <header className="h-[72px] px-6 flex items-center justify-between border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 z-10 shrink-0">
             <div className="flex items-center gap-4">
                 {activeInstance && (currentTitle === '/whatsapp-hub' || currentTitle === '/') && (
                     <div className="relative">
@@ -32,21 +32,21 @@ const Topbar = ({ activeInstance, currentTitle }) => {
                     </div>
                 )}
                 <div>
-                    <h2 className="font-display font-bold text-text-main text-lg leading-tight">
+                    <h2 className="font-display font-bold text-text-main dark:text-white text-lg leading-tight">
                         {getFormattedTitle()}
                     </h2>
                     {activeInstance && (currentTitle === '/whatsapp-hub' || currentTitle === '/') && (
                         <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-xs text-text-muted">Personal WhatsApp</span>
-                            <span className="size-1 bg-gray-300 rounded-full"></span>
-                            <span className="text-xs text-green-600 font-medium bg-green-50 px-1.5 rounded">Connected</span>
+                            <span className="text-xs text-text-muted dark:text-gray-400">Personal WhatsApp</span>
+                            <span className="size-1 bg-gray-300 dark:bg-gray-600 rounded-full"></span>
+                            <span className="text-xs text-green-600 dark:text-green-400 font-medium bg-green-50 dark:bg-green-900/40 px-1.5 rounded">Connected</span>
                         </div>
                     )}
                 </div>
             </div>
 
             <div className="flex items-center gap-3">
-                <Link to="/settings" className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors shadow-sm bg-white">
+                <Link to="/settings" className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors shadow-sm bg-white dark:bg-gray-800">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
                     {t(language, 'settings')}
                 </Link>
