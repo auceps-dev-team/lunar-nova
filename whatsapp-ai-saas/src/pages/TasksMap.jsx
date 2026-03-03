@@ -1,16 +1,20 @@
 import React from 'react';
+import useAppStore from '../store';
+import { getTranslation as t } from '../locales';
 
 const TasksMap = () => {
+    const language = useAppStore(state => state.appSettings?.language) || 'en';
+
     return (
         <div style={{ animation: 'fadeIn 0.3s ease' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
                 <div>
-                    <h1 style={{ fontSize: '24px', marginBottom: '8px' }}>Task Management</h1>
-                    <p style={{ color: 'var(--text-secondary)' }}>Organize your workflow and follow up on client requests.</p>
+                    <h1 style={{ fontSize: '24px', marginBottom: '8px' }}>{t(language, 'taskManagement')}</h1>
+                    <p style={{ color: 'var(--text-secondary)' }}>{t(language, 'taskDesc')}</p>
                 </div>
                 <button className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                    New Task
+                    {t(language, 'newTask')}
                 </button>
             </div>
 
@@ -20,7 +24,7 @@ const TasksMap = () => {
                     <div style={{ padding: '16px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#f59e0b' }}></div>
-                            <span style={{ fontWeight: 600 }}>To Do</span>
+                            <span style={{ fontWeight: 600 }}>{t(language, 'toDo')}</span>
                         </div>
                         <span style={{ background: 'var(--bg-color)', padding: '2px 8px', borderRadius: '12px', fontSize: '12px', color: 'var(--text-secondary)' }}>2</span>
                     </div>
@@ -53,7 +57,7 @@ const TasksMap = () => {
                     <div style={{ padding: '16px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#3b82f6' }}></div>
-                            <span style={{ fontWeight: 600 }}>In Progress</span>
+                            <span style={{ fontWeight: 600 }}>{t(language, 'inProgress')}</span>
                         </div>
                         <span style={{ background: 'var(--bg-color)', padding: '2px 8px', borderRadius: '12px', fontSize: '12px', color: 'var(--text-secondary)' }}>1</span>
                     </div>
@@ -75,12 +79,12 @@ const TasksMap = () => {
                     <div style={{ padding: '16px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#10b981' }}></div>
-                            <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>Completed</span>
+                            <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>{t(language, 'completed')}</span>
                         </div>
                         <span style={{ background: 'var(--bg-color)', padding: '2px 8px', borderRadius: '12px', fontSize: '12px', color: 'var(--text-secondary)' }}>0</span>
                     </div>
                     <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px', minHeight: '400px', alignItems: 'center', justifyContent: 'center' }}>
-                        <p style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>No completed tasks yet.</p>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>{t(language, 'completed')} (0)</p>
                     </div>
                 </div>
 

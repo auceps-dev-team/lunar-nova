@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import useAppStore from '../store';
+import { getTranslation as t } from '../locales';
 
 const AgentsHub = () => {
     const [activeAgent, setActiveAgent] = useState('creative');
@@ -10,6 +11,7 @@ const AgentsHub = () => {
     // Get resilient chat history from global store
     const agentChats = useAppStore(state => state.agentChats);
     const updateAgentChat = useAppStore(state => state.updateAgentChat);
+    const language = useAppStore(state => state.appSettings?.language) || 'en';
 
     const agents = [
         {
@@ -82,8 +84,8 @@ const AgentsHub = () => {
                 flexDirection: 'column'
             }}>
                 <div style={{ padding: '20px', borderBottom: '1px solid var(--border-color)' }}>
-                    <h2 style={{ fontSize: '18px', fontWeight: 600 }}>Agent Directory</h2>
-                    <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>Select a persona to chat with</p>
+                    <h2 style={{ fontSize: '18px', fontWeight: 600 }}>{t(language, 'agentDirectory')}</h2>
+                    <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>{t(language, 'selectPersona')}</p>
                 </div>
 
                 <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -144,7 +146,7 @@ const AgentsHub = () => {
 
                 <div style={{ flex: 1, padding: '24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     <div style={{ alignSelf: 'center', padding: '8px 16px', background: 'var(--bg-color)', borderRadius: '20px', fontSize: '12px', color: 'var(--text-secondary)' }}>
-                        Chat initialized with {currentAgent.name}
+                        {t(language, 'chatInitialized')} {currentAgent.name}
                     </div>
 
                     {currentChat.map((msg, idx) => (
@@ -188,7 +190,7 @@ const AgentsHub = () => {
                                 display: 'flex', alignItems: 'center', justifyContent: 'center'
                             }}>{currentAgent.icon}</div>
                             <div style={{ background: 'var(--bg-color)', padding: '16px', borderRadius: '12px', borderTopLeftRadius: '2px', fontSize: '14px', fontStyle: 'italic', color: 'var(--text-secondary)' }}>
-                                Thinking...
+                                {t(language, 'thinking')}
                             </div>
                         </div>
                     )}
@@ -229,7 +231,7 @@ const AgentsHub = () => {
                                 }
                             }}
                             disabled={isLoading}
-                            placeholder="Message the agent... (Shift+Enter for new line)"
+                            placeholder={t(language, 'messageAgent')}
                             rows="2"
                             style={{
                                 flex: 1,
@@ -249,7 +251,7 @@ const AgentsHub = () => {
                             onClick={handleSendMessage}
                             disabled={isLoading || !inputFocus.trim()}
                         >
-                            Send
+                            {t(language, 'send')}
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
                         </button>
                     </div>
