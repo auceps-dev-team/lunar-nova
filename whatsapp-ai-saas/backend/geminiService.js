@@ -192,12 +192,17 @@ async function chatWithAgent(personaId, message, imageParams) {
         if (imageParams && imageParams.data && imageParams.mimeType) {
             contents = [
                 {
-                    inlineData: {
-                        data: imageParams.data,
-                        mimeType: imageParams.mimeType
-                    }
-                },
-                message
+                    role: 'user',
+                    parts: [
+                        { text: message },
+                        {
+                            inlineData: {
+                                data: imageParams.data,
+                                mimeType: imageParams.mimeType
+                            }
+                        }
+                    ]
+                }
             ];
         } else {
             contents = message;
@@ -218,7 +223,64 @@ async function chatWithAgent(personaId, message, imageParams) {
     }
 }
 
-async function generateImage(prompt, aspectRatio = '1:1') {
+async function generateImage(prompt, aspectRatio = '1:1', imageParams = null) {
+    // --- STRATEGY --- 
+    // If a reference image is provided: use Gemini Flash Image (image editing/uplifting mode)
+    //   → This PRESERVES the product identity (logo, shape, labels)
+    // If no image: use Imagen 4 for pure text-to-image
+
+    if (imageParams && imageParams.data && imageParams.mimeType) {
+        // ---- IMAGE EDITING / PRODUCT UPLIFTING MODE ----
+        try {
+            console.log('[generateImage] Image reference received — using Gemini Flash image-edit mode');
+            const editingPrompt = `You are an expert product photography director. The user has provided a product image. Your task is to UPLIFT this product photo into a high-end advertising visual.
+
+CRITICAL RULES:
+- You MUST preserve the product exactly as it appears: maintain all logos, labels, text, and the product shape/identity.
+- Do NOT generate a new product or replace the product.
+- Only enhance the environment, lighting, background, and atmosphere.
+- The product must remain the main subject.
+
+Enhancement instructions: ${prompt}`;
+
+            const response = await ai.models.generateContent({
+                model: 'gemini-2.0-flash-exp-image-generation',
+                contents: [
+                    {
+                        role: 'user',
+                        parts: [
+                            {
+                                inlineData: {
+                                    data: imageParams.data,
+                                    mimeType: imageParams.mimeType
+                                }
+                            },
+                            { text: editingPrompt }
+                        ]
+                    }
+                ],
+                config: {
+                    responseModalities: ['IMAGE', 'TEXT'],
+                }
+            });
+
+            // Extract the image from the response
+            if (response.candidates && response.candidates[0]?.content?.parts) {
+                for (const part of response.candidates[0].content.parts) {
+                    if (part.inlineData && part.inlineData.data) {
+                        return { imageBytes: part.inlineData.data };
+                    }
+                }
+            }
+            return { error: "L'édition d'image n'a pas retourné de résultat visuel." };
+        } catch (error) {
+            console.error("Gemini Image Edit Error:", error);
+            // Fallback to Imagen 4 text-only if edit fails
+            console.log('[generateImage] Edit mode failed, falling back to Imagen 4...');
+        }
+    }
+
+    // ---- TEXT-TO-IMAGE MODE (Imagen 4) ----
     try {
         const response = await ai.models.generateImages({
             model: 'imagen-4.0-generate-001',
@@ -240,7 +302,6 @@ async function generateImage(prompt, aspectRatio = '1:1') {
         const errMessage = error.message || error.toString();
         let userMessage = errMessage;
 
-        // Provide better error context if it's a 404/permissions issue
         if (errMessage.includes('404') || errMessage.includes('not found')) {
             userMessage = "La génération d'image n'est pas activée avec cette clé API (Imagen 4 non disponible).";
         } else if (errMessage.includes('billing')) {

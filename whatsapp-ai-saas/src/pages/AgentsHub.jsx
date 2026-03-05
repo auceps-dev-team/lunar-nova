@@ -9,15 +9,21 @@ const AgentsHub = () => {
     const [selectedImage, setSelectedImage] = useState(null);
     const [generatedPrompt, setGeneratedPrompt] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [isHistoryOpen, setIsHistoryOpen] = useState(false); // Minimized history by default
+    const [isHistoryOpen, setIsHistoryOpen] = useState(false);
     const [aspectRatio, setAspectRatio] = useState('1:1');
     const [isGeneratingImage, setIsGeneratingImage] = useState(false);
     const [generatedImageResult, setGeneratedImageResult] = useState(null);
+    const [generationRefImage, setGenerationRefImage] = useState(null); // Reference image for gen tab
     const fileInputRef = useRef(null);
+    const genFileInputRef = useRef(null);
 
     // Global store for persistent Agent History
     const agentHistory = useAppStore(state => state.agentHistory) || [];
     const addAgentHistory = useAppStore(state => state.addAgentHistory);
+    const removeAgentHistory = useAppStore(state => state.removeAgentHistory);
+    const clearAllHistory = () => {
+        historyForAgent.forEach(h => removeAgentHistory(h.id));
+    };
 
     // We only have the Visual Agent right now
     const agents = [
@@ -39,6 +45,18 @@ const AgentsHub = () => {
             const reader = new FileReader();
             reader.onloadend = () => {
                 setSelectedImage({ name: file.name, data: reader.result });
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    // Upload handler for the generation tab reference image
+    const handleGenImageUpload = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setGenerationRefImage({ name: file.name, data: reader.result });
             };
             reader.readAsDataURL(file);
         }
@@ -110,6 +128,7 @@ const AgentsHub = () => {
         setSelectedImage(item.image);
         setGeneratedPrompt(item.prompt);
         setGeneratedImageResult(item.generatedImage || null);
+        if (item.image) setGenerationRefImage(item.image); // Pre-load as reference image in gen tab
         setActiveTab('generation');
     };
 
@@ -119,13 +138,24 @@ const AgentsHub = () => {
         setIsGeneratingImage(true);
         setGeneratedImageResult(null);
         try {
+            const body = {
+                prompt: generatedPrompt,
+                aspectRatio: aspectRatio
+            };
+
+            // Attach reference image (from gen tab or analysis tab) if available
+            const refImg = generationRefImage || selectedImage;
+            if (refImg) {
+                body.imageParams = {
+                    data: refImg.data.split(',')[1],
+                    mimeType: 'image/jpeg'
+                };
+            }
+
             const res = await fetch('http://localhost:3000/api/gemini/generate-image', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    prompt: generatedPrompt,
-                    aspectRatio: aspectRatio
-                })
+                body: JSON.stringify(body)
             });
             const data = await res.json();
 
@@ -150,14 +180,25 @@ const AgentsHub = () => {
         <div style={{ display: 'flex', height: '100%', gap: '16px', animation: 'fadeIn 0.3s' }}>
             {/* Left Sidebar - Minimized Agent History Log */}
             <div className={`transition-all duration-300 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 flex flex-col shrink-0 ${isHistoryOpen ? 'w-[260px]' : 'w-[64px] items-center'}`}>
-                <div onClick={() => setIsHistoryOpen(!isHistoryOpen)} className="p-4 border-b border-gray-200 dark:border-gray-800 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center justify-between w-full">
-                    {isHistoryOpen ? (
-                        <>
-                            <h2 className="text-sm font-semibold text-gray-900 dark:text-white">History</h2>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6" /></svg>
-                        </>
-                    ) : (
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-500"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                <div className="p-3 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between w-full gap-2">
+                    <div onClick={() => setIsHistoryOpen(!isHistoryOpen)} className="flex items-center gap-2 cursor-pointer hover:opacity-70 flex-1">
+                        {isHistoryOpen ? (
+                            <>
+                                <h2 className="text-sm font-semibold text-gray-900 dark:text-white">Agent History</h2>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6" /></svg>
+                            </>
+                        ) : (
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-500"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                        )}
+                    </div>
+                    {isHistoryOpen && historyForAgent.length > 0 && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); clearAllHistory(); }}
+                            title="Supprimer tout l'historique"
+                            className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/30 text-gray-400 hover:text-red-500 transition-colors"
+                        >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>
+                        </button>
                     )}
                 </div>
 
@@ -165,28 +206,38 @@ const AgentsHub = () => {
                     {historyForAgent.map(hist => (
                         <div
                             key={hist.id}
-                            onClick={() => loadHistoryItem(hist)}
-                            className={`rounded-lg border border-gray-100 dark:border-gray-800 cursor-pointer transition-colors shadow-sm overflow-hidden ${isHistoryOpen ? 'p-3 hover:bg-gray-50 dark:hover:bg-gray-800' : 'w-10 h-10 hover:opacity-80 relative group'}`}
+                            className={`rounded-lg border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden relative group ${isHistoryOpen ? 'p-3' : 'w-10 h-10'}`}
                         >
-                            {isHistoryOpen ? (
-                                <>
-                                    <div className="flex justify-between items-start mb-1">
-                                        <span className="text-sm font-medium text-gray-900 dark:text-white truncate pe-2">{hist.productType}</span>
-                                    </div>
-                                    <div className="text-xs text-gray-500 truncate mb-2">{hist.targetAmbiance}</div>
-                                    {hist.image && (
-                                        <div className="h-16 w-full rounded overflow-hidden bg-gray-100 dark:bg-gray-800">
-                                            <img src={hist.image.data} alt="thumb" className="w-full h-full object-cover" />
+                            {/* Delete button always visible on hover */}
+                            <button
+                                onClick={(e) => { e.stopPropagation(); removeAgentHistory(hist.id); }}
+                                className="absolute top-1 right-1 z-10 bg-white/90 dark:bg-gray-900/90 text-red-400 hover:text-red-600 rounded-full w-5 h-5 items-center justify-center hidden group-hover:flex transition-all shadow"
+                                title="Supprimer"
+                            >
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                            </button>
+
+                            <div onClick={() => loadHistoryItem(hist)} className="cursor-pointer w-full h-full">
+                                {isHistoryOpen ? (
+                                    <>
+                                        <div className="flex justify-between items-start mb-1">
+                                            <span className="text-sm font-medium text-gray-900 dark:text-white truncate pe-2">{hist.productType}</span>
                                         </div>
-                                    )}
-                                </>
-                            ) : (
-                                hist.image ? (
-                                    <img src={hist.image.data} alt="thumb" className="w-full h-full object-cover" />
+                                        <div className="text-xs text-gray-500 truncate mb-2">{hist.targetAmbiance}</div>
+                                        {hist.image && (
+                                            <div className="h-16 w-full rounded overflow-hidden bg-gray-100 dark:bg-gray-800">
+                                                <img src={hist.image.data} alt="thumb" className="w-full h-full object-cover" />
+                                            </div>
+                                        )}
+                                    </>
                                 ) : (
-                                    <div className="w-full h-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs">IMG</div>
-                                )
-                            )}
+                                    hist.image ? (
+                                        <img src={hist.image.data} alt="thumb" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <div className="w-full h-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs">IMG</div>
+                                    )
+                                )}
+                            </div>
                         </div>
                     ))}
                 </div>
@@ -324,8 +375,11 @@ const AgentsHub = () => {
                     {/* Tab 2: Split Generator View */}
                     {activeTab === 'generation' && (
                         <div className="flex flex-col md:flex-row gap-6 w-full h-full p-4 md:p-6 pb-20 md:pb-6">
-                            {/* Left View: Image & History Strip */}
-                            <div className="flex-1 flex flex-col gap-4 bg-[#f3f4f6] dark:bg-[#1f2128] border border-gray-200 dark:border-gray-800 rounded-2xl p-4 overflow-hidden relative justify-between">
+                            {/* Left View: Image & Reference Panel */}
+                            <div className="flex-1 flex flex-col gap-4 bg-[#f3f4f6] dark:bg-[#1f2128] border border-gray-200 dark:border-gray-800 rounded-2xl p-4 overflow-hidden relative justify-between min-h-[380px]">
+                                <input type="file" ref={genFileInputRef} className="hidden" accept="image/*" onChange={handleGenImageUpload} />
+
+                                {/* Main Image View */}
                                 <div className="flex-1 flex items-center justify-center overflow-hidden rounded-xl relative">
                                     {generatedImageResult ? (
                                         <div className="relative w-full h-full flex items-center justify-center">
@@ -333,25 +387,62 @@ const AgentsHub = () => {
                                             <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-xs font-medium flex items-center gap-2">
                                                 <span className="w-2 h-2 rounded-full bg-green-400"></span> Résultat Généré
                                             </div>
+                                            <div className="absolute top-4 right-4 flex gap-2">
+                                                <button
+                                                    className="bg-white/90 hover:bg-red-50 text-red-500 p-2 rounded-lg shadow transition"
+                                                    onClick={() => setGeneratedImageResult(null)}
+                                                    title="Supprimer le résultat"
+                                                >
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>
+                                                </button>
+                                                <button
+                                                    className="bg-white/90 hover:bg-white text-gray-900 px-4 py-2 rounded-lg text-sm font-semibold shadow-lg transition"
+                                                    onClick={() => {
+                                                        const a = document.createElement('a');
+                                                        a.href = generatedImageResult;
+                                                        a.download = `generation_${Date.now()}.jpg`;
+                                                        a.click();
+                                                    }}
+                                                >
+                                                    Télécharger
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : generationRefImage ? (
+                                        <div className="relative w-full h-full flex items-center justify-center">
+                                            <img src={generationRefImage.data} alt="Reference" className="max-w-full max-h-full object-contain rounded-lg shadow-md opacity-90" />
+                                            <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-xs font-medium flex items-center gap-2">
+                                                <span className="w-2 h-2 rounded-full bg-blue-400"></span> Image de Référence
+                                            </div>
                                             <button
-                                                className="absolute bottom-4 right-4 bg-white/90 hover:bg-white text-gray-900 px-4 py-2 rounded-lg text-sm font-semibold shadow-lg transition"
-                                                onClick={() => {
-                                                    const a = document.createElement('a');
-                                                    a.href = generatedImageResult;
-                                                    a.download = `generation_${Date.now()}.jpg`;
-                                                    a.click();
-                                                }}
+                                                className="absolute top-4 right-4 bg-white/90 hover:bg-red-50 text-red-500 p-2 rounded-lg shadow transition"
+                                                onClick={() => setGenerationRefImage(null)}
+                                                title="Supprimer l'image de référence"
                                             >
-                                                Télécharger
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>
                                             </button>
                                         </div>
-                                    ) : selectedImage ? (
-                                        <img src={selectedImage.data} alt="Visual" className="max-w-full max-h-full object-contain rounded-lg shadow-md opacity-70" />
                                     ) : (
-                                        <div className="text-gray-400 text-sm">No image available</div>
+                                        <div
+                                            className="w-full h-full flex flex-col items-center justify-center gap-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl cursor-pointer hover:bg-gray-100 dark:hover:bg-[#252830] transition"
+                                            onClick={() => genFileInputRef.current?.click()}
+                                        >
+                                            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-gray-400"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                                            <div className="text-center">
+                                                <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Ajouter une image de référence</p>
+                                                <p className="text-xs text-gray-400 mt-1">Utilisée pour guider la génération Imagen 4</p>
+                                            </div>
+                                            <button
+                                                className="mt-1 px-4 py-2 bg-[#4f46e5] hover:bg-[#4338ca] text-white text-sm font-medium rounded-lg shadow transition"
+                                                onClick={(e) => { e.stopPropagation(); genFileInputRef.current?.click(); }}
+                                            >
+                                                Choisir une image
+                                            </button>
+                                        </div>
                                     )}
                                 </div>
 
+                                {/* Recent history strip */}
                                 <div className="shrink-0 flex items-center gap-3 overflow-x-auto pt-2 pb-1">
                                     <span className="text-xs font-semibold text-gray-500 mr-2 flex items-center gap-1 shrink-0">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
