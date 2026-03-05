@@ -65,10 +65,26 @@ const Sidebar = ({ instances, activeId, onSelect, onAdd, onRemove, onUpdate, cur
                     <span className="text-sm font-medium">{t(language, 'whatsappHub')}</span>
                 </Link>
 
-                <Link to="/agents" className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors group ${currentPath === '/agents' ? 'bg-primary/20 text-primary border border-primary/20' : 'text-gray-300 hover:bg-white/5 hover:text-white'}`}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="10" rx="2" ry="2"></rect><circle cx="12" cy="5" r="2"></circle><path d="M12 7v4"></path><line x1="8" y1="16" x2="8.01" y2="16"></line><line x1="16" y1="16" x2="16.01" y2="16"></line></svg>
-                    <span className="text-sm font-medium">{t(language, 'agentsHub')}</span>
-                </Link>
+                <div>
+                    <Link
+                        to="/agents"
+                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors group ${currentPath.includes('/agents') ? 'bg-primary/20 text-primary border border-primary/20' : 'text-gray-300 hover:bg-white/5 hover:text-white'}`}
+                    >
+                        <div className="flex items-center gap-3">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="10" rx="2" ry="2"></rect><circle cx="12" cy="5" r="2"></circle><path d="M12 7v4"></path><line x1="8" y1="16" x2="8.01" y2="16"></line><line x1="16" y1="16" x2="16.01" y2="16"></line></svg>
+                            <span className="text-sm font-medium">{t(language, 'agentsHub')}</span>
+                        </div>
+                        <svg className={`w-4 h-4 transition-transform ${currentPath.includes('/agents') ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </Link>
+
+                    <div id="agents-dropdown" className={`overflow-hidden transition-all duration-300 pl-11 pr-3 space-y-1 ${currentPath.includes('/agents') ? 'max-h-40 py-1' : 'max-h-0 py-0'}`}>
+                        <Link to="/agents" className={`flex items-center px-3 py-2 rounded-lg transition-colors ${currentPath === '/agents' ? 'bg-white/10 text-white font-medium' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
+                            <span className="truncate text-sm">Visual & Creative</span>
+                        </Link>
+                    </div>
+                </div>
 
                 <Link to="/tasks" className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors group ${currentPath === '/tasks' ? 'bg-primary/20 text-primary border border-primary/20' : 'text-gray-300 hover:bg-white/5 hover:text-white'}`}>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>

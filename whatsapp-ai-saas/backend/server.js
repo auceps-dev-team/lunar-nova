@@ -227,14 +227,14 @@ app.post('/api/gemini/copilot', async (req, res) => {
 
 // Endpoint for specialized Persona AI Agents (Legal, Creative)
 app.post('/api/gemini/agent', async (req, res) => {
-    const { persona, message } = req.body;
+    const { persona, message, imageParams } = req.body;
 
     if (!message) {
         return res.status(400).json({ error: 'Missing message.' });
     }
 
     try {
-        const aiResponse = await chatWithAgent(persona, message);
+        const aiResponse = await chatWithAgent(persona, message, imageParams);
         res.json({
             status: 'success',
             response: aiResponse.response

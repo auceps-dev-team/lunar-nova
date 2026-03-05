@@ -36,12 +36,14 @@ const useAppStore = create(
                 allowAiRead: true
             },
 
-            // --- Agent Chats ---
+            // --- Agent Chats & History ---
             agentChats: {
                 creative: [{ sender: 'agent', text: 'Hello! I am your Visual & Creative Agent. How can I assist you with your workload today?' }],
                 legal: [{ sender: 'agent', text: 'Hello! I am your Legal & Admin Agent. How can I assist you with your workload today?' }],
                 copywriter: [{ sender: 'agent', text: 'Bonjour ! Je suis l\'Experte en Copywriting de Vente et SDR Senior. Donnez-moi une CIBLE et un OBJECTIF, je vous rédige 3 approches irrésistibles.' }]
             },
+
+            agentHistory: [],
 
             // --- Actions ---
             updateSettings: (updates) => set((state) => ({
@@ -69,6 +71,14 @@ const useAppStore = create(
                     ...state.agentChats,
                     [agentId]: updatedChat
                 }
+            })),
+
+            addAgentHistory: (historyItem) => set((state) => ({
+                agentHistory: [historyItem, ...state.agentHistory]
+            })),
+
+            removeAgentHistory: (historyId) => set((state) => ({
+                agentHistory: state.agentHistory.filter(h => h.id !== historyId)
             })),
 
             // --- Task Management Actions ---
