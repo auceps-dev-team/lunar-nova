@@ -8,9 +8,14 @@ const useAppStore = create(
             // --- Shared Data ---
             activeWhatsAppContext: null,
 
-            // --- Persistent Data (Instances & Dashboard Metrics) ---
+            // --- Persistent Data ---
             instances: [],
             copilotRepliesGenerated: 0,
+            tasks: [
+                { id: '1', title: 'Implement @dnd-kit/core for this exact board format', tag: 'Development', status: 'todo', date: new Date().toISOString().split('T')[0] },
+                { id: '2', title: 'Review contract drafted by AI Agent', tag: 'Legal', status: 'todo', date: new Date().toISOString().split('T')[0] },
+                { id: '3', title: 'Build React UI layouts for Phase 2 expansion', tag: 'Design', status: 'in-progress', date: new Date().toISOString().split('T')[0] }
+            ],
 
             userProfile: {
                 isAuthenticated: false,
@@ -64,6 +69,19 @@ const useAppStore = create(
                     ...state.agentChats,
                     [agentId]: updatedChat
                 }
+            })),
+
+            // --- Task Management Actions ---
+            addTask: (task) => set((state) => ({
+                tasks: [...state.tasks, { ...task, id: Date.now().toString() }]
+            })),
+
+            updateTaskStatus: (taskId, newStatus) => set((state) => ({
+                tasks: state.tasks.map(t => t.id === taskId ? { ...t, status: newStatus } : t)
+            })),
+
+            deleteTask: (taskId) => set((state) => ({
+                tasks: state.tasks.filter(t => t.id !== taskId)
             }))
         }),
         {
