@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const { chromium } = require('playwright');
 const crypto = require('crypto');
-const { generateProposals, chatWithAgent } = require('./geminiService');
+const { generateProposals, chatWithAgent, generateImage } = require('./geminiService');
 const { logCopilotInteraction } = require('./db');
 const { getCachedProposals, setCachedProposals } = require('./redisClient');
 
@@ -242,6 +242,29 @@ app.post('/api/gemini/agent', async (req, res) => {
     } catch (error) {
         console.error('Agent Route Error:', error);
         res.status(500).json({ error: 'Failed to chat with agent.' });
+    }
+});
+
+// Endpoint to generate an image via Gemini Imagen 3
+app.post('/api/gemini/generate-image', async (req, res) => {
+    const { prompt, aspectRatio } = req.body;
+
+    if (!prompt) {
+        return res.status(400).json({ error: 'Missing prompt.' });
+    }
+
+    try {
+        const generationResponse = await generateImage(prompt, aspectRatio);
+        if (generationResponse.error) {
+            return res.status(500).json({ status: 'error', error: generationResponse.error });
+        }
+        res.json({
+            status: 'success',
+            imageStore: generationResponse.imageBytes
+        });
+    } catch (error) {
+        console.error('Image Generation Error:', error);
+        res.status(500).json({ error: 'Failed to generate image via API.' });
     }
 });
 

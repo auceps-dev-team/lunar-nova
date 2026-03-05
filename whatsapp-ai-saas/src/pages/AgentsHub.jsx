@@ -11,6 +11,9 @@ const AgentsHub = () => {
     const [generatedPrompt, setGeneratedPrompt] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [isHistoryOpen, setIsHistoryOpen] = useState(false); // Minimized history by default
+    const [aspectRatio, setAspectRatio] = useState('1:1');
+    const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+    const [generatedImageResult, setGeneratedImageResult] = useState(null);
     const fileInputRef = useRef(null);
 
     // Global store for persistent Agent History
@@ -108,7 +111,41 @@ const AgentsHub = () => {
         setTargetAmbiance(item.targetAmbiance);
         setSelectedImage(item.image);
         setGeneratedPrompt(item.prompt);
+        setGeneratedImageResult(item.generatedImage || null);
         setActiveTab('generation');
+    };
+
+    const handleGenerateImage = async () => {
+        if (!generatedPrompt || isGeneratingImage) return;
+
+        setIsGeneratingImage(true);
+        setGeneratedImageResult(null);
+        try {
+            const res = await fetch('http://localhost:3000/api/gemini/generate-image', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    prompt: generatedPrompt,
+                    aspectRatio: aspectRatio
+                })
+            });
+            const data = await res.json();
+
+            if (data.status === 'success' && data.imageStore) {
+                // Ensure it's correctly formatted as data URI
+                const b64Data = data.imageStore.startsWith('data:') ? data.imageStore : `data:image/jpeg;base64,${data.imageStore}`;
+                setGeneratedImageResult(b64Data);
+
+                // Update history item with generated image (optional but good idea)
+            } else {
+                alert(data.error || "Une erreur est survenue lors de la génération de l'image.");
+            }
+        } catch (error) {
+            console.error('Image Generation error', error);
+            alert("Une erreur de connexion au serveur pour la génération s'est produite.");
+        } finally {
+            setIsGeneratingImage(false);
+        }
     };
 
     return (
@@ -292,8 +329,26 @@ const AgentsHub = () => {
                             {/* Left View: Image & History Strip */}
                             <div className="flex-1 flex flex-col gap-4 bg-[#f3f4f6] dark:bg-[#1f2128] border border-gray-200 dark:border-gray-800 rounded-2xl p-4 overflow-hidden relative justify-between">
                                 <div className="flex-1 flex items-center justify-center overflow-hidden rounded-xl relative">
-                                    {selectedImage ? (
-                                        <img src={selectedImage.data} alt="Visual" className="max-w-full max-h-full object-contain rounded-lg shadow-md" />
+                                    {generatedImageResult ? (
+                                        <div className="relative w-full h-full flex items-center justify-center">
+                                            <img src={generatedImageResult} alt="Generated" className="max-w-full max-h-full object-contain rounded-lg shadow-xl ring-4 ring-[#4f46e5]/30" />
+                                            <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-xs font-medium flex items-center gap-2">
+                                                <span className="w-2 h-2 rounded-full bg-green-400"></span> Résultat Généré
+                                            </div>
+                                            <button 
+                                                className="absolute bottom-4 right-4 bg-white/90 hover:bg-white text-gray-900 px-4 py-2 rounded-lg text-sm font-semibold shadow-lg transition"
+                                                onClick={() => {
+                                                    const a = document.createElement('a');
+                                                    a.href = generatedImageResult;
+                                                    a.download = `generation_${Date.now()}.jpg`;
+                                                    a.click();
+                                                }}
+                                            >
+                                                Télécharger
+                                            </button>
+                                        </div>
+                                    ) : selectedImage ? (
+                                        <img src={selectedImage.data} alt="Visual" className="max-w-full max-h-full object-contain rounded-lg shadow-md opacity-70" />
                                     ) : (
                                         <div className="text-gray-400 text-sm">No image available</div>
                                     )}
@@ -333,14 +388,18 @@ const AgentsHub = () => {
 
                                 <div className="flex flex-col gap-4 mb-8">
                                     <div>
-                                        <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 block">Modèle</label>
+                                        <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 block">Modèle de Génération</label>
                                         <div className="relative">
-                                            <select className="w-full bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-700 rounded-lg py-2.5 px-3 text-sm text-gray-900 dark:text-gray-100 outline-none cursor-pointer appearance-none">
-                                                <option>GPT-4o</option>
-                                                <option>Gemini 2.5 Flash</option>
-                                                <option>Midjourney V6</option>
+                                            <select disabled className="w-full bg-gray-50 dark:bg-[#111827] border border-gray-200 dark:border-gray-700 rounded-lg py-2.5 px-3 text-sm text-gray-500 outline-none appearance-none opacity-80 cursor-not-allowed">
+                                                <option selected>Gemini Imagen 3</option>
+                                                <option disabled>Midjourney V6 (API Requise)</option>
+                                                <option disabled>DALL-E 3 (API Requise)</option>
                                             </select>
-                                            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
+                                            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                                            </div>
+                                        </div>
+                                    </div>
                                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
                                             </div>
                                         </div>
@@ -348,10 +407,15 @@ const AgentsHub = () => {
                                     <div>
                                         <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 block">Proportions</label>
                                         <div className="relative">
-                                            <select className="w-full bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-700 rounded-lg py-2.5 px-3 text-sm text-gray-900 dark:text-gray-100 outline-none cursor-pointer appearance-none text-left flex gap-2">
-                                                <option>2:3 (Vertical)</option>
-                                                <option>1:1 (Carré)</option>
-                                                <option>16:9 (Horizontal)</option>
+                                            <select 
+                                                value={aspectRatio}
+                                                onChange={e => setAspectRatio(e.target.value)}
+                                                className="w-full bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-700 rounded-lg py-2.5 px-3 text-sm text-gray-900 dark:text-gray-100 outline-none cursor-pointer appearance-none text-left flex gap-2"
+                                            >
+                                                <option value="1:1">1:1 (Carré)</option>
+                                                <option value="3:4">3:4 (Vertical)</option>
+                                                <option value="4:3">4:3 (Horizontal)</option>
+                                                <option value="16:9">16:9 (Large)</option>
                                             </select>
                                             <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
                                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
@@ -360,18 +424,21 @@ const AgentsHub = () => {
                                     </div>
                                 </div>
 
-                                <button
-                                    className="mt-auto w-full bg-[#5468ff] hover:bg-[#4353cc] text-white py-3 rounded-xl font-semibold shadow-md transition-colors"
-                                    onClick={() => alert("Simulation : Dans l'application finale, ceci lancera la génération d'image via l'API (Midjourney/DALL-E) en utilisant votre prompt.")}
-                                >
-                                    Générer
-                                </button>
-                            </div>
-                        </div>
-                    )}
-                </div>
+                <button
+                    className={`mt-auto w-full py-3 rounded-xl font-semibold shadow-md transition-all flex justify-center items-center gap-2 ${isGeneratingImage ? 'bg-gray-300 dark:bg-gray-700 text-gray-500 cursor-not-allowed' : 'bg-[#5468ff] hover:bg-[#4353cc] text-white'}`}
+                    onClick={handleGenerateImage}
+                    disabled={isGeneratingImage || !generatedPrompt}
+                >
+                    {isGeneratingImage && <span className="pulse w-4 h-4 rounded-full bg-current"></span>}
+                    {isGeneratingImage ? 'Génération en cours...' : 'Générer (Imagen 3)'}
+                </button>
             </div>
         </div>
+    )
+}
+                </div >
+            </div >
+        </div >
     );
 };
 

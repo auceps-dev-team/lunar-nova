@@ -218,7 +218,41 @@ async function chatWithAgent(personaId, message, imageParams) {
     }
 }
 
+async function generateImage(prompt, aspectRatio = '1:1') {
+    try {
+        const response = await ai.models.generateImages({
+            model: 'imagen-3.0-generate-001',
+            prompt: prompt,
+            config: {
+                numberOfImages: 1,
+                outputMimeType: 'image/jpeg',
+                aspectRatio: aspectRatio
+            }
+        });
+
+        if (response.generatedImages && response.generatedImages.length > 0) {
+            return { imageBytes: response.generatedImages[0].image.imageBytes };
+        } else {
+            return { error: 'No image generated.' };
+        }
+    } catch (error) {
+        console.error("Imagen API Error:", error);
+        const errMessage = error.message || error.toString();
+        let userMessage = errMessage;
+
+        // Provide better error context if it's a 404/permissions issue
+        if (errMessage.includes('404') || errMessage.includes('not found')) {
+            userMessage = "La génération d'image n'est pas activée avec cette clé API (Imagen 3 non disponible).";
+        } else if (errMessage.includes('billing')) {
+            userMessage = "La génération d'image nécessite un compte payant / billing activé sur Google Cloud.";
+        }
+
+        return { error: userMessage };
+    }
+}
+
 module.exports = {
     generateProposals,
-    chatWithAgent
+    chatWithAgent,
+    generateImage
 };
