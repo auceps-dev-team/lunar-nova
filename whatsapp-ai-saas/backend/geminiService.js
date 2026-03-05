@@ -221,7 +221,7 @@ async function chatWithAgent(personaId, message, imageParams) {
 async function generateImage(prompt, aspectRatio = '1:1') {
     try {
         const response = await ai.models.generateImages({
-            model: 'imagen-3.0-generate-001',
+            model: 'imagen-4.0-generate-001',
             prompt: prompt,
             config: {
                 numberOfImages: 1,
@@ -242,7 +242,7 @@ async function generateImage(prompt, aspectRatio = '1:1') {
 
         // Provide better error context if it's a 404/permissions issue
         if (errMessage.includes('404') || errMessage.includes('not found')) {
-            userMessage = "La génération d'image n'est pas activée avec cette clé API (Imagen 3 non disponible).";
+            userMessage = "La génération d'image n'est pas activée avec cette clé API (Imagen 4 non disponible).";
         } else if (errMessage.includes('billing')) {
             userMessage = "La génération d'image nécessite un compte payant / billing activé sur Google Cloud.";
         }
