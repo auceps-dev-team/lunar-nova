@@ -3,7 +3,7 @@ import useAppStore from '../store';
 import { getTranslation as t } from '../locales';
 
 const Settings = () => {
-    const settings = useAppStore(state => state.appSettings) || { theme: 'light', language: 'en', model: 'gemini-1.5-pro', allowAiRead: true };
+    const settings = useAppStore(state => state.appSettings) || { theme: 'light', language: 'en', model: 'gemini-pro-latest', allowAiRead: true };
     const updateSettings = useAppStore(state => state.updateSettings);
 
     const handleToggle = (key) => {
@@ -85,8 +85,9 @@ const Settings = () => {
                             onChange={(e) => handleChange('model', e.target.value)}
                             className="border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none bg-white dark:bg-gray-700 dark:text-white min-w-[200px]"
                         >
-                            <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
-                            <option value="gemini-1.5-flash">Gemini 1.5 Flash (Faster)</option>
+                            <option value="gemini-pro-latest">Gemini Pro (Latest)</option>
+                            <option value="gemini-flash-latest">Gemini Flash (Faster)</option>
+                            <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
                             <option value="gpt-4" disabled>GPT-4 (Premium Only)</option>
                             <option value="claude-3" disabled>Claude 3 (Premium Only)</option>
                         </select>

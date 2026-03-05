@@ -118,7 +118,15 @@ const WorkArea = ({ instances, activeId }) => {
             }
         } catch (error) {
             console.error('Copilot Error:', error);
-            alert('Failed to extract context. Ensure WhatsApp is fully loaded.');
+
+            // Check if it's a network error
+            if (error.message && error.message.includes('fetch')) {
+                alert(`Error: Could not connect to the Backend Orchestrator. Is it running? (${error.message})`);
+            } else if (error.name === 'SyntaxError') {
+                alert(`Error: The Backend Orchestrator returned an invalid response. Check the backend logs.`);
+            } else {
+                alert(`Error running Assistive Copilot: ${error.message || error}`);
+            }
         }
         setIsCopilotLoading(false);
     };

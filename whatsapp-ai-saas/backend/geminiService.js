@@ -32,8 +32,13 @@ async function generateProposals(chatContext, modelParam) {
     });
 
     try {
+        let targetModel = modelParam || 'gemini-1.5-pro';
+        if (targetModel === 'gemini-1.5-flash') {
+            targetModel = 'gemini-1.5-flash-latest';
+        }
+
         const response = await ai.models.generateContent({
-            model: modelParam || 'gemini-1.5-pro',
+            model: targetModel,
             contents: formattedChat,
             config: {
                 systemInstruction: systemInstruction,
@@ -45,7 +50,20 @@ async function generateProposals(chatContext, modelParam) {
         return JSON.parse(jsonText);
     } catch (error) {
         console.error("Gemini API Error:", error);
-        return { proposed_replies: ["Error connecting to Assistive Copilot"] };
+
+        // Extract a readable message from the Google API error if possible
+        const errMessage = error.message || error.toString();
+        let userMessage = "Error connecting to Assistive Copilot.";
+
+        if (errMessage.includes('API key not valid') || errMessage.toLowerCase().includes('api key')) {
+            userMessage = "API Key Error: Please check that your Gemini API key is valid in backend/.env.";
+        } else if (errMessage.includes('location is not supported')) {
+            userMessage = "Region Error: Gemini API is not supported in your region, or requires billing.";
+        } else {
+            userMessage = `AI Error: ${errMessage}`;
+        }
+
+        return { proposed_replies: [userMessage] };
     }
 }
 
