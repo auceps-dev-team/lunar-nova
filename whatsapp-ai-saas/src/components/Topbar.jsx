@@ -31,7 +31,7 @@ const Topbar = ({ activeInstance, currentTitle }) => {
     };
 
     return (
-        <header className="h-[72px] px-6 flex items-center justify-between border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 z-10 shrink-0">
+        <header className="relative h-[72px] px-6 flex items-center justify-between border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 z-20 shrink-0">
             <div className="flex items-center gap-4">
                 {activeInstance && (currentTitle === '/whatsapp-hub' || currentTitle === '/') && (
                     <div className="relative">
@@ -70,15 +70,15 @@ const Topbar = ({ activeInstance, currentTitle }) => {
                     </button>
 
                     {showNotifications && (
-                        <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 z-50 overflow-hidden">
+                        <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 z-50 overflow-hidden">
                             <div className="p-3 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
                                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Pending Tasks ({dueTasks.length})</h3>
                             </div>
-                            <div className="max-h-64 overflow-y-auto">
+                            <div className="max-h-64 overflow-y-auto custom-scrollbar">
                                 {dueTasks.length > 0 ? (
                                     dueTasks.map(task => (
                                         <div key={task.id} className="p-3 border-b border-gray-50 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                                            <div className="text-sm font-medium text-gray-800 dark:text-gray-200">{task.title}</div>
+                                            <div className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate" title={task.title}>{task.title}</div>
                                             <div className="text-xs text-red-500 font-medium mt-1 inline-block px-1.5 py-0.5 rounded bg-red-50 dark:bg-red-900/30 border border-red-100 dark:border-red-800/50">Due: {task.date}</div>
                                         </div>
                                     ))

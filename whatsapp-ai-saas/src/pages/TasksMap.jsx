@@ -101,6 +101,7 @@ const TasksMap = () => {
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [newTaskTitle, setNewTaskTitle] = useState('');
     const [newTaskTag, setNewTaskTag] = useState('Development');
+    const [newTaskDate, setNewTaskDate] = useState(new Date().toISOString().split('T')[0]);
     const [viewMode, setViewMode] = useState('board'); // 'board' or 'calendar'
     const [currentDate, setCurrentDate] = useState(new Date());
 
