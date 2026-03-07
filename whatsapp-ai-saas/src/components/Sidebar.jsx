@@ -25,9 +25,11 @@ const Sidebar = ({ instances, activeId, onSelect, onAdd, onRemove, onUpdate, cur
     const [editForm, setEditForm] = useState({ name: '', color: '', icon: '' });
     const language = useAppStore(state => state.appSettings?.language) || 'en';
     const [sidebarWidth, setSidebarWidth] = useState(260);
+    const [isResizing, setIsResizing] = useState(false);
 
     const startResizing = (mouseDownEvent) => {
         mouseDownEvent.preventDefault();
+        setIsResizing(true);
         const startWidth = sidebarWidth;
         const startX = mouseDownEvent.clientX;
 
@@ -37,6 +39,7 @@ const Sidebar = ({ instances, activeId, onSelect, onAdd, onRemove, onUpdate, cur
         };
 
         const onMouseUp = () => {
+            setIsResizing(false);
             document.removeEventListener('mousemove', onMouseMove);
             document.removeEventListener('mouseup', onMouseUp);
         };
@@ -241,12 +244,15 @@ const Sidebar = ({ instances, activeId, onSelect, onAdd, onRemove, onUpdate, cur
 
             {/* Resizer Handler */}
             <div
-                className="w-2 cursor-col-resize shrink-0 hover:bg-white/10 transition-colors flex items-center justify-center z-20 group -ml-1 absolute right-[-4px] top-0 bottom-0"
+                className={`w-2 cursor-col-resize shrink-0 transition-colors flex items-center justify-center z-20 group -ml-1 absolute right-[-4px] top-0 bottom-0 ${isResizing ? 'bg-white/20' : 'hover:bg-white/10'}`}
                 onMouseDown={startResizing}
                 title="Drag to resize sidebar"
             >
-                <div className="w-1 h-8 rounded-full bg-gray-500 group-hover:bg-white transition-colors" />
+                <div className={`w-1 h-8 rounded-full transition-colors ${isResizing ? 'bg-white' : 'bg-gray-500 group-hover:bg-white'}`} />
             </div>
+
+            {/* Invisible overlay to block iframe mouse events while dragging */}
+            {isResizing && <div className="fixed inset-0 z-50 cursor-col-resize select-none" />}
         </div>
     );
 };

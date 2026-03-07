@@ -16,10 +16,12 @@ const WorkArea = ({ instances, activeId }) => {
         { role: 'agent', text: 'Hello! I am WhatCopilote. Click "Analyze Current Chat" to generate replies, or type a custom request below.' }
     ]);
     const [copilotWidth, setCopilotWidth] = useState(320);
+    const [isResizing, setIsResizing] = useState(false);
 
     // Resizer Logic
     const startResizing = (mouseDownEvent) => {
         mouseDownEvent.preventDefault();
+        setIsResizing(true);
         const startWidth = copilotWidth;
         const startX = mouseDownEvent.clientX;
 
@@ -30,6 +32,7 @@ const WorkArea = ({ instances, activeId }) => {
         };
 
         const onMouseUp = () => {
+            setIsResizing(false);
             document.removeEventListener('mousemove', onMouseMove);
             document.removeEventListener('mouseup', onMouseUp);
         };
@@ -250,12 +253,15 @@ const WorkArea = ({ instances, activeId }) => {
 
             {/* Resizer Handler */}
             <div
-                className="w-2 cursor-col-resize shrink-0 hover:bg-primary/20 transition-colors flex items-center justify-center z-20 group -ml-2"
+                className={`w-2 cursor-col-resize shrink-0 transition-colors flex items-center justify-center z-20 group -ml-2 ${isResizing ? 'bg-primary/30' : 'hover:bg-primary/20'}`}
                 onMouseDown={startResizing}
                 title="Drag to resize panel"
             >
-                <div className="w-1 h-8 rounded-full bg-gray-300 group-hover:bg-primary transition-colors" />
+                <div className={`w-1 h-8 rounded-full transition-colors ${isResizing ? 'bg-primary' : 'bg-gray-300 group-hover:bg-primary'}`} />
             </div>
+
+            {/* Invisible overlay to block iframe mouse events while dragging */}
+            {isResizing && <div className="fixed inset-0 z-50 cursor-col-resize select-none" />}
 
             {/* Right Side: Session Info & AI Agent Status (Old Design Restored) */}
             <aside className="shrink-0 flex flex-col gap-4 h-full" style={{ width: `${copilotWidth}px` }}>
