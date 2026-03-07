@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const { chromium } = require('playwright');
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 const { generateProposals, chatWithAgent, generateImage } = require('./geminiService');
 const { logCopilotInteraction } = require('./db');
 const { getCachedProposals, setCachedProposals } = require('./redisClient');
@@ -266,6 +268,184 @@ app.post('/api/gemini/generate-image', async (req, res) => {
     } catch (error) {
         console.error('Image Generation Error:', error);
         res.status(500).json({ error: 'Failed to generate image via API.' });
+    }
+});
+
+// Endpoint to automatically push an item to WhatsApp Business Catalog via Playwright
+app.post('/api/catalog/upload', async (req, res) => {
+    const { instance_id, productName, productDescription, productPrice, imageBase64 } = req.body;
+
+    if (!instance_id || !productName || !imageBase64) {
+        return res.status(400).json({ error: 'Missing required fields (instance_id, productName, imageBase64).' });
+    }
+
+    let browser;
+    let tempImagePath;
+
+    try {
+        // 1. Prepare the temporary image file
+        const tempDir = path.join(__dirname, '.temp');
+        if (!fs.existsSync(tempDir)) {
+            fs.mkdirSync(tempDir, { recursive: true });
+        }
+
+        // Strip out base64 header if present
+        const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
+        const fileName = `catalog_product_${Date.now()}.png`;
+        tempImagePath = path.join(tempDir, fileName);
+
+        fs.writeFileSync(tempImagePath, base64Data, 'base64');
+        console.log(`[Catalog] Saved temporary image to ${tempImagePath}`);
+
+        // 2. Connect to Playwright
+        const fetch = (await import('node-fetch')).default;
+
+        // Root browser CDP Endpoint
+        const browserJsonRes = await fetch('http://127.0.0.1:8315/json/version').catch(() => null);
+        if (!browserJsonRes) throw new Error("Ensure WhatsApp Desktop app (Electron) is running.");
+        const jsonVersion = await browserJsonRes.json();
+
+        // Target specific instance
+        const targetsRes = await fetch('http://127.0.0.1:8315/json').catch(() => null);
+        const targets = await targetsRes.json();
+
+        // Match the instance_id partition
+        const whatsappTarget = targets.find(t =>
+            t.url.includes('web.whatsapp.com') &&
+            t.url.includes(`whatsapp-ai-saas/persist:${instance_id}/`)
+        );
+
+        if (!whatsappTarget) {
+            throw new Error("Could not find WhatsApp Web target for the given instance ID.");
+        }
+
+        browser = await chromium.connectOverCDP(jsonVersion.webSocketDebuggerUrl);
+        const contexts = browser.contexts();
+        let targetPage = null;
+
+        for (const context of contexts) {
+            for (const page of context.pages()) {
+                if (page.url() === whatsappTarget.url || page.url().includes('web.whatsapp.com')) {
+                    targetPage = page;
+                    break;
+                }
+            }
+            if (targetPage) break;
+        }
+
+        if (!targetPage) {
+            throw new Error("Target Page Context could not be located.");
+        }
+
+        console.log(`[Catalog] Connected to instance: ${instance_id}`);
+
+        // 3. Pre-flight Check: Is it a Business Account?
+        const isBusinessAccount = await targetPage.evaluate(() => {
+            // Business accounts have specific data-icon available on the top header/menu area
+            const catalogMenuIcon = document.querySelector('span[data-icon="catalog"]');
+            const labelsIcon = document.querySelector('span[data-icon="labels"]');
+            return !!(catalogMenuIcon || labelsIcon);
+        });
+
+        if (!isBusinessAccount) {
+            throw new Error("SECURITY BLOCK: The selected instance is not a WhatsApp Business account. Catalog actions cannot be performed.");
+        }
+
+        console.log(`[Catalog] Pre-flight Check Passed. Proceeding with upload...`);
+
+        // Wait a small moment to ensure UI stability
+        await targetPage.waitForTimeout(1000);
+
+        // 4. Navigate to Catalog
+        // Click the catalog icon in the header or menu
+        await targetPage.click('span[data-icon="catalog"]', { timeout: 5000 }).catch(() => {
+            throw new Error("Could not find or click the Catalog icon.");
+        });
+
+        // Click "Add a new item" (Ajouter un nouvel article)
+        await targetPage.waitForSelector('span[data-icon="plus"]', { timeout: 8000 });
+        await targetPage.click('span[data-icon="plus"]');
+
+        // 5. Inject Image and Fill Form
+        // Native Playwright file input
+        console.log(`[Catalog] Locating file input...`);
+        // The input type=file is hidden but accept image types
+        await targetPage.waitForSelector('input[type="file"][accept*="image"]', { state: 'attached', timeout: 8000 });
+        await targetPage.setInputFiles('input[type="file"][accept*="image"]', tempImagePath);
+
+        console.log(`[Catalog] Filling out product forms...`);
+        // Need to wait slightly for image to visually load
+        await targetPage.waitForTimeout(2000);
+
+        // Find inputs by placeholder or aria-labels (Meta changes these often, so we use flexible selectors)
+        // Usually, the first text input is the Name, second is Description (or div contenteditable)
+        // Note: Playwright's getByRole or specific placeholder text helps
+
+        // Find main wrapper for the catalog form to constrain selectors
+        await targetPage.waitForSelector('.catalog-form-container, div[role="dialog"]', { timeout: 5000 }).catch(() => { });
+
+        // Try filling Name (Usually the first editable text field)
+        const nameInputLocator = targetPage.locator('input[type="text"]').first();
+        if (await nameInputLocator.isVisible()) {
+            await nameInputLocator.fill(productName);
+        } else {
+            // Fallback: search for placeholder "Nom" or "Item name"
+            const altName = targetPage.locator('input[placeholder*="Nom"], input[placeholder*="name"], input[placeholder*="Nom de l\'article"]');
+            if (await altName.count() > 0) {
+                await altName.first().fill(productName);
+            }
+        }
+
+        // Try filling Description (Usually a div contenteditable or textarea)
+        const descLocator = targetPage.locator('div[title*="Description"], div[aria-label*="Description"], textarea');
+        if (await descLocator.count() > 0) {
+            // Fill the contenteditable element properly
+            await descLocator.first().focus();
+            await targetPage.keyboard.type(productDescription);
+        }
+
+        // Try filling Price if provided
+        if (productPrice) {
+            const priceLocator = targetPage.locator('input[placeholder*="Prix"], input[placeholder*="Price"]');
+            if (await priceLocator.count() > 0) {
+                await priceLocator.first().fill(productPrice.toString());
+            }
+        }
+
+        console.log(`[Catalog] Form filled. Attempting to submit...`);
+
+        // 6. Final Submit
+        // "Ajouter au catalogue" / "Save" / "Add to catalog"
+        const submitButton = targetPage.locator('button:has-text("Ajouter"), button:has-text("Save"), button:has-text("Add")').last();
+        if (await submitButton.isVisible()) {
+            await submitButton.click();
+            console.log(`[Catalog] Product Submitted Successfully.`);
+        } else {
+            console.warn(`[Catalog] Submit button not found. Product might have been filled but not saved automatically.`);
+        }
+
+        // Wait for potential network request completion
+        await targetPage.waitForTimeout(2000);
+
+        await browser.close();
+
+        // 7. Cleanup
+        if (fs.existsSync(tempImagePath)) {
+            fs.unlinkSync(tempImagePath);
+        }
+
+        res.json({
+            status: 'success',
+            message: 'Product successfully pushed to WhatsApp Business Catalog.'
+        });
+
+    } catch (error) {
+        if (browser) await browser.close().catch(() => { });
+        if (tempImagePath && fs.existsSync(tempImagePath)) {
+            fs.unlinkSync(tempImagePath); // Cleanup on fail
+        }
+        console.error('Catalog Automation Error:', error);
+        res.status(500).json({ error: 'Failed to automate WhatsApp Catalog. Exception: ' + error.message });
     }
 });
 

@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import useAppStore from '../store';
 
-const AgentsHub = () => {
+const AgentsHub = ({ activeId }) => {
     const [activeAgent, setActiveAgent] = useState('creative');
     const [activeTab, setActiveTab] = useState('analyse'); // 'analyse' or 'generation'
     const [productType, setProductType] = useState('');
@@ -12,6 +12,7 @@ const AgentsHub = () => {
     const [isHistoryOpen, setIsHistoryOpen] = useState(false);
     const [aspectRatio, setAspectRatio] = useState('1:1');
     const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+    const [isUploadingCatalog, setIsUploadingCatalog] = useState(false);
     const [generatedImageResult, setGeneratedImageResult] = useState(null);
     const [generationRefImage, setGenerationRefImage] = useState(null); // Reference image for gen tab
     const fileInputRef = useRef(null);
@@ -173,6 +174,51 @@ const AgentsHub = () => {
             alert("Une erreur de connexion au serveur pour la génération s'est produite.");
         } finally {
             setIsGeneratingImage(false);
+        }
+    };
+
+    const handleUploadToCatalog = async () => {
+        if (!generatedImageResult || !generatedPrompt || !activeId) {
+            alert("Aucune image générée, aucune description disponible, ou aucune instance WhatsApp active.");
+            return;
+        }
+
+        setIsUploadingCatalog(true);
+        try {
+            // Extract the 'Name' or default to a generic name from the prompt text
+            // The AI usually outputs structure like **Nom du Produit:** or Name:
+            const nameMatch = generatedPrompt.match(/\*\*[Nn]om.*?\*\*\s*:\s*(.*)/) || generatedPrompt.match(/[Nn]om\s*:\s*(.*)/);
+            const productName = nameMatch ? nameMatch[1].trim() : "Produit Généré par IA";
+
+            // Extract Price if possible (optional)
+            const priceMatch = generatedPrompt.match(/\*\*[Pp]rix.*?\*\*\s*:\s*(.*)/) || generatedPrompt.match(/[Pp]rix\s*:\s*(.*)/);
+            const productPrice = priceMatch ? priceMatch[1].trim() : "";
+
+            const body = {
+                instance_id: activeId,
+                productName: productName,
+                productDescription: generatedPrompt, // Send the full prompt description
+                productPrice: productPrice,
+                imageBase64: generatedImageResult
+            };
+
+            const res = await fetch('http://localhost:3000/api/catalog/upload', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            const data = await res.json();
+
+            if (data.status === 'success') {
+                alert("✨ Succès ! Le produit a été ajouté au catalogue WhatsApp Business.");
+            } else {
+                alert(`Erreur : ${data.error || "Impossible d'ajouter au catalogue."}`);
+            }
+        } catch (error) {
+            console.error('Catalog Upload error', error);
+            alert("Erreur réseau lors de l'envoi vers WhatsApp.");
+        } finally {
+            setIsUploadingCatalog(false);
         }
     };
 
@@ -441,6 +487,34 @@ const AgentsHub = () => {
                                         </div>
                                     )}
                                 </div>
+
+                                {/* Catalog Upload Button Area */}
+                                {generatedImageResult && (
+                                    <div className="shrink-0 flex items-center justify-between bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 rounded-xl p-3 mt-3 shadow-sm">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0">
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                                            </div>
+                                            <div>
+                                                <h4 className="text-sm font-semibold text-emerald-900 dark:text-emerald-300">Catalogue WhatsApp Business</h4>
+                                                <p className="text-xs text-emerald-700/80 dark:text-emerald-400/80">Publier ce produit directement dans votre boutique.</p>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={handleUploadToCatalog}
+                                            disabled={isUploadingCatalog || !activeId}
+                                            className={`px-4 py-2 rounded-lg text-sm font-semibold shadow transition flex items-center gap-2 ${isUploadingCatalog || !activeId ? 'bg-gray-300 dark:bg-gray-700 text-gray-500 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700 text-white'}`}
+                                        >
+                                            {isUploadingCatalog ? (
+                                                <><span className="pulse w-2 h-2 rounded-full bg-current"></span> Déploiement...</>
+                                            ) : !activeId ? (
+                                                'Instance introuvable'
+                                            ) : (
+                                                'Publier l\'article'
+                                            )}
+                                        </button>
+                                    </div>
+                                )}
 
                                 {/* Recent history strip */}
                                 <div className="shrink-0 flex items-center gap-3 overflow-x-auto pt-2 pb-1">

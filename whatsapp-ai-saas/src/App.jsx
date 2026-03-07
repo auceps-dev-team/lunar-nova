@@ -91,7 +91,7 @@ function AppContent() {
                 <Routes>
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/profile" element={<Profile />} />
-                  <Route path="/agents" element={<AgentsHub />} />
+                  <Route path="/agents" element={<AgentsHub activeId={activeId} />} />
                   <Route path="/tasks" element={<TasksMap />} />
                   <Route path="/invoice-builder" element={<InvoiceBuilder />} />
                   <Route path="/tools" element={<ToolsBox />} />
