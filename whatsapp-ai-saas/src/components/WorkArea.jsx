@@ -15,6 +15,28 @@ const WorkArea = ({ instances, activeId }) => {
     const [chatHistory, setChatHistory] = useState([
         { role: 'agent', text: 'Hello! I am WhatCopilote. Click "Analyze Current Chat" to generate replies, or type a custom request below.' }
     ]);
+    const [copilotWidth, setCopilotWidth] = useState(320);
+
+    // Resizer Logic
+    const startResizing = (mouseDownEvent) => {
+        mouseDownEvent.preventDefault();
+        const startWidth = copilotWidth;
+        const startX = mouseDownEvent.clientX;
+
+        const onMouseMove = (mouseMoveEvent) => {
+            // Dragging left makes width larger, right makes it smaller
+            const newWidth = Math.max(250, Math.min(600, startWidth - (mouseMoveEvent.clientX - startX)));
+            setCopilotWidth(newWidth);
+        };
+
+        const onMouseUp = () => {
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+        };
+
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+    };
 
     // Zustand Global Actions
     const incrementCopilotReplies = useAppStore(state => state.incrementCopilotReplies);
@@ -193,7 +215,7 @@ const WorkArea = ({ instances, activeId }) => {
     }
 
     return (
-        <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-white bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:24px_24px] flex relative h-full">
+        <div className="flex-1 overflow-hidden scrollbar-hide p-6 space-y-6 bg-white bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:24px_24px] flex relative h-full">
 
             {/* Left Side: Main WhatsApp Web View */}
             <div className="flex-1 flex flex-col h-full bg-white rounded-xl shadow-card border border-gray-100 overflow-hidden relative mr-4">
@@ -212,14 +234,31 @@ const WorkArea = ({ instances, activeId }) => {
                                 allowpopups="true"
                                 useragent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
                                 className="w-full h-full flex-1"
+                                ref={(el) => {
+                                    if (el && !el.hasAttribute('data-css-injected')) {
+                                        el.addEventListener('dom-ready', () => {
+                                            el.insertCSS('::-webkit-scrollbar { display: none !important; } * { scrollbar-width: none !important; }');
+                                        });
+                                        el.setAttribute('data-css-injected', 'true');
+                                    }
+                                }}
                             />
                         </div>
                     ))}
                 </div>
             </div>
 
+            {/* Resizer Handler */}
+            <div
+                className="w-2 cursor-col-resize shrink-0 hover:bg-primary/20 transition-colors flex items-center justify-center z-20 group -ml-2"
+                onMouseDown={startResizing}
+                title="Drag to resize panel"
+            >
+                <div className="w-1 h-8 rounded-full bg-gray-300 group-hover:bg-primary transition-colors" />
+            </div>
+
             {/* Right Side: Session Info & AI Agent Status (Old Design Restored) */}
-            <aside className="w-[320px] shrink-0 flex flex-col gap-4 h-full">
+            <aside className="shrink-0 flex flex-col gap-4 h-full" style={{ width: `${copilotWidth}px` }}>
 
                 <div className="card shrink-0">
                     <div className="card-header">
@@ -278,7 +317,7 @@ const WorkArea = ({ instances, activeId }) => {
                             </button>
                         </div>
 
-                        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px', paddingBottom: '16px', paddingRight: '6px' }} className="sidebar-scroll">
+                        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px', paddingBottom: '16px', paddingRight: '6px' }} className="scrollbar-hide">
                             {chatHistory.map((msg, i) => (
                                 <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
                                     <div style={{
