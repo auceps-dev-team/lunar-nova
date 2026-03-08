@@ -102,7 +102,14 @@ Liste les actions manuelles obligatoires pour sauver le texte :
 
 ## 4. Le Prompt de Génération (Pour Photoshop GenFill / Midjourney Inpainting)
 Rédige un prompt **en ANGLAIS** focalisé sur le fond et la lumière.
-*Structure :* [Environment/Background] + [Lighting/Atmosphere] + [Props/Elements] + [Style/Camera Settings] --no text, product distortion`,
+*Structure :* [Environment/Background] + [Lighting/Atmosphere] + [Props/Elements] + [Style/Camera Settings] --no text, product distortion
+
+## 5. Textes pour le Catalogue WhatsApp
+Propose des textes vendeurs pour lister ce visuel fini dans la boutique WhatsApp.
+**Nom:** [Nom accrocheur]
+**Prix:** [Un prix fictif cohérent]
+**Code:** [Génère un code d'article unique, ex: B235-PRO]
+**Description:** [Description marketing persuasive et structurée]`,
 
     legal: `You are the Legal & Admin Agent for a SaaS platform.
 Your expertise is in drafting contracts, writing professional invoices, and providing general legal assistance.

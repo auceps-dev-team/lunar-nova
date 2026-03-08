@@ -1,13 +1,16 @@
 import React, { useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import useAppStore from '../store';
 
 const AgentsHub = ({ activeId }) => {
+    const navigate = useNavigate();
     const [activeAgent, setActiveAgent] = useState('creative');
     const [activeTab, setActiveTab] = useState('analyse'); // 'analyse' or 'generation'
     const [productType, setProductType] = useState('');
     const [targetAmbiance, setTargetAmbiance] = useState('');
     const [selectedImage, setSelectedImage] = useState(null);
     const [generatedPrompt, setGeneratedPrompt] = useState('');
+    const [generatedMarketing, setGeneratedMarketing] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [isHistoryOpen, setIsHistoryOpen] = useState(false);
     const [aspectRatio, setAspectRatio] = useState('1:1');
@@ -22,6 +25,9 @@ const AgentsHub = ({ activeId }) => {
     const agentHistory = useAppStore(state => state.agentHistory) || [];
     const addAgentHistory = useAppStore(state => state.addAgentHistory);
     const removeAgentHistory = useAppStore(state => state.removeAgentHistory);
+    const setCatalogDraft = useAppStore(state => state.setCatalogDraft);
+    const setCopilotNotification = useAppStore(state => state.setCopilotNotification);
+    const showAppNotification = useAppStore(state => state.showAppNotification);
     const clearAllHistory = () => {
         historyForAgent.forEach(h => removeAgentHistory(h.id));
     };
@@ -88,19 +94,33 @@ const AgentsHub = ({ activeId }) => {
             if (data.status === 'success') {
                 // Heuristic to extract the prompt from Markdown headers or text
                 let extractedPrompt = "Could not parse prompt automatically. Review analysis.";
+                let extractedMarketing = "Produit Généré par IA";
+
                 const splitMarkers = ["4. Le Prompt de Génération", "Prompt de Génération", "Prompt:", "Environment/Background"];
 
                 for (const marker of splitMarkers) {
                     if (data.response.includes(marker)) {
                         const parts = data.response.split(marker);
-                        let textBlock = parts[parts.length - 1];
+                        let textBlock = parts[1] || parts[parts.length - 1]; // Support varying splits
+
+                        // Stop right before section 5 if it exists in the output
+                        if (textBlock.includes("5. Textes pour le Catalogue WhatsApp")) {
+                            textBlock = textBlock.split("5. Textes pour le Catalogue WhatsApp")[0];
+                        }
+
                         textBlock = textBlock.replace(/^[*\s:-]+/, '').replace(/```.*\n?/g, '').trim();
                         extractedPrompt = textBlock;
                         break;
                     }
                 }
 
+                if (data.response.includes("5. Textes pour le Catalogue WhatsApp")) {
+                    let mktBlock = data.response.split("5. Textes pour le Catalogue WhatsApp")[1];
+                    extractedMarketing = mktBlock.replace(/^[*\s:-]+/, '').replace(/```.*\n?/g, '').trim();
+                }
+
                 setGeneratedPrompt(extractedPrompt);
+                setGeneratedMarketing(extractedMarketing);
 
                 // Persist the generated item to history
                 addAgentHistory({
@@ -110,7 +130,8 @@ const AgentsHub = ({ activeId }) => {
                     productType,
                     targetAmbiance,
                     image: selectedImage,
-                    prompt: extractedPrompt
+                    prompt: extractedPrompt,
+                    marketing: extractedMarketing
                 });
 
                 // Do not auto-switch tab here as requested, the user wants prompt in analysis tab
@@ -128,6 +149,7 @@ const AgentsHub = ({ activeId }) => {
         setTargetAmbiance(item.targetAmbiance);
         setSelectedImage(item.image);
         setGeneratedPrompt(item.prompt);
+        setGeneratedMarketing(item.marketing || null);
         setGeneratedImageResult(item.generatedImage || null);
         if (item.image) setGenerationRefImage(item.image); // Pre-load as reference image in gen tab
         setActiveTab('generation');
@@ -185,22 +207,40 @@ const AgentsHub = ({ activeId }) => {
 
         setIsUploadingCatalog(true);
         try {
-            // Extract the 'Name' or default to a generic name from the prompt text
-            // The AI usually outputs structure like **Nom du Produit:** or Name:
-            const nameMatch = generatedPrompt.match(/\*\*[Nn]om.*?\*\*\s*:\s*(.*)/) || generatedPrompt.match(/[Nn]om\s*:\s*(.*)/);
+            const marketingText = generatedMarketing || generatedPrompt;
+            // First, strip markdown bold to make regex more stable
+            const cleanText = marketingText.replace(/\*\*/g, '');
+
+            const nameMatch = cleanText.match(/[Nn]om\s*:\s*(.*)/);
             const productName = nameMatch ? nameMatch[1].trim() : "Produit Généré par IA";
 
-            // Extract Price if possible (optional)
-            const priceMatch = generatedPrompt.match(/\*\*[Pp]rix.*?\*\*\s*:\s*(.*)/) || generatedPrompt.match(/[Pp]rix\s*:\s*(.*)/);
+            const priceMatch = cleanText.match(/[Pp]rix\s*:\s*(.*)/);
             const productPrice = priceMatch ? priceMatch[1].trim() : "";
+
+            const codeMatch = cleanText.match(/[Cc]ode.*?\s*:\s*(.*)/);
+            const productCode = codeMatch ? codeMatch[1].trim() : "";
+
+            const descMatch = cleanText.match(/[Dd]escription\s*:\s*([\s\S]*)/);
+            const productDescription = descMatch ? descMatch[1].trim() : marketingText;
 
             const body = {
                 instance_id: activeId,
                 productName: productName,
-                productDescription: generatedPrompt, // Send the full prompt description
+                productDescription: productDescription,
                 productPrice: productPrice,
                 imageBase64: generatedImageResult
             };
+
+            // Set the draft in the global store so WhatCopilot can display it explicitly structured
+            setCatalogDraft({
+                name: productName,
+                description: productDescription,
+                price: productPrice,
+                code: productCode
+            });
+
+            // Switch to the WhatsApp view immediately so the user can watch the automation
+            navigate('/whatsapp-hub');
 
             const res = await fetch('http://localhost:3000/api/catalog/upload', {
                 method: 'POST',
@@ -210,13 +250,14 @@ const AgentsHub = ({ activeId }) => {
             const data = await res.json();
 
             if (data.status === 'success') {
-                alert("✨ Succès ! Le produit a été ajouté au catalogue WhatsApp Business.");
+                showAppNotification("Le produit a été ajouté au catalogue WhatsApp Business", "success");
+                setCopilotNotification("✨ Succès ! L'image a été injectée dans WhatsApp. Vous pouvez maintenant copier-coller les informations dans votre catalogue en toute sécurité.");
             } else {
-                alert(`Erreur : ${data.error || "Impossible d'ajouter au catalogue."}`);
+                showAppNotification(`Erreur : ${data.error || "Impossible d'ajouter au catalogue."}`, "error");
             }
         } catch (error) {
             console.error('Catalog Upload error', error);
-            alert("Erreur réseau lors de l'envoi vers WhatsApp.");
+            showAppNotification("Erreur réseau lors de l'envoi vers WhatsApp.", "error");
         } finally {
             setIsUploadingCatalog(false);
         }

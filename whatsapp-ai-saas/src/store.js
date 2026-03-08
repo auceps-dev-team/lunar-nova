@@ -7,6 +7,9 @@ const useAppStore = create(
         (set, get) => ({
             // --- Shared Data ---
             activeWhatsAppContext: null,
+            catalogDraft: null,
+            copilotNotification: null,
+            appNotification: null,
 
             // --- Persistent Data ---
             instances: [],
@@ -59,6 +62,17 @@ const useAppStore = create(
             })),
 
             setActiveWhatsAppContext: (context) => set({ activeWhatsAppContext: context }),
+            setCatalogDraft: (draft) => set({ catalogDraft: draft }),
+            clearCatalogDraft: () => set({ catalogDraft: null }),
+
+            setCopilotNotification: (msg) => set({ copilotNotification: msg }),
+            clearCopilotNotification: () => set({ copilotNotification: null }),
+
+            showAppNotification: (msg, type = 'success') => {
+                set({ appNotification: { msg, type } });
+                setTimeout(() => set({ appNotification: null }), 4000);
+            },
+            clearAppNotification: () => set({ appNotification: null }),
 
             setInstances: (newInstances) => set({ instances: newInstances }),
 

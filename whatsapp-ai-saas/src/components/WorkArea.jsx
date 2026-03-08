@@ -43,6 +43,47 @@ const WorkArea = ({ instances, activeId }) => {
 
     // Zustand Global Actions
     const incrementCopilotReplies = useAppStore(state => state.incrementCopilotReplies);
+    const catalogDraft = useAppStore(state => state.catalogDraft);
+    const clearCatalogDraft = useAppStore(state => state.clearCatalogDraft);
+    const copilotNotification = useAppStore(state => state.copilotNotification);
+    const clearCopilotNotification = useAppStore(state => state.clearCopilotNotification);
+
+    // Listen for incoming Catalog Drafts from the Agent Hub
+    useEffect(() => {
+        if (catalogDraft) {
+            // Send a nicely formatted message to Copilot for copy-pasting
+            setChatHistory(prev => [
+                ...prev,
+                {
+                    id: Date.now().toString(),
+                    role: 'agent',
+                    text: `J'ai préparé l'interface de publication pour vous ! 🚀\nL'image a été injectée. Voici les textes générés à copier-coller dans les champs de votre catalogue :`,
+                    proposals: [
+                        `Nom : ${catalogDraft.name || ''}`,
+                        catalogDraft.price ? `Prix : ${catalogDraft.price}` : null,
+                        catalogDraft.code ? `Code de l'article : ${catalogDraft.code}` : null,
+                        `Description :\n${catalogDraft.description || ''}`
+                    ].filter(Boolean)
+                }
+            ]);
+            clearCatalogDraft();
+        }
+    }, [catalogDraft, clearCatalogDraft]);
+
+    // Listen for incoming system notifications to display in Copilot
+    useEffect(() => {
+        if (copilotNotification) {
+            setChatHistory(prev => [
+                ...prev,
+                {
+                    id: Date.now().toString(),
+                    role: 'agent',
+                    text: copilotNotification
+                }
+            ]);
+            clearCopilotNotification();
+        }
+    }, [copilotNotification, clearCopilotNotification]);
 
     // Reset proposals when switching tabs
     useEffect(() => {
@@ -228,8 +269,7 @@ const WorkArea = ({ instances, activeId }) => {
                     {instances.map(instance => (
                         <div
                             key={instance.id}
-                            className={`webview-container absolute inset-0 ${instance.id === activeId ? 'active z-10' : 'opacity-0 z-0 pointer-events-none'}`}
-                            style={{ display: instance.id === activeId ? 'flex' : 'none' }}
+                            className={`webview-container absolute inset-0 flex ${instance.id === activeId ? 'active z-10 opacity-100' : 'opacity-0 -z-10 pointer-events-none'}`}
                         >
                             <webview
                                 src="https://web.whatsapp.com"

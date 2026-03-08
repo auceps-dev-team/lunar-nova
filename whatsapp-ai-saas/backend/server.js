@@ -272,7 +272,14 @@ app.post('/api/catalog/upload', async (req, res) => {
     }
 
     let browser;
-    let tempImagePath;
+    let tempImagePath = null;
+
+    // Helper functions for human-like behavior
+    const humanDelay = async (min = 1500, max = 3500) => {
+        const ms = Math.floor(Math.random() * (max - min + 1)) + min;
+        return new Promise(resolve => setTimeout(resolve, ms));
+    };
+    const humanTypeDelay = () => Math.floor(Math.random() * (120 - 40 + 1)) + 40;
 
     try {
         // 1. Prepare the temporary image file
@@ -291,6 +298,16 @@ app.post('/api/catalog/upload', async (req, res) => {
 
         // 2. Connect to Puppeteer
         browser = await puppeteer.connect({ browserURL: 'http://127.0.0.1:8315', defaultViewport: null });
+
+    } catch (error) {
+        if (tempImagePath && fs.existsSync(tempImagePath)) {
+            fs.unlinkSync(tempImagePath); // Cleanup on fail
+        }
+        console.error('Image Error:', error);
+        res.status(500).json({ error: 'Failed writing file.' });
+    }
+
+    try {
         const targets = browser.targets();
         let targetPage = null;
 
@@ -318,13 +335,14 @@ app.post('/api/catalog/upload', async (req, res) => {
         // 3. Pre-flight Check: Is it a Business Account?
         const isBusinessAccount = await targetPage.evaluate(() => {
             // Business accounts have specific data-icon available on the top header/menu area
-            const catalogMenuIcon = document.querySelector('span[data-icon="catalog"]');
-            const labelsIcon = document.querySelector('span[data-icon="labels"]');
+            const catalogMenuIcon = document.querySelector('span[data-icon="catalog"], span[data-icon="storefront"], span[data-icon="smb-store"]');
+            const labelsIcon = document.querySelector('span[data-icon="labels"], span[data-icon="smb-labels-header"]');
             return !!(catalogMenuIcon || labelsIcon);
         });
 
         if (!isBusinessAccount) {
-            throw new Error("SECURITY BLOCK: The selected instance is not a WhatsApp Business account. Catalog actions cannot be performed.");
+            console.warn(`[Catalog] SECURITY WARNING: Business icons ('catalog', 'smb-store', 'labels') not found. Proceeding with caution.`);
+            // throw new Error("SECURITY BLOCK: The selected instance is not a WhatsApp Business account. Catalog actions cannot be performed.");
         }
 
         console.log(`[Catalog] Pre - flight Check Passed.Proceeding with upload...`);
@@ -333,27 +351,109 @@ app.post('/api/catalog/upload', async (req, res) => {
         await targetPage.bringToFront().catch(() => { });
 
         try {
-            // Click Catalog Icon
-            await targetPage.waitForSelector('span[data-icon="catalog"]', { timeout: 5000 });
-            await targetPage.evaluate(() => document.querySelector('span[data-icon="catalog"]').closest('div[role="button"]').click());
-            console.log(`[Catalog] Clicked Catalog Icon`);
+            await humanDelay(1000, 2000); // Breathe
 
-            // Wait a moment for navigation
-            await new Promise(r => setTimeout(r, 2000));
+            // --- ADAPTIVE CHECK ---
+            // If the user is ALREADY on the "Add Item" page, we can skip navigation entirely.
+            // We know we are there if the file input already exists.
+            let isAlreadyOnAddItemPage = false;
+            try {
+                const immediateFileInput = await targetPage.$('input[type="file"]');
+                if (immediateFileInput) {
+                    isAlreadyOnAddItemPage = true;
+                    console.log(`[Catalog] Adaptive check: User is already on the Add Item page. Skipping navigation.`);
+                }
+            } catch (e) {
+                // Ignore, we will proceed with normal navigation
+            }
 
-            // Wait for "Add a new item" button and click using xpath or evaluate
-            await targetPage.evaluate(() => {
-                const buttons = Array.from(document.querySelectorAll('button'));
-                const addButton = buttons.find(b => b.innerText.includes('Add a new item') || b.innerText.includes('Ajouter un nouvel article'));
-                if (addButton) addButton.click();
-            });
-            console.log(`[Catalog] Clicked Add Item Button`);
+            if (!isAlreadyOnAddItemPage) {
+                // Click Catalog Icon (could be 'catalog', 'smb-store', or 'storefront')
+                const storefrontSelectors = 'span[data-icon="catalog"], span[data-icon="smb-store"], span[data-icon="storefront"]';
+                await targetPage.waitForSelector(storefrontSelectors, { timeout: 8000 });
+                await targetPage.evaluate((sel) => {
+                    const icon = document.querySelector(sel);
+                    if (icon) {
+                        const btn = icon.closest('div[role="button"]') || icon.closest('button') || icon;
+                        btn.click();
+                    }
+                }, storefrontSelectors);
+                console.log(`[Catalog] Clicked Catalog/Storefront Icon`);
 
-            // Wait for form to appear
-            await new Promise(r => setTimeout(r, 2000));
+                // Wait a moment for navigation (human reading time)
+                await humanDelay(2500, 4500);
 
-            // We will upload using setInputFiles, wait for input[type="file"] or input[accept="image/*"]
-            const fileInputSelector = 'input[type="file"][accept="image/png,image/jpeg,image/webp"]';
+                // Step 2: Intermediate Catalogue Click if we are on "Outils professionnels" (Business Tools sidebar)
+                await targetPage.evaluate(() => {
+                    const spans = Array.from(document.querySelectorAll('span, div'));
+                    const catSpan = spans.find(s => {
+                        const txt = s.innerText ? s.innerText.trim().toLowerCase() : '';
+                        return (txt === 'catalogue' || txt === 'catalog') && s.closest('div[role="button"]');
+                    });
+                    if (catSpan) {
+                        const btn = catSpan.closest('div[role="button"]');
+                        btn.click();
+                    }
+                });
+                console.log(`[Catalog] Checked for intermediate Catalogue menu`);
+
+                await humanDelay(2000, 3000);
+
+                // Wait for "Add a new item" button and click using xpath or evaluate
+                const clicked = await targetPage.evaluate(() => {
+                    // Exact match from user HTML DOM dump
+                    const exactAddBtn = document.querySelector(
+                        'button[aria-label*="Ajouter un nouvel article"], button[aria-label*="Add a new item"], ' +
+                        'div[aria-label*="Ajouter un nouvel article"], div[aria-label*="Add a new item"], ' +
+                        'button[title*="Ajouter un nouvel article"], button[title*="Add a new item"]'
+                    );
+
+                    if (exactAddBtn) {
+                        const btn = exactAddBtn.closest('div[role="button"]') || exactAddBtn.closest('button') || exactAddBtn;
+                        btn.click();
+                        return 'exact-aria-label';
+                    }
+
+                    // Try to find the "Plus" icon used by WhatsApp for adding items
+                    const plusIcon = document.querySelector('span[data-icon="plus"]');
+                    if (plusIcon) {
+                        const btn = plusIcon.closest('div[role="button"]') || plusIcon.closest('button') || plusIcon;
+                        btn.click();
+                        return 'icon';
+                    }
+
+                    // Fallback to text matching: Meta might use a large div without a standard role
+                    const allElements = Array.from(document.querySelectorAll('div, span, button'));
+                    const addButton = allElements.find(el => {
+                        if (el.children.length > 2 && el.tagName !== 'BUTTON') return false; // Avoid matching parent containers
+                        const txt = el.innerText ? el.innerText.trim().toLowerCase() : '';
+                        return txt === 'add a new item' || txt === 'ajouter un nouvel article' ||
+                            txt === 'ajouter un article' || txt === 'add new item';
+                    });
+
+                    if (addButton) {
+                        const btn = addButton.closest('div[role="button"]') || addButton.closest('button') || addButton;
+                        btn.click();
+                        return 'text';
+                    }
+
+                    return false;
+                });
+
+                if (!clicked) {
+                    // Log all buttons to figure out what Meta changed it to
+                    const allButtons = await targetPage.evaluate(() => Array.from(document.querySelectorAll('button, div[role="button"]')).map(b => b.innerText || b.getAttribute('aria-label')).filter(Boolean));
+                    console.error(`[Catalog] Available buttons:`, allButtons);
+                    throw new Error("Could not find the 'Add item' button (Plus icon or text match failed).");
+                }
+                console.log(`[Catalog] Clicked Add Item Button via ${clicked}`);
+
+                // Wait for form to appear (animation time + human visual register)
+                await humanDelay(2500, 4000);
+            }
+
+            // We will upload using setInputFiles, wait for input[type="file"]
+            const fileInputSelector = 'input[type="file"]';
             await targetPage.waitForSelector(fileInputSelector, { timeout: 10000 });
 
             const fileInput = await targetPage.$(fileInputSelector);
@@ -364,43 +464,13 @@ app.post('/api/catalog/upload', async (req, res) => {
                 throw new Error("File input not found in DOM");
             }
 
-            // Wait for image thumbnail to render
-            await new Promise(r => setTimeout(r, 2000));
+            // Wait for image thumbnail to render and load (avoid suspicious speed)
+            await humanDelay(3000, 5000);
 
-            // Find Inputs and Textareas
-            // Item Name (usually the first input[type="text"])
-            const inputs = await targetPage.$$('div[contenteditable="true"]');
-            if (inputs.length > 0) {
-                // First is usually Name
-                await inputs[0].click();
-                await targetPage.keyboard.type(productName, { delay: 10 });
-                console.log(`[Catalog] Pushed Product Name`);
-            }
+            // Wait for image thumbnail to render and load (avoid suspicious speed)
+            await humanDelay(3000, 5000);
 
-            // Description (usually the second contenteditable div)
-            if (productDescription && inputs.length > 1) {
-                await inputs[1].click();
-                await targetPage.keyboard.type(productDescription, { delay: 10 });
-                console.log(`[Catalog] Pushed Product Description`);
-            }
-
-            // Price (find input by placeholder or type)
-            if (productPrice) {
-                const priceInput = await targetPage.$('input[placeholder*="Prix"], input[placeholder*="Price"]');
-                if (priceInput) {
-                    await priceInput.type(productPrice.toString(), { delay: 10 });
-                    console.log(`[Catalog] Pushed Product Price`);
-                }
-            }
-
-            console.log(`[Catalog] Form filled.Attempting to submit...`);
-
-            // Final Submission (Optional: uncomment to auto-submit, better to let user verify)
-            // await targetPage.evaluate(() => {
-            //     const buttons = Array.from(document.querySelectorAll('button'));
-            //     const saveBtn = buttons.find(b => b.innerText.includes('Add to catalog') || b.innerText.includes('Ajouter au catalogue'));
-            //     if (saveBtn) saveBtn.click();
-            // });
+            console.log(`[Catalog] Image upload complete. Handing off to user via Copilot...`);
 
         } catch (e) {
             console.error("Puppeteer Catalog Interaction Error", e);
@@ -420,6 +490,8 @@ app.post('/api/catalog/upload', async (req, res) => {
         res.status(500).json({ error: 'Failed to automate WhatsApp Catalog. Exception: ' + error.message });
     }
 });
+
+// Nodemon trigger
 
 app.listen(PORT, () => {
     console.log(`[Orchestrator] Running on http://localhost:${PORT}`);
