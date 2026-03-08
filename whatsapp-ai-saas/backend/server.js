@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const { chromium } = require('playwright');
+const puppeteer = require('puppeteer-core');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
@@ -17,6 +17,7 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // API route to get WhatsApp instances status
 app.get('/api/instances', async (req, res) => {
+    let browser = null;
     try {
         // To avoid Protocol error (Browser.getVersion), we MUST connect to the browser root, not a specific page target
         const fetch = (await import('node-fetch')).default;
@@ -24,14 +25,15 @@ app.get('/api/instances', async (req, res) => {
         const json = await response.json();
 
         // Connect to the root browser CDP endpoint
-        const browser = await chromium.connectOverCDP(json.webSocketDebuggerUrl);
-        const contexts = browser.contexts();
+        browser = await puppeteer.connect({ browserURL: 'http://127.0.0.1:8315', defaultViewport: null });
+        const targets = await browser.targets();
 
         let activeInstancesCount = 0;
 
-        for (const context of contexts) {
-            for (const page of context.pages()) {
-                if (page.url().includes('web.whatsapp.com')) {
+        for (const target of targets) {
+            if (target.url().includes('web.whatsapp.com') && target.type() === 'webview') {
+                const page = await target.page();
+                if (page) {
                     activeInstancesCount++;
 
                     try {
@@ -62,7 +64,7 @@ app.get('/api/instances', async (req, res) => {
         }
 
         // Don't close the browser connecting just the contexts, leave it or close the connection properly
-        await browser.close();
+        browser.disconnect();
 
         res.json({
             status: 'success',
@@ -71,6 +73,7 @@ app.get('/api/instances', async (req, res) => {
         });
 
     } catch (error) {
+        if (browser) browser.disconnect();
         console.error('CDP Connection Error:', error);
         res.status(500).json({
             status: 'error',
@@ -85,41 +88,31 @@ app.get('/api/context/:instance_id', async (req, res) => {
 
     let browser = null;
     try {
-        const fetch = (await import('node-fetch')).default;
-        const responseTargets = await fetch('http://127.0.0.1:8315/json');
-        const targets = await responseTargets.json();
+        // Connect Puppeteer directly to the Electron remote debugging port
+        browser = await puppeteer.connect({ browserURL: 'http://127.0.0.1:8315', defaultViewport: null });
 
-        // Find the specific webview targeting WhatsApp
-        const whatsappTarget = targets.find(t => t.url.includes('web.whatsapp.com'));
-
-        if (!whatsappTarget) {
-            return res.status(404).json({ error: 'WhatsApp instance not found in targets. Is the tab completely open?' });
-        }
-
-        const responseVersion = await fetch('http://127.0.0.1:8315/json/version');
-        const jsonVersion = await responseVersion.json();
-
-        // Connect to the root browser CDP endpoint
-        browser = await chromium.connectOverCDP(jsonVersion.webSocketDebuggerUrl);
-        const contexts = browser.contexts();
-
+        const targets = browser.targets();
         let targetPage = null;
 
-        // Iterate through all contexts and pages to find the WhatsApp Web frame
-        for (const context of contexts) {
-            for (const page of context.pages()) {
-                // Playwright pages usually have a url() that matches the target.url
-                if (page.url() === whatsappTarget.url || page.url().includes('web.whatsapp.com')) {
-                    targetPage = page;
-                    break;
-                }
+        // Iterate through all targets to find the exact WhatsApp Web instance
+        for (const target of targets) {
+            if (target.url().includes('web.whatsapp.com') && target.type() === 'webview') {
+                try {
+                    const page = await target.page();
+                    if (page) {
+                        const pageInstanceId = await page.evaluate(() => window.__whatsapp_instance_id).catch(() => null);
+                        if (pageInstanceId === instance_id) {
+                            targetPage = page;
+                            break;
+                        }
+                    }
+                } catch (e) { }
             }
-            if (targetPage) break;
         }
 
         if (!targetPage) {
-            await browser.close();
-            return res.status(404).json({ error: 'WhatsApp instance found in targets but not in Playwright contexts.' });
+            browser.disconnect();
+            return res.status(404).json({ error: 'WhatsApp instance found in targets but not assigned the expected Webview instance_id.' });
         }
 
         // Extremely safe DOM Parsing: no clicks, no interactions.
@@ -156,8 +149,6 @@ app.get('/api/context/:instance_id', async (req, res) => {
             return result;
         });
 
-        await browser.close();
-
         res.json({
             status: 'success',
             instance_id,
@@ -165,15 +156,16 @@ app.get('/api/context/:instance_id', async (req, res) => {
         });
 
     } catch (error) {
-        if (browser) await browser.close().catch(() => { });
         console.error('Context Extraction Error:', error);
         res.status(500).json({ error: 'Failed to extract chat context safely. Exception: ' + error.message });
+    } finally {
+        if (browser) browser.disconnect();
     }
 });
 
 // Endpoint to fetch Copilot Generative Replies
 app.post('/api/gemini/copilot', async (req, res) => {
-    // Requires instance_id for DB logging in a multi-tenant environment. 
+    // Requires instance_id for DB logging in a multi-tenant environment.
     // Usually passed as part of the request. Let's assume frontend passes it.
     const { instance_id, chatContext, model } = req.body;
 
@@ -295,49 +287,33 @@ app.post('/api/catalog/upload', async (req, res) => {
         tempImagePath = path.join(tempDir, fileName);
 
         fs.writeFileSync(tempImagePath, base64Data, 'base64');
-        console.log(`[Catalog] Saved temporary image to ${tempImagePath}`);
+        console.log(`[Catalog] Saved temporary image to ${tempImagePath} `);
 
-        // 2. Connect to Playwright
-        const fetch = (await import('node-fetch')).default;
-
-        // Root browser CDP Endpoint
-        const browserJsonRes = await fetch('http://127.0.0.1:8315/json/version').catch(() => null);
-        if (!browserJsonRes) throw new Error("Ensure WhatsApp Desktop app (Electron) is running.");
-        const jsonVersion = await browserJsonRes.json();
-
-        // Target specific instance
-        const targetsRes = await fetch('http://127.0.0.1:8315/json').catch(() => null);
-        const targets = await targetsRes.json();
-
-        // Match the instance_id partition
-        const whatsappTarget = targets.find(t =>
-            t.url.includes('web.whatsapp.com') &&
-            t.url.includes(`whatsapp-ai-saas/persist:${instance_id}/`)
-        );
-
-        if (!whatsappTarget) {
-            throw new Error("Could not find WhatsApp Web target for the given instance ID.");
-        }
-
-        browser = await chromium.connectOverCDP(jsonVersion.webSocketDebuggerUrl);
-        const contexts = browser.contexts();
+        // 2. Connect to Puppeteer
+        browser = await puppeteer.connect({ browserURL: 'http://127.0.0.1:8315', defaultViewport: null });
+        const targets = browser.targets();
         let targetPage = null;
 
-        for (const context of contexts) {
-            for (const page of context.pages()) {
-                if (page.url() === whatsappTarget.url || page.url().includes('web.whatsapp.com')) {
-                    targetPage = page;
-                    break;
-                }
+        for (const target of targets) {
+            if (target.url().includes('web.whatsapp.com') && target.type() === 'webview') {
+                try {
+                    const page = await target.page();
+                    if (page) {
+                        const pageInstanceId = await page.evaluate(() => window.__whatsapp_instance_id).catch(() => null);
+                        if (pageInstanceId === instance_id) {
+                            targetPage = page;
+                            break;
+                        }
+                    }
+                } catch (e) { }
             }
-            if (targetPage) break;
         }
 
         if (!targetPage) {
-            throw new Error("Target Page Context could not be located.");
+            throw new Error(`Target Page Context could not be located.Ensure the Webview for instance ${instance_id} is mounted.`);
         }
 
-        console.log(`[Catalog] Connected to instance: ${instance_id}`);
+        console.log(`[Catalog] Connected to instance: ${instance_id} `);
 
         // 3. Pre-flight Check: Is it a Business Account?
         const isBusinessAccount = await targetPage.evaluate(() => {
@@ -351,87 +327,84 @@ app.post('/api/catalog/upload', async (req, res) => {
             throw new Error("SECURITY BLOCK: The selected instance is not a WhatsApp Business account. Catalog actions cannot be performed.");
         }
 
-        console.log(`[Catalog] Pre-flight Check Passed. Proceeding with upload...`);
+        console.log(`[Catalog] Pre - flight Check Passed.Proceeding with upload...`);
 
-        // Wait a small moment to ensure UI stability
-        await targetPage.waitForTimeout(1000);
+        // In Puppeteer, focus using bringToFront or focus
+        await targetPage.bringToFront().catch(() => { });
 
-        // 4. Navigate to Catalog
-        // Click the catalog icon in the header or menu
-        await targetPage.click('span[data-icon="catalog"]', { timeout: 5000 }).catch(() => {
-            throw new Error("Could not find or click the Catalog icon.");
-        });
+        try {
+            // Click Catalog Icon
+            await targetPage.waitForSelector('span[data-icon="catalog"]', { timeout: 5000 });
+            await targetPage.evaluate(() => document.querySelector('span[data-icon="catalog"]').closest('div[role="button"]').click());
+            console.log(`[Catalog] Clicked Catalog Icon`);
 
-        // Click "Add a new item" (Ajouter un nouvel article)
-        await targetPage.waitForSelector('span[data-icon="plus"]', { timeout: 8000 });
-        await targetPage.click('span[data-icon="plus"]');
+            // Wait a moment for navigation
+            await new Promise(r => setTimeout(r, 2000));
 
-        // 5. Inject Image and Fill Form
-        // Native Playwright file input
-        console.log(`[Catalog] Locating file input...`);
-        // The input type=file is hidden but accept image types
-        await targetPage.waitForSelector('input[type="file"][accept*="image"]', { state: 'attached', timeout: 8000 });
-        await targetPage.setInputFiles('input[type="file"][accept*="image"]', tempImagePath);
+            // Wait for "Add a new item" button and click using xpath or evaluate
+            await targetPage.evaluate(() => {
+                const buttons = Array.from(document.querySelectorAll('button'));
+                const addButton = buttons.find(b => b.innerText.includes('Add a new item') || b.innerText.includes('Ajouter un nouvel article'));
+                if (addButton) addButton.click();
+            });
+            console.log(`[Catalog] Clicked Add Item Button`);
 
-        console.log(`[Catalog] Filling out product forms...`);
-        // Need to wait slightly for image to visually load
-        await targetPage.waitForTimeout(2000);
+            // Wait for form to appear
+            await new Promise(r => setTimeout(r, 2000));
 
-        // Find inputs by placeholder or aria-labels (Meta changes these often, so we use flexible selectors)
-        // Usually, the first text input is the Name, second is Description (or div contenteditable)
-        // Note: Playwright's getByRole or specific placeholder text helps
+            // We will upload using setInputFiles, wait for input[type="file"] or input[accept="image/*"]
+            const fileInputSelector = 'input[type="file"][accept="image/png,image/jpeg,image/webp"]';
+            await targetPage.waitForSelector(fileInputSelector, { timeout: 10000 });
 
-        // Find main wrapper for the catalog form to constrain selectors
-        await targetPage.waitForSelector('.catalog-form-container, div[role="dialog"]', { timeout: 5000 }).catch(() => { });
-
-        // Try filling Name (Usually the first editable text field)
-        const nameInputLocator = targetPage.locator('input[type="text"]').first();
-        if (await nameInputLocator.isVisible()) {
-            await nameInputLocator.fill(productName);
-        } else {
-            // Fallback: search for placeholder "Nom" or "Item name"
-            const altName = targetPage.locator('input[placeholder*="Nom"], input[placeholder*="name"], input[placeholder*="Nom de l\'article"]');
-            if (await altName.count() > 0) {
-                await altName.first().fill(productName);
+            const fileInput = await targetPage.$(fileInputSelector);
+            if (fileInput) {
+                await fileInput.uploadFile(tempImagePath);
+                console.log(`[Catalog] Image injected from disk: ${tempImagePath} `);
+            } else {
+                throw new Error("File input not found in DOM");
             }
-        }
 
-        // Try filling Description (Usually a div contenteditable or textarea)
-        const descLocator = targetPage.locator('div[title*="Description"], div[aria-label*="Description"], textarea');
-        if (await descLocator.count() > 0) {
-            // Fill the contenteditable element properly
-            await descLocator.first().focus();
-            await targetPage.keyboard.type(productDescription);
-        }
+            // Wait for image thumbnail to render
+            await new Promise(r => setTimeout(r, 2000));
 
-        // Try filling Price if provided
-        if (productPrice) {
-            const priceLocator = targetPage.locator('input[placeholder*="Prix"], input[placeholder*="Price"]');
-            if (await priceLocator.count() > 0) {
-                await priceLocator.first().fill(productPrice.toString());
+            // Find Inputs and Textareas
+            // Item Name (usually the first input[type="text"])
+            const inputs = await targetPage.$$('div[contenteditable="true"]');
+            if (inputs.length > 0) {
+                // First is usually Name
+                await inputs[0].click();
+                await targetPage.keyboard.type(productName, { delay: 10 });
+                console.log(`[Catalog] Pushed Product Name`);
             }
-        }
 
-        console.log(`[Catalog] Form filled. Attempting to submit...`);
+            // Description (usually the second contenteditable div)
+            if (productDescription && inputs.length > 1) {
+                await inputs[1].click();
+                await targetPage.keyboard.type(productDescription, { delay: 10 });
+                console.log(`[Catalog] Pushed Product Description`);
+            }
 
-        // 6. Final Submit
-        // "Ajouter au catalogue" / "Save" / "Add to catalog"
-        const submitButton = targetPage.locator('button:has-text("Ajouter"), button:has-text("Save"), button:has-text("Add")').last();
-        if (await submitButton.isVisible()) {
-            await submitButton.click();
-            console.log(`[Catalog] Product Submitted Successfully.`);
-        } else {
-            console.warn(`[Catalog] Submit button not found. Product might have been filled but not saved automatically.`);
-        }
+            // Price (find input by placeholder or type)
+            if (productPrice) {
+                const priceInput = await targetPage.$('input[placeholder*="Prix"], input[placeholder*="Price"]');
+                if (priceInput) {
+                    await priceInput.type(productPrice.toString(), { delay: 10 });
+                    console.log(`[Catalog] Pushed Product Price`);
+                }
+            }
 
-        // Wait for potential network request completion
-        await targetPage.waitForTimeout(2000);
+            console.log(`[Catalog] Form filled.Attempting to submit...`);
 
-        await browser.close();
+            // Final Submission (Optional: uncomment to auto-submit, better to let user verify)
+            // await targetPage.evaluate(() => {
+            //     const buttons = Array.from(document.querySelectorAll('button'));
+            //     const saveBtn = buttons.find(b => b.innerText.includes('Add to catalog') || b.innerText.includes('Ajouter au catalogue'));
+            //     if (saveBtn) saveBtn.click();
+            // });
 
-        // 7. Cleanup
-        if (fs.existsSync(tempImagePath)) {
-            fs.unlinkSync(tempImagePath);
+        } catch (e) {
+            console.error("Puppeteer Catalog Interaction Error", e);
+            throw new Error(`Catalog interaction failed: ${e.message} `);
         }
 
         res.json({
@@ -440,7 +413,6 @@ app.post('/api/catalog/upload', async (req, res) => {
         });
 
     } catch (error) {
-        if (browser) await browser.close().catch(() => { });
         if (tempImagePath && fs.existsSync(tempImagePath)) {
             fs.unlinkSync(tempImagePath); // Cleanup on fail
         }

@@ -238,11 +238,13 @@ const WorkArea = ({ instances, activeId }) => {
                                 useragent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
                                 className="w-full h-full flex-1"
                                 ref={(el) => {
-                                    if (el && !el.hasAttribute('data-css-injected')) {
+                                    if (el && !el.hasAttribute('data-setup-injected')) {
                                         el.addEventListener('dom-ready', () => {
                                             el.insertCSS('::-webkit-scrollbar { display: none !important; } * { scrollbar-width: none !important; }');
+                                            // Inject instance ID into the global window object so Playwright can find the right context
+                                            el.executeJavaScript(`window.__whatsapp_instance_id = '${instance.id}';`);
                                         });
-                                        el.setAttribute('data-css-injected', 'true');
+                                        el.setAttribute('data-setup-injected', 'true');
                                     }
                                 }}
                             />
