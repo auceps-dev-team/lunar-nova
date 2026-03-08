@@ -61,8 +61,6 @@ function AppContent() {
   // Check if we are currently on the WhatsApp route
   const isWhatsApp = location.pathname === '/whatsapp-hub' || location.pathname === '/';
 
-  const appSettings = useAppStore(state => state.appSettings) || { theme: 'light', language: 'en' };
-
   return (
     <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID_HERE"}>
       <div className={`font-body h-screen w-screen overflow-hidden p-4 ${appSettings.theme === 'dark' ? 'dark bg-gray-950 text-gray-100' : 'bg-background-light text-text-main'}`} dir={appSettings.language === 'ar' ? 'rtl' : 'ltr'}>

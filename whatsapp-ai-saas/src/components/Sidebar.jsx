@@ -27,6 +27,10 @@ const Sidebar = ({ instances, activeId, onSelect, onAdd, onRemove, onUpdate, cur
     const [sidebarWidth, setSidebarWidth] = useState(260);
     const [isResizing, setIsResizing] = useState(false);
 
+    // Dropdown states
+    const [fashionStudioExpanded, setFashionStudioExpanded] = useState(false);
+    const [whatsappMenuExpanded, setWhatsappMenuExpanded] = useState(false);
+
     const startResizing = (mouseDownEvent) => {
         mouseDownEvent.preventDefault();
         setIsResizing(true);
@@ -89,26 +93,107 @@ const Sidebar = ({ instances, activeId, onSelect, onAdd, onRemove, onUpdate, cur
                         <span className="text-sm font-medium">{t(language, 'whatsappHub')}</span>
                     </Link>
 
+                    {/* AI Fashion Studio Dropdown */}
                     <div>
-                        <Link
-                            to="/agents"
-                            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors group ${currentPath.includes('/agents') ? 'bg-primary/20 text-primary border border-primary/20' : 'text-gray-300 hover:bg-white/5 hover:text-white'}`}
+                        <button
+                            onClick={() => setFashionStudioExpanded(!fashionStudioExpanded)}
+                            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors group ${currentPath.includes('/fashion') ? 'bg-primary/20 text-primary border border-primary/20' : 'text-gray-300 hover:bg-white/5 hover:text-white'}`}
                         >
                             <div className="flex items-center gap-3">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="10" rx="2" ry="2"></rect><circle cx="12" cy="5" r="2"></circle><path d="M12 7v4"></path><line x1="8" y1="16" x2="8.01" y2="16"></line><line x1="16" y1="16" x2="16.01" y2="16"></line></svg>
-                                <span className="text-sm font-medium">{t(language, 'agentsHub')}</span>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.38 3.46 16 2a8.86 8.86 0 0 1-5 0 8.86 8.86 0 0 1-5 0L1.62 3.46A2 2 0 0 0 0 5.34v.53a3 3 0 0 0 2 2.82v10.3A3 3 0 0 0 5 22h14a3 3 0 0 0 3-3V8.69a3 3 0 0 0 2-2.82v-.53a2 2 0 0 0-1.62-1.88z"></path><path d="M12 2v6"></path><path d="M9 12h6"></path><path d="M9 16h6"></path></svg>
+                                <span className="text-sm font-medium">AI Fashion Studio</span>
                             </div>
-                            <svg className={`w-4 h-4 transition-transform ${currentPath.includes('/agents') ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg className={`w-4 h-4 transition-transform ${fashionStudioExpanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                             </svg>
-                        </Link>
+                        </button>
 
-                        <div id="agents-dropdown" className={`overflow-hidden transition-all duration-300 pl-11 pr-3 space-y-1 ${currentPath.includes('/agents') ? 'max-h-40 py-1' : 'max-h-0 py-0'}`}>
-                            <Link to="/agents" className={`flex items-center px-3 py-2 rounded-lg transition-colors ${currentPath === '/agents' ? 'bg-white/10 text-white font-medium' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
-                                <span className="truncate text-sm">Visual & Creative</span>
+                        <div className={`overflow-hidden transition-all duration-300 pl-11 pr-3 space-y-1 ${fashionStudioExpanded ? 'max-h-96 py-1' : 'max-h-0 py-0'}`}>
+                            <Link to="/fashion/dashboard" className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${currentPath === '/fashion/dashboard' ? 'bg-white/10 text-white font-medium' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                                <span className="truncate text-sm">Dashboard</span>
+                            </Link>
+                            <Link to="/agents" className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${currentPath === '/agents' ? 'bg-white/10 text-white font-medium' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="10" rx="2" ry="2"></rect><circle cx="12" cy="5" r="2"></circle><path d="M12 7v4"></path></svg>
+                                <span className="truncate text-sm">Photo Product</span>
+                            </Link>
+                            <Link to="/fashion/photoshoot" className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${currentPath === '/fashion/photoshoot' ? 'bg-white/10 text-white font-medium' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+                                <span className="truncate text-sm">PhotoShoot</span>
+                            </Link>
+                            <Link to="/fashion/tryon" className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${currentPath === '/fashion/tryon' ? 'bg-white/10 text-white font-medium' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.38 3.46 16 2a8.86 8.86 0 0 1-5 0 8.86 8.86 0 0 1-5 0L1.62 3.46A2 2 0 0 0 0 5.34v.53a3 3 0 0 0 2 2.82v10.3A3 3 0 0 0 5 22h14a3 3 0 0 0 3-3V8.69a3 3 0 0 0 2-2.82v-.53a2 2 0 0 0-1.62-1.88z"></path></svg>
+                                <span className="truncate text-sm">Virtual Try-on</span>
+                            </Link>
+                            <Link to="/fashion/model" className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${currentPath === '/fashion/model' ? 'bg-white/10 text-white font-medium' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                                <span className="truncate text-sm">Change Model</span>
+                            </Link>
+                            <Link to="/fashion/edit" className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${currentPath === '/fashion/edit' ? 'bg-white/10 text-white font-medium' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                                <span className="truncate text-sm">Edit Image</span>
+                            </Link>
+                            <Link to="/fashion/video" className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${currentPath === '/fashion/video' ? 'bg-white/10 text-white font-medium' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
+                                <span className="truncate text-sm">Create Video</span>
+                            </Link>
+                            <Link to="/fashion/library" className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${currentPath === '/fashion/library' ? 'bg-white/10 text-white font-medium' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
+                                <span className="truncate text-sm">My Photo Shoots</span>
+                            </Link>
+                            <Link to="/fashion/wardrobe" className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${currentPath === '/fashion/wardrobe' ? 'bg-white/10 text-white font-medium' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.38 3.46 16 2a8.86 8.86 0 0 1-5 0 8.86 8.86 0 0 1-5 0L1.62 3.46A2 2 0 0 0 0 5.34v.53a3 3 0 0 0 2 2.82v10.3A3 3 0 0 0 5 22h14a3 3 0 0 0 3-3V8.69a3 3 0 0 0 2-2.82v-.53a2 2 0 0 0-1.62-1.88z"></path></svg>
+                                <span className="truncate text-sm">My Wardrobe</span>
+                            </Link>
+                            <Link to="/fashion/settings" className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${currentPath === '/fashion/settings' ? 'bg-white/10 text-white font-medium' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                                <span className="truncate text-sm">Settings</span>
                             </Link>
                         </div>
                     </div>
+
+                    <Link to="/ai-chat" className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors group ${currentPath === '/ai-chat' ? 'bg-primary/20 text-primary border border-primary/20' : 'text-gray-300 hover:bg-white/5 hover:text-white'}`}>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                        <span className="text-sm font-medium">AI Chat</span>
+                    </Link>
+
+                    <Link to="/ai-writer" className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors group ${currentPath === '/ai-writer' ? 'bg-primary/20 text-primary border border-primary/20' : 'text-gray-300 hover:bg-white/5 hover:text-white'}`}>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                        <span className="text-sm font-medium">AI Writer</span>
+                    </Link>
+
+                    {/* WhatsApp Specialized Dropdown */}
+                    <div>
+                        <button
+                            onClick={() => setWhatsappMenuExpanded(!whatsappMenuExpanded)}
+                            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors group ${currentPath.includes('/wa/') ? 'bg-primary/20 text-primary border border-primary/20' : 'text-gray-300 hover:bg-white/5 hover:text-white'}`}
+                        >
+                            <div className="flex items-center gap-3">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                                <span className="text-sm font-medium">Whatsapp</span>
+                            </div>
+                            <svg className={`w-4 h-4 transition-transform ${whatsappMenuExpanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+
+                        <div className={`overflow-hidden transition-all duration-300 pl-11 pr-3 space-y-1 ${whatsappMenuExpanded ? 'max-h-40 py-1' : 'max-h-0 py-0'}`}>
+                            <Link to="/whatsapp-hub" className={`flex items-center px-3 py-2 rounded-lg transition-colors ${currentPath === '/whatsapp-hub' ? 'bg-white/10 text-white font-medium' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
+                                <span className="truncate text-sm">Contact Lists</span>
+                            </Link>
+                            <Link to="/whatsapp-hub" className={`flex items-center px-3 py-2 rounded-lg transition-colors ${currentPath === '/wa/segments' ? 'bg-white/10 text-white font-medium' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
+                                <span className="truncate text-sm">Segments</span>
+                            </Link>
+                            <Link to="/whatsapp-hub" className={`flex items-center px-3 py-2 rounded-lg transition-colors ${currentPath === '/wa/contacts' ? 'bg-white/10 text-white font-medium' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
+                                <span className="truncate text-sm">Contacts</span>
+                            </Link>
+                        </div>
+                    </div>
+
+                    <Link to="/support" className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors group ${currentPath === '/support' ? 'bg-primary/20 text-primary border border-primary/20' : 'text-gray-300 hover:bg-white/5 hover:text-white'}`}>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                        <span className="text-sm font-medium">{t(language, 'support') || 'Support'}</span>
+                    </Link>
 
                     <Link to="/tasks" className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors group ${currentPath === '/tasks' ? 'bg-primary/20 text-primary border border-primary/20' : 'text-gray-300 hover:bg-white/5 hover:text-white'}`}>
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
