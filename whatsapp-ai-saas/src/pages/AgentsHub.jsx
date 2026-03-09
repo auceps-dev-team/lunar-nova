@@ -16,7 +16,8 @@ const AgentsHub = ({ activeId }) => {
     const [aspectRatio, setAspectRatio] = useState('1:1');
     const [isGeneratingImage, setIsGeneratingImage] = useState(false);
     const [isUploadingCatalog, setIsUploadingCatalog] = useState(false);
-    const [generatedImageResult, setGeneratedImageResult] = useState(null);
+    const [generatedImageResults, setGeneratedImageResults] = useState([]);
+    const [selectedImageIndex, setSelectedImageIndex] = useState(0);
     const [generationRefImage, setGenerationRefImage] = useState(null); // Reference image for gen tab
     const fileInputRef = useRef(null);
     const genFileInputRef = useRef(null);
@@ -177,7 +178,6 @@ const AgentsHub = ({ activeId }) => {
         if (!generatedPrompt || isGeneratingImage) return;
 
         setIsGeneratingImage(true);
-        setGeneratedImageResult(null);
         try {
             const body = {
                 prompt: generatedPrompt,
@@ -669,8 +669,8 @@ const AgentsHub = ({ activeId }) => {
                                     <div>
                                         <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 block">Generation Model</label>
                                         <div className="relative">
-                                            <select disabled className="w-full bg-gray-50 dark:bg-[#111827] border border-gray-200 dark:border-gray-700 rounded-lg py-2.5 px-3 text-sm text-gray-500 outline-none appearance-none opacity-80 cursor-not-allowed">
-                                                <option selected>Gemini Imagen 4.0</option>
+                                            <select disabled defaultValue="Gemini Imagen 4.0" className="w-full bg-gray-50 dark:bg-[#111827] border border-gray-200 dark:border-gray-700 rounded-lg py-2.5 px-3 text-sm text-gray-500 outline-none appearance-none opacity-80 cursor-not-allowed">
+                                                <option>Gemini Imagen 4.0</option>
                                                 <option disabled>Midjourney V6 (API Requise)</option>
                                                 <option disabled>DALL-E 3 (API Requise)</option>
                                             </select>
