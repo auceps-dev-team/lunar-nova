@@ -36,7 +36,8 @@ const useAppStore = create(
                 theme: 'light',
                 language: 'en',
                 model: 'gemini-1.5-pro',
-                allowAiRead: true
+                allowAiRead: true,
+                promptFormat: 'json'
             },
 
             // --- Agent Chats & History ---

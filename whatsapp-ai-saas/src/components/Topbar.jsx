@@ -21,7 +21,7 @@ const Topbar = ({ activeInstance, currentTitle }) => {
         if (!currentTitle || currentTitle === '/') return t(language, 'whatsappHub');
         if (currentTitle === '/whatsapp-hub') return activeInstance ? activeInstance.name : t(language, 'whatsappHub');
         if (currentTitle === '/dashboard') return t(language, 'dashboard');
-        if (currentTitle === '/agents') return t(language, 'agentsHub');
+        if (currentTitle === '/agents') return "Product Photo";
         if (currentTitle === '/tasks') return t(language, 'tasks');
         if (currentTitle === '/invoice-builder') return t(language, 'invoiceBuilder');
         if (currentTitle === '/tools') return t(language, 'tools');

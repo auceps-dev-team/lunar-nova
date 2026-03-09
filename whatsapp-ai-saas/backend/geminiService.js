@@ -189,10 +189,28 @@ en fonction de la situation
 </TONALITÉ_SOUHAITÉE>`
 };
 
-async function chatWithAgent(personaId, message, imageParams) {
+async function chatWithAgent(personaId, message, imageParams, promptFormat = 'text') {
     if (!message) return { response: "I didn't catch that. How can I help?" };
 
-    const personaInstruction = agentPersonas[personaId] || agentPersonas.creative;
+    let personaInstruction = agentPersonas[personaId] || agentPersonas.creative;
+
+    if (personaId === 'creative' && promptFormat === 'json') {
+        personaInstruction += `\n\nTU DOIS IMPÉRATIVEMENT RÉPONDRE AVEC UN OBJET JSON VALIDE respectant exactement cette structure (NE METS PAS DE BLOCS MARKDOWN \`\`\`json, RENVOIE JUSTE LE JSON BRUT):
+        {
+            "product": "Nom extrait du produit",
+            "concept": "Concept de la scène",
+            "colors": "Palette suggérée",
+            "script": "Script visuel de la mise en scène",
+            "instructions": "Instructions de préparation",
+            "prompt": "Prompt en anglais (environnement, lumière, etc.)",
+            "marketing": {
+                "name": "Nom accrocheur",
+                "price": "Prix fictif cohérent",
+                "code": "Code barre unique",
+                "description": "Description pour catalogue"
+            }
+        }`;
+    }
 
     try {
         let contents;
@@ -215,12 +233,15 @@ async function chatWithAgent(personaId, message, imageParams) {
             contents = message;
         }
 
+        const config = { systemInstruction: personaInstruction };
+        if (promptFormat === 'json') {
+            config.responseMimeType = "application/json";
+        }
+
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: contents,
-            config: {
-                systemInstruction: personaInstruction
-            }
+            config: config
         });
 
         return { response: response.text };
@@ -230,11 +251,20 @@ async function chatWithAgent(personaId, message, imageParams) {
     }
 }
 
-async function generateImage(prompt, aspectRatio = '1:1', imageParams = null) {
+async function generateImage(prompt, configAspectRatio = '1:1', imageParams = null) {
     // --- STRATEGY --- 
     // If a reference image is provided: use Gemini Flash Image (image editing/uplifting mode)
     //   → This PRESERVES the product identity (logo, shape, labels)
     // If no image: use Imagen 4 for pure text-to-image
+
+    // Map UI aspect ratios to Gemini accepted format
+    const aspectMap = {
+        '1:1': 'ASPECT_RATIO_1_1',
+        '3:4': 'ASPECT_RATIO_3_4',
+        '4:3': 'ASPECT_RATIO_4_3',
+        '16:9': 'ASPECT_RATIO_16_9'
+    };
+    const geminiAspectRatio = aspectMap[configAspectRatio] || 'ASPECT_RATIO_1_1';
 
     if (imageParams && imageParams.data && imageParams.mimeType) {
         // ---- IMAGE EDITING / PRODUCT UPLIFTING MODE ----
@@ -295,7 +325,7 @@ Enhancement instructions: ${prompt}`;
             config: {
                 numberOfImages: 1,
                 outputMimeType: 'image/jpeg',
-                aspectRatio: aspectRatio
+                aspectRatio: geminiAspectRatio
             }
         });
 

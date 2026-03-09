@@ -28,6 +28,7 @@ const AgentsHub = ({ activeId }) => {
     const setCatalogDraft = useAppStore(state => state.setCatalogDraft);
     const setCopilotNotification = useAppStore(state => state.setCopilotNotification);
     const showAppNotification = useAppStore(state => state.showAppNotification);
+    const promptFormat = useAppStore(state => state.appSettings?.promptFormat) || 'json';
     const clearAllHistory = () => {
         historyForAgent.forEach(h => removeAgentHistory(h.id));
     };
@@ -36,7 +37,7 @@ const AgentsHub = ({ activeId }) => {
     const agents = [
         {
             id: 'creative',
-            name: 'Visual & Creative Agent',
+            name: 'Product Photo',
             description: 'Specialized in generating prompts for high-end product uplifting.',
             icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>,
             color: '#3b82f6' // Blue match for photo icon
@@ -82,6 +83,7 @@ const AgentsHub = ({ activeId }) => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     persona: 'creative',
+                    promptFormat: promptFormat,
                     message: `Type de produit: ${productType}\nAmbiance souhaitée: ${targetAmbiance}\n[Base64 Image Attached]`,
                     imageParams: {
                         data: selectedImage.data.split(',')[1],
@@ -92,31 +94,46 @@ const AgentsHub = ({ activeId }) => {
             const data = await res.json();
 
             if (data.status === 'success') {
-                // Heuristic to extract the prompt from Markdown headers or text
                 let extractedPrompt = "Could not parse prompt automatically. Review analysis.";
                 let extractedMarketing = "Produit Généré par IA";
 
-                const splitMarkers = ["4. Le Prompt de Génération", "Prompt de Génération", "Prompt:", "Environment/Background"];
-
-                for (const marker of splitMarkers) {
-                    if (data.response.includes(marker)) {
-                        const parts = data.response.split(marker);
-                        let textBlock = parts[1] || parts[parts.length - 1]; // Support varying splits
-
-                        // Stop right before section 5 if it exists in the output
-                        if (textBlock.includes("5. Textes pour le Catalogue WhatsApp")) {
-                            textBlock = textBlock.split("5. Textes pour le Catalogue WhatsApp")[0];
+                if (promptFormat === 'json') {
+                    try {
+                        let jsonStr = data.response;
+                        const jsonBoundary = jsonStr.indexOf('{');
+                        const jsonEndBoundary = jsonStr.lastIndexOf('}');
+                        if (jsonBoundary !== -1 && jsonEndBoundary !== -1) {
+                            jsonStr = jsonStr.substring(jsonBoundary, jsonEndBoundary + 1);
                         }
-
-                        textBlock = textBlock.replace(/^[*\s:-]+/, '').replace(/```.*\n?/g, '').trim();
-                        extractedPrompt = textBlock;
-                        break;
+                        const parsed = JSON.parse(jsonStr);
+                        extractedPrompt = parsed.prompt || "No prompt provided";
+                        extractedMarketing = `Nom: ${parsed.marketing?.name || ''}\nPrix: ${parsed.marketing?.price || ''}\nCode: ${parsed.marketing?.code || ''}\nDescription: ${parsed.marketing?.description || ''}`;
+                    } catch (e) {
+                        console.error("Failed to parse JSON response:", e);
+                        extractedPrompt = data.response;
                     }
-                }
+                } else {
+                    const splitMarkers = ["4. Le Prompt de Génération", "Prompt de Génération", "Prompt:", "Environment/Background"];
 
-                if (data.response.includes("5. Textes pour le Catalogue WhatsApp")) {
-                    let mktBlock = data.response.split("5. Textes pour le Catalogue WhatsApp")[1];
-                    extractedMarketing = mktBlock.replace(/^[*\s:-]+/, '').replace(/```.*\n?/g, '').trim();
+                    for (const marker of splitMarkers) {
+                        if (data.response.includes(marker)) {
+                            const parts = data.response.split(marker);
+                            let textBlock = parts[1] || parts[parts.length - 1];
+
+                            if (textBlock.includes("5. Textes pour le Catalogue WhatsApp")) {
+                                textBlock = textBlock.split("5. Textes pour le Catalogue WhatsApp")[0];
+                            }
+
+                            textBlock = textBlock.replace(/^[*\s:-]+/, '').replace(/```.*\n?/g, '').trim();
+                            extractedPrompt = textBlock;
+                            break;
+                        }
+                    }
+
+                    if (data.response.includes("5. Textes pour le Catalogue WhatsApp")) {
+                        let mktBlock = data.response.split("5. Textes pour le Catalogue WhatsApp")[1];
+                        extractedMarketing = mktBlock.replace(/^[*\s:-]+/, '').replace(/```.*\n?/g, '').trim();
+                    }
                 }
 
                 setGeneratedPrompt(extractedPrompt);
@@ -150,7 +167,8 @@ const AgentsHub = ({ activeId }) => {
         setSelectedImage(item.image);
         setGeneratedPrompt(item.prompt);
         setGeneratedMarketing(item.marketing || null);
-        setGeneratedImageResult(item.generatedImage || null);
+        setGeneratedImageResults(item.generatedImages || (item.generatedImage ? [item.generatedImage] : []));
+        setSelectedImageIndex(0);
         if (item.image) setGenerationRefImage(item.image); // Pre-load as reference image in gen tab
         setActiveTab('generation');
     };
@@ -185,9 +203,39 @@ const AgentsHub = ({ activeId }) => {
             if (data.status === 'success' && data.imageStore) {
                 // Ensure it's correctly formatted as data URI
                 const b64Data = data.imageStore.startsWith('data:') ? data.imageStore : `data:image/jpeg;base64,${data.imageStore}`;
-                setGeneratedImageResult(b64Data);
 
-                // Update history item with generated image (optional but good idea)
+                const newResults = [b64Data, ...generatedImageResults];
+                setGeneratedImageResults(newResults);
+                setSelectedImageIndex(0); // View the newest by default
+
+                // Update history item with generated image array
+                if (historyForAgent.length > 0) {
+                    const latestHistory = historyForAgent[0];
+                    // Append to existing array or initialize
+                    const updatedImages = latestHistory.generatedImages
+                        ? [b64Data, ...latestHistory.generatedImages]
+                        : (latestHistory.generatedImage ? [b64Data, latestHistory.generatedImage] : [b64Data]);
+
+                    removeAgentHistory(latestHistory.id);
+                    addAgentHistory({
+                        ...latestHistory,
+                        generatedImages: updatedImages,
+                        generatedImage: b64Data // keep fallback
+                    });
+                } else {
+                    addAgentHistory({
+                        id: Date.now().toString(),
+                        agentId: activeAgent,
+                        date: new Date().toISOString(),
+                        productType,
+                        targetAmbiance,
+                        image: selectedImage,
+                        prompt: generatedPrompt,
+                        marketing: generatedMarketing,
+                        generatedImages: [b64Data],
+                        generatedImage: b64Data
+                    });
+                }
             } else {
                 alert(data.error || "Une erreur est survenue lors de la génération de l'image.");
             }
@@ -200,7 +248,8 @@ const AgentsHub = ({ activeId }) => {
     };
 
     const handleUploadToCatalog = async () => {
-        if (!generatedImageResult || !generatedPrompt || !activeId) {
+        const currentGeneratedImage = generatedImageResults[selectedImageIndex];
+        if (!currentGeneratedImage || !generatedPrompt || !activeId) {
             alert("Aucune image générée, aucune description disponible, ou aucune instance WhatsApp active.");
             return;
         }
@@ -228,7 +277,7 @@ const AgentsHub = ({ activeId }) => {
                 productName: productName,
                 productDescription: productDescription,
                 productPrice: productPrice,
-                imageBase64: generatedImageResult
+                imageBase64: currentGeneratedImage
             };
 
             // Set the draft in the global store so WhatCopilot can display it explicitly structured
@@ -271,7 +320,7 @@ const AgentsHub = ({ activeId }) => {
                     <div onClick={() => setIsHistoryOpen(!isHistoryOpen)} className="flex items-center gap-2 cursor-pointer hover:opacity-70 flex-1">
                         {isHistoryOpen ? (
                             <>
-                                <h2 className="text-sm font-semibold text-gray-900 dark:text-white">Agent History</h2>
+                                <h2 className="text-sm font-semibold text-gray-900 dark:text-white">Récents</h2>
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6" /></svg>
                             </>
                         ) : (
@@ -398,6 +447,21 @@ const AgentsHub = ({ activeId }) => {
                                         </div>
                                     </div>
 
+                                    {/* Recent history strip under Image upload in Analyse Tab */}
+                                    {historyForAgent.length > 0 && (
+                                        <div className="shrink-0 flex items-center gap-3 overflow-x-auto bg-gray-50 dark:bg-gray-900 border border-gray-100 rounded-xl p-3 shadow-sm dark:border-gray-700">
+                                            <span className="text-xs font-semibold text-gray-500 mr-2 flex items-center gap-1 shrink-0">
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                                                Récent
+                                            </span>
+                                            {historyForAgent.slice(0, 5).map(hist => (
+                                                <div key={hist.id} onClick={() => loadHistoryItem(hist)} className="w-12 h-12 shrink-0 rounded-lg border border-gray-200 hover:border-blue-500 cursor-pointer overflow-hidden bg-gray-200 dark:bg-gray-800 transition-all hover:-translate-y-1">
+                                                    {hist.image && <img src={hist.image.data} className="w-full h-full object-cover opacity-90" />}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
                                     <div className="flex gap-4">
                                         <div className="flex-1">
                                             <input
@@ -451,7 +515,7 @@ const AgentsHub = ({ activeId }) => {
                                             className="px-4 py-2 bg-[#4f46e5] text-white rounded-lg text-sm font-medium hover:bg-[#4338ca] transition shadow"
                                             onClick={() => setActiveTab('generation')}
                                         >
-                                            Aller à la Génération &rarr;
+                                            Go to Generation &rarr;
                                         </button>
                                     </div>
                                 </div>
@@ -467,44 +531,68 @@ const AgentsHub = ({ activeId }) => {
                                 <input type="file" ref={genFileInputRef} className="hidden" accept="image/*" onChange={handleGenImageUpload} />
 
                                 {/* Main Image View */}
-                                <div className="flex-1 flex items-center justify-center overflow-hidden rounded-xl relative">
-                                    {generatedImageResult ? (
-                                        <div className="relative w-full h-full flex items-center justify-center">
-                                            <img src={generatedImageResult} alt="Generated" className="max-w-full max-h-full object-contain rounded-lg shadow-xl ring-4 ring-[#4f46e5]/30" />
-                                            <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-xs font-medium flex items-center gap-2">
-                                                <span className="w-2 h-2 rounded-full bg-green-400"></span> Résultat Généré
+                                <div className="flex-1 flex flex-col items-center justify-center overflow-hidden rounded-xl relative">
+                                    {generatedImageResults.length > 0 ? (
+                                        <div className="relative flex flex-col items-center justify-center w-full h-full">
+                                            <div className="relative w-full h-full flex items-center justify-center">
+                                                <img src={generatedImageResults[selectedImageIndex]} alt="Generated" className="max-w-full max-h-full object-contain rounded-lg shadow-xl ring-4 ring-[#4f46e5]/30" />
+                                                <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-xs font-medium flex items-center gap-2">
+                                                    <span className="w-2 h-2 rounded-full bg-green-400"></span> Generated Result
+                                                </div>
+                                                <div className="absolute top-4 right-4 flex gap-2">
+                                                    <button
+                                                        className="bg-white/90 hover:bg-red-50 text-red-500 p-2 rounded-lg shadow transition"
+                                                        onClick={() => {
+                                                            const newResults = [...generatedImageResults];
+                                                            newResults.splice(selectedImageIndex, 1);
+                                                            setGeneratedImageResults(newResults);
+                                                            if (selectedImageIndex >= newResults.length) {
+                                                                setSelectedImageIndex(Math.max(0, newResults.length - 1));
+                                                            }
+                                                        }}
+                                                        title="Delete result"
+                                                    >
+                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>
+                                                    </button>
+                                                    <button
+                                                        className="bg-white/90 hover:bg-white text-gray-900 px-4 py-2 rounded-lg text-sm font-semibold shadow-lg transition"
+                                                        onClick={() => {
+                                                            const a = document.createElement('a');
+                                                            a.href = generatedImageResults[selectedImageIndex];
+                                                            a.download = `generation_${Date.now()}.jpg`;
+                                                            a.click();
+                                                        }}
+                                                    >
+                                                        Download
+                                                    </button>
+                                                </div>
                                             </div>
-                                            <div className="absolute top-4 right-4 flex gap-2">
-                                                <button
-                                                    className="bg-white/90 hover:bg-red-50 text-red-500 p-2 rounded-lg shadow transition"
-                                                    onClick={() => setGeneratedImageResult(null)}
-                                                    title="Supprimer le résultat"
-                                                >
-                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>
-                                                </button>
-                                                <button
-                                                    className="bg-white/90 hover:bg-white text-gray-900 px-4 py-2 rounded-lg text-sm font-semibold shadow-lg transition"
-                                                    onClick={() => {
-                                                        const a = document.createElement('a');
-                                                        a.href = generatedImageResult;
-                                                        a.download = `generation_${Date.now()}.jpg`;
-                                                        a.click();
-                                                    }}
-                                                >
-                                                    Télécharger
-                                                </button>
-                                            </div>
+
+                                            {/* Floating Recent Generations Array Picker */}
+                                            {generatedImageResults.length > 1 && (
+                                                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 overflow-x-auto bg-black/50 backdrop-blur-md border border-white/20 rounded-2xl p-2 shadow-2xl z-20">
+                                                    {generatedImageResults.map((imgSrc, idx) => (
+                                                        <div
+                                                            key={idx}
+                                                            onClick={() => setSelectedImageIndex(idx)}
+                                                            className={`w-14 h-14 shrink-0 rounded-xl border-2 cursor-pointer overflow-hidden bg-gray-200 dark:bg-gray-800 transition-all hover:-translate-y-1 ${idx === selectedImageIndex ? 'border-primary ring-2 ring-primary/50 shadow-lg scale-110' : 'border-transparent opacity-80 hover:opacity-100'}`}
+                                                        >
+                                                            <img src={imgSrc} className="w-full h-full object-cover" />
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                     ) : generationRefImage ? (
                                         <div className="relative w-full h-full flex items-center justify-center">
                                             <img src={generationRefImage.data} alt="Reference" className="max-w-full max-h-full object-contain rounded-lg shadow-md opacity-90" />
                                             <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-xs font-medium flex items-center gap-2">
-                                                <span className="w-2 h-2 rounded-full bg-blue-400"></span> Image de Référence
+                                                <span className="w-2 h-2 rounded-full bg-blue-400"></span> Reference Image
                                             </div>
                                             <button
                                                 className="absolute top-4 right-4 bg-white/90 hover:bg-red-50 text-red-500 p-2 rounded-lg shadow transition"
                                                 onClick={() => setGenerationRefImage(null)}
-                                                title="Supprimer l'image de référence"
+                                                title="Remove reference image"
                                             >
                                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>
                                             </button>
@@ -516,29 +604,29 @@ const AgentsHub = ({ activeId }) => {
                                         >
                                             <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-gray-400"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
                                             <div className="text-center">
-                                                <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Ajouter une image de référence</p>
-                                                <p className="text-xs text-gray-400 mt-1">Utilisée pour guider la génération Imagen 4</p>
+                                                <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Add a reference image</p>
+                                                <p className="text-xs text-gray-400 mt-1">Used to guide Gemini Imagen</p>
                                             </div>
                                             <button
                                                 className="mt-1 px-4 py-2 bg-[#4f46e5] hover:bg-[#4338ca] text-white text-sm font-medium rounded-lg shadow transition"
                                                 onClick={(e) => { e.stopPropagation(); genFileInputRef.current?.click(); }}
                                             >
-                                                Choisir une image
+                                                Choose an image
                                             </button>
                                         </div>
                                     )}
                                 </div>
 
                                 {/* Catalog Upload Button Area */}
-                                {generatedImageResult && (
-                                    <div className="shrink-0 flex items-center justify-between bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 rounded-xl p-3 mt-3 shadow-sm">
+                                {generatedImageResults.length > 0 && (
+                                    <div className="shrink-0 flex items-center justify-between bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 rounded-xl p-3 mt-3 shadow-sm z-10">
                                         <div className="flex items-center gap-3">
                                             <div className="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0">
                                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
                                             </div>
                                             <div>
-                                                <h4 className="text-sm font-semibold text-emerald-900 dark:text-emerald-300">Catalogue WhatsApp Business</h4>
-                                                <p className="text-xs text-emerald-700/80 dark:text-emerald-400/80">Publier ce produit directement dans votre boutique.</p>
+                                                <h4 className="text-sm font-semibold text-emerald-900 dark:text-emerald-300">WhatsApp Business Catalog</h4>
+                                                <p className="text-xs text-emerald-700/80 dark:text-emerald-400/80">Publish this product directly to your store.</p>
                                             </div>
                                         </div>
                                         <button
@@ -547,35 +635,22 @@ const AgentsHub = ({ activeId }) => {
                                             className={`px-4 py-2 rounded-lg text-sm font-semibold shadow transition flex items-center gap-2 ${isUploadingCatalog || !activeId ? 'bg-gray-300 dark:bg-gray-700 text-gray-500 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700 text-white'}`}
                                         >
                                             {isUploadingCatalog ? (
-                                                <><span className="pulse w-2 h-2 rounded-full bg-current"></span> Déploiement...</>
+                                                <><span className="pulse w-2 h-2 rounded-full bg-current"></span> Deploying...</>
                                             ) : !activeId ? (
-                                                'Instance introuvable'
+                                                'Instance not found'
                                             ) : (
-                                                'Publier l\'article'
+                                                'Publish product'
                                             )}
                                         </button>
                                     </div>
                                 )}
-
-                                {/* Recent history strip */}
-                                <div className="shrink-0 flex items-center gap-3 overflow-x-auto pt-2 pb-1">
-                                    <span className="text-xs font-semibold text-gray-500 mr-2 flex items-center gap-1 shrink-0">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                                        Récent
-                                    </span>
-                                    {historyForAgent.slice(0, 5).map(hist => (
-                                        <div key={hist.id} onClick={() => loadHistoryItem(hist)} className="w-14 h-14 shrink-0 rounded-lg border-2 border-transparent hover:border-blue-500 cursor-pointer overflow-hidden bg-gray-200 dark:bg-gray-800 transition-all hover:-translate-y-1">
-                                            {hist.image && <img src={hist.image.data} className="w-full h-full object-cover opacity-90" />}
-                                        </div>
-                                    ))}
-                                </div>
                             </div>
 
                             {/* Right View: Settings Panel */}
                             <div className="w-full md:w-[360px] flex flex-col bg-white dark:bg-[#1a1c23] border border-gray-200 dark:border-gray-800 rounded-2xl p-5 shadow-sm shrink-0 h-fit md:h-full">
                                 <div className="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-lg mb-6">
-                                    <button className="flex-1 py-1.5 bg-white dark:bg-[#2d3039] text-[#4f46e5] dark:text-[#818cf8] text-sm font-semibold rounded-md shadow-sm transition">Créer</button>
-                                    <button className="flex-1 py-1.5 text-gray-600 dark:text-gray-400 text-sm font-medium hover:text-gray-900 transition">Modifier l'image</button>
+                                    <button className="flex-1 py-1.5 bg-white dark:bg-[#2d3039] text-[#4f46e5] dark:text-[#818cf8] text-sm font-semibold rounded-md shadow-sm transition">Create</button>
+                                    <button className="flex-1 py-1.5 text-gray-600 dark:text-gray-400 text-sm font-medium hover:text-gray-900 transition">Edit image</button>
                                 </div>
 
                                 <div className="relative mb-6">
@@ -592,7 +667,7 @@ const AgentsHub = ({ activeId }) => {
 
                                 <div className="flex flex-col gap-4 mb-8">
                                     <div>
-                                        <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 block">Modèle de Génération</label>
+                                        <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 block">Generation Model</label>
                                         <div className="relative">
                                             <select disabled className="w-full bg-gray-50 dark:bg-[#111827] border border-gray-200 dark:border-gray-700 rounded-lg py-2.5 px-3 text-sm text-gray-500 outline-none appearance-none opacity-80 cursor-not-allowed">
                                                 <option selected>Gemini Imagen 4.0</option>
@@ -606,17 +681,17 @@ const AgentsHub = ({ activeId }) => {
                                     </div>
 
                                     <div>
-                                        <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 block">Proportions</label>
+                                        <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 block">Aspect Ratio</label>
                                         <div className="relative">
                                             <select
                                                 value={aspectRatio}
                                                 onChange={e => setAspectRatio(e.target.value)}
                                                 className="w-full bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-700 rounded-lg py-2.5 px-3 text-sm text-gray-900 dark:text-gray-100 outline-none cursor-pointer appearance-none text-left flex gap-2"
                                             >
-                                                <option value="1:1">1:1 (Carré)</option>
+                                                <option value="1:1">1:1 (Square)</option>
                                                 <option value="3:4">3:4 (Vertical)</option>
                                                 <option value="4:3">4:3 (Horizontal)</option>
-                                                <option value="16:9">16:9 (Large)</option>
+                                                <option value="16:9">16:9 (Wide)</option>
                                             </select>
                                             <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
                                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
@@ -631,7 +706,7 @@ const AgentsHub = ({ activeId }) => {
                                     disabled={isGeneratingImage || !generatedPrompt}
                                 >
                                     {isGeneratingImage && <span className="pulse w-4 h-4 rounded-full bg-current"></span>}
-                                    {isGeneratingImage ? 'Génération en cours...' : 'Générer (Imagen 4)'}
+                                    {isGeneratingImage ? 'Generating...' : 'Generate (Imagen 4)'}
                                 </button>
                             </div>
                         </div>
