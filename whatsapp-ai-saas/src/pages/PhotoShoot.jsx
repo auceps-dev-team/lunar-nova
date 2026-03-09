@@ -17,15 +17,18 @@ const MODELS = [
 ];
 
 const POSES = [
-    { id: 'standing_pockets', name: 'Standing, hands in pockets', desc: 'Relaxed standing pose with both hands in pockets' },
-    { id: 'hands_back', name: 'Hands behind back', desc: 'Elegant pose with hands clasped behind back' },
-    { id: 'sitting_stool', name: 'Sitting on stool', desc: 'Sitting casually on a high stool, legs crossed' },
-    { id: 'leaning_wall', name: 'Leaning against wall', desc: 'Cool leaning pose against a wall, arms crossed' },
-    { id: 'walking', name: 'Walking forward', desc: 'Dynamic walking pose, mid-stride, natural movement' },
-    { id: 'side_profile', name: 'Side profile', desc: 'Elegant side profile view, chin slightly up' },
-    { id: 'arms_crossed', name: 'Arms crossed', desc: 'Confident standing pose with arms crossed over chest' },
-    { id: 'natural', name: 'Natural', desc: 'Natural relaxed pose, looking at camera, slight smile' },
-    { id: 'adjusting_hair', name: 'Adjusting hair', desc: 'One hand adjusting hair, relaxed expression' },
+    { id: 'standing_pockets', name: 'Standing, hands in pockets', desc: 'Relaxed standing pose with both hands in pockets', img: '/assets/poses/standing_pockets.jpg' },
+    { id: 'hands_back', name: 'Hands in pockets', desc: 'Standing with both hands casually in front pockets', img: '/assets/poses/hands_in_pockets.jpg' },
+    { id: 'sitting_stool', name: 'Sitting on stool', desc: 'Sitting casually on a high stool, legs crossed', img: '/assets/poses/sitting_stool.jpg' },
+    { id: 'neutral_standing', name: 'Neutral standing', desc: 'Relaxed neutral standing, arms at sides, face forward', img: '/assets/poses/neutral_standing.jpg' },
+    { id: 'walking', name: 'Walking forward', desc: 'Dynamic walking pose, mid-stride, natural movement', img: '/assets/poses/walking.jpg' },
+    { id: 'side_profile', name: 'Side profile', desc: 'Elegant side profile view, standing straight', img: '/assets/poses/side_profile.jpg' },
+    { id: 'arms_crossed', name: 'Arms crossed', desc: 'Confident standing pose with arms crossed over chest', img: '/assets/poses/arms_crossed.jpg' },
+    { id: 'natural', name: 'Natural', desc: 'Natural relaxed pose, one hand in pocket, looking at camera', img: '/assets/poses/natural.jpg' },
+    { id: 'spinning', name: 'Spinning / twist', desc: 'Dynamic spinning pose with hair flowing, arms outstretched', img: '/assets/poses/spinning.jpg' },
+    { id: 'kneeling', name: 'Kneeling', desc: 'Kneeling on the ground, arms crossed, editorial pose', img: '/assets/poses/kneeling.jpg' },
+    { id: 'adjusting_hair', name: 'Adjusting hair', desc: 'Both hands adjusting hair, arms up, relaxed expression', img: '/assets/poses/adjusting_hair.jpg' },
+    { id: 'neutral_arms_down', name: 'Neutral, arms down', desc: 'Relaxed full-body standing, arms naturally at sides', img: '/assets/poses/neutral_arms_down.jpg' },
 ];
 
 const BACKGROUNDS = [
@@ -247,8 +250,12 @@ CRITICAL RULES:
                                     : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-[#5468ff]/50'
                                     }`}
                             >
-                                <div className="w-14 h-14 mx-auto rounded-xl bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-900/30 dark:to-orange-800/30 flex items-center justify-center text-orange-600 dark:text-orange-400 mb-3">
-                                    {getPoseIcon()}
+                                <div className="w-14 h-14 mx-auto rounded-xl bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-900/30 dark:to-orange-800/30 flex items-center justify-center text-orange-600 dark:text-orange-400 mb-3 overflow-hidden">
+                                    {p.img ? (
+                                        <img src={p.img} alt={p.name} className="w-full h-full object-cover" />
+                                    ) : (
+                                        getPoseIcon()
+                                    )}
                                 </div>
                                 <div className="text-center">
                                     <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full mb-1 bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300">Pose</span>
