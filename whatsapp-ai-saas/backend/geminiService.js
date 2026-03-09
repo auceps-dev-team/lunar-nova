@@ -1,9 +1,9 @@
-require('dotenv').config();
+require('dotenv').config({ path: require('path').join(__dirname, '.env') });
 const { GoogleGenAI } = require('@google/genai');
 
 // Initialize the Gemini client
 // Note: Requires GEMINI_API_KEY in the .env file
-const ai = new GoogleGenAI({});
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 const systemInstruction = `You are an expert Assistive Copilot for a WhatsApp Business SaaS.
 Your objective is to read the provided chat history strictly as context and propose 3 highly relevant, professional, and concise replies to the user.
