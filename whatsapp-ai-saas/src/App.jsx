@@ -13,6 +13,7 @@ import InvoiceBuilder from './pages/InvoiceBuilder';
 import Profile from './pages/Profile';
 import ToolsBox from './pages/ToolsBox';
 import Settings from './pages/Settings';
+import PhotoShoot from './pages/PhotoShoot';
 
 // Placeholder Pages for Phase 2
 
@@ -107,6 +108,7 @@ function AppContent() {
                   <Route path="/invoice-builder" element={<InvoiceBuilder />} />
                   <Route path="/tools" element={<ToolsBox />} />
                   <Route path="/settings" element={<Settings />} />
+                  <Route path="/fashion/photoshoot" element={<PhotoShoot activeId={activeId} />} />
                 </Routes>
               </div>
             )}

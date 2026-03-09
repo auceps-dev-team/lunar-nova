@@ -27,6 +27,7 @@ const Topbar = ({ activeInstance, currentTitle }) => {
         if (currentTitle === '/tools') return t(language, 'tools');
         if (currentTitle === '/profile') return t(language, 'accountStrategy');
         if (currentTitle === '/settings') return t(language, 'appSettings');
+        if (currentTitle === '/fashion/photoshoot') return "Photo Shoot";
         return t(language, 'workspace');
     };
 

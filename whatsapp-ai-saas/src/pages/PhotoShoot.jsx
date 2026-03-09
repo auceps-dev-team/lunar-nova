@@ -1,0 +1,547 @@
+import React, { useState, useRef } from 'react';
+import useAppStore from '../store';
+
+// ── Preset Data ────────────────────────────────────────────────
+const MODELS = [
+    { id: 'ethan', name: 'Ethan', gender: 'Male', desc: 'Athletic build, short dark hair, warm bronze skin' },
+    { id: 'mia', name: 'Mia', gender: 'Female', desc: 'Slim, blonde straight hair, European features, fair skin' },
+    { id: 'sophie', name: 'Sophie', gender: 'Female', desc: 'Tan olive skin, brunette wavy hair, Mediterranean look' },
+    { id: 'ella', name: 'Ella', gender: 'Female', desc: 'Dark brown skin, natural afro-textured hair, radiant smile' },
+    { id: 'olivia', name: 'Olivia', gender: 'Female', desc: 'Auburn red hair, light freckles, slender build' },
+    { id: 'chloe', name: 'Chloe', gender: 'Female', desc: 'East Asian features, straight black hair, porcelain skin' },
+    { id: 'emma', name: 'Emma', gender: 'Female', desc: 'Light skin, wavy brown hair, classic European beauty' },
+    { id: 'lucas', name: 'Lucas', gender: 'Male', desc: 'Mediterranean, dark curly hair, olive skin, strong jawline' },
+    { id: 'liam', name: 'Liam', gender: 'Male', desc: 'Nordic, blonde short hair, tall, blue eyes, fair skin' },
+    { id: 'noah', name: 'Noah', gender: 'Male', desc: 'Dark brown skin, shaved head, strong build, confident' },
+];
+
+const POSES = [
+    { id: 'standing_pockets', name: 'Standing, hands in pockets', desc: 'Relaxed standing pose with both hands in pockets' },
+    { id: 'hands_back', name: 'Hands behind back', desc: 'Elegant pose with hands clasped behind back' },
+    { id: 'sitting_stool', name: 'Sitting on stool', desc: 'Sitting casually on a high stool, legs crossed' },
+    { id: 'leaning_wall', name: 'Leaning against wall', desc: 'Cool leaning pose against a wall, arms crossed' },
+    { id: 'walking', name: 'Walking forward', desc: 'Dynamic walking pose, mid-stride, natural movement' },
+    { id: 'side_profile', name: 'Side profile', desc: 'Elegant side profile view, chin slightly up' },
+    { id: 'arms_crossed', name: 'Arms crossed', desc: 'Confident standing pose with arms crossed over chest' },
+    { id: 'natural', name: 'Natural', desc: 'Natural relaxed pose, looking at camera, slight smile' },
+    { id: 'adjusting_hair', name: 'Adjusting hair', desc: 'One hand adjusting hair, relaxed expression' },
+];
+
+const BACKGROUNDS = [
+    { id: 'studio_white', name: 'Studio White', category: 'studio', desc: 'Clean pure white cyclorama studio background' },
+    { id: 'studio_dark', name: 'Studio Dark', category: 'studio', desc: 'Deep dark moody studio with dramatic shadows' },
+    { id: 'beach', name: 'Beach', category: 'outdoor', desc: 'Golden hour beach with soft warm waves and sand' },
+    { id: 'urban', name: 'Urban Street', category: 'city', desc: 'Modern urban city street with concrete and glass buildings' },
+    { id: 'european_city', name: 'European City', category: 'city', desc: 'Charming European cobblestone street with classic architecture' },
+    { id: 'cozy', name: 'Cozy Interior', category: 'studio', desc: 'Warm cozy interior room with natural light and plants' },
+    { id: 'floral', name: 'Floral', category: 'outdoor', desc: 'Lush floral garden background with blooming flowers' },
+    { id: 'nature', name: 'Nature Outdoor', category: 'outdoor', desc: 'Serene nature landscape with soft golden light and greenery' },
+    { id: 'minimal', name: 'Minimalist', category: 'studio', desc: 'Clean minimalist beige/cream toned solid backdrop' },
+];
+
+// ── Color helpers for the category badges ──
+const CATEGORY_COLORS = {
+    studio: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300',
+    outdoor: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
+    city: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+    Male: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+    Female: 'bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300',
+};
+
+const PhotoShoot = ({ activeId }) => {
+    // ── State ──
+    const [productImages, setProductImages] = useState([]); // up to 3
+    const [selectedModel, setSelectedModel] = useState(null);
+    const [selectedPose, setSelectedPose] = useState(null);
+    const [selectedBackground, setSelectedBackground] = useState(null);
+    const [activeSection, setActiveSection] = useState(null); // 'model' | 'pose' | 'background' | null
+    const [generatedResults, setGeneratedResults] = useState([]);
+    const [selectedResultIndex, setSelectedResultIndex] = useState(0);
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [generatedPrompt, setGeneratedPrompt] = useState('');
+    const fileInputRef = useRef(null);
+
+    const promptFormat = useAppStore(state => state.appSettings?.promptFormat) || 'json';
+
+    // ── Handlers ──
+    const handleProductUpload = (e) => {
+        const files = Array.from(e.target.files);
+        if (files.length === 0) return;
+
+        const remaining = 3 - productImages.length;
+        const toProcess = files.slice(0, remaining);
+
+        toProcess.forEach(file => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setProductImages(prev => [...prev, { name: file.name, data: reader.result }].slice(0, 3));
+            };
+            reader.readAsDataURL(file);
+        });
+        e.target.value = '';
+    };
+
+    const removeProduct = (idx) => {
+        setProductImages(prev => prev.filter((_, i) => i !== idx));
+    };
+
+    const handleGenerate = async () => {
+        if (productImages.length === 0 || isGenerating) return;
+
+        setIsGenerating(true);
+        try {
+            // Step 1: Build context message for Clarisse
+            const model = selectedModel || MODELS[Math.floor(Math.random() * MODELS.length)];
+            const pose = selectedPose || POSES[Math.floor(Math.random() * POSES.length)];
+            const bg = selectedBackground || BACKGROUNDS[Math.floor(Math.random() * BACKGROUNDS.length)];
+
+            const contextMessage = `PHOTOSHOOT MODE — Virtual Model Dressing
+
+I need you to generate a detailed fashion photography prompt for Imagen 4.
+
+PRODUCT: The attached image(s) show the product to be worn/held by the model.
+MODEL: ${model.name} — ${model.gender}, ${model.desc}
+POSE: ${pose.name} — ${pose.desc}
+BACKGROUND: ${bg.name} — ${bg.desc}
+
+CRITICAL RULES:
+- The model MUST be wearing/holding/using the EXACT product shown in the image
+- Preserve all product details: colors, logos, labels, textures, patterns
+- Generate a high-end fashion editorial photography prompt
+- Include professional studio lighting details
+- The output should be a single comprehensive prompt for image generation
+- Focus on photorealistic, magazine-quality result
+- Describe the model's appearance matching the selected model description
+- Include the exact pose and background described above`;
+
+            // Step 2: Call Clarisse agent for prompt
+            const agentRes = await fetch('http://localhost:3000/api/gemini/agent', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    persona: 'creative',
+                    promptFormat: 'text',
+                    message: contextMessage,
+                    imageParams: {
+                        data: productImages[0].data.split(',')[1],
+                        mimeType: 'image/jpeg'
+                    }
+                })
+            });
+            const agentData = await agentRes.json();
+
+            let optimizedPrompt = contextMessage;
+            if (agentData.status === 'success' && agentData.message) {
+                // Try to extract the prompt from the response
+                const responseText = agentData.message;
+                // Look for prompt in JSON or plain text
+                try {
+                    const parsed = JSON.parse(responseText);
+                    optimizedPrompt = parsed.prompt || parsed.visual_prompt || responseText;
+                } catch {
+                    optimizedPrompt = responseText;
+                }
+            }
+            setGeneratedPrompt(optimizedPrompt);
+
+            // Step 3: Generate image with Imagen 4
+            const genBody = {
+                prompt: optimizedPrompt,
+                aspectRatio: '3:4',
+                imageParams: {
+                    data: productImages[0].data.split(',')[1],
+                    mimeType: 'image/jpeg'
+                }
+            };
+
+            const genRes = await fetch('http://localhost:3000/api/gemini/generate-image', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(genBody)
+            });
+            const genData = await genRes.json();
+
+            if (genData.status === 'success' && genData.imageStore) {
+                const b64Data = genData.imageStore.startsWith('data:')
+                    ? genData.imageStore
+                    : `data:image/jpeg;base64,${genData.imageStore}`;
+
+                setGeneratedResults(prev => [b64Data, ...prev]);
+                setSelectedResultIndex(0);
+            } else {
+                console.error('Generation failed:', genData);
+            }
+        } catch (err) {
+            console.error('PhotoShoot generation error:', err);
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
+    // ── Rendering helpers ──
+    const getModelInitials = (name) => name.slice(0, 2).toUpperCase();
+    const getPoseIcon = () => (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <circle cx="12" cy="4" r="2"></circle>
+            <path d="M12 6v6m-4 4l4-4 4 4m-8-6l-2 6m10-6l2 6"></path>
+        </svg>
+    );
+
+    const renderSelectionGrid = () => {
+        if (activeSection === 'model') {
+            return (
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">Select a Model</h3>
+                        <button onClick={() => setActiveSection(null)} className="text-sm text-gray-500 hover:text-gray-900 dark:hover:text-white transition">← Back</button>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        {MODELS.map(m => (
+                            <div
+                                key={m.id}
+                                onClick={() => { setSelectedModel(m); setActiveSection(null); }}
+                                className={`group relative rounded-2xl border-2 p-4 cursor-pointer transition-all hover:-translate-y-1 hover:shadow-lg ${selectedModel?.id === m.id
+                                        ? 'border-[#5468ff] bg-[#5468ff]/5 shadow-md ring-2 ring-[#5468ff]/30'
+                                        : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-[#5468ff]/50'
+                                    }`}
+                            >
+                                <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-600 dark:to-gray-700 flex items-center justify-center text-2xl font-bold text-gray-500 dark:text-gray-300 mb-3">
+                                    {getModelInitials(m.name)}
+                                </div>
+                                <div className="text-center">
+                                    <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full mb-1 ${CATEGORY_COLORS[m.gender]}`}>{m.gender}</span>
+                                    <p className="text-sm font-semibold text-gray-900 dark:text-white">{m.name}</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">{m.desc}</p>
+                                </div>
+                                {selectedModel?.id === m.id && (
+                                    <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[#5468ff] flex items-center justify-center">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        if (activeSection === 'pose') {
+            return (
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">Select a Pose</h3>
+                        <button onClick={() => setActiveSection(null)} className="text-sm text-gray-500 hover:text-gray-900 dark:hover:text-white transition">← Back</button>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        {POSES.map(p => (
+                            <div
+                                key={p.id}
+                                onClick={() => { setSelectedPose(p); setActiveSection(null); }}
+                                className={`group relative rounded-2xl border-2 p-4 cursor-pointer transition-all hover:-translate-y-1 hover:shadow-lg ${selectedPose?.id === p.id
+                                        ? 'border-[#5468ff] bg-[#5468ff]/5 shadow-md ring-2 ring-[#5468ff]/30'
+                                        : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-[#5468ff]/50'
+                                    }`}
+                            >
+                                <div className="w-14 h-14 mx-auto rounded-xl bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-900/30 dark:to-orange-800/30 flex items-center justify-center text-orange-600 dark:text-orange-400 mb-3">
+                                    {getPoseIcon()}
+                                </div>
+                                <div className="text-center">
+                                    <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full mb-1 bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300">Pose</span>
+                                    <p className="text-sm font-semibold text-gray-900 dark:text-white">{p.name}</p>
+                                </div>
+                                {selectedPose?.id === p.id && (
+                                    <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[#5468ff] flex items-center justify-center">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        if (activeSection === 'background') {
+            return (
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">Select a Background</h3>
+                        <button onClick={() => setActiveSection(null)} className="text-sm text-gray-500 hover:text-gray-900 dark:hover:text-white transition">← Back</button>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        {BACKGROUNDS.map(b => (
+                            <div
+                                key={b.id}
+                                onClick={() => { setSelectedBackground(b); setActiveSection(null); }}
+                                className={`group relative rounded-2xl border-2 p-4 cursor-pointer transition-all hover:-translate-y-1 hover:shadow-lg ${selectedBackground?.id === b.id
+                                        ? 'border-[#5468ff] bg-[#5468ff]/5 shadow-md ring-2 ring-[#5468ff]/30'
+                                        : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-[#5468ff]/50'
+                                    }`}
+                            >
+                                <div className={`w-14 h-14 mx-auto rounded-xl flex items-center justify-center mb-3 ${b.category === 'studio' ? 'bg-gradient-to-br from-gray-100 to-gray-300 dark:from-gray-700 dark:to-gray-600' :
+                                        b.category === 'outdoor' ? 'bg-gradient-to-br from-green-100 to-emerald-200 dark:from-green-900/30 dark:to-emerald-800/30' :
+                                            'bg-gradient-to-br from-amber-100 to-amber-200 dark:from-amber-900/30 dark:to-amber-800/30'
+                                    }`}>
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className={
+                                        b.category === 'studio' ? 'text-gray-500' : b.category === 'outdoor' ? 'text-emerald-600' : 'text-amber-600'
+                                    }>
+                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                        <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                                        <polyline points="21 15 16 10 5 21"></polyline>
+                                    </svg>
+                                </div>
+                                <div className="text-center">
+                                    <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full mb-1 ${CATEGORY_COLORS[b.category]}`}>{b.category}</span>
+                                    <p className="text-sm font-semibold text-gray-900 dark:text-white">{b.name}</p>
+                                </div>
+                                {selectedBackground?.id === b.id && (
+                                    <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[#5468ff] flex items-center justify-center">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        // Default: show results or empty state
+        return null;
+    };
+
+    // ── RENDER ──
+    return (
+        <div className="flex h-full w-full overflow-hidden">
+            {/* ─── LEFT PANEL: Setup ─── */}
+            <div className="w-[300px] shrink-0 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a1c23] flex flex-col overflow-y-auto">
+                <div className="p-5 border-b border-gray-100 dark:border-gray-800">
+                    <h2 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+                        Set Up Photoshoot
+                    </h2>
+                </div>
+
+                <div className="flex-1 p-4 space-y-5">
+                    {/* ── Product Upload ── */}
+                    <div>
+                        <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 block">Products</label>
+                        <p className="text-xs text-gray-400 mb-2">Upload up to 3 product images</p>
+                        <input type="file" ref={fileInputRef} className="hidden" accept="image/*" multiple onChange={handleProductUpload} />
+
+                        <div className="flex items-center gap-2 flex-wrap">
+                            {productImages.map((img, idx) => (
+                                <div key={idx} className="relative w-16 h-16 rounded-xl overflow-hidden border-2 border-gray-200 dark:border-gray-700 group">
+                                    <img src={img.data} className="w-full h-full object-cover" alt={img.name} />
+                                    <button
+                                        onClick={() => removeProduct(idx)}
+                                        className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center"
+                                    >
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                    </button>
+                                </div>
+                            ))}
+                            {productImages.length < 3 && (
+                                <button
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className="w-16 h-16 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center text-gray-400 hover:text-[#5468ff] hover:border-[#5468ff] transition"
+                                >
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* ── Model Selection ── */}
+                    <div>
+                        <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1 block">Model</label>
+                        <p className="text-xs text-gray-400 mb-2">{selectedModel ? selectedModel.name : 'Random'}</p>
+                        <button
+                            onClick={() => setActiveSection(activeSection === 'model' ? null : 'model')}
+                            className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all ${activeSection === 'model' ? 'border-[#5468ff] bg-[#5468ff]/5' : 'border-gray-200 dark:border-gray-700 hover:border-[#5468ff]/50'
+                                }`}
+                        >
+                            <div className="flex items-center gap-3">
+                                {selectedModel ? (
+                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-600 dark:to-gray-700 flex items-center justify-center text-xs font-bold text-gray-500 dark:text-gray-300">
+                                        {getModelInitials(selectedModel.name)}
+                                    </div>
+                                ) : (
+                                    <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-400"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                                    </div>
+                                )}
+                                <span className="text-sm font-medium text-gray-900 dark:text-white">Select Model</span>
+                            </div>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-400"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                        </button>
+                    </div>
+
+                    {/* ── Pose Selection ── */}
+                    <div>
+                        <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1 block">Pose</label>
+                        <p className="text-xs text-gray-400 mb-2">{selectedPose ? selectedPose.name : 'Random'}</p>
+                        <button
+                            onClick={() => setActiveSection(activeSection === 'pose' ? null : 'pose')}
+                            className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all ${activeSection === 'pose' ? 'border-[#5468ff] bg-[#5468ff]/5' : 'border-gray-200 dark:border-gray-700 hover:border-[#5468ff]/50'
+                                }`}
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-500">
+                                    {getPoseIcon()}
+                                </div>
+                                <span className="text-sm font-medium text-gray-900 dark:text-white">Select Pose</span>
+                            </div>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-400"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                        </button>
+                    </div>
+
+                    {/* ── Background Selection ── */}
+                    <div>
+                        <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1 block">Background</label>
+                        <p className="text-xs text-gray-400 mb-2">{selectedBackground ? selectedBackground.name : 'Random'}</p>
+                        <button
+                            onClick={() => setActiveSection(activeSection === 'background' ? null : 'background')}
+                            className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all ${activeSection === 'background' ? 'border-[#5468ff] bg-[#5468ff]/5' : 'border-gray-200 dark:border-gray-700 hover:border-[#5468ff]/50'
+                                }`}
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-500">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                                </div>
+                                <span className="text-sm font-medium text-gray-900 dark:text-white">Select Background</span>
+                            </div>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-400"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                        </button>
+                    </div>
+                </div>
+
+                {/* ── Generate Button ── */}
+                <div className="p-4 border-t border-gray-100 dark:border-gray-800">
+                    <button
+                        onClick={handleGenerate}
+                        disabled={isGenerating || productImages.length === 0}
+                        className={`w-full py-3.5 rounded-xl font-semibold shadow-md transition-all flex justify-center items-center gap-3 ${isGenerating
+                                ? 'bg-gradient-to-r from-[#5468ff]/80 to-[#7c3aed]/80 text-white cursor-wait'
+                                : productImages.length === 0
+                                    ? 'bg-gray-200 dark:bg-gray-700 text-gray-400 cursor-not-allowed'
+                                    : 'bg-[#5468ff] hover:bg-[#4353cc] text-white'
+                            }`}
+                    >
+                        {isGenerating ? (
+                            <>
+                                <div className="pinterest-loader">
+                                    <div className="pin"></div>
+                                    <div className="pin"></div>
+                                    <div className="pin"></div>
+                                </div>
+                                Generating...
+                            </>
+                        ) : (
+                            <>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                                </svg>
+                                Generate Photo Shoot
+                            </>
+                        )}
+                    </button>
+                </div>
+            </div>
+
+            {/* ─── RIGHT PANEL: Grid / Results ─── */}
+            <div className="flex-1 overflow-y-auto bg-[#f8f9fb] dark:bg-[#111318] p-6">
+                {activeSection ? (
+                    renderSelectionGrid()
+                ) : generatedResults.length > 0 ? (
+                    <div className="space-y-6">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Generated Results</h3>
+                            <span className="text-xs text-gray-400">{generatedResults.length} image{generatedResults.length > 1 ? 's' : ''}</span>
+                        </div>
+
+                        {/* Main image display */}
+                        <div className="relative bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm" style={{ minHeight: '500px' }}>
+                            <img
+                                src={generatedResults[selectedResultIndex]}
+                                alt="Generated photoshoot"
+                                className="w-full h-full object-contain"
+                            />
+                            <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-xs font-medium flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-green-400"></span> Generated Result
+                            </div>
+                            <div className="absolute top-4 right-4 flex gap-2">
+                                <button
+                                    className="w-8 h-8 flex items-center justify-center bg-black/40 backdrop-blur-sm hover:bg-red-500/90 text-white/80 hover:text-white rounded-lg shadow-lg transition-all"
+                                    onClick={() => {
+                                        const newResults = [...generatedResults];
+                                        newResults.splice(selectedResultIndex, 1);
+                                        setGeneratedResults(newResults);
+                                        if (selectedResultIndex >= newResults.length) {
+                                            setSelectedResultIndex(Math.max(0, newResults.length - 1));
+                                        }
+                                    }}
+                                    title="Delete result"
+                                >
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>
+                                </button>
+                                <button
+                                    className="h-8 flex items-center gap-1.5 bg-black/40 backdrop-blur-sm hover:bg-white/90 hover:text-gray-900 text-white/90 px-3 rounded-lg text-xs font-semibold shadow-lg transition-all"
+                                    onClick={() => {
+                                        const a = document.createElement('a');
+                                        a.href = generatedResults[selectedResultIndex];
+                                        a.download = `photoshoot_${Date.now()}.jpg`;
+                                        a.click();
+                                    }}
+                                >
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                    Download
+                                </button>
+                            </div>
+
+                            {/* Floating card picker */}
+                            {generatedResults.length > 1 && (
+                                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 overflow-x-auto bg-black/50 backdrop-blur-md border border-white/20 rounded-2xl p-2 shadow-2xl z-20">
+                                    {generatedResults.map((imgSrc, idx) => (
+                                        <div
+                                            key={idx}
+                                            onClick={() => setSelectedResultIndex(idx)}
+                                            className={`w-14 h-14 shrink-0 rounded-xl border-2 cursor-pointer overflow-hidden bg-gray-200 dark:bg-gray-800 transition-all hover:-translate-y-1 ${idx === selectedResultIndex
+                                                    ? 'border-[#5468ff] ring-2 ring-[#5468ff]/50 shadow-lg scale-110'
+                                                    : 'border-transparent opacity-80 hover:opacity-100'
+                                                }`}
+                                        >
+                                            <img src={imgSrc} className="w-full h-full object-cover" alt="" />
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Generated prompt preview */}
+                        {generatedPrompt && (
+                            <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-4">
+                                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Generated Prompt</h4>
+                                <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-4">{generatedPrompt}</p>
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    /* Empty state */
+                    <div className="h-full flex flex-col items-center justify-center text-center">
+                        <div className="w-20 h-20 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-6">
+                            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-gray-400">
+                                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                                <circle cx="12" cy="13" r="4"></circle>
+                            </svg>
+                        </div>
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Ready for a Photo Shoot</h3>
+                        <p className="text-sm text-gray-500 max-w-sm">Upload your product, select a model, pose, and background — then hit Generate to create stunning fashion photography with AI.</p>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+export default PhotoShoot;
