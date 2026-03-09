@@ -266,10 +266,19 @@ async function generateImage(prompt, configAspectRatio = '1:1', imageParams = nu
     };
     const geminiAspectRatio = aspectMap[configAspectRatio] || 'ASPECT_RATIO_1_1';
 
+    // Map aspect ratios to pixel dimensions for prompt guidance
+    const dimensionMap = {
+        '1:1': { w: 1024, h: 1024, label: 'square (1:1)' },
+        '3:4': { w: 768, h: 1024, label: 'vertical/portrait (3:4)' },
+        '4:3': { w: 1024, h: 768, label: 'horizontal/landscape (4:3)' },
+        '16:9': { w: 1280, h: 720, label: 'widescreen (16:9)' }
+    };
+    const dims = dimensionMap[configAspectRatio] || dimensionMap['1:1'];
+
     if (imageParams && imageParams.data && imageParams.mimeType) {
         // ---- IMAGE EDITING / PRODUCT UPLIFTING MODE ----
         try {
-            console.log('[generateImage] Image reference received — using Gemini Flash image-edit mode');
+            console.log(`[generateImage] Image reference received — using Gemini Flash image-edit mode (aspect: ${dims.label})`);
             const editingPrompt = `You are an expert product photography director. The user has provided a product image. Your task is to UPLIFT this product photo into a high-end advertising visual.
 
 CRITICAL RULES:
@@ -277,6 +286,7 @@ CRITICAL RULES:
 - Do NOT generate a new product or replace the product.
 - Only enhance the environment, lighting, background, and atmosphere.
 - The product must remain the main subject.
+- The output image MUST have a ${dims.label} aspect ratio (approximately ${dims.w}x${dims.h} pixels). Crop, pad, or compose the scene accordingly. Do NOT ignore this constraint.
 
 Enhancement instructions: ${prompt}`;
 
