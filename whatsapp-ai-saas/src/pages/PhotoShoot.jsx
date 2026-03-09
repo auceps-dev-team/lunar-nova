@@ -103,38 +103,17 @@ const PhotoShoot = ({ activeId }) => {
             const pose = selectedPose || POSES[Math.floor(Math.random() * POSES.length)];
             const bg = selectedBackground || BACKGROUNDS[Math.floor(Math.random() * BACKGROUNDS.length)];
 
-            const contextMessage = `PHOTOSHOOT MODE — Virtual Model Dressing
-
-I need you to analyze the attached product image(s) in detail, then generate a comprehensive fashion photography prompt for Imagen 4.
-
-PRODUCT: The attached image(s) show the product to be worn/held by the model. Analyze them carefully: identify the type of garment/accessory, its color, material, texture, pattern, fit, and any logos or distinctive details.
-
-MODEL: ${model.name} — ${model.gender}, ${model.desc}
-POSE: ${pose.name} — ${pose.desc}
-BACKGROUND: ${bg.name} — ${bg.desc}
-
-CRITICAL RULES:
-- First ANALYZE the product in detail (type, color, material, texture, pattern, cut, fit)
-- The model MUST be wearing/holding/using the EXACT product shown in the image
-- Preserve ALL product details: colors, logos, labels, textures, patterns, stitching
-- Generate a high-end fashion editorial photography prompt
-- Include professional studio lighting details appropriate for the background
-- Focus on photorealistic, magazine-quality result
-- Describe the model's appearance matching the selected model description exactly
-- Include the exact pose and background described above
-
-RESPOND IN JSON FORMAT:
-{
-  "product_analysis": "detailed description of the product from the image",
-  "visual_prompt": "the comprehensive image generation prompt including model, pose, background, lighting, and product details",
-  "style_notes": "editorial style, mood, and photography technique notes"
-}`;
+            const contextMessage = `I need a professional photoshoot prompt.
+<PRODUIT>: Photo of the product in the attached image.
+<MODELE>: ${model.name} — ${model.gender}, ${model.desc}
+<POSE>: ${pose.name} — ${pose.desc}
+<BACKGROUND>: ${bg.name} — ${bg.desc}`;
 
             const agentRes = await fetch('http://localhost:3000/api/gemini/agent', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    persona: 'creative',
+                    persona: 'photoshoot',
                     promptFormat: 'json',
                     message: contextMessage,
                     imageParams: {
@@ -145,14 +124,15 @@ RESPOND IN JSON FORMAT:
             });
             const agentData = await agentRes.json();
 
-            let optimizedPrompt = contextMessage;
-            if (agentData.status === 'success' && agentData.message) {
-                const responseText = agentData.message;
+            let optimizedPrompt = '';
+            if (agentData.status === 'success' && agentData.response) {
                 try {
-                    const parsed = JSON.parse(responseText);
-                    optimizedPrompt = parsed.visual_prompt || parsed.prompt || responseText;
-                } catch {
-                    optimizedPrompt = responseText;
+                    const parsed = typeof agentData.response === 'string'
+                        ? JSON.parse(agentData.response)
+                        : agentData.response;
+                    optimizedPrompt = parsed.image_generation_prompt || agentData.response;
+                } catch (e) {
+                    optimizedPrompt = agentData.response;
                 }
             }
             setGeneratedPrompt(optimizedPrompt);
@@ -171,7 +151,11 @@ RESPOND IN JSON FORMAT:
         try {
             const genBody = {
                 prompt: generatedPrompt,
-                aspectRatio: '3:4'
+                aspectRatio: '3:4',
+                imageParams: {
+                    data: productImages[0].data.split(',')[1],
+                    mimeType: 'image/jpeg'
+                }
             };
 
             const genRes = await fetch('http://localhost:3000/api/gemini/generate-image', {
