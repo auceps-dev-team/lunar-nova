@@ -63,7 +63,8 @@ const PhotoShoot = ({ activeId }) => {
     const [activeSection, setActiveSection] = useState(null); // 'model' | 'pose' | 'background' | null
     const [generatedResults, setGeneratedResults] = useState([]);
     const [selectedResultIndex, setSelectedResultIndex] = useState(0);
-    const [isGenerating, setIsGenerating] = useState(false);
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [isGeneratingImage, setIsGeneratingImage] = useState(false);
     const [generatedPrompt, setGeneratedPrompt] = useState('');
     const fileInputRef = useRef(null);
 
@@ -91,42 +92,50 @@ const PhotoShoot = ({ activeId }) => {
         setProductImages(prev => prev.filter((_, i) => i !== idx));
     };
 
-    const handleGenerate = async () => {
-        if (productImages.length === 0 || isGenerating) return;
+    // ── Phase 1: Analyze & Generate Strategy ──
+    const handleAnalyze = async () => {
+        if (productImages.length === 0 || isAnalyzing) return;
 
-        setIsGenerating(true);
+        setIsAnalyzing(true);
+        setGeneratedPrompt('');
         try {
-            // Step 1: Build context message for Clarisse
             const model = selectedModel || MODELS[Math.floor(Math.random() * MODELS.length)];
             const pose = selectedPose || POSES[Math.floor(Math.random() * POSES.length)];
             const bg = selectedBackground || BACKGROUNDS[Math.floor(Math.random() * BACKGROUNDS.length)];
 
             const contextMessage = `PHOTOSHOOT MODE — Virtual Model Dressing
 
-I need you to generate a detailed fashion photography prompt for Imagen 4.
+I need you to analyze the attached product image(s) in detail, then generate a comprehensive fashion photography prompt for Imagen 4.
 
-PRODUCT: The attached image(s) show the product to be worn/held by the model.
+PRODUCT: The attached image(s) show the product to be worn/held by the model. Analyze them carefully: identify the type of garment/accessory, its color, material, texture, pattern, fit, and any logos or distinctive details.
+
 MODEL: ${model.name} — ${model.gender}, ${model.desc}
 POSE: ${pose.name} — ${pose.desc}
 BACKGROUND: ${bg.name} — ${bg.desc}
 
 CRITICAL RULES:
+- First ANALYZE the product in detail (type, color, material, texture, pattern, cut, fit)
 - The model MUST be wearing/holding/using the EXACT product shown in the image
-- Preserve all product details: colors, logos, labels, textures, patterns
+- Preserve ALL product details: colors, logos, labels, textures, patterns, stitching
 - Generate a high-end fashion editorial photography prompt
-- Include professional studio lighting details
-- The output should be a single comprehensive prompt for image generation
+- Include professional studio lighting details appropriate for the background
 - Focus on photorealistic, magazine-quality result
-- Describe the model's appearance matching the selected model description
-- Include the exact pose and background described above`;
+- Describe the model's appearance matching the selected model description exactly
+- Include the exact pose and background described above
 
-            // Step 2: Call Clarisse agent for prompt
+RESPOND IN JSON FORMAT:
+{
+  "product_analysis": "detailed description of the product from the image",
+  "visual_prompt": "the comprehensive image generation prompt including model, pose, background, lighting, and product details",
+  "style_notes": "editorial style, mood, and photography technique notes"
+}`;
+
             const agentRes = await fetch('http://localhost:3000/api/gemini/agent', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     persona: 'creative',
-                    promptFormat: 'text',
+                    promptFormat: 'json',
                     message: contextMessage,
                     imageParams: {
                         data: productImages[0].data.split(',')[1],
@@ -138,26 +147,31 @@ CRITICAL RULES:
 
             let optimizedPrompt = contextMessage;
             if (agentData.status === 'success' && agentData.message) {
-                // Try to extract the prompt from the response
                 const responseText = agentData.message;
-                // Look for prompt in JSON or plain text
                 try {
                     const parsed = JSON.parse(responseText);
-                    optimizedPrompt = parsed.prompt || parsed.visual_prompt || responseText;
+                    optimizedPrompt = parsed.visual_prompt || parsed.prompt || responseText;
                 } catch {
                     optimizedPrompt = responseText;
                 }
             }
             setGeneratedPrompt(optimizedPrompt);
+        } catch (err) {
+            console.error('PhotoShoot analysis error:', err);
+        } finally {
+            setIsAnalyzing(false);
+        }
+    };
 
-            // Step 3: Generate image with Imagen 4
+    // ── Phase 2: Generate Image (Imagen 4) ──
+    const handleGenerateImage = async () => {
+        if (!generatedPrompt || isGeneratingImage) return;
+
+        setIsGeneratingImage(true);
+        try {
             const genBody = {
-                prompt: optimizedPrompt,
-                aspectRatio: '3:4',
-                imageParams: {
-                    data: productImages[0].data.split(',')[1],
-                    mimeType: 'image/jpeg'
-                }
+                prompt: generatedPrompt,
+                aspectRatio: '3:4'
             };
 
             const genRes = await fetch('http://localhost:3000/api/gemini/generate-image', {
@@ -180,7 +194,7 @@ CRITICAL RULES:
         } catch (err) {
             console.error('PhotoShoot generation error:', err);
         } finally {
-            setIsGenerating(false);
+            setIsGeneratingImage(false);
         }
     };
 
@@ -438,33 +452,33 @@ CRITICAL RULES:
                     </div>
                 </div>
 
-                {/* ── Generate Button ── */}
+                {/* ── Analyze Button ── */}
                 <div className="p-4 border-t border-gray-100 dark:border-gray-800">
                     <button
-                        onClick={handleGenerate}
-                        disabled={isGenerating || productImages.length === 0}
-                        className={`w-full py-3.5 rounded-xl font-semibold shadow-md transition-all flex justify-center items-center gap-3 ${isGenerating
-                            ? 'bg-gradient-to-r from-[#5468ff]/80 to-[#7c3aed]/80 text-white cursor-wait'
+                        onClick={handleAnalyze}
+                        disabled={isAnalyzing || productImages.length === 0}
+                        className={`w-full py-3.5 rounded-xl font-semibold shadow-md transition-all flex justify-center items-center gap-3 ${isAnalyzing
+                            ? 'bg-gradient-to-r from-emerald-500/90 to-teal-500/90 text-white cursor-wait'
                             : productImages.length === 0
                                 ? 'bg-gray-200 dark:bg-gray-700 text-gray-400 cursor-not-allowed'
-                                : 'bg-[#5468ff] hover:bg-[#4353cc] text-white'
+                                : 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white'
                             }`}
                     >
-                        {isGenerating ? (
+                        {isAnalyzing ? (
                             <>
-                                <div className="pinterest-loader">
-                                    <div className="pin"></div>
-                                    <div className="pin"></div>
-                                    <div className="pin"></div>
-                                </div>
-                                Generating...
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="animate-scan-loupe">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                </svg>
+                                Analyzing Product...
                             </>
                         ) : (
                             <>
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                                 </svg>
-                                Generate Photo Shoot
+                                Analyze & Generate Strategy
                             </>
                         )}
                     </button>
@@ -545,6 +559,99 @@ CRITICAL RULES:
                             <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-4">
                                 <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Generated Prompt</h4>
                                 <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-4">{generatedPrompt}</p>
+                                {/* Generate again button */}
+                                <button
+                                    onClick={handleGenerateImage}
+                                    disabled={isGeneratingImage}
+                                    className={`mt-4 w-full py-3 rounded-xl font-semibold shadow-md transition-all flex justify-center items-center gap-3 ${isGeneratingImage
+                                        ? 'bg-gradient-to-r from-[#5468ff]/80 to-[#7c3aed]/80 text-white cursor-wait'
+                                        : 'bg-gradient-to-r from-[#5468ff] to-[#7c3aed] hover:from-[#4353cc] hover:to-[#6b2fc4] text-white'
+                                        }`}
+                                >
+                                    {isGeneratingImage ? (
+                                        <>
+                                            <div className="pinterest-loader">
+                                                <div className="pin"></div>
+                                                <div className="pin"></div>
+                                                <div className="pin"></div>
+                                            </div>
+                                            Generating...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                                            </svg>
+                                            Generate (Imagen 4)
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                ) : (generatedPrompt || isAnalyzing) ? (
+                    /* Prompt view after analysis, before image generation */
+                    <div className="space-y-6">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Strategy</h3>
+                        </div>
+
+                        {isAnalyzing ? (
+                            /* Analysis animation overlay */
+                            <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-8 relative overflow-hidden" style={{ minHeight: '300px' }}>
+                                <div className="flex flex-col items-center justify-center h-full gap-6">
+                                    <div className="relative w-24 h-24">
+                                        {productImages[0] && (
+                                            <img src={productImages[0].data} alt="Analyzing" className="w-full h-full object-cover rounded-xl opacity-60" />
+                                        )}
+                                        <div className="absolute inset-0 flex items-center justify-center">
+                                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-emerald-500 animate-scan-loupe">
+                                                <circle cx="11" cy="11" r="8"></circle>
+                                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    <div className="text-center">
+                                        <p className="text-sm font-semibold text-gray-900 dark:text-white mb-1">Analyzing Product...</p>
+                                        <p className="text-xs text-gray-500">Clarisse is studying your product and generating the optimal photoshoot strategy</p>
+                                    </div>
+                                    {/* Progress bar */}
+                                    <div className="w-64 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                                        <div className="h-full bg-gradient-to-r from-emerald-400 to-teal-500 rounded-full animate-progress-indeterminate"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-4">
+                                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Generated Prompt</h4>
+                                <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{generatedPrompt}</p>
+                                {/* Generate Image button */}
+                                <button
+                                    onClick={handleGenerateImage}
+                                    disabled={isGeneratingImage}
+                                    className={`mt-4 w-full py-3 rounded-xl font-semibold shadow-md transition-all flex justify-center items-center gap-3 ${isGeneratingImage
+                                        ? 'bg-gradient-to-r from-[#5468ff]/80 to-[#7c3aed]/80 text-white cursor-wait'
+                                        : 'bg-gradient-to-r from-[#5468ff] to-[#7c3aed] hover:from-[#4353cc] hover:to-[#6b2fc4] text-white'
+                                        }`}
+                                >
+                                    {isGeneratingImage ? (
+                                        <>
+                                            <div className="pinterest-loader">
+                                                <div className="pin"></div>
+                                                <div className="pin"></div>
+                                                <div className="pin"></div>
+                                            </div>
+                                            Generating...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                                            </svg>
+                                            Generate (Imagen 4)
+                                        </>
+                                    )}
+                                </button>
                             </div>
                         )}
                     </div>
@@ -558,7 +665,7 @@ CRITICAL RULES:
                             </svg>
                         </div>
                         <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Ready for a Photo Shoot</h3>
-                        <p className="text-sm text-gray-500 max-w-sm">Upload your product, select a model, pose, and background — then hit Generate to create stunning fashion photography with AI.</p>
+                        <p className="text-sm text-gray-500 max-w-sm">Upload your product, select a model, pose, and background — then hit Analyze to generate your strategy.</p>
                     </div>
                 )}
             </div>

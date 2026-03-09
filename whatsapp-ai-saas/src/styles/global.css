@@ -869,11 +869,30 @@ webview {
 
 /* Magnifying glass scanning animation (Analysis phase) */
 @keyframes magnifyScan {
-  0%   { transform: translate(-60%, -60%) scale(1); opacity: 0.7; }
-  25%  { transform: translate(40%, -40%) scale(1.1); opacity: 1; }
-  50%  { transform: translate(50%, 40%) scale(0.95); opacity: 0.9; }
-  75%  { transform: translate(-40%, 50%) scale(1.05); opacity: 1; }
-  100% { transform: translate(-60%, -60%) scale(1); opacity: 0.7; }
+  0% {
+    transform: translate(-60%, -60%) scale(1);
+    opacity: 0.7;
+  }
+
+  25% {
+    transform: translate(40%, -40%) scale(1.1);
+    opacity: 1;
+  }
+
+  50% {
+    transform: translate(50%, 40%) scale(0.95);
+    opacity: 0.9;
+  }
+
+  75% {
+    transform: translate(-40%, 50%) scale(1.05);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translate(-60%, -60%) scale(1);
+    opacity: 0.7;
+  }
 }
 
 .analysis-scanning-overlay {
@@ -920,16 +939,39 @@ webview {
 }
 
 @keyframes scanLine {
-  0%   { top: 10%; opacity: 0; }
-  20%  { opacity: 1; }
-  80%  { opacity: 1; }
-  100% { top: 90%; opacity: 0; }
+  0% {
+    top: 10%;
+    opacity: 0;
+  }
+
+  20% {
+    opacity: 1;
+  }
+
+  80% {
+    opacity: 1;
+  }
+
+  100% {
+    top: 90%;
+    opacity: 0;
+  }
 }
 
 /* Pinterest-style pin loading animation (Generation phase) */
 @keyframes pinBounce {
-  0%, 80%, 100% { transform: scale(0.3); opacity: 0.3; }
-  40%           { transform: scale(1); opacity: 1; }
+
+  0%,
+  80%,
+  100% {
+    transform: scale(0.3);
+    opacity: 0.3;
+  }
+
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .pinterest-loader {
@@ -947,24 +989,89 @@ webview {
   animation: pinBounce 1.4s ease-in-out infinite;
 }
 
-.pinterest-loader .pin:nth-child(1) { animation-delay: -0.32s; }
-.pinterest-loader .pin:nth-child(2) { animation-delay: -0.16s; }
-.pinterest-loader .pin:nth-child(3) { animation-delay: 0s; }
+.pinterest-loader .pin:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.pinterest-loader .pin:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+.pinterest-loader .pin:nth-child(3) {
+  animation-delay: 0s;
+}
 
 /* Shimmer effect on generation image area */
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 .generation-shimmer {
-  background: linear-gradient(
-    90deg,
-    rgba(84, 104, 255, 0.05) 25%,
-    rgba(84, 104, 255, 0.15) 50%,
-    rgba(84, 104, 255, 0.05) 75%
-  );
+  background: linear-gradient(90deg,
+      rgba(84, 104, 255, 0.05) 25%,
+      rgba(84, 104, 255, 0.15) 50%,
+      rgba(84, 104, 255, 0.05) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.8s ease-in-out infinite;
   border-radius: 12px;
+}
+
+/* Scan loupe animation for analysis phase */
+@keyframes scan-loupe {
+  0% {
+    transform: translate(-8px, -8px) scale(1);
+    opacity: 0.7;
+  }
+
+  25% {
+    transform: translate(8px, -4px) scale(1.1);
+    opacity: 1;
+  }
+
+  50% {
+    transform: translate(4px, 8px) scale(0.95);
+    opacity: 0.8;
+  }
+
+  75% {
+    transform: translate(-6px, 4px) scale(1.05);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translate(-8px, -8px) scale(1);
+    opacity: 0.7;
+  }
+}
+
+.animate-scan-loupe {
+  animation: scan-loupe 2s ease-in-out infinite;
+}
+
+/* Indeterminate progress bar */
+@keyframes progress-indeterminate {
+  0% {
+    width: 0%;
+    margin-left: 0%;
+  }
+
+  50% {
+    width: 60%;
+    margin-left: 20%;
+  }
+
+  100% {
+    width: 0%;
+    margin-left: 100%;
+  }
+}
+
+.animate-progress-indeterminate {
+  animation: progress-indeterminate 1.8s ease-in-out infinite;
 }

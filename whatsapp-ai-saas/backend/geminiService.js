@@ -259,12 +259,13 @@ async function generateImage(prompt, configAspectRatio = '1:1', imageParams = nu
 
     // Map UI aspect ratios to Gemini accepted format
     const aspectMap = {
-        '1:1': 'ASPECT_RATIO_1_1',
-        '3:4': 'ASPECT_RATIO_3_4',
-        '4:3': 'ASPECT_RATIO_4_3',
-        '16:9': 'ASPECT_RATIO_16_9'
+        '1:1': '1:1',
+        '3:4': '3:4',
+        '4:3': '4:3',
+        '9:16': '9:16',
+        '16:9': '16:9'
     };
-    const geminiAspectRatio = aspectMap[configAspectRatio] || 'ASPECT_RATIO_1_1';
+    const geminiAspectRatio = aspectMap[configAspectRatio] || '1:1';
 
     // Map aspect ratios to pixel dimensions for prompt guidance
     const dimensionMap = {
