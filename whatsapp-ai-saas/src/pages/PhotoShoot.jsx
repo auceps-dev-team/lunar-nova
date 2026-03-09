@@ -67,6 +67,8 @@ const PhotoShoot = ({ activeId }) => {
     const [isGeneratingImage, setIsGeneratingImage] = useState(false);
     const [generatedPrompt, setGeneratedPrompt] = useState('');
     const fileInputRef = useRef(null);
+    // Stores the locked model/pose/bg context from Phase 1 for use in Phase 2
+    const sessionContextRef = useRef(null);
 
     const promptFormat = useAppStore(state => state.appSettings?.promptFormat) || 'json';
 
@@ -102,6 +104,9 @@ const PhotoShoot = ({ activeId }) => {
             const model = selectedModel || MODELS[Math.floor(Math.random() * MODELS.length)];
             const pose = selectedPose || POSES[Math.floor(Math.random() * POSES.length)];
             const bg = selectedBackground || BACKGROUNDS[Math.floor(Math.random() * BACKGROUNDS.length)];
+
+            // Lock current session context so Phase 2 always uses the same model/pose/bg
+            sessionContextRef.current = { model, pose, bg };
 
             const contextMessage = `I need a professional photoshoot prompt.
 <PRODUIT>: Photo of the product in the attached image.
@@ -149,8 +154,14 @@ const PhotoShoot = ({ activeId }) => {
 
         setIsGeneratingImage(true);
         try {
+            // Build a hard-constraint prefix from the locked session context
+            const ctx = sessionContextRef.current;
+            const hardConstraints = ctx
+                ? `MANDATORY CONSTRAINTS (DO NOT IGNORE):\n- MODEL: ${ctx.model.gender}, ${ctx.model.desc}\n- DO NOT change the model's gender, ethnicity, or appearance\n- POSE: ${ctx.pose.desc}\n- BACKGROUND: ${ctx.bg.desc}\n\nFASHION PROMPT:\n`
+                : '';
+
             const genBody = {
-                prompt: generatedPrompt,
+                prompt: hardConstraints + generatedPrompt,
                 aspectRatio: '3:4',
                 imageParams: {
                     data: productImages[0].data.split(',')[1],
