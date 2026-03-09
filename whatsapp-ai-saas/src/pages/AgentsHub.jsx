@@ -447,6 +447,21 @@ const AgentsHub = ({ activeId }) => {
                                         </div>
                                     </div>
 
+                                    {/* Magnifying glass scanning overlay during analysis */}
+                                    {isLoading && selectedImage && (
+                                        <div className="relative w-full rounded-xl overflow-hidden border-2 border-emerald-400/30" style={{ minHeight: '120px' }}>
+                                            <img src={selectedImage.data} className="w-full h-40 object-cover rounded-xl opacity-70" alt="scanning" />
+                                            <div className="analysis-scanning-overlay">
+                                                <div className="magnify-lens"></div>
+                                                <div className="scan-line"></div>
+                                            </div>
+                                            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-sm text-emerald-300 text-xs font-medium px-4 py-1.5 rounded-full flex items-center gap-2 z-20">
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                                                Analyzing product...
+                                            </div>
+                                        </div>
+                                    )}
+
                                     {/* Recent history strip under Image upload in Analyse Tab */}
                                     {historyForAgent.length > 0 && (
                                         <div className="shrink-0 flex items-center gap-3 overflow-x-auto bg-gray-50 dark:bg-gray-900 border border-gray-100 rounded-xl p-3 shadow-sm dark:border-gray-700">
@@ -484,12 +499,28 @@ const AgentsHub = ({ activeId }) => {
                                     </div>
 
                                     <button
-                                        className="w-full bg-[#10b981] hover:bg-[#059669] text-white py-3 mt-2 rounded-lg font-medium shadow flex justify-center items-center gap-2"
+                                        className={`w-full py-3 mt-2 rounded-lg font-medium shadow flex justify-center items-center gap-2 transition-all ${isLoading ? 'bg-emerald-600/80 text-white cursor-wait' : 'bg-[#10b981] hover:bg-[#059669] text-white'
+                                            }`}
                                         onClick={handleGenerateAnalysis}
                                         disabled={isLoading}
                                     >
-                                        {isLoading ? <span className="pulse w-4 h-4 rounded-full bg-white"></span> : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" /></svg>}
-                                        {isLoading ? 'Analyzing Imagery...' : 'Analyze & Generate Strategy'}
+                                        {isLoading ? (
+                                            <>
+                                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="animate-spin">
+                                                    <circle cx="11" cy="11" r="8" strokeDasharray="50" strokeDashoffset="20"></circle>
+                                                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                                </svg>
+                                                Scanning &amp; Analyzing...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                    <circle cx="11" cy="11" r="8"></circle>
+                                                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                                </svg>
+                                                Analyze &amp; Generate Strategy
+                                            </>
+                                        )}
                                     </button>
                                 </div>
                             </div>
@@ -541,7 +572,7 @@ const AgentsHub = ({ activeId }) => {
                                                 </div>
                                                 <div className="absolute top-4 right-4 flex gap-2">
                                                     <button
-                                                        className="bg-white/90 hover:bg-red-50 text-red-500 p-2 rounded-lg shadow transition"
+                                                        className="w-8 h-8 flex items-center justify-center bg-black/40 backdrop-blur-sm hover:bg-red-500/90 text-white/80 hover:text-white rounded-lg shadow-lg transition-all"
                                                         onClick={() => {
                                                             const newResults = [...generatedImageResults];
                                                             newResults.splice(selectedImageIndex, 1);
@@ -555,7 +586,7 @@ const AgentsHub = ({ activeId }) => {
                                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>
                                                     </button>
                                                     <button
-                                                        className="bg-white/90 hover:bg-white text-gray-900 px-4 py-2 rounded-lg text-sm font-semibold shadow-lg transition"
+                                                        className="h-8 flex items-center gap-1.5 bg-black/40 backdrop-blur-sm hover:bg-white/90 hover:text-gray-900 text-white/90 px-3 rounded-lg text-xs font-semibold shadow-lg transition-all"
                                                         onClick={() => {
                                                             const a = document.createElement('a');
                                                             a.href = generatedImageResults[selectedImageIndex];
@@ -563,6 +594,7 @@ const AgentsHub = ({ activeId }) => {
                                                             a.click();
                                                         }}
                                                     >
+                                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                                                         Download
                                                     </button>
                                                 </div>
@@ -701,12 +733,30 @@ const AgentsHub = ({ activeId }) => {
                                 </div>
 
                                 <button
-                                    className={`mt-auto w-full py-3 rounded-xl font-semibold shadow-md transition-all flex justify-center items-center gap-2 ${isGeneratingImage ? 'bg-gray-300 dark:bg-gray-700 text-gray-500 cursor-not-allowed' : 'bg-[#5468ff] hover:bg-[#4353cc] text-white'}`}
+                                    className={`mt-auto w-full py-3.5 rounded-xl font-semibold shadow-md transition-all flex justify-center items-center gap-3 ${isGeneratingImage
+                                        ? 'bg-gradient-to-r from-[#5468ff]/80 to-[#7c3aed]/80 text-white cursor-wait'
+                                        : 'bg-[#5468ff] hover:bg-[#4353cc] text-white'
+                                        }`}
                                     onClick={handleGenerateImage}
                                     disabled={isGeneratingImage || !generatedPrompt}
                                 >
-                                    {isGeneratingImage && <span className="pulse w-4 h-4 rounded-full bg-current"></span>}
-                                    {isGeneratingImage ? 'Generating...' : 'Generate (Imagen 4)'}
+                                    {isGeneratingImage ? (
+                                        <>
+                                            <div className="pinterest-loader">
+                                                <div className="pin"></div>
+                                                <div className="pin"></div>
+                                                <div className="pin"></div>
+                                            </div>
+                                            Generating...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                                            </svg>
+                                            Generate (Imagen 4)
+                                        </>
+                                    )}
                                 </button>
                             </div>
                         </div>

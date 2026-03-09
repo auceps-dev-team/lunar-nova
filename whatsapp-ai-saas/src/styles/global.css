@@ -862,3 +862,109 @@ webview {
     display: inline !important;
   }
 }
+
+/* ============================================ */
+/* Product Photo — Custom Animations            */
+/* ============================================ */
+
+/* Magnifying glass scanning animation (Analysis phase) */
+@keyframes magnifyScan {
+  0%   { transform: translate(-60%, -60%) scale(1); opacity: 0.7; }
+  25%  { transform: translate(40%, -40%) scale(1.1); opacity: 1; }
+  50%  { transform: translate(50%, 40%) scale(0.95); opacity: 0.9; }
+  75%  { transform: translate(-40%, 50%) scale(1.05); opacity: 1; }
+  100% { transform: translate(-60%, -60%) scale(1); opacity: 0.7; }
+}
+
+.analysis-scanning-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+.analysis-scanning-overlay .magnify-lens {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  border: 3px solid rgba(16, 185, 129, 0.6);
+  box-shadow: 0 0 30px 10px rgba(16, 185, 129, 0.15), inset 0 0 20px rgba(16, 185, 129, 0.08);
+  animation: magnifyScan 3s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+.analysis-scanning-overlay .magnify-lens::after {
+  content: '';
+  position: absolute;
+  bottom: -20px;
+  right: -4px;
+  width: 4px;
+  height: 26px;
+  background: rgba(16, 185, 129, 0.5);
+  border-radius: 2px;
+  transform: rotate(-45deg);
+  transform-origin: top center;
+}
+
+.analysis-scanning-overlay .scan-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(16, 185, 129, 0.5), transparent);
+  animation: scanLine 2s ease-in-out infinite;
+}
+
+@keyframes scanLine {
+  0%   { top: 10%; opacity: 0; }
+  20%  { opacity: 1; }
+  80%  { opacity: 1; }
+  100% { top: 90%; opacity: 0; }
+}
+
+/* Pinterest-style pin loading animation (Generation phase) */
+@keyframes pinBounce {
+  0%, 80%, 100% { transform: scale(0.3); opacity: 0.3; }
+  40%           { transform: scale(1); opacity: 1; }
+}
+
+.pinterest-loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.pinterest-loader .pin {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: pinBounce 1.4s ease-in-out infinite;
+}
+
+.pinterest-loader .pin:nth-child(1) { animation-delay: -0.32s; }
+.pinterest-loader .pin:nth-child(2) { animation-delay: -0.16s; }
+.pinterest-loader .pin:nth-child(3) { animation-delay: 0s; }
+
+/* Shimmer effect on generation image area */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.generation-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(84, 104, 255, 0.05) 25%,
+    rgba(84, 104, 255, 0.15) 50%,
+    rgba(84, 104, 255, 0.05) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.8s ease-in-out infinite;
+  border-radius: 12px;
+}
