@@ -32,15 +32,17 @@ const POSES = [
 ];
 
 const BACKGROUNDS = [
-    { id: 'studio_white', name: 'Studio White', category: 'studio', desc: 'Clean pure white cyclorama studio background' },
-    { id: 'studio_dark', name: 'Studio Dark', category: 'studio', desc: 'Deep dark moody studio with dramatic shadows' },
-    { id: 'beach', name: 'Beach', category: 'outdoor', desc: 'Golden hour beach with soft warm waves and sand' },
-    { id: 'urban', name: 'Urban Street', category: 'city', desc: 'Modern urban city street with concrete and glass buildings' },
-    { id: 'european_city', name: 'European City', category: 'city', desc: 'Charming European cobblestone street with classic architecture' },
-    { id: 'cozy', name: 'Cozy Interior', category: 'studio', desc: 'Warm cozy interior room with natural light and plants' },
-    { id: 'floral', name: 'Floral', category: 'outdoor', desc: 'Lush floral garden background with blooming flowers' },
-    { id: 'nature', name: 'Nature Outdoor', category: 'outdoor', desc: 'Serene nature landscape with soft golden light and greenery' },
-    { id: 'minimal', name: 'Minimalist', category: 'studio', desc: 'Clean minimalist beige/cream toned solid backdrop' },
+    { id: 'studio_white', name: 'Studio White', category: 'studio', desc: 'Clean pure white cyclorama studio background', img: '/assets/backgrounds/studio_white.png' },
+    { id: 'studio_dark', name: 'Studio Dark', category: 'studio', desc: 'Deep dark moody studio with dramatic shadows', img: '/assets/backgrounds/studio_dark.jpg' },
+    { id: 'studio_red', name: 'Studio Red', category: 'studio', desc: 'Rich deep red velvet studio with dramatic spotlight and warm tones', img: '/assets/backgrounds/studio_red.jpg' },
+    { id: 'beach', name: 'Beach', category: 'outdoor', desc: 'Golden hour beach cabana with soft warm light and sand', img: '/assets/backgrounds/beach.jpg' },
+    { id: 'urban', name: 'NYC', category: 'city', desc: 'New York City street with yellow taxi and brownstone buildings', img: '/assets/backgrounds/nyc.jpg' },
+    { id: 'european_city', name: 'European City', category: 'city', desc: 'Parisian cobblestone street with classic Haussmann architecture and terrace', img: '/assets/backgrounds/european_city.jpg' },
+    { id: 'cozy', name: 'Cozy Studio', category: 'studio', desc: 'Warm studio interior with herringbone floor, stool, and natural sunlight', img: '/assets/backgrounds/cozy.jpg' },
+    { id: 'shadow', name: 'Shadow', category: 'studio', desc: 'Warm sandy wall with dramatic diagonal light and shadow play', img: '/assets/backgrounds/shadow.jpg' },
+    { id: 'leaf_shadow', name: 'Leaf Shadow', category: 'outdoor', desc: 'Warm terracotta wall with organic leaf shadow patterns', img: '/assets/backgrounds/leaf_shadow.jpg' },
+    { id: 'minimal', name: 'Minimalist', category: 'studio', desc: 'Dark navy gradient studio with smooth floor and soft ambient light', img: '/assets/backgrounds/minimalist.jpg' },
+    { id: 'floral', name: 'Floral Garden', category: 'outdoor', desc: 'Enchanted floral garden with wisteria, roses, and dreamy fabrics', img: '/assets/backgrounds/floral.jpg' },
 ];
 
 // ── Color helpers for the category badges ──
@@ -290,17 +292,21 @@ CRITICAL RULES:
                                     : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-[#5468ff]/50'
                                     }`}
                             >
-                                <div className={`w-14 h-14 mx-auto rounded-xl flex items-center justify-center mb-3 ${b.category === 'studio' ? 'bg-gradient-to-br from-gray-100 to-gray-300 dark:from-gray-700 dark:to-gray-600' :
+                                <div className={`w-14 h-14 mx-auto rounded-xl flex items-center justify-center mb-3 overflow-hidden ${b.category === 'studio' ? 'bg-gradient-to-br from-gray-100 to-gray-300 dark:from-gray-700 dark:to-gray-600' :
                                     b.category === 'outdoor' ? 'bg-gradient-to-br from-green-100 to-emerald-200 dark:from-green-900/30 dark:to-emerald-800/30' :
                                         'bg-gradient-to-br from-amber-100 to-amber-200 dark:from-amber-900/30 dark:to-amber-800/30'
                                     }`}>
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className={
-                                        b.category === 'studio' ? 'text-gray-500' : b.category === 'outdoor' ? 'text-emerald-600' : 'text-amber-600'
-                                    }>
-                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                                        <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                                        <polyline points="21 15 16 10 5 21"></polyline>
-                                    </svg>
+                                    {b.img ? (
+                                        <img src={b.img} alt={b.name} className="w-full h-full object-cover" />
+                                    ) : (
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className={
+                                            b.category === 'studio' ? 'text-gray-500' : b.category === 'outdoor' ? 'text-emerald-600' : 'text-amber-600'
+                                        }>
+                                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                                            <polyline points="21 15 16 10 5 21"></polyline>
+                                        </svg>
+                                    )}
                                 </div>
                                 <div className="text-center">
                                     <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full mb-1 ${CATEGORY_COLORS[b.category]}`}>{b.category}</span>
