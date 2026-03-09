@@ -3,16 +3,17 @@ import useAppStore from '../store';
 
 // ── Preset Data ────────────────────────────────────────────────
 const MODELS = [
-    { id: 'ethan', name: 'Ethan', gender: 'Male', desc: 'Athletic build, short dark hair, warm bronze skin' },
-    { id: 'mia', name: 'Mia', gender: 'Female', desc: 'Slim, blonde straight hair, European features, fair skin' },
-    { id: 'sophie', name: 'Sophie', gender: 'Female', desc: 'Tan olive skin, brunette wavy hair, Mediterranean look' },
-    { id: 'ella', name: 'Ella', gender: 'Female', desc: 'Dark brown skin, natural afro-textured hair, radiant smile' },
-    { id: 'olivia', name: 'Olivia', gender: 'Female', desc: 'Auburn red hair, light freckles, slender build' },
-    { id: 'chloe', name: 'Chloe', gender: 'Female', desc: 'East Asian features, straight black hair, porcelain skin' },
-    { id: 'emma', name: 'Emma', gender: 'Female', desc: 'Light skin, wavy brown hair, classic European beauty' },
-    { id: 'lucas', name: 'Lucas', gender: 'Male', desc: 'Mediterranean, dark curly hair, olive skin, strong jawline' },
-    { id: 'liam', name: 'Liam', gender: 'Male', desc: 'Nordic, blonde short hair, tall, blue eyes, fair skin' },
-    { id: 'noah', name: 'Noah', gender: 'Male', desc: 'Dark brown skin, shaved head, strong build, confident' },
+    { id: 'ethan', name: 'Ethan', gender: 'Male', desc: 'Athletic build, short dark hair, strong jawline, chiseled features', img: '/assets/models/ethan.png' },
+    { id: 'mia', name: 'Mia', gender: 'Female', desc: 'Slim, blonde bob hair, blue eyes, fair skin, classic elegance', img: '/assets/models/mia.jpg' },
+    { id: 'sophie', name: 'Sophie', gender: 'Female', desc: 'Tan olive skin, dark hair pulled back, strong features, warm tones', img: '/assets/models/sophie.jpg' },
+    { id: 'ella', name: 'Ella', gender: 'Female', desc: 'Dark brown skin, natural afro-textured hair, elegant and radiant', img: '/assets/models/ella.jpg' },
+    { id: 'olivia', name: 'Olivia', gender: 'Female', desc: 'Auburn hair pulled back, light freckles, blue eyes, natural beauty', img: '/assets/models/olivia.png' },
+    { id: 'chloe', name: 'Chloe', gender: 'Female', desc: 'East Asian features, long black hair with bangs, porcelain skin', img: '/assets/models/chloe.jpg' },
+    { id: 'emma', name: 'Emma', gender: 'Female', desc: 'Short brown hair, freckles, blue-green eyes, modern European look', img: '/assets/models/emma.jpg' },
+    { id: 'lucas', name: 'Lucas', gender: 'Male', desc: 'Mature, salt-and-pepper hair, trimmed beard, blue eyes, distinguished', img: '/assets/models/lucas.jpg' },
+    { id: 'liam', name: 'Liam', gender: 'Male', desc: 'Young, blonde wavy hair, fair skin, youthful look', img: '/assets/models/liam.jpg' },
+    { id: 'noah', name: 'Noah', gender: 'Male', desc: 'Dark brown skin, short curly afro hair, strong build, confident', img: '/assets/models/noah.jpg' },
+    { id: 'oliver', name: 'Oliver', gender: 'Male', desc: 'East Asian features, slicked-back dark hair, sharp jawline, lean build', img: '/assets/models/oliver.jpg' },
 ];
 
 const POSES = [
@@ -201,12 +202,16 @@ CRITICAL RULES:
                                 key={m.id}
                                 onClick={() => { setSelectedModel(m); setActiveSection(null); }}
                                 className={`group relative rounded-2xl border-2 p-4 cursor-pointer transition-all hover:-translate-y-1 hover:shadow-lg ${selectedModel?.id === m.id
-                                        ? 'border-[#5468ff] bg-[#5468ff]/5 shadow-md ring-2 ring-[#5468ff]/30'
-                                        : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-[#5468ff]/50'
+                                    ? 'border-[#5468ff] bg-[#5468ff]/5 shadow-md ring-2 ring-[#5468ff]/30'
+                                    : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-[#5468ff]/50'
                                     }`}
                             >
-                                <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-600 dark:to-gray-700 flex items-center justify-center text-2xl font-bold text-gray-500 dark:text-gray-300 mb-3">
-                                    {getModelInitials(m.name)}
+                                <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-600 dark:to-gray-700 flex items-center justify-center text-2xl font-bold text-gray-500 dark:text-gray-300 mb-3 overflow-hidden">
+                                    {m.img ? (
+                                        <img src={m.img} alt={m.name} className="w-full h-full object-cover" />
+                                    ) : (
+                                        getModelInitials(m.name)
+                                    )}
                                 </div>
                                 <div className="text-center">
                                     <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full mb-1 ${CATEGORY_COLORS[m.gender]}`}>{m.gender}</span>
@@ -238,8 +243,8 @@ CRITICAL RULES:
                                 key={p.id}
                                 onClick={() => { setSelectedPose(p); setActiveSection(null); }}
                                 className={`group relative rounded-2xl border-2 p-4 cursor-pointer transition-all hover:-translate-y-1 hover:shadow-lg ${selectedPose?.id === p.id
-                                        ? 'border-[#5468ff] bg-[#5468ff]/5 shadow-md ring-2 ring-[#5468ff]/30'
-                                        : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-[#5468ff]/50'
+                                    ? 'border-[#5468ff] bg-[#5468ff]/5 shadow-md ring-2 ring-[#5468ff]/30'
+                                    : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-[#5468ff]/50'
                                     }`}
                             >
                                 <div className="w-14 h-14 mx-auto rounded-xl bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-900/30 dark:to-orange-800/30 flex items-center justify-center text-orange-600 dark:text-orange-400 mb-3">
@@ -274,13 +279,13 @@ CRITICAL RULES:
                                 key={b.id}
                                 onClick={() => { setSelectedBackground(b); setActiveSection(null); }}
                                 className={`group relative rounded-2xl border-2 p-4 cursor-pointer transition-all hover:-translate-y-1 hover:shadow-lg ${selectedBackground?.id === b.id
-                                        ? 'border-[#5468ff] bg-[#5468ff]/5 shadow-md ring-2 ring-[#5468ff]/30'
-                                        : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-[#5468ff]/50'
+                                    ? 'border-[#5468ff] bg-[#5468ff]/5 shadow-md ring-2 ring-[#5468ff]/30'
+                                    : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-[#5468ff]/50'
                                     }`}
                             >
                                 <div className={`w-14 h-14 mx-auto rounded-xl flex items-center justify-center mb-3 ${b.category === 'studio' ? 'bg-gradient-to-br from-gray-100 to-gray-300 dark:from-gray-700 dark:to-gray-600' :
-                                        b.category === 'outdoor' ? 'bg-gradient-to-br from-green-100 to-emerald-200 dark:from-green-900/30 dark:to-emerald-800/30' :
-                                            'bg-gradient-to-br from-amber-100 to-amber-200 dark:from-amber-900/30 dark:to-amber-800/30'
+                                    b.category === 'outdoor' ? 'bg-gradient-to-br from-green-100 to-emerald-200 dark:from-green-900/30 dark:to-emerald-800/30' :
+                                        'bg-gradient-to-br from-amber-100 to-amber-200 dark:from-amber-900/30 dark:to-amber-800/30'
                                     }`}>
                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className={
                                         b.category === 'studio' ? 'text-gray-500' : b.category === 'outdoor' ? 'text-emerald-600' : 'text-amber-600'
@@ -363,8 +368,12 @@ CRITICAL RULES:
                         >
                             <div className="flex items-center gap-3">
                                 {selectedModel ? (
-                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-600 dark:to-gray-700 flex items-center justify-center text-xs font-bold text-gray-500 dark:text-gray-300">
-                                        {getModelInitials(selectedModel.name)}
+                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-600 dark:to-gray-700 flex items-center justify-center text-xs font-bold text-gray-500 dark:text-gray-300 overflow-hidden">
+                                        {selectedModel.img ? (
+                                            <img src={selectedModel.img} alt={selectedModel.name} className="w-full h-full object-cover" />
+                                        ) : (
+                                            getModelInitials(selectedModel.name)
+                                        )}
                                     </div>
                                 ) : (
                                     <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
@@ -422,10 +431,10 @@ CRITICAL RULES:
                         onClick={handleGenerate}
                         disabled={isGenerating || productImages.length === 0}
                         className={`w-full py-3.5 rounded-xl font-semibold shadow-md transition-all flex justify-center items-center gap-3 ${isGenerating
-                                ? 'bg-gradient-to-r from-[#5468ff]/80 to-[#7c3aed]/80 text-white cursor-wait'
-                                : productImages.length === 0
-                                    ? 'bg-gray-200 dark:bg-gray-700 text-gray-400 cursor-not-allowed'
-                                    : 'bg-[#5468ff] hover:bg-[#4353cc] text-white'
+                            ? 'bg-gradient-to-r from-[#5468ff]/80 to-[#7c3aed]/80 text-white cursor-wait'
+                            : productImages.length === 0
+                                ? 'bg-gray-200 dark:bg-gray-700 text-gray-400 cursor-not-allowed'
+                                : 'bg-[#5468ff] hover:bg-[#4353cc] text-white'
                             }`}
                     >
                         {isGenerating ? (
@@ -507,8 +516,8 @@ CRITICAL RULES:
                                             key={idx}
                                             onClick={() => setSelectedResultIndex(idx)}
                                             className={`w-14 h-14 shrink-0 rounded-xl border-2 cursor-pointer overflow-hidden bg-gray-200 dark:bg-gray-800 transition-all hover:-translate-y-1 ${idx === selectedResultIndex
-                                                    ? 'border-[#5468ff] ring-2 ring-[#5468ff]/50 shadow-lg scale-110'
-                                                    : 'border-transparent opacity-80 hover:opacity-100'
+                                                ? 'border-[#5468ff] ring-2 ring-[#5468ff]/50 shadow-lg scale-110'
+                                                : 'border-transparent opacity-80 hover:opacity-100'
                                                 }`}
                                         >
                                             <img src={imgSrc} className="w-full h-full object-cover" alt="" />
