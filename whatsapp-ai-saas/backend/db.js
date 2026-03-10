@@ -83,9 +83,17 @@ async function initDB() {
                 phone VARCHAR(50) NOT NULL,
                 list_id INTEGER REFERENCES wa_contact_lists(id) ON DELETE SET NULL,
                 segment_id INTEGER REFERENCES wa_segments(id) ON DELETE SET NULL,
+                status VARCHAR(50) DEFAULT 'unverified',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         `);
+
+        // Migration for the Phase 14: Add 'status' to existing table if it doesn't exist
+        try {
+            await client.query("ALTER TABLE wa_contacts ADD COLUMN status VARCHAR(50) DEFAULT 'unverified'");
+        } catch (err) {
+            // Ignore error if column already exists (SQLite throws if column exists)
+        }
 
         client.release();
         isDbConnected = true;

@@ -8,6 +8,10 @@ export default function Contacts({ activeId }) {
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [contactStatus, setContactStatus] = useState({});
     const [currentPage, setCurrentPage] = useState(1);
+    const [sortField, setSortField] = useState('id');
+    const [sortDirection, setSortDirection] = useState('desc');
+    const [filterStatus, setFilterStatus] = useState('all');
+    const [filterSegment, setFilterSegment] = useState('all');
     const itemsPerPage = 10;
 
     const navigate = useNavigate();
@@ -46,8 +50,52 @@ export default function Contacts({ activeId }) {
         }
     };
 
-    const contactsOnPage = contacts.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-    const totalPages = Math.ceil(contacts.length / itemsPerPage);
+    // Derive unique segments for the filter dropdown
+    const uniqueSegments = [...new Set(contacts.map(c => c.segment_name).filter(Boolean))];
+
+    // Apply filtering
+    let processedContacts = contacts.filter(c => {
+        let matchStatus = true;
+        let matchSegment = true;
+
+        // Status filter: unverified, valid, invalid
+        if (filterStatus !== 'all') {
+            matchStatus = (c.status || 'unverified') === filterStatus;
+        }
+
+        // Segment filter
+        if (filterSegment !== 'all') {
+            matchSegment = c.segment_name === filterSegment;
+        }
+
+        return matchStatus && matchSegment;
+    });
+
+    // Apply sorting
+    processedContacts.sort((a, b) => {
+        let valA = a[sortField];
+        let valB = b[sortField];
+
+        if (typeof valA === 'string') valA = valA.toLowerCase();
+        if (typeof valB === 'string') valB = valB.toLowerCase();
+
+        if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
+        if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
+        return 0;
+    });
+
+    const totalFiltered = processedContacts.length;
+    const contactsOnPage = processedContacts.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+    const totalPages = Math.ceil(totalFiltered / itemsPerPage);
+
+    const handleSort = (field) => {
+        if (sortField === field) {
+            setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortField(field);
+            setSortDirection('asc');
+        }
+    };
 
     const handleAnalyze = async () => {
         if (!activeId) {
@@ -147,7 +195,7 @@ export default function Contacts({ activeId }) {
                     </button>
                     <button
                         onClick={() => navigate('/wa/contacts/add')}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-colors shadow-sm"
+                        className="bg-gray-900 hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-200 dark:text-gray-900 text-white px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-colors shadow-sm"
                     >
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14" /></svg>
                         Add New Contact
@@ -155,14 +203,60 @@ export default function Contacts({ activeId }) {
                 </div>
             </div>
 
+            {/* Filters Bar */}
+            <div className="flex flex-wrap gap-4 items-center bg-white dark:bg-zinc-900 p-4 border border-gray-100 dark:border-zinc-800 rounded-xl shadow-sm">
+                <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Status:</label>
+                    <select
+                        value={filterStatus}
+                        onChange={(e) => { setFilterStatus(e.target.value); setCurrentPage(1); }}
+                        className="bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-gray-800 dark:text-gray-200 text-sm rounded-lg py-1.5 px-3 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                    >
+                        <option value="all">All</option>
+                        <option value="valid">✅ Valid</option>
+                        <option value="invalid">❌ Invalid (N/A)</option>
+                        <option value="unverified">⏱️ Unverified</option>
+                    </select>
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Segment:</label>
+                    <select
+                        value={filterSegment}
+                        onChange={(e) => { setFilterSegment(e.target.value); setCurrentPage(1); }}
+                        className="bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-gray-800 dark:text-gray-200 text-sm rounded-lg py-1.5 px-3 focus:ring-emerald-500 focus:border-emerald-500 outline-none max-w-[200px]"
+                    >
+                        <option value="all">All Segments</option>
+                        {uniqueSegments.map(seg => (
+                            <option key={seg} value={seg}>{seg}</option>
+                        ))}
+                    </select>
+                </div>
+
+                <div className="ml-auto text-sm text-gray-500 dark:text-gray-400 font-medium">
+                    {totalFiltered} Contacts Found
+                </div>
+            </div>
+
             <div className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm">
-                        <thead className="bg-gray-50 dark:bg-zinc-800/50 text-gray-500 dark:text-gray-400 font-semibold text-xs tracking-wider uppercase">
+                        <thead className="bg-gray-50 dark:bg-zinc-800/50 text-gray-500 dark:text-gray-400 font-semibold text-xs tracking-wider uppercase select-none">
                             <tr>
-                                <th className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800">ID</th>
-                                <th className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800">Name</th>
+                                <th
+                                    className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800 cursor-pointer hover:bg-gray-100 dark:hover:bg-zinc-700/50 transition-colors"
+                                    onClick={() => handleSort('id')}
+                                >
+                                    <div className="flex items-center gap-1">ID {sortField === 'id' && (sortDirection === 'asc' ? '↑' : '↓')}</div>
+                                </th>
+                                <th
+                                    className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800 cursor-pointer hover:bg-gray-100 dark:hover:bg-zinc-700/50 transition-colors"
+                                    onClick={() => handleSort('name')}
+                                >
+                                    <div className="flex items-center gap-1">Name {sortField === 'name' && (sortDirection === 'asc' ? '↑' : '↓')}</div>
+                                </th>
                                 <th className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800">Phone</th>
+                                <th className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800">Segment</th>
                                 <th className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800 text-right">Action</th>
                             </tr>
                         </thead>
@@ -182,15 +276,18 @@ export default function Contacts({ activeId }) {
                             ) : contactsOnPage.map((contact) => (
                                 <tr key={contact.id} className="hover:bg-gray-50/50 dark:hover:bg-zinc-800/30 transition-colors">
                                     <td className="px-6 py-4 text-gray-500 dark:text-zinc-400">#{contact.id}</td>
-                                    <td className="px-6 py-4 font-medium flex items-center gap-2">
-                                        {contact.name}
-                                        {contactStatus[contact.id] === 'loading' && <svg className="animate-spin h-3 w-3 text-gray-400" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>}
-                                        {contactStatus[contact.id] === 'valid' && <span className="bg-green-100 text-green-700 text-[10px] px-1.5 py-0.5 rounded-full font-bold">✓ WA</span>}
-                                        {contactStatus[contact.id] === 'invalid' && <span className="bg-red-100 text-red-700 text-[10px] px-1.5 py-0.5 rounded-full font-bold">✗ N/A</span>}
-                                        {contactStatus[contact.id] === 'error' && <span className="text-yellow-500 text-xs" title="API Error">⚠️ Err</span>}
+                                    <td className="px-6 py-4 font-medium flex items-center gap-2 max-w-[250px] truncate" title={contact.name}>
+                                        <span className="truncate">{contact.name}</span>
+                                        {contactStatus[contact.id] === 'loading' && <svg className="animate-spin h-3 w-3 flex-shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>}
+
+                                        {/* Show live status if available, else DB status */}
+                                        {(contactStatus[contact.id] === 'valid' || (!contactStatus[contact.id] && contact.status === 'valid')) && <span className="bg-green-100 flex-shrink-0 text-green-700 text-[10px] px-1.5 py-0.5 rounded-full font-bold">✓ WA</span>}
+                                        {(contactStatus[contact.id] === 'invalid' || (!contactStatus[contact.id] && contact.status === 'invalid')) && <span className="bg-red-100 flex-shrink-0 text-red-700 text-[10px] px-1.5 py-0.5 rounded-full font-bold">✗ N/A</span>}
+                                        {contactStatus[contact.id] === 'error' && <span className="text-yellow-500 flex-shrink-0 text-xs" title="API Error">⚠️</span>}
                                     </td>
                                     <td className="px-6 py-4 font-mono text-gray-600 dark:text-gray-400">{contact.phone}</td>
-                                    <td className="px-6 py-4 text-right space-x-2">
+                                    <td className="px-6 py-4 text-gray-600 dark:text-gray-400 text-xs">{contact.segment_name || '-'}</td>
+                                    <td className="px-6 py-4 text-right">
                                         <button
                                             onClick={() => handleOpenChat(contact.phone)}
                                             className="text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300 font-medium text-xs bg-emerald-50 dark:bg-emerald-900/20 px-3 py-1.5 rounded-md transition-colors flex items-center justify-center gap-1 ml-auto"
@@ -222,7 +319,7 @@ export default function Contacts({ activeId }) {
 
                 {totalPages > 1 && (
                     <div className="flex justify-between items-center p-4 border-t border-gray-100 dark:border-zinc-800 text-sm text-gray-500 dark:text-gray-400">
-                        <span>Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, contacts.length)} of {contacts.length} entries</span>
+                        <span>Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, totalFiltered)} of {totalFiltered} entries</span>
                         <div className="flex gap-2">
                             <button
                                 onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}

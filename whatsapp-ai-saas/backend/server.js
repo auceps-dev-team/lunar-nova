@@ -532,7 +532,13 @@ app.post('/api/wa/segments', async (req, res) => {
 
 app.get('/api/wa/contacts', async (req, res) => {
     try {
-        const result = await pool.query('SELECT * FROM wa_contacts ORDER BY id DESC');
+        const result = await pool.query(`
+            SELECT c.*, s.name as segment_name, l.name as list_name
+            FROM wa_contacts c
+            LEFT JOIN wa_segments s ON c.segment_id = s.id
+            LEFT JOIN wa_contact_lists l ON c.list_id = l.id
+            ORDER BY c.id DESC
+        `);
         res.json({ status: 'success', data: result.rows });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -777,9 +783,16 @@ app.post('/api/wa/verify-contact', async (req, res) => {
 
         if (result === 'VALIDE') {
             console.log(`✅ [Verifier] Le numéro ${cleanPhone} est valide.`);
+            try {
+                // Try to update DB. Using LIKE handles cases where DB has + prefix
+                await pool.query('UPDATE wa_contacts SET status = ? WHERE phone LIKE ?', ['valid', `%${cleanPhone}%`]);
+            } catch (dbErr) { console.error('DB Update Error:', dbErr); }
             res.json({ status: 'success', is_valid: true, message: `The number ${cleanPhone} is registered on WhatsApp.` });
         } else {
             console.log(`❌ [Verifier] Le numéro ${cleanPhone} n'est pas sur WhatsApp. (${result})`);
+            try {
+                await pool.query('UPDATE wa_contacts SET status = ? WHERE phone LIKE ?', ['invalid', `%${cleanPhone}%`]);
+            } catch (dbErr) { console.error('DB Update Error:', dbErr); }
             res.json({ status: 'success', is_valid: false, message: `The number ${cleanPhone} is NOT registered on WhatsApp.` });
         }
 
