@@ -66,6 +66,7 @@ const PhotoShoot = ({ activeId }) => {
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [isGeneratingImage, setIsGeneratingImage] = useState(false);
     const [generatedPrompt, setGeneratedPrompt] = useState('');
+    const [selectedAspectRatio, setSelectedAspectRatio] = useState('3:4');
     const fileInputRef = useRef(null);
     // Stores the locked model/pose/bg context from Phase 1 for use in Phase 2
     const sessionContextRef = useRef(null);
@@ -157,12 +158,12 @@ const PhotoShoot = ({ activeId }) => {
             // Build a hard-constraint prefix from the locked session context
             const ctx = sessionContextRef.current;
             const hardConstraints = ctx
-                ? `MANDATORY CONSTRAINTS (DO NOT IGNORE):\n- MODEL: ${ctx.model.gender}, ${ctx.model.desc}\n- DO NOT change the model's gender, ethnicity, or appearance\n- POSE: ${ctx.pose.desc}\n- BACKGROUND: ${ctx.bg.desc}\n\nFASHION PROMPT:\n`
+                ? `MANDATORY CONSTRAINTS (DO NOT IGNORE):\n- MODEL: ${ctx.model.gender}, ${ctx.model.desc}\n- DO NOT change the model's gender, ethnicity, or appearance\n- POSE: The model MUST be in the following pose — ${ctx.pose.name}: ${ctx.pose.desc}. Do NOT show a different body position.\n- BACKGROUND: ${ctx.bg.desc}\n\nFASHION PROMPT:\n`
                 : '';
 
             const genBody = {
                 prompt: hardConstraints + generatedPrompt,
-                aspectRatio: '3:4',
+                aspectRatio: selectedAspectRatio,
                 imageParams: {
                     data: productImages[0].data.split(',')[1],
                     mimeType: 'image/jpeg'
@@ -447,6 +448,24 @@ const PhotoShoot = ({ activeId }) => {
                     </div>
                 </div>
 
+                {/* ── Aspect Ratio ── */}
+                <div className="px-4 pb-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-2">Aspect Ratio</p>
+                    <div className="flex gap-2">
+                        {['1:1', '3:4', '4:3', '9:16'].map(ratio => (
+                            <button
+                                key={ratio}
+                                onClick={() => setSelectedAspectRatio(ratio)}
+                                className={`flex-1 py-1.5 rounded-lg text-xs font-semibold border transition-all ${selectedAspectRatio === ratio
+                                        ? 'bg-emerald-500 text-white border-emerald-500'
+                                        : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-emerald-400'
+                                    }`}
+                            >
+                                {ratio}
+                            </button>
+                        ))}
+                    </div>
+                </div>
                 {/* ── Analyze Button ── */}
                 <div className="p-4 border-t border-gray-100 dark:border-gray-800">
                     <button
