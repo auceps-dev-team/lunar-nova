@@ -16,12 +16,19 @@ const ensureJpeg = (base64) => {
             }
             ctx.fillStyle = '#FFFFFF';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(img, 0, 0);
             resolve(canvas.toDataURL('image/jpeg', 0.95));
         };
         img.onerror = reject;
         img.src = base64;
     });
+};
+
+const toSafeExifString = (str) => {
+    try {
+        return unescape(encodeURIComponent(str || ''));
+    } catch (e) {
+        return str || '';
+    }
 };
 
 export function ImageEditor({ image, onUpdateImage, onRemove }) {
@@ -156,6 +163,7 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
             // Connect to our local Express backend instead of Next.js lib
             const genBody = {
                 prompt: prompt,
+                editMode: true,
                 imageParams: {
                     data: image.base64.split(',')[1],
                     mimeType: image.mimeType
@@ -223,25 +231,25 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
             const newExifObj = { ...exifData };
             if (!newExifObj['0th']) newExifObj['0th'] = {};
 
-            if (exifForm.artist) newExifObj['0th'][piexif.ImageIFD.Artist] = exifForm.artist;
+            if (exifForm.artist) newExifObj['0th'][piexif.ImageIFD.Artist] = toSafeExifString(exifForm.artist);
             else delete newExifObj['0th'][piexif.ImageIFD.Artist];
 
-            if (exifForm.copyright) newExifObj['0th'][piexif.ImageIFD.Copyright] = exifForm.copyright;
+            if (exifForm.copyright) newExifObj['0th'][piexif.ImageIFD.Copyright] = toSafeExifString(exifForm.copyright);
             else delete newExifObj['0th'][piexif.ImageIFD.Copyright];
 
-            if (exifForm.software) newExifObj['0th'][piexif.ImageIFD.Software] = exifForm.software;
+            if (exifForm.software) newExifObj['0th'][piexif.ImageIFD.Software] = toSafeExifString(exifForm.software);
             else delete newExifObj['0th'][piexif.ImageIFD.Software];
 
-            if (exifForm.dateTime) newExifObj['0th'][piexif.ImageIFD.DateTime] = exifForm.dateTime;
+            if (exifForm.dateTime) newExifObj['0th'][piexif.ImageIFD.DateTime] = toSafeExifString(exifForm.dateTime);
             else delete newExifObj['0th'][piexif.ImageIFD.DateTime];
 
-            if (exifForm.make) newExifObj['0th'][piexif.ImageIFD.Make] = exifForm.make;
+            if (exifForm.make) newExifObj['0th'][piexif.ImageIFD.Make] = toSafeExifString(exifForm.make);
             else delete newExifObj['0th'][piexif.ImageIFD.Make];
 
-            if (exifForm.model) newExifObj['0th'][piexif.ImageIFD.Model] = exifForm.model;
+            if (exifForm.model) newExifObj['0th'][piexif.ImageIFD.Model] = toSafeExifString(exifForm.model);
             else delete newExifObj['0th'][piexif.ImageIFD.Model];
 
-            if (exifForm.description) newExifObj['0th'][piexif.ImageIFD.ImageDescription] = exifForm.description;
+            if (exifForm.description) newExifObj['0th'][piexif.ImageIFD.ImageDescription] = toSafeExifString(exifForm.description);
             else delete newExifObj['0th'][piexif.ImageIFD.ImageDescription];
 
             const exifBytes = piexif.dump(newExifObj);
@@ -374,7 +382,7 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
             const newExifObj = exifData ? { ...exifData } : { '0th': {}, 'Exif': {}, 'GPS': {}, '1st': {}, 'Interop': {} };
             if (!newExifObj['0th']) newExifObj['0th'] = {};
 
-            newExifObj['0th'][piexif.ImageIFD.ImageDescription] = combinedDescription;
+            newExifObj['0th'][piexif.ImageIFD.ImageDescription] = toSafeExifString(combinedDescription);
 
             const exifBytes = piexif.dump(newExifObj);
 
@@ -501,9 +509,9 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                     {isProcessing && (
                         <div className="absolute inset-0 z-20 bg-white/60 dark:bg-zinc-950/60 flex items-center justify-center backdrop-blur-md transition-all duration-300">
                             <div className="flex flex-col items-center space-y-5 p-8 bg-white/90 dark:bg-zinc-900/80 rounded-2xl border border-gray-200 dark:border-zinc-800/50 shadow-2xl">
-                                <div className="relative">
+                                <div className="relative flex items-center justify-center">
                                     <div className="w-16 h-16 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
-                                    <Sparkles className="w-6 h-6 text-primary absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
+                                    <Sparkles className="w-6 h-6 text-primary absolute animate-pulse pointer-events-none" />
                                 </div>
                                 <div className="text-center">
                                     <h3 className="text-base font-semibold text-gray-900 dark:text-zinc-200">Processing with AI</h3>

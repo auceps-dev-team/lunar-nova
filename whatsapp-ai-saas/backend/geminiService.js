@@ -294,7 +294,7 @@ async function chatWithAgent(personaId, message, imageParams, promptFormat = 'te
     }
 }
 
-async function generateImage(prompt, configAspectRatio = '1:1', imageParams = null) {
+async function generateImage(prompt, configAspectRatio = '1:1', imageParams = null, editMode = false) {
     // --- STRATEGY --- 
     // If a reference image is provided: use Gemini Flash Image (image editing/uplifting mode)
     //   → This PRESERVES the product identity (logo, shape, labels)
@@ -322,14 +322,19 @@ async function generateImage(prompt, configAspectRatio = '1:1', imageParams = nu
     if (imageParams && imageParams.data && imageParams.mimeType) {
         // ---- IMAGE EDITING / PRODUCT UPLIFTING MODE ----
         try {
-            console.log(`[generateImage] Image reference received — using Gemini Flash image-edit mode (aspect: ${dims.label})`);
-            const editingPrompt = `Generate a high-end fashion photoshoot image. A professional model is wearing the EXACT product shown in the reference image.
+            let finalPrompt = prompt;
+            if (editMode) {
+                console.log(`[generateImage] Pure edit mode active. Using raw prompt: ${prompt}`);
+            } else {
+                console.log(`[generateImage] Image reference received — using Gemini Flash image-edit mode (aspect: ${dims.label})`);
+                finalPrompt = `Generate a high-end fashion photoshoot image. A professional model is wearing the EXACT product shown in the reference image.
 
 CRITICAL: The product/garment in the reference image must appear IDENTICALLY on the model — same color, material, texture, pattern, logos, labels, and design details. Do NOT change the product in any way.
 
 ${prompt}
 
 The output image should be a ${dims.label} aspect ratio (approximately ${dims.w}x${dims.h} pixels). Create a photorealistic, magazine-quality editorial photo.`;
+            }
 
             const response = await ai.models.generateContent({
                 model: 'gemini-2.0-flash-exp-image-generation',
@@ -343,7 +348,7 @@ The output image should be a ${dims.label} aspect ratio (approximately ${dims.w}
                                     mimeType: imageParams.mimeType
                                 }
                             },
-                            { text: editingPrompt }
+                            { text: finalPrompt }
                         ]
                     }
                 ],

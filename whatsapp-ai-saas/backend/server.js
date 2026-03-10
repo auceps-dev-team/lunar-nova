@@ -242,14 +242,14 @@ app.post('/api/gemini/agent', async (req, res) => {
 
 // Endpoint to generate an image via Gemini Imagen 4
 app.post('/api/gemini/generate-image', async (req, res) => {
-    const { prompt, aspectRatio, imageParams } = req.body;
+    const { prompt, aspectRatio, imageParams, editMode } = req.body;
 
     if (!prompt) {
         return res.status(400).json({ error: 'Missing prompt.' });
     }
 
     try {
-        const generationResponse = await generateImage(prompt, aspectRatio, imageParams);
+        const generationResponse = await generateImage(prompt, aspectRatio, imageParams, editMode);
         if (generationResponse.error) {
             return res.status(500).json({ error: generationResponse.error });
         }
