@@ -6,6 +6,9 @@ export default function Contacts({ activeId }) {
     const [contacts, setContacts] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [contactStatus, setContactStatus] = useState({});
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
 
     const navigate = useNavigate();
     const showAppNotification = useAppStore(state => state.showAppNotification);
@@ -43,6 +46,9 @@ export default function Contacts({ activeId }) {
         }
     };
 
+    const contactsOnPage = contacts.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+    const totalPages = Math.ceil(contacts.length / itemsPerPage);
+
     const handleAnalyze = async () => {
         if (!activeId) {
             showAppNotification('Please start a WhatsApp session first.', 'error');
@@ -53,10 +59,17 @@ export default function Contacts({ activeId }) {
         let validCount = 0;
         let invalidCount = 0;
 
-        for (const contact of contacts) {
+        for (const contact of contactsOnPage) {
+            setContactStatus(prev => ({ ...prev, [contact.id]: 'loading' }));
             try {
-                // Strip spaces and the '+' for the WhatsApp link
-                const rawPhone = contact.phone.replace(/[^0-9]/g, '');
+                const rawPhone = contact.phone ? contact.phone.toString().replace(/[^0-9]/g, '') : '';
+
+                // If it's empty or totally invalid, immediately flag it and skip
+                if (!rawPhone || rawPhone.length < 5) {
+                    invalidCount++;
+                    setContactStatus(prev => ({ ...prev, [contact.id]: 'invalid' }));
+                    continue;
+                }
 
                 const res = await fetch('http://localhost:3000/api/wa/verify-contact', {
                     method: 'POST',
@@ -69,16 +82,50 @@ export default function Contacts({ activeId }) {
 
                 const data = await res.json();
                 if (data.status === 'success') {
-                    if (data.is_valid) validCount++;
-                    else invalidCount++;
+                    if (data.is_valid) {
+                        validCount++;
+                        setContactStatus(prev => ({ ...prev, [contact.id]: 'valid' }));
+                    } else {
+                        invalidCount++;
+                        setContactStatus(prev => ({ ...prev, [contact.id]: 'invalid' }));
+                    }
+                } else {
+                    setContactStatus(prev => ({ ...prev, [contact.id]: 'error' }));
                 }
             } catch (err) {
                 console.error("Error analyzing contact", contact.name, err);
+                setContactStatus(prev => ({ ...prev, [contact.id]: 'error' }));
             }
         }
 
         setIsAnalyzing(false);
-        showAppNotification(`Analysis Complete: ${validCount} valid WhatsApp numbers found, ${invalidCount} invalid/missing.`, 'success');
+        showAppNotification(`Page Analysis: ${validCount} valid WhatsApp numbers found, ${invalidCount} invalid/missing.`, 'success');
+    };
+
+    const handleOpenChat = async (phone) => {
+        if (!activeId) {
+            showAppNotification('Please start a WhatsApp session first.', 'error');
+            return;
+        }
+
+        try {
+            const rawPhone = phone.replace(/[^0-9]/g, '');
+            const res = await fetch('http://localhost:3000/api/wa/open-chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ instance_id: activeId, phone: rawPhone })
+            });
+            const data = await res.json();
+            if (data.status === 'success') {
+                showAppNotification('WhatsApp Chat successfully opening on active instance', 'success');
+                navigate('/whatsapp-hub'); // Send user back to the webview!
+            } else {
+                throw new Error(data.error);
+            }
+        } catch (error) {
+            console.error(error);
+            showAppNotification('Failed to open chat window', 'error');
+        }
     };
 
     return (
@@ -126,35 +173,74 @@ export default function Contacts({ activeId }) {
                                         Loading contacts...
                                     </td>
                                 </tr>
-                            ) : contacts.length === 0 ? (
+                            ) : contactsOnPage.length === 0 ? (
                                 <tr>
                                     <td colSpan="4" className="px-6 py-12 text-center text-gray-500 dark:text-zinc-500">
                                         No contacts found.
                                     </td>
                                 </tr>
-                            ) : contacts.map((contact) => (
+                            ) : contactsOnPage.map((contact) => (
                                 <tr key={contact.id} className="hover:bg-gray-50/50 dark:hover:bg-zinc-800/30 transition-colors">
                                     <td className="px-6 py-4 text-gray-500 dark:text-zinc-400">#{contact.id}</td>
-                                    <td className="px-6 py-4 font-medium">{contact.name}</td>
+                                    <td className="px-6 py-4 font-medium flex items-center gap-2">
+                                        {contact.name}
+                                        {contactStatus[contact.id] === 'loading' && <svg className="animate-spin h-3 w-3 text-gray-400" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>}
+                                        {contactStatus[contact.id] === 'valid' && <span className="bg-green-100 text-green-700 text-[10px] px-1.5 py-0.5 rounded-full font-bold">✓ WA</span>}
+                                        {contactStatus[contact.id] === 'invalid' && <span className="bg-red-100 text-red-700 text-[10px] px-1.5 py-0.5 rounded-full font-bold">✗ N/A</span>}
+                                        {contactStatus[contact.id] === 'error' && <span className="text-yellow-500 text-xs" title="API Error">⚠️ Err</span>}
+                                    </td>
                                     <td className="px-6 py-4 font-mono text-gray-600 dark:text-gray-400">{contact.phone}</td>
                                     <td className="px-6 py-4 text-right space-x-2">
                                         <button
-                                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium text-xs bg-blue-50 dark:bg-blue-900/20 px-3 py-1.5 rounded-md transition-colors"
+                                            onClick={() => handleOpenChat(contact.phone)}
+                                            className="text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300 font-medium text-xs bg-emerald-50 dark:bg-emerald-900/20 px-3 py-1.5 rounded-md transition-colors flex items-center justify-center gap-1 ml-auto"
+                                            title="Contacter sur WhatsApp"
                                         >
-                                            Edit
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                                            Contacter
                                         </button>
-                                        <button
-                                            onClick={() => handleDelete(contact.id)}
-                                            className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 font-medium text-xs bg-red-50 dark:bg-red-900/20 px-3 py-1.5 rounded-md transition-colors"
-                                        >
-                                            Delete
-                                        </button>
+                                        <div className="flex justify-end gap-2 mt-2">
+                                            <button
+                                                onClick={() => navigate('/wa/contacts/edit/' + contact.id)}
+                                                className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium text-xs bg-blue-50 dark:bg-blue-900/20 px-3 py-1.5 rounded-md transition-colors"
+                                            >
+                                                Edit
+                                            </button>
+                                            <button
+                                                onClick={() => handleDelete(contact.id)}
+                                                className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 font-medium text-xs bg-red-50 dark:bg-red-900/20 px-3 py-1.5 rounded-md transition-colors"
+                                            >
+                                                Delete
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
                         </tbody>
                     </table>
                 </div>
+
+                {totalPages > 1 && (
+                    <div className="flex justify-between items-center p-4 border-t border-gray-100 dark:border-zinc-800 text-sm text-gray-500 dark:text-gray-400">
+                        <span>Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, contacts.length)} of {contacts.length} entries</span>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                disabled={currentPage === 1}
+                                className="px-3 py-1 border border-gray-200 dark:border-zinc-700 rounded hover:bg-gray-50 dark:hover:bg-zinc-800 disabled:opacity-50 transition-colors"
+                            >
+                                Précédent
+                            </button>
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                disabled={currentPage === totalPages}
+                                className="px-3 py-1 border border-gray-200 dark:border-zinc-700 rounded hover:bg-gray-50 dark:hover:bg-zinc-800 disabled:opacity-50 transition-colors"
+                            >
+                                Suivant
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 {contacts.length > 0 && (
                     <div className="p-4 border-t border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-900/50 flex justify-end">

@@ -124,6 +124,7 @@ function AppContent() {
                   <Route path="/wa/segments" element={<Segments />} />
                   <Route path="/wa/contacts" element={<Contacts activeId={activeId} />} />
                   <Route path="/wa/contacts/add" element={<ContactAdd />} />
+                  <Route path="/wa/contacts/edit/:id" element={<ContactAdd />} />
                   <Route path="/wa/contacts/import" element={<ContactImport />} />
                 </Routes>
               </div>

@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import useAppStore from '../../store';
 
 export default function ContactAdd() {
     const navigate = useNavigate();
+    const { id } = useParams();
+    const isEditMode = !!id;
     const showAppNotification = useAppStore(state => state.showAppNotification);
 
     const [formData, setFormData] = useState({
@@ -17,20 +19,49 @@ export default function ContactAdd() {
     const [lists, setLists] = useState([{ id: '1', name: 'Clients VIP' }]); // Mock
     const [segments, setSegments] = useState([{ id: '1', name: 'Active Users' }]); // Mock
     const [isSaving, setIsSaving] = useState(false);
+    const [isLoading, setIsLoading] = useState(isEditMode);
 
-    // Mock fetching metadata
     useEffect(() => {
-        // Here we would ideally fetch the lists and segments from the backend
-        // fetch('/api/wa/contact-lists').then(res => res.json()).then(data => setLists(data.data));
-    }, []);
+        if (isEditMode) {
+            fetch(`http://localhost:3000/api/wa/contacts/${id}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        const contact = data.data;
+                        // Naive split of country code + phone for edit mode
+                        const parts = contact.phone ? contact.phone.split(' ') : [];
+                        const countryCode = parts.length > 1 ? parts[0] : '+1';
+                        const phone = parts.length > 1 ? parts.slice(1).join(' ') : (contact.phone || '');
+
+                        setFormData({
+                            name: contact.name || '',
+                            phone: phone,
+                            countryCode: countryCode,
+                            listId: contact.list_id || '',
+                            segmentId: contact.segment_id || ''
+                        });
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    showAppNotification('Failed to load contact data', 'error');
+                })
+                .finally(() => setIsLoading(false));
+        }
+    }, [id, showAppNotification]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsSaving(true);
 
+        const method = isEditMode ? 'PUT' : 'POST';
+        const url = isEditMode
+            ? `http://localhost:3000/api/wa/contacts/${id}`
+            : 'http://localhost:3000/api/wa/contacts';
+
         try {
-            const res = await fetch('http://localhost:3000/api/wa/contacts', {
-                method: 'POST',
+            const res = await fetch(url, {
+                method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     name: formData.name,
@@ -42,15 +73,19 @@ export default function ContactAdd() {
 
             if (!res.ok) throw new Error('Failed to save contact');
 
-            showAppNotification('Contact successfully added!', 'success');
+            showAppNotification(`Contact successfully ${isEditMode ? 'updated' : 'added'}!`, 'success');
             navigate('/wa/contacts');
         } catch (error) {
             console.error(error);
-            showAppNotification('Failed to add contact: ' + error.message, 'error');
+            showAppNotification(`Failed to ${isEditMode ? 'update' : 'add'} contact: ` + error.message, 'error');
         } finally {
             setIsSaving(false);
         }
     };
+
+    if (isLoading) {
+        return <div className="p-8 text-center text-gray-500">Loading contact variables...</div>;
+    }
 
     return (
         <div className="max-w-7xl mx-auto space-y-6">
@@ -60,8 +95,12 @@ export default function ContactAdd() {
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6" /></svg>
                         Back to dashboard
                     </Link>
-                    <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">Contact Add</h1>
-                    <p className="text-gray-500 dark:text-gray-400 mt-1">Contact edit page for your whatsapp.</p>
+                    <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
+                        {isEditMode ? 'Edit Contact' : 'Contact Add'}
+                    </h1>
+                    <p className="text-gray-500 dark:text-gray-400 mt-1">
+                        {isEditMode ? 'Update this contacts data for your whatsapp.' : 'Contact edit page for your whatsapp.'}
+                    </p>
                 </div>
                 <button
                     onClick={() => navigate('/wa/contacts')}
@@ -143,7 +182,7 @@ export default function ContactAdd() {
                         disabled={isSaving}
                         className="w-full text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800 transition-colors disabled:opacity-50"
                     >
-                        {isSaving ? 'Saving...' : 'Add Contact'}
+                        {isSaving ? 'Saving...' : (isEditMode ? 'Update Contact' : 'Add Contact')}
                     </button>
                 </form>
             </div>

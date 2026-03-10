@@ -598,6 +598,88 @@ app.post('/api/wa/contacts', async (req, res) => {
     }
 });
 
+app.get('/api/wa/contacts/:id', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM wa_contacts WHERE id = $1', [req.params.id]);
+        if (result.rows.length === 0) return res.status(404).json({ error: 'Not found' });
+        res.json({ status: 'success', data: result.rows[0] });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.put('/api/wa/contacts/:id', async (req, res) => {
+    const { name, phone, list_id, segment_id } = req.body;
+    try {
+        const result = await pool.query(
+            'UPDATE wa_contacts SET name = $1, phone = $2, list_id = $3, segment_id = $4 WHERE id = $5 RETURNING *',
+            [name, phone, list_id || null, segment_id || null, req.params.id]
+        );
+        res.json({ status: 'success', data: result.rows[0] });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.delete('/api/wa/contacts/:id', async (req, res) => {
+    try {
+        await pool.query('DELETE FROM wa_contacts WHERE id = $1', [req.params.id]);
+        res.json({ status: 'success', message: 'Deleted' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/wa/open-chat', async (req, res) => {
+    const { instance_id, phone } = req.body;
+    if (!instance_id || !phone) return res.status(400).json({ error: 'Missing instance_id or phone' });
+
+    let browser;
+    try {
+        const cdpUrl = `http://localhost:8315`;
+        browser = await puppeteer.connect({
+            browserURL: cdpUrl,
+            defaultViewport: null
+        });
+
+        const targets = await browser.targets();
+        let targetPage = null;
+
+        for (const target of targets) {
+            if (target.type() === 'webview' && target.url().includes('whatsapp')) {
+                const p = await target.page();
+                if (p) {
+                    try {
+                        const id = await p.evaluate(() => window.__whatsapp_instance_id);
+                        if (id === instance_id) {
+                            targetPage = p;
+                            break;
+                        }
+                    } catch (e) { }
+                    if (!targetPage) targetPage = p;
+                }
+            }
+        }
+
+        if (!targetPage) {
+            browser.disconnect();
+            return res.status(404).json({ error: 'WhatsApp instance not found or not ready.' });
+        }
+
+        // Clean phone number (e.g. 2250707070707, numbers only)
+        const cleanPhone = phone.replace(/[^0-9]/g, '');
+        const url = `https://web.whatsapp.com/send?phone=${cleanPhone}`;
+        await targetPage.goto(url);
+
+        res.json({ status: 'success', message: 'Chat opened' });
+    } catch (err) {
+        console.error("Open chat error:", err);
+        res.status(500).json({ error: err.message });
+    } finally {
+        if (browser) browser.disconnect();
+    }
+});
+
 app.post('/api/wa/verify-contact', async (req, res) => {
     const { instance_id, phone } = req.body;
 
@@ -614,8 +696,24 @@ app.post('/api/wa/verify-contact', async (req, res) => {
             defaultViewport: null
         });
 
-        const pages = await browser.pages();
-        const targetPage = pages.find(p => p.url().includes(instance_id) || p.url().includes('whatsapp'));
+        const targets = await browser.targets();
+        let targetPage = null;
+
+        for (const target of targets) {
+            if (target.type() === 'webview' && target.url().includes('whatsapp')) {
+                const p = await target.page();
+                if (p) {
+                    try {
+                        const id = await p.evaluate(() => window.__whatsapp_instance_id);
+                        if (id === instance_id) {
+                            targetPage = p;
+                            break;
+                        }
+                    } catch (e) { }
+                    if (!targetPage) targetPage = p;
+                }
+            }
+        }
 
         if (!targetPage) {
             browser.disconnect();
@@ -623,34 +721,71 @@ app.post('/api/wa/verify-contact', async (req, res) => {
         }
 
         console.log(`[Verifier] Navigating to WhatsApp send URL for phone: ${phone}`);
-        const verifyUrl = `https://web.whatsapp.com/send?phone=${phone}`;
+        // Strip out non-numeric characters for absolute safety
+        const cleanPhone = phone.replace(/[^0-9]/g, '');
+        // User specified format requires a slash before the question mark
+        const verifyUrl = `https://web.whatsapp.com/send/?phone=${cleanPhone}`;
         await targetPage.goto(verifyUrl, { waitUntil: 'domcontentloaded' });
 
-        const chatBoxSelector = 'div[aria-placeholder="Tapez un message"], div[title="Tapez un message"], div[aria-placeholder="Type a message"], div[title="Type a message"]';
-        const errorModalSelector = 'div[data-testid="popup-contents"]';
+        console.log(`[Verifier] Racing chatbox vs error modal using DOM check...`);
+        const result = await targetPage.evaluate(() => {
+            return new Promise((resolve) => {
+                let checkCount = 0;
+                const interval = setInterval(() => {
+                    checkCount++;
 
-        console.log(`[Verifier] Racing chatbox vs error modal...`);
-        const result = await Promise.race([
-            targetPage.waitForSelector(chatBoxSelector, { timeout: 15000 }).then(() => 'VALIDE'),
-            targetPage.waitForSelector(errorModalSelector, { timeout: 15000 }).then(() => 'INVALIDE')
-        ]);
+                    // 1. Check for valid chat (Conversation panel or message input, excluding generic wrappers)
+                    const validElement = document.querySelector('[data-testid="conversation-panel-wrapper"], [data-testid="conversation-panel-messages"], div[title="Type a message"], div[title="Tapez un message"]');
+                    if (validElement) {
+                        clearInterval(interval);
+                        resolve('VALIDE');
+                        return;
+                    }
+
+                    // 2. Check for the specific error modal provided by user
+                    const modalBody = document.querySelector('[data-animate-modal-body="true"]');
+                    if (modalBody) {
+                        const text = modalBody.innerText || modalBody.textContent || '';
+                        if (text.toLowerCase().includes("n'est pas sur whatsapp") ||
+                            text.toLowerCase().includes("is not on whatsapp") ||
+                            text.toLowerCase().includes("invalide")) {
+
+                            // Try to click OK to dismiss the modal for the NEXT iteration
+                            const buttons = document.querySelectorAll('button');
+                            for (const btn of buttons) {
+                                const btnText = btn.innerText || btn.textContent || '';
+                                if (btnText.trim().toUpperCase() === 'OK') {
+                                    btn.click();
+                                    break;
+                                }
+                            }
+
+                            clearInterval(interval);
+                            resolve('INVALIDE');
+                            return;
+                        }
+                    }
+
+                    // 15 seconds timeout checking every 500ms
+                    if (checkCount > 30) {
+                        clearInterval(interval);
+                        resolve('TIMEOUT');
+                    }
+                }, 500);
+            });
+        });
 
         if (result === 'VALIDE') {
-            console.log(`✅ [Verifier] Le numéro ${phone} est valide.`);
-            res.json({ status: 'success', is_valid: true, message: `The number ${phone} is registered on WhatsApp.` });
+            console.log(`✅ [Verifier] Le numéro ${cleanPhone} est valide.`);
+            res.json({ status: 'success', is_valid: true, message: `The number ${cleanPhone} is registered on WhatsApp.` });
         } else {
-            console.log(`❌ [Verifier] Le numéro ${phone} n'est pas sur WhatsApp.`);
-
-            // Clean up error modal
-            const okButton = await targetPage.$('button[data-testid="popup-controls-ok"]');
-            if (okButton) await okButton.click();
-
-            res.json({ status: 'success', is_valid: false, message: `The number ${phone} is NOT registered on WhatsApp.` });
+            console.log(`❌ [Verifier] Le numéro ${cleanPhone} n'est pas sur WhatsApp. (${result})`);
+            res.json({ status: 'success', is_valid: false, message: `The number ${cleanPhone} is NOT registered on WhatsApp.` });
         }
 
     } catch (error) {
-        console.error(`[Verifier] Erreur de vérification: ${error.message}`);
-        res.status(500).json({ error: 'Timeout or network error during WhatsApp validation.', details: error.message });
+        console.error(`[Verifier] Erreur globale de vérification: ${error.message}`);
+        res.status(500).json({ error: 'System error during WhatsApp validation.', details: error.message });
     } finally {
         if (browser) browser.disconnect();
     }
