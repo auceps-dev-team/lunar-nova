@@ -740,8 +740,10 @@ app.post('/api/wa/verify-contact', async (req, res) => {
                 const interval = setInterval(() => {
                     checkCount++;
 
-                    // 1. Check for valid chat (Conversation panel or message input, excluding generic wrappers)
-                    const validElement = document.querySelector('[data-testid="conversation-panel-wrapper"], [data-testid="conversation-panel-messages"], div[title="Type a message"], div[title="Tapez un message"]');
+                    // 1. Check for valid chat
+                    // When a chat successfully opens, the #main container gets a <header> and a <footer> (message input area).
+                    // This avoids false positives from the empty #main wrapper while being far less brittle than strict data-testids.
+                    const validElement = document.querySelector('#main header, #main footer, [data-testid="conversation-panel-wrapper"], div[title="Type a message"], div[title="Tapez un message"]');
                     if (validElement) {
                         clearInterval(interval);
                         resolve('VALIDE');
