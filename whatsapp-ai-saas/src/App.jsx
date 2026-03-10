@@ -16,6 +16,12 @@ import Settings from './pages/Settings';
 import PhotoShoot from './pages/PhotoShoot';
 import { ImageWorkspace } from './components/image-editor/ImageWorkspace';
 
+// WhatsApp Plugin Pages (Phase 13)
+import ContactLists from './pages/whatsapp/ContactLists';
+import Segments from './pages/whatsapp/Segments';
+import Contacts from './pages/whatsapp/Contacts';
+import ContactAdd from './pages/whatsapp/ContactAdd';
+
 // Placeholder Pages for Phase 2
 
 import useAppStore from './store';
@@ -111,6 +117,12 @@ function AppContent() {
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/fashion/photoshoot" element={<PhotoShoot activeId={activeId} />} />
                   <Route path="/fashion/edit" element={<ImageWorkspace />} />
+
+                  {/* WhatsApp Pages */}
+                  <Route path="/wa/contact-lists" element={<ContactLists />} />
+                  <Route path="/wa/segments" element={<Segments />} />
+                  <Route path="/wa/contacts" element={<Contacts activeId={activeId} />} />
+                  <Route path="/wa/contacts/add" element={<ContactAdd />} />
                 </Routes>
               </div>
             )}

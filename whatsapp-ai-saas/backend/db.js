@@ -25,6 +25,30 @@ async function initDB() {
             );
         `);
 
+        // Phase 13: WhatsApp Contact Management Tables
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS wa_contact_lists (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+            
+            CREATE TABLE IF NOT EXISTS wa_segments (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+            
+            CREATE TABLE IF NOT EXISTS wa_contacts (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                phone VARCHAR(50) NOT NULL,
+                list_id INTEGER REFERENCES wa_contact_lists(id) ON DELETE SET NULL,
+                segment_id INTEGER REFERENCES wa_segments(id) ON DELETE SET NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        `);
+
         client.release();
         isDbConnected = true;
         console.log('[PostgreSQL] Connected and copilot_logs table verified.');

@@ -146,13 +146,13 @@ const Sidebar = ({ instances, activeId, onSelect, onAdd, onRemove, onUpdate, cur
                         </button>
 
                         <div className={`overflow-hidden transition-all duration-300 pl-11 pr-3 space-y-1 ${whatsappMenuExpanded ? 'max-h-40 py-1' : 'max-h-0 py-0'}`}>
-                            <Link to="/whatsapp-hub" className={`flex items-center px-3 py-2 rounded-lg transition-colors ${currentPath === '/whatsapp-hub' ? 'bg-white/10 text-white font-medium' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
+                            <Link to="/wa/contact-lists" className={`flex items-center px-3 py-2 rounded-lg transition-colors ${currentPath === '/wa/contact-lists' ? 'bg-white/10 text-white font-medium' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
                                 <span className="truncate text-sm">Contact Lists</span>
                             </Link>
-                            <Link to="/whatsapp-hub" className={`flex items-center px-3 py-2 rounded-lg transition-colors ${currentPath === '/wa/segments' ? 'bg-white/10 text-white font-medium' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
+                            <Link to="/wa/segments" className={`flex items-center px-3 py-2 rounded-lg transition-colors ${currentPath === '/wa/segments' ? 'bg-white/10 text-white font-medium' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
                                 <span className="truncate text-sm">Segments</span>
                             </Link>
-                            <Link to="/whatsapp-hub" className={`flex items-center px-3 py-2 rounded-lg transition-colors ${currentPath === '/wa/contacts' ? 'bg-white/10 text-white font-medium' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
+                            <Link to="/wa/contacts" className={`flex items-center px-3 py-2 rounded-lg transition-colors ${currentPath === '/wa/contacts' ? 'bg-white/10 text-white font-medium' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
                                 <span className="truncate text-sm">Contacts</span>
                             </Link>
                         </div>

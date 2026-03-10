@@ -5,7 +5,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const { generateProposals, chatWithAgent, generateImage } = require('./geminiService');
-const { logCopilotInteraction } = require('./db');
+const { logCopilotInteraction, pool } = require('./db');
 const { getCachedProposals, setCachedProposals } = require('./redisClient');
 
 const app = express();
@@ -488,6 +488,126 @@ app.post('/api/catalog/upload', async (req, res) => {
         }
         console.error('Catalog Automation Error:', error);
         res.status(500).json({ error: 'Failed to automate WhatsApp Catalog. Exception: ' + error.message });
+    }
+});
+
+// --- Phase 13: WhatsApp Contacts APIs ---
+app.get('/api/wa/contact-lists', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM wa_contact_lists ORDER BY id DESC');
+        res.json({ status: 'success', data: result.rows });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/wa/contact-lists', async (req, res) => {
+    const { name } = req.body;
+    try {
+        const result = await pool.query('INSERT INTO wa_contact_lists (name) VALUES ($1) RETURNING *', [name]);
+        res.json({ status: 'success', data: result.rows[0] });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/wa/segments', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM wa_segments ORDER BY id DESC');
+        res.json({ status: 'success', data: result.rows });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/wa/segments', async (req, res) => {
+    const { name } = req.body;
+    try {
+        const result = await pool.query('INSERT INTO wa_segments (name) VALUES ($1) RETURNING *', [name]);
+        res.json({ status: 'success', data: result.rows[0] });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/wa/contacts', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM wa_contacts ORDER BY id DESC');
+        res.json({ status: 'success', data: result.rows });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/wa/contacts', async (req, res) => {
+    const { name, phone, list_id, segment_id } = req.body;
+    try {
+        // Simple insert parsing optional logic where necessary
+        const result = await pool.query(
+            'INSERT INTO wa_contacts (name, phone, list_id, segment_id) VALUES ($1, $2, $3, $4) RETURNING *',
+            [name, phone, list_id || null, segment_id || null]
+        );
+        res.json({ status: 'success', data: result.rows[0] });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/wa/verify-contact', async (req, res) => {
+    const { instance_id, phone } = req.body;
+
+    if (!instance_id || !phone) {
+        return res.status(400).json({ error: 'Missing required fields (instance_id, phone).' });
+    }
+
+    let browser;
+    try {
+        const cdpUrl = `http://localhost:8315`;
+        console.log(`[Verifier] Trying to connect to Electron CDP for whatsapp instance...`);
+        browser = await puppeteer.connect({
+            browserURL: cdpUrl,
+            defaultViewport: null
+        });
+
+        const pages = await browser.pages();
+        const targetPage = pages.find(p => p.url().includes(instance_id) || p.url().includes('whatsapp'));
+
+        if (!targetPage) {
+            browser.disconnect();
+            return res.status(404).json({ error: `Not Found: Could not find WhatsApp Web tab for instance_id: ${instance_id}` });
+        }
+
+        console.log(`[Verifier] Navigating to WhatsApp send URL for phone: ${phone}`);
+        const verifyUrl = `https://web.whatsapp.com/send?phone=${phone}`;
+        await targetPage.goto(verifyUrl, { waitUntil: 'domcontentloaded' });
+
+        const chatBoxSelector = 'div[aria-placeholder="Tapez un message"], div[title="Tapez un message"], div[aria-placeholder="Type a message"], div[title="Type a message"]';
+        const errorModalSelector = 'div[data-testid="popup-contents"]';
+
+        console.log(`[Verifier] Racing chatbox vs error modal...`);
+        const result = await Promise.race([
+            targetPage.waitForSelector(chatBoxSelector, { timeout: 15000 }).then(() => 'VALIDE'),
+            targetPage.waitForSelector(errorModalSelector, { timeout: 15000 }).then(() => 'INVALIDE')
+        ]);
+
+        if (result === 'VALIDE') {
+            console.log(`✅ [Verifier] Le numéro ${phone} est valide.`);
+            res.json({ status: 'success', is_valid: true, message: `The number ${phone} is registered on WhatsApp.` });
+        } else {
+            console.log(`❌ [Verifier] Le numéro ${phone} n'est pas sur WhatsApp.`);
+
+            // Clean up error modal
+            const okButton = await targetPage.$('button[data-testid="popup-controls-ok"]');
+            if (okButton) await okButton.click();
+
+            res.json({ status: 'success', is_valid: false, message: `The number ${phone} is NOT registered on WhatsApp.` });
+        }
+
+    } catch (error) {
+        console.error(`[Verifier] Erreur de vérification: ${error.message}`);
+        res.status(500).json({ error: 'Timeout or network error during WhatsApp validation.', details: error.message });
+    } finally {
+        if (browser) browser.disconnect();
     }
 });
 
