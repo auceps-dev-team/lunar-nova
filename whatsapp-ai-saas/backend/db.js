@@ -1,13 +1,47 @@
-const { Pool } = require('pg');
-require('dotenv').config();
-
-// Initialize PostgreSQL Connection Pool
-// Falls back to a default local string if DATABASE_URL is not in .env
-const pool = new Pool({
-    connectionString: process.env.DATABASE_URL || 'postgres://postgres:password@localhost:5432/whatsapp_saas',
-});
+const sqlite3 = require('sqlite3').verbose();
+const { open } = require('sqlite');
+const path = require('path');
 
 let isDbConnected = false;
+
+// Open SQLite database
+const dbPromise = open({
+    filename: path.join(__dirname, 'database.sqlite'),
+    driver: sqlite3.Database
+});
+
+// Mocking the PostgreSQL 'pool' interface so we don't have to rewrite server.js
+const pool = {
+    async query(text, params = []) {
+        const db = await dbPromise;
+
+        // 1. Convert PostgreSQL positional parameters ($1, $2) to SQLite's (?)
+        let sqliteText = text.replace(/\$\d+/g, '?');
+
+        // 2. Postgres specific type adjustments for CREATE TABLE
+        sqliteText = sqliteText.replace(/SERIAL PRIMARY KEY/gi, 'INTEGER PRIMARY KEY AUTOINCREMENT');
+        sqliteText = sqliteText.replace(/JSONB/gi, 'TEXT'); // SQLite uses TEXT for JSON
+
+        // 3. PostgreSQL RETURNING and SELECT expect rows back
+        const isSelect = sqliteText.trim().toUpperCase().startsWith('SELECT') || sqliteText.toUpperCase().includes('RETURNING');
+
+        if (isSelect) {
+            const rows = await db.all(sqliteText, params);
+            return { rows };
+        } else {
+            const result = await db.run(sqliteText, params);
+            return { rows: [], lastID: result.lastID, changes: result.changes };
+        }
+    },
+
+    // Mock pooling client for transactions
+    async connect() {
+        return {
+            query: async (text, params) => pool.query(text, params),
+            release: () => { /* No-op for SQLite */ }
+        };
+    }
+};
 
 async function initDB() {
     try {
@@ -16,11 +50,11 @@ async function initDB() {
         // Create logs table if it doesn't exist
         await client.query(`
             CREATE TABLE IF NOT EXISTS copilot_logs (
-                id SERIAL PRIMARY KEY,
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
                 instance_id VARCHAR(255) NOT NULL,
                 contact_name VARCHAR(255) NOT NULL,
-                extracted_context JSONB NOT NULL,
-                proposed_replies JSONB NOT NULL,
+                extracted_context TEXT NOT NULL,
+                proposed_replies TEXT NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         `);
@@ -28,19 +62,23 @@ async function initDB() {
         // Phase 13: WhatsApp Contact Management Tables
         await client.query(`
             CREATE TABLE IF NOT EXISTS wa_contact_lists (
-                id SERIAL PRIMARY KEY,
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name VARCHAR(255) NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
-            
+        `);
+
+        await client.query(`
             CREATE TABLE IF NOT EXISTS wa_segments (
-                id SERIAL PRIMARY KEY,
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name VARCHAR(255) NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
-            
+        `);
+
+        await client.query(`
             CREATE TABLE IF NOT EXISTS wa_contacts (
-                id SERIAL PRIMARY KEY,
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name VARCHAR(255) NOT NULL,
                 phone VARCHAR(50) NOT NULL,
                 list_id INTEGER REFERENCES wa_contact_lists(id) ON DELETE SET NULL,
@@ -51,9 +89,9 @@ async function initDB() {
 
         client.release();
         isDbConnected = true;
-        console.log('[PostgreSQL] Connected and copilot_logs table verified.');
+        console.log('[SQLite] Connected and tables verified.');
     } catch (err) {
-        console.warn('[PostgreSQL] Could not connect to database. Logging will be bypassed.', err.message);
+        console.warn('[SQLite] Could not initialize database. Logging will be bypassed.', err.message);
     }
 }
 
@@ -80,7 +118,7 @@ async function logCopilotInteraction(instance_id, contact_name, context, proposa
 
         await pool.query(query, values);
     } catch (err) {
-        console.error('[PostgreSQL] Error logging interaction:', err.message);
+        console.error('[SQLite] Error logging interaction:', err.message);
     }
 }
 

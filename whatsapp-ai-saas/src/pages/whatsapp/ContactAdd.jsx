@@ -42,11 +42,11 @@ export default function ContactAdd() {
 
             if (!res.ok) throw new Error('Failed to save contact');
 
-            showAppNotification({ msg: 'Contact successfully added!', type: 'success' });
+            showAppNotification('Contact successfully added!', 'success');
             navigate('/wa/contacts');
         } catch (error) {
             console.error(error);
-            showAppNotification({ msg: 'Failed to add contact: ' + error.message, type: 'error' });
+            showAppNotification('Failed to add contact: ' + error.message, 'error');
         } finally {
             setIsSaving(false);
         }

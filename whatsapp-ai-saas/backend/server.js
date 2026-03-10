@@ -539,6 +539,51 @@ app.get('/api/wa/contacts', async (req, res) => {
     }
 });
 
+app.post('/api/wa/contacts/bulk', async (req, res) => {
+    const { contacts } = req.body;
+
+    if (!Array.isArray(contacts) || contacts.length === 0) {
+        return res.status(400).json({ error: 'No valid contacts provided' });
+    }
+
+    const client = await pool.connect();
+
+    try {
+        await client.query('BEGIN');
+
+        for (const contact of contacts) {
+            const { name, phone, segment_name } = contact;
+            let segment_id = null;
+
+            // Simple Auto-Resolution: if a segment is typed, find or create it
+            if (segment_name) {
+                const segCheck = await client.query('SELECT id FROM wa_segments WHERE name = $1', [segment_name]);
+                if (segCheck.rows.length > 0) {
+                    segment_id = segCheck.rows[0].id;
+                } else {
+                    const newSeg = await client.query('INSERT INTO wa_segments (name) VALUES ($1) RETURNING id', [segment_name]);
+                    segment_id = newSeg.rows[0].id;
+                }
+            }
+
+            // Insert the contact
+            await client.query(
+                'INSERT INTO wa_contacts (name, phone, segment_id) VALUES ($1, $2, $3)',
+                [name || 'Inconnu', phone, segment_id]
+            );
+        }
+
+        await client.query('COMMIT');
+        res.json({ status: 'success', imported: contacts.length });
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error("Bulk Import Error: ", err);
+        res.status(500).json({ error: 'Database error during bulk insert', details: err.message });
+    } finally {
+        client.release();
+    }
+});
+
 app.post('/api/wa/contacts', async (req, res) => {
     const { name, phone, list_id, segment_id } = req.body;
     try {

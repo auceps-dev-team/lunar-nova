@@ -21,6 +21,7 @@ import ContactLists from './pages/whatsapp/ContactLists';
 import Segments from './pages/whatsapp/Segments';
 import Contacts from './pages/whatsapp/Contacts';
 import ContactAdd from './pages/whatsapp/ContactAdd';
+import ContactImport from './pages/whatsapp/ContactImport';
 
 // Placeholder Pages for Phase 2
 
@@ -123,6 +124,7 @@ function AppContent() {
                   <Route path="/wa/segments" element={<Segments />} />
                   <Route path="/wa/contacts" element={<Contacts activeId={activeId} />} />
                   <Route path="/wa/contacts/add" element={<ContactAdd />} />
+                  <Route path="/wa/contacts/import" element={<ContactImport />} />
                 </Routes>
               </div>
             )}
