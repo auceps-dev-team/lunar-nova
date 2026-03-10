@@ -14,6 +14,7 @@ import Profile from './pages/Profile';
 import ToolsBox from './pages/ToolsBox';
 import Settings from './pages/Settings';
 import PhotoShoot from './pages/PhotoShoot';
+import { ImageWorkspace } from './components/image-editor/ImageWorkspace';
 
 // Placeholder Pages for Phase 2
 
@@ -109,6 +110,7 @@ function AppContent() {
                   <Route path="/tools" element={<ToolsBox />} />
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/fashion/photoshoot" element={<PhotoShoot activeId={activeId} />} />
+                  <Route path="/fashion/edit" element={<ImageWorkspace />} />
                 </Routes>
               </div>
             )}
