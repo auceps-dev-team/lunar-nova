@@ -12,6 +12,13 @@ export default function Contacts({ activeId }) {
     const [sortDirection, setSortDirection] = useState('desc');
     const [filterStatus, setFilterStatus] = useState('all');
     const [filterSegment, setFilterSegment] = useState('all');
+
+    // Bulk Actions State
+    const [selectedContacts, setSelectedContacts] = useState([]);
+    const [isBulkEditModalOpen, setIsBulkEditModalOpen] = useState(false);
+    const [bulkSegmentId, setBulkSegmentId] = useState('');
+    const [isSubmittingBulk, setIsSubmittingBulk] = useState(false);
+
     const itemsPerPage = 10;
 
     const navigate = useNavigate();
@@ -52,6 +59,9 @@ export default function Contacts({ activeId }) {
 
     // Derive unique segments for the filter dropdown
     const uniqueSegments = [...new Set(contacts.map(c => c.segment_name).filter(Boolean))];
+    // Also get segments with IDs for bulk update modal
+    const segments = [...new Map(contacts.filter(c => c.segment_name && c.segment_id).map(item => [item.segment_id, { id: item.segment_id, name: item.segment_name }])).values()];
+
 
     // Apply filtering
     let processedContacts = contacts.filter(c => {
@@ -79,10 +89,82 @@ export default function Contacts({ activeId }) {
         if (typeof valA === 'string') valA = valA.toLowerCase();
         if (typeof valB === 'string') valB = valB.toLowerCase();
 
-        if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
-        if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
-        return 0;
+        let comparison = 0;
+        if (valA < valB) comparison = -1;
+        if (valA > valB) comparison = 1;
+        return sortDirection === 'asc' ? comparison : -comparison;
     });
+
+    const handleSelectAll = (e) => {
+        if (e.target.checked) {
+            // Select all currently visible (or processed) contacts
+            setSelectedContacts(processedContacts.map(c => c.id));
+        } else {
+            setSelectedContacts([]);
+        }
+    };
+
+    const handleSelectContact = (id) => {
+        if (selectedContacts.includes(id)) {
+            setSelectedContacts(selectedContacts.filter(contactId => contactId !== id));
+        } else {
+            setSelectedContacts([...selectedContacts, id]);
+        }
+    };
+
+    const handleBulkDelete = async () => {
+        if (!window.confirm(`Are you sure you want to delete ${selectedContacts.length} contacts?`)) return;
+
+        try {
+            const res = await fetch('http://localhost:3000/api/wa/contacts/bulk-delete', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contactIds: selectedContacts })
+            });
+            const data = await res.json();
+            if (data.status === 'success') {
+                showAppNotification(`Successfully deleted ${data.deletedCount} contacts`, 'success');
+                setContacts(contacts.filter(c => !selectedContacts.includes(c.id)));
+                setSelectedContacts([]);
+            } else {
+                throw new Error(data.error);
+            }
+        } catch (error) {
+            console.error('Bulk delete error:', error);
+            showAppNotification('Failed to delete contacts', 'error');
+        }
+    };
+
+    const handleBulkUpdate = async (e) => {
+        e.preventDefault();
+        setIsSubmittingBulk(true);
+        try {
+            const res = await fetch('http://localhost:3000/api/wa/contacts/bulk-update', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contactIds: selectedContacts,
+                    segmentId: bulkSegmentId
+                })
+            });
+            const data = await res.json();
+            if (data.status === 'success') {
+                showAppNotification(`Successfully updated ${data.updatedCount} contacts`, 'success');
+                // Refresh contacts to get new segment names from DB
+                fetchContacts();
+                setSelectedContacts([]);
+                setIsBulkEditModalOpen(false);
+                setBulkSegmentId('');
+            } else {
+                throw new Error(data.error);
+            }
+        } catch (error) {
+            console.error('Bulk update error:', error);
+            showAppNotification('Failed to update contacts', 'error');
+        } finally {
+            setIsSubmittingBulk(false);
+        }
+    };
 
     const totalFiltered = processedContacts.length;
     const contactsOnPage = processedContacts.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
@@ -184,9 +266,29 @@ export default function Contacts({ activeId }) {
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6" /></svg>
                         Back to dashboard
                     </Link>
-                    <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">Contact</h1>
+                    <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">Contacts</h1>
                 </div>
                 <div className="flex items-center gap-3">
+                    {selectedContacts.length > 0 && (
+                        <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 px-3 py-1.5 rounded-lg border border-blue-100 dark:border-blue-800/50">
+                            <span className="text-sm font-medium text-blue-700 dark:text-blue-400">
+                                {selectedContacts.length} selected
+                            </span>
+                            <div className="h-4 w-px bg-blue-200 dark:bg-blue-800 mx-1"></div>
+                            <button
+                                onClick={() => setIsBulkEditModalOpen(true)}
+                                className="text-sm font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                            >
+                                Edit Segment
+                            </button>
+                            <button
+                                onClick={handleBulkDelete}
+                                className="text-sm font-medium text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition-colors ml-2"
+                            >
+                                Delete All
+                            </button>
+                        </div>
+                    )}
                     <button
                         onClick={() => navigate('/wa/contacts/import')}
                         className="bg-white hover:bg-gray-50 text-gray-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-gray-200 border border-gray-200 dark:border-zinc-700 px-4 py-2 rounded-lg font-medium text-sm transition-colors shadow-sm"
@@ -243,6 +345,14 @@ export default function Contacts({ activeId }) {
                     <table className="w-full text-left text-sm">
                         <thead className="bg-gray-50 dark:bg-zinc-800/50 text-gray-500 dark:text-gray-400 font-semibold text-xs tracking-wider uppercase select-none">
                             <tr>
+                                <th className="p-4 border-b border-gray-100 dark:border-zinc-800 w-10">
+                                    <input
+                                        type="checkbox"
+                                        className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 dark:border-zinc-600 dark:bg-zinc-700 dark:checked:bg-blue-500"
+                                        checked={processedContacts.length > 0 && selectedContacts.length === processedContacts.length}
+                                        onChange={handleSelectAll}
+                                    />
+                                </th>
                                 <th
                                     className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800 cursor-pointer hover:bg-gray-100 dark:hover:bg-zinc-700/50 transition-colors"
                                     onClick={() => handleSort('id')}
@@ -257,24 +367,32 @@ export default function Contacts({ activeId }) {
                                 </th>
                                 <th className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800">Phone</th>
                                 <th className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800">Segment</th>
-                                <th className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800 text-right">Action</th>
+                                <th className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800 text-right min-w-[150px]">Action</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100 dark:divide-zinc-800 text-gray-800 dark:text-zinc-200">
                             {isLoading ? (
                                 <tr>
-                                    <td colSpan="4" className="px-6 py-12 text-center text-gray-500 dark:text-zinc-500">
+                                    <td colSpan="6" className="px-6 py-12 text-center text-gray-500 dark:text-zinc-500">
                                         Loading contacts...
                                     </td>
                                 </tr>
                             ) : contactsOnPage.length === 0 ? (
                                 <tr>
-                                    <td colSpan="4" className="px-6 py-12 text-center text-gray-500 dark:text-zinc-500">
+                                    <td colSpan="6" className="px-6 py-12 text-center text-gray-500 dark:text-zinc-500">
                                         No contacts found.
                                     </td>
                                 </tr>
                             ) : contactsOnPage.map((contact) => (
                                 <tr key={contact.id} className="hover:bg-gray-50/50 dark:hover:bg-zinc-800/30 transition-colors">
+                                    <td className="p-4">
+                                        <input
+                                            type="checkbox"
+                                            className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 dark:border-zinc-600 dark:bg-zinc-700 dark:checked:bg-blue-500"
+                                            checked={selectedContacts.includes(contact.id)}
+                                            onChange={() => handleSelectContact(contact.id)}
+                                        />
+                                    </td>
                                     <td className="px-6 py-4 text-gray-500 dark:text-zinc-400">#{contact.id}</td>
                                     <td className="px-6 py-4 font-medium flex items-center gap-2 max-w-[250px] truncate" title={contact.name}>
                                         <span className="truncate">{contact.name}</span>
@@ -359,6 +477,62 @@ export default function Contacts({ activeId }) {
                     </div>
                 )}
             </div>
+
+            {/* Bulk Edit Modal */}
+            {isBulkEditModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                    <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+                        <div className="p-6">
+                            <div className="flex justify-between items-start mb-4">
+                                <div>
+                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">Bulk Edit Segment</h3>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Update the segment for {selectedContacts.length} selected contacts.</p>
+                                </div>
+                                <button
+                                    onClick={() => setIsBulkEditModalOpen(false)}
+                                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                                >
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                </button>
+                            </div>
+
+                            <form onSubmit={handleBulkUpdate} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Select New Segment</label>
+                                    <select
+                                        className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-zinc-800 dark:border-zinc-700 dark:placeholder-gray-400 dark:text-white transition-colors"
+                                        value={bulkSegmentId}
+                                        onChange={(e) => setBulkSegmentId(e.target.value)}
+                                        required
+                                    >
+                                        <option value="">Choose a segment</option>
+                                        {segments.map(s => (
+                                            <option key={s.id} value={s.id}>{s.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="pt-2 flex gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsBulkEditModalOpen(false)}
+                                        className="flex-1 text-gray-700 bg-gray-100 hover:bg-gray-200 dark:text-gray-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={isSubmittingBulk}
+                                        className="flex-1 text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors disabled:opacity-50"
+                                    >
+                                        {isSubmittingBulk ? 'Updating...' : 'Update'}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

@@ -630,8 +630,57 @@ app.put('/api/wa/contacts/:id', async (req, res) => {
             'UPDATE wa_contacts SET name = $1, phone = $2, list_id = $3, segment_id = $4 WHERE id = $5 RETURNING *',
             [name, phone, list_id || null, segment_id || null, req.params.id]
         );
+        console.log(`[WA] Updated contact ${req.params.id}`);
         res.json({ status: 'success', data: result.rows[0] });
     } catch (err) {
+        console.error(`[WA] Error updating contact:`, err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.put('/api/wa/contacts/bulk-update', async (req, res) => {
+    const { contactIds, segmentId } = req.body;
+    if (!Array.isArray(contactIds) || contactIds.length === 0) {
+        return res.status(400).json({ error: 'contactIds array is required and cannot be empty' });
+    }
+
+    try {
+        // Build parameterized query for the IN clause
+        const idPlaceholders = contactIds.map((_, i) => `$${i + 2}`).join(',');
+        const query = `
+            UPDATE wa_contacts 
+            SET segment_id = $1 
+            WHERE id IN (${idPlaceholders}) 
+            RETURNING *
+        `;
+
+        const values = [segmentId || null, ...contactIds];
+        const result = await pool.query(query, values);
+
+        console.log(`[WA] Bulk updated ${result.rowCount} contacts`);
+        res.json({ status: 'success', data: result.rows, updatedCount: result.rowCount });
+    } catch (err) {
+        console.error('[WA] Error bulk updating contacts:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.delete('/api/wa/contacts/bulk-delete', async (req, res) => {
+    const { contactIds } = req.body;
+    if (!Array.isArray(contactIds) || contactIds.length === 0) {
+        return res.status(400).json({ error: 'contactIds array is required and cannot be empty' });
+    }
+
+    try {
+        const idPlaceholders = contactIds.map((_, i) => `$${i + 1}`).join(',');
+        const query = `DELETE FROM wa_contacts WHERE id IN (${idPlaceholders})`;
+
+        const result = await pool.query(query, contactIds);
+
+        console.log(`[WA] Bulk deleted ${result.rowCount} contacts`);
+        res.json({ status: 'success', deletedCount: result.rowCount });
+    } catch (err) {
+        console.error('[WA] Error bulk deleting contacts:', err);
         res.status(500).json({ error: err.message });
     }
 });
