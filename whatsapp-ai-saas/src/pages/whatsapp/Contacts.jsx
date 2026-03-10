@@ -8,7 +8,7 @@ export default function Contacts({ activeId }) {
     const [isAnalyzing, setIsAnalyzing] = useState(false);
 
     const navigate = useNavigate();
-    const setAppNotification = useAppStore(state => state.setAppNotification);
+    const showAppNotification = useAppStore(state => state.showAppNotification);
     const fileInputRef = useRef(null);
 
     const fetchContacts = async () => {
@@ -20,7 +20,7 @@ export default function Contacts({ activeId }) {
             }
         } catch (error) {
             console.error("Failed to fetch contacts", error);
-            setAppNotification({ msg: 'Failed to load contacts', type: 'error' });
+            showAppNotification({ msg: 'Failed to load contacts', type: 'error' });
         } finally {
             setIsLoading(false);
         }
@@ -37,15 +37,15 @@ export default function Contacts({ activeId }) {
             // Note: Currently no backend delete route written, simulating for UI
             // await fetch(`http://localhost:3000/api/wa/contacts/${id}`, { method: 'DELETE' });
             setContacts(contacts.filter(c => c.id !== id));
-            setAppNotification({ msg: 'Contact deleted locally (Backend route pending)', type: 'success' });
+            showAppNotification({ msg: 'Contact deleted locally (Backend route pending)', type: 'success' });
         } catch (error) {
-            setAppNotification({ msg: 'Failed to delete contact', type: 'error' });
+            showAppNotification({ msg: 'Failed to delete contact', type: 'error' });
         }
     };
 
     const handleAnalyze = async () => {
         if (!activeId) {
-            setAppNotification({ msg: 'Please start a WhatsApp session first.', type: 'error' });
+            showAppNotification({ msg: 'Please start a WhatsApp session first.', type: 'error' });
             return;
         }
 
@@ -78,7 +78,7 @@ export default function Contacts({ activeId }) {
         }
 
         setIsAnalyzing(false);
-        setAppNotification({
+        showAppNotification({
             msg: `Analysis Complete: ${validCount} valid WhatsApp numbers found, ${invalidCount} invalid/missing.`,
             type: 'success'
         });
@@ -88,7 +88,7 @@ export default function Contacts({ activeId }) {
         const file = e.target.files?.[0];
         if (!file) return;
         // In a real app, parse the CSV and send to backend
-        setAppNotification({ msg: `Selected file: ${file.name}. CSV Import logic pending.`, type: 'success' });
+        showAppNotification({ msg: `Selected file: ${file.name}. CSV Import logic pending.`, type: 'success' });
         e.target.value = ''; // reset
     };
 

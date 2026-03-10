@@ -4,7 +4,7 @@ import useAppStore from '../../store';
 
 export default function ContactAdd() {
     const navigate = useNavigate();
-    const setAppNotification = useAppStore(state => state.setAppNotification);
+    const showAppNotification = useAppStore(state => state.showAppNotification);
 
     const [formData, setFormData] = useState({
         name: '',
@@ -42,11 +42,11 @@ export default function ContactAdd() {
 
             if (!res.ok) throw new Error('Failed to save contact');
 
-            setAppNotification({ msg: 'Contact successfully added!', type: 'success' });
+            showAppNotification({ msg: 'Contact successfully added!', type: 'success' });
             navigate('/wa/contacts');
         } catch (error) {
             console.error(error);
-            setAppNotification({ msg: 'Failed to add contact: ' + error.message, type: 'error' });
+            showAppNotification({ msg: 'Failed to add contact: ' + error.message, type: 'error' });
         } finally {
             setIsSaving(false);
         }
