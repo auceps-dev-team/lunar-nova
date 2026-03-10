@@ -10,8 +10,8 @@ export default function ContactAdd() {
 
     const [formData, setFormData] = useState({
         name: '',
+        name: '',
         phone: '',
-        countryCode: '+1',
         listId: '',
         segmentId: ''
     });
@@ -28,15 +28,9 @@ export default function ContactAdd() {
                 .then(data => {
                     if (data.status === 'success') {
                         const contact = data.data;
-                        // Naive split of country code + phone for edit mode
-                        const parts = contact.phone ? contact.phone.split(' ') : [];
-                        const countryCode = parts.length > 1 ? parts[0] : '+1';
-                        const phone = parts.length > 1 ? parts.slice(1).join(' ') : (contact.phone || '');
-
                         setFormData({
                             name: contact.name || '',
-                            phone: phone,
-                            countryCode: countryCode,
+                            phone: contact.phone || '',
                             listId: contact.list_id || '',
                             segmentId: contact.segment_id || ''
                         });
@@ -65,7 +59,7 @@ export default function ContactAdd() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     name: formData.name,
-                    phone: `${formData.countryCode} ${formData.phone}`,
+                    phone: formData.phone,
                     list_id: formData.listId || null,
                     segment_id: formData.segmentId || null
                 })
@@ -124,29 +118,15 @@ export default function ContactAdd() {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone Number (including Country Code)</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone Number</label>
                         <input
                             type="tel"
                             required
+                            placeholder="e.g. +1 555 123 4567"
                             className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-zinc-800 dark:border-zinc-700 dark:placeholder-gray-400 dark:text-white"
                             value={formData.phone}
                             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                         />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Country code</label>
-                        <select
-                            className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-zinc-800 dark:border-zinc-700 dark:placeholder-gray-400 dark:text-white"
-                            value={formData.countryCode}
-                            onChange={(e) => setFormData({ ...formData, countryCode: e.target.value })}
-                        >
-                            <option value="+93">Afghanistan (+93)</option>
-                            <option value="+33">France (+33)</option>
-                            <option value="+1">United States (+1)</option>
-                            <option value="+229">Benin (+229)</option>
-                            {/* Shortened for brevity */}
-                        </select>
                     </div>
 
                     <div>

@@ -501,6 +501,15 @@ app.get('/api/wa/contact-lists', async (req, res) => {
     }
 });
 
+app.get('/api/wa/contact-lists', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM wa_contact_lists ORDER BY id DESC');
+        res.json({ status: 'success', data: result.rows });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.post('/api/wa/contact-lists', async (req, res) => {
     const { name } = req.body;
     try {
