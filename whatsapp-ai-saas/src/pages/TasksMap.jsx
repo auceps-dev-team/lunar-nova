@@ -1,126 +1,7 @@
 import React, { useState, useRef } from 'react';
 import useAppStore from '../store';
 import { getTranslation as t } from '../locales';
-import { DndContext, closestCorners, TouchSensor, PointerSensor, useSensor, useSensors, useDroppable } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 
-// --- Sortable Task Item Component ---
-const SortableTask = ({ task, onEdit, onDelete }) => {
-    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id });
-
-    const style = {
-        transform: CSS.Transform.toString(transform),
-        transition,
-        opacity: isDragging ? 0.4 : 1,
-        touchAction: 'none'
-    };
-
-    const getTagColor = (tag) => {
-        const colors = {
-            'Development': '#3b82f6',
-            'Legal': '#10b981',
-            'Design': '#8b5cf6',
-            'Marketing': '#f59e0b',
-            'Sales': '#ef4444'
-        };
-        return colors[tag] || '#64748b';
-    };
-
-    return (
-        <div
-            ref={setNodeRef}
-            style={style}
-            {...attributes}
-            {...listeners}
-            className="group bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 cursor-grab relative hover:shadow-md transition-all"
-        >
-            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 z-10 bg-white dark:bg-gray-800 p-1 rounded-lg border border-gray-100 dark:border-gray-700 shadow-sm">
-                <button
-                    onClick={(e) => { e.stopPropagation(); onEdit(task); }}
-                    className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors"
-                    title="Edit Task"
-                >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                </button>
-                <button
-                    onClick={(e) => { e.stopPropagation(); onDelete(task.id); }}
-                    className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
-                    title="Delete Task"
-                >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                </button>
-            </div>
-
-            <div className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: getTagColor(task.tag) }}>
-                {task.tag}
-            </div>
-            <div className="font-semibold text-gray-900 dark:text-white text-sm mb-2 leading-snug">{task.title}</div>
-            
-            {task.description && (
-                <div className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mb-3">
-                    {task.description.replace(/<[^>]+>/g, '') /* Strip HTML for preview */}
-                </div>
-            )}
-
-            <div className="flex flex-wrap gap-2 mb-3">
-               {task.attachments && task.attachments.length > 0 && (
-                   <span className="inline-flex items-center gap-1 bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400 text-[10px] font-medium px-2 py-0.5 rounded-md">
-                       <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-                       {task.attachments.length} files
-                   </span>
-               )}
-               {task.annotations && (
-                   <span className="inline-flex items-center gap-1 bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 text-[10px] font-medium px-2 py-0.5 rounded-md">
-                       <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                       Notes
-                   </span>
-               )}
-            </div>
-
-            <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-50 dark:border-gray-700/50">
-                <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 font-medium">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-                    {task.date}
-                </div>
-                {/* Placeholder Avatar */}
-                <div className="w-5 h-5 rounded-full bg-indigo-100 flex items-center justify-center text-[8px] font-bold text-indigo-700 border border-white dark:border-gray-800">
-                    JO
-                </div>
-            </div>
-        </div>
-    );
-};
-
-// --- Task Column Component ---
-const TaskColumn = ({ id, title, defaultCount, color, tasks, onEdit, onDelete }) => {
-    const { setNodeRef } = useDroppable({ id });
-    return (
-        <div ref={setNodeRef} style={{ minWidth: '320px', flex: 1, background: 'var(--panel-bg)', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ padding: '16px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: color }}></div>
-                    <span style={{ fontWeight: 600 }}>{title}</span>
-                </div>
-                <span style={{ background: 'var(--bg-color)', padding: '2px 8px', borderRadius: '12px', fontSize: '12px', color: 'var(--text-secondary)' }}>
-                    {tasks.length}
-                </span>
-            </div>
-            <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px', minHeight: '400px' }}>
-                <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy} id={id}>
-                    {tasks.map(task => (
-                        <SortableTask key={task.id} task={task} onEdit={onEdit} onDelete={onDelete} />
-                    ))}
-                    {tasks.length === 0 && (
-                        <div style={{ width: '100%', height: '100%', minHeight: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>No tasks here</span>
-                        </div>
-                    )}
-                </SortableContext>
-            </div>
-        </div>
-    );
-};
 
 const TasksMap = () => {
     const language = useAppStore(state => state.appSettings?.language) || 'en';
@@ -160,31 +41,7 @@ const TasksMap = () => {
     const [viewMode, setViewMode] = useState('board'); // 'board' or 'calendar'
     const [currentDate, setCurrentDate] = useState(new Date());
 
-    // Dnd sensors
-    const sensors = useSensors(
-        useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-        useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } })
-    );
-
-    const handleDragEnd = (event) => {
-        const { active, over } = event;
-        if (!over) return;
-
-        const taskId = active.id;
-        // determine over container if we drop on another item or empty space
-        let destContainerId = over.id;
-
-        // If dropped over a task, find its status
-        if (destContainerId !== 'todo' && destContainerId !== 'in-progress' && destContainerId !== 'completed') {
-            const overTask = tasks.find(t => t.id === destContainerId);
-            if (overTask) destContainerId = overTask.status;
-        }
-
-        const task = tasks.find(t => t.id === taskId);
-        if (task && destContainerId && destContainerId !== task.status) {
-            updateTaskStatus(taskId, destContainerId);
-        }
-    };
+    // Dnd logic removed for redesign
 
     const handleSaveTask = (e) => {
         e.preventDefault();
@@ -349,9 +206,7 @@ const TasksMap = () => {
         }
     };
 
-    const todoTasks = tasks.filter(t => t.status === 'todo');
-    const inProgressTasks = tasks.filter(t => t.status === 'in-progress');
-    const completedTasks = tasks.filter(t => t.status === 'completed');
+    // Filter variables removed for redesign
 
     return (
         <div className="flex-1 overflow-y-auto" style={{ animation: 'fadeIn 0.3s ease' }}>
@@ -538,138 +393,30 @@ const TasksMap = () => {
                 </div>
             )}
 
-            {viewMode === 'board' && (
-                <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={handleDragEnd}>
-                    <div style={{ display: 'flex', gap: '24px', overflowX: 'auto', paddingBottom: '20px' }}>
-                        <TaskColumn id="todo" title={t(language, 'toDo')} color="#f59e0b" tasks={todoTasks} onEdit={handleOpenEditForm} onDelete={deleteTask} />
-                        <TaskColumn id="in-progress" title={t(language, 'inProgress')} color="#3b82f6" tasks={inProgressTasks} onEdit={handleOpenEditForm} onDelete={deleteTask} />
-                        <TaskColumn id="completed" title={t(language, 'completed')} color="#10b981" tasks={completedTasks} onEdit={handleOpenEditForm} onDelete={deleteTask} />
-                    </div>
-                </DndContext>
-            )}
-            
-            {viewMode === 'calendar' && (
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-                    {/* Calendar Header */}
-                    <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
-                        <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-                            {currentDate.toLocaleString('default', { month: 'long' })} {currentDate.getFullYear()}
-                        </h2>
-                        <div className="flex gap-2">
-                            <button onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth() - 1)))} className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
-                            </button>
-                            <button onClick={() => setCurrentDate(new Date())} className="px-3 py-1 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md text-sm font-medium shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
-                                Today
-                            </button>
-                            <button onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth() + 1)))} className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                            </button>
-                        </div>
-                    </div>
-                    {/* Calendar Grid */}
-                    <div className="grid grid-cols-7 border-b border-gray-200 dark:border-gray-700 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 py-2">
-                        <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
-                    </div>
-                    <div className="grid grid-cols-7 auto-rows-[120px]">
-                        {(() => {
-                            const year = currentDate.getFullYear();
-                            const month = currentDate.getMonth();
-                            const firstDay = new Date(year, month, 1);
-                            const lastDay = new Date(year, month + 1, 0);
-                            const daysInMonth = lastDay.getDate();
-                            const startingDay = firstDay.getDay(); // 0 = Sun
-                            const cells = [];
-
-                            // Empty cells for days before the 1st
-                            for (let i = 0; i < startingDay; i++) {
-                                cells.push(<div key={`empty-${i}`} className="border-b border-r border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/30"></div>);
-                            }
-
-                            // Cells for days of the month
-                            for (let i = 1; i <= daysInMonth; i++) {
-                                const currentCellDate = new Date(year, month, i);
-                                // Local date string in YYYY-MM-DD format based on local timezone
-                                const dateString = new Date(currentCellDate.getTime() - (currentCellDate.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
-
-                                const isToday = new Date().toISOString().split('T')[0] === dateString;
-                                const dayTasks = tasks.filter(t => t.date === dateString);
-
-                                cells.push(
-                                    <div key={`day-${i}`} className={`border-b border-r border-gray-200 dark:border-gray-700 p-2 flex flexDirection-column ${isToday ? 'bg-primary/5 dark:bg-primary/10' : ''}`}>
-                                        <div className="flex justify-between items-center mb-1">
-                                            <span className={`text-sm font-medium ${isToday ? 'text-primary' : 'text-gray-700 dark:text-gray-300'}`}>{i}</span>
-                                        </div>
-                                        <div className="flex-1 overflow-y-auto space-y-1 mt-1 pr-1 custom-scrollbar">
-                                            {dayTasks.map(task => (
-                                                <div key={task.id} className="text-[10px] truncate px-1.5 py-1 rounded bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 shadow-sm" title={task.title}>
-                                                    <span style={{ color: task.status === 'completed' ? '#10b981' : task.status === 'in-progress' ? '#3b82f6' : '#f59e0b', marginRight: '4px' }}>•</span>
-                                                    {task.title}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                );
-                            }
-                            return cells;
-                        })()}
-                    </div>
-                </div>
-            )}
-
-            {viewMode === 'ai-conversations' && (
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm text-gray-700 dark:text-gray-300">
-                            <thead className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700">
-                                <tr>
-                                    <th className="px-6 py-4 font-bold text-gray-900 dark:text-white">Date/Time</th>
-                                    <th className="px-6 py-4 font-bold text-gray-900 dark:text-white">Associated Task</th>
-                                    <th className="px-6 py-4 font-bold text-gray-900 dark:text-white">AI Advice Summary</th>
-                                    <th className="px-6 py-4 font-bold text-gray-900 dark:text-white">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                                <tr className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                                    <td className="px-6 py-4">Oct 24, 10:30 AM</td>
-                                    <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">Contacter les entreprises de BTP</td>
-                                    <td className="px-6 py-4 text-gray-500 dark:text-gray-400">Drafted intro email, generated talking points.</td>
-                                    <td className="px-6 py-4">
-                                        <button onClick={() => setIsEllaOpen(true)} className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-lg transition-colors">View Chat</button>
-                                    </td>
-                                </tr>
-                                <tr className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                                    <td className="px-6 py-4">Oct 23, 2:15 PM</td>
-                                    <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">Collaborative notes in draft.</td>
-                                    <td className="px-6 py-4 text-gray-500 dark:text-gray-400">Analyzed market trends, suggested structure.</td>
-                                    <td className="px-6 py-4">
-                                        <button onClick={() => setIsEllaOpen(true)} className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-lg transition-colors">View Chat</button>
-                                    </td>
-                                </tr>
-                                <tr className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                                    <td className="px-6 py-4">Oct 22, 9:00 AM</td>
-                                    <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">Meet le jeudi à 11h30 et 15h30.</td>
-                                    <td className="px-6 py-4 text-gray-500 dark:text-gray-400">Summarized document, provided questions.</td>
-                                    <td className="px-6 py-4">
-                                        <button onClick={() => setIsEllaOpen(true)} className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-lg transition-colors">View Chat</button>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            )}
+            {/* Redesigned Task View Wrapper (To be implemented) */}
+            <div className="flex flex-col items-center justify-center p-12 mt-12 bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-300 dark:border-gray-700">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" className="text-gray-400 mb-4">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="3" y1="9" x2="21" y2="9"></line>
+                    <line x1="9" y1="21" x2="9" y2="9"></line>
+                </svg>
+                <h2 className="text-xl font-bold text-gray-700 dark:text-gray-200">Task View Redesign in Progress</h2>
+                <p className="text-gray-500 mt-2">The layout is currently being rebuilt.</p>
+            </div>
 
             {/* Ella Floating Button */}
             <button
                 onClick={() => setIsEllaOpen(true)}
-                className="fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-r from-purple-500 to-indigo-600 hover:shadow-xl text-white rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-105 active:scale-95 z-40"
+                className="fixed bottom-6 right-6 w-14 h-14 bg-teal-600 hover:bg-teal-700 text-white rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-105 active:scale-95 z-40"
                 title="Talk to Ella"
             >
                 <div>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
-                        <path d="M5 3v4M7 5H3"/>
+                    {/* Snapshot-like Magic wand icon */}
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M16.5 6a2.5 2.5 0 0 1 3.5 3.5l-9.5 9.5a2.5 2.5 0 0 1-3.5-3.5l9.5-9.5zm-5.5 8.5a1 1 0 1 0-1.4 1.4 1 1 0 0 0 1.4-1.4z" />
+                        <path d="M19 2l.8 2.2L22 5l-2.2.8L19 8l-.8-2.2L16 5l2.2-.8L19 2z" />
+                        <path d="M9.5 6.5L10 8l1.5.5-1.5.5-.5 1.5-.5-1.5L7.5 8.5 9 8l.5-1.5z" />
+                        <path d="M14.5 16l.4 1.1L16 17.5l-1.1.4-.4 1.1-.4-1.1L13 17.5l1.1-.4.4-1.1z" />
                     </svg>
                 </div>
             </button>
@@ -677,21 +424,23 @@ const TasksMap = () => {
             {/* Ella Chat Panel */}
             <div className={`fixed top-0 right-0 h-full w-96 bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 shadow-2xl z-50 transform transition-transform duration-300 flex flex-col ${isEllaOpen ? 'translate-x-0' : 'translate-x-full'}`}>
                 {/* Header */}
-                <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center bg-purple-50 dark:bg-purple-900/10">
+                <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center bg-teal-50 dark:bg-teal-900/10">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-purple-200 dark:bg-purple-800 flex items-center justify-center text-purple-600 dark:text-purple-300">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
-                                <path d="M5 3v4M7 5H3"/>
+                        <div className="w-10 h-10 rounded-full bg-teal-600 flex items-center justify-center text-white">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M16.5 6a2.5 2.5 0 0 1 3.5 3.5l-9.5 9.5a2.5 2.5 0 0 1-3.5-3.5l9.5-9.5zm-5.5 8.5a1 1 0 1 0-1.4 1.4 1 1 0 0 0 1.4-1.4z" />
+                                <path d="M19 2l.8 2.2L22 5l-2.2.8L19 8l-.8-2.2L16 5l2.2-.8L19 2z" />
+                                <path d="M9.5 6.5L10 8l1.5.5-1.5.5-.5 1.5-.5-1.5L7.5 8.5 9 8l.5-1.5z" />
+                                <path d="M14.5 16l.4 1.1L16 17.5l-1.1.4-.4 1.1-.4-1.1L13 17.5l1.1-.4.4-1.1z" />
                             </svg>
                         </div>
                         <div>
                             <h3 className="font-bold text-gray-900 dark:text-white leading-tight">Ella</h3>
                             <div className="flex items-center gap-2 mt-0.5">
-                                <p className="text-xs text-purple-600 dark:text-purple-400 font-medium truncate">Life Architect</p>
-                                <div className="flex bg-purple-200/50 dark:bg-purple-900/50 rounded-md p-0.5 ml-1">
-                                    <button onClick={() => setEllaMode('Planning')} className={`px-2 py-0.5 text-[10px] uppercase tracking-wider font-bold rounded ${ellaMode === 'Planning' ? 'bg-white dark:bg-gray-700 text-purple-700 dark:text-purple-300 shadow-sm' : 'text-purple-600/70 dark:text-purple-400/70'}`}>Plan</button>
-                                    <button onClick={() => setEllaMode('Fast')} className={`px-2 py-0.5 text-[10px] uppercase tracking-wider font-bold rounded ${ellaMode === 'Fast' ? 'bg-white dark:bg-gray-700 text-purple-700 dark:text-purple-300 shadow-sm' : 'text-purple-600/70 dark:text-purple-400/70'}`}>Fast</button>
+                                <p className="text-xs text-teal-600 dark:text-teal-400 font-medium truncate">Life Architect</p>
+                                <div className="flex bg-teal-200/50 dark:bg-teal-900/50 rounded-md p-0.5 ml-1">
+                                    <button onClick={() => setEllaMode('Planning')} className={`px-2 py-0.5 text-[10px] uppercase tracking-wider font-bold rounded ${ellaMode === 'Planning' ? 'bg-white dark:bg-gray-700 text-teal-700 dark:text-teal-300 shadow-sm' : 'text-teal-600/70 dark:text-teal-400/70'}`}>Plan</button>
+                                    <button onClick={() => setEllaMode('Fast')} className={`px-2 py-0.5 text-[10px] uppercase tracking-wider font-bold rounded ${ellaMode === 'Fast' ? 'bg-white dark:bg-gray-700 text-teal-700 dark:text-teal-300 shadow-sm' : 'text-teal-600/70 dark:text-teal-400/70'}`}>Fast</button>
                                 </div>
                             </div>
                         </div>
@@ -706,19 +455,19 @@ const TasksMap = () => {
                     {ellaHistory.map((msg, i) => (
                         <div key={i} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                             {msg.sender === 'agent-proposal' ? (
-                                <div className="bg-white dark:bg-gray-800 p-3 rounded-xl border border-purple-200 dark:border-purple-800 shadow-sm w-[85%] mt-1">
+                                <div className="bg-white dark:bg-gray-800 p-3 rounded-xl border border-teal-200 dark:border-teal-800 shadow-sm w-[85%] mt-1">
                                     <div className="flex items-center gap-2 mb-2">
-                                        <svg width="14" height="14" className="text-purple-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-                                        <p className="text-[11px] font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400">Proposed Task</p>
+                                        <svg width="14" height="14" className="text-teal-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                                        <p className="text-[11px] font-bold uppercase tracking-wider text-teal-600 dark:text-teal-400">Proposed Task</p>
                                     </div>
                                     <p className="text-sm font-semibold mb-1 text-gray-900 dark:text-white leading-snug">{msg.action.title}</p>
                                     <div className="flex gap-2 mt-3">
-                                        <button onClick={() => { addTask(msg.action); setEllaHistory(prev => prev.filter((_, idx) => idx !== i)); }} className="flex-1 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold rounded-lg transition-colors">Approve</button>
+                                        <button onClick={() => { addTask(msg.action); setEllaHistory(prev => prev.filter((_, idx) => idx !== i)); }} className="flex-1 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold rounded-lg transition-colors">Approve</button>
                                         <button onClick={() => setEllaHistory(prev => prev.filter((_, idx) => idx !== i))} className="flex-1 py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-xs font-semibold rounded-lg transition-colors">Reject</button>
                                     </div>
                                 </div>
                             ) : (
-                                <div className={`max-w-[85%] p-3 rounded-2xl text-sm ${msg.sender === 'user' ? 'bg-purple-600 text-white rounded-tr-sm' : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-tl-sm'}`}>
+                                <div className={`max-w-[85%] p-3 rounded-2xl text-sm ${msg.sender === 'user' ? 'bg-teal-600 text-white rounded-tr-sm' : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-tl-sm'}`}>
                                     {msg.text.split('\\n').map((line, idx) => (
                                         <React.Fragment key={idx}>{line}<br/></React.Fragment>
                                     ))}
@@ -729,9 +478,9 @@ const TasksMap = () => {
                     {isAiLoading && (
                         <div className="flex justify-start">
                             <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-2xl rounded-tl-sm flex gap-1 items-center">
-                                <div className="w-2 h-2 rounded-full bg-purple-400 animate-bounce"></div>
-                                <div className="w-2 h-2 rounded-full bg-purple-400 animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                                <div className="w-2 h-2 rounded-full bg-purple-400 animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                                <div className="w-2 h-2 rounded-full bg-teal-400 animate-bounce"></div>
+                                <div className="w-2 h-2 rounded-full bg-teal-400 animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                                <div className="w-2 h-2 rounded-full bg-teal-400 animate-bounce" style={{animationDelay: '0.2s'}}></div>
                             </div>
                         </div>
                     )}
@@ -745,12 +494,12 @@ const TasksMap = () => {
                             value={ellaInput}
                             onChange={(e) => setEllaInput(e.target.value)}
                             placeholder="Delegate a task to Ella..."
-                            className="w-full pl-4 pr-12 py-3 bg-gray-100 dark:bg-gray-800 border-none rounded-xl text-sm focus:ring-2 focus:ring-purple-500 dark:text-white"
+                            className="w-full pl-4 pr-12 py-3 bg-gray-100 dark:bg-gray-800 border-none rounded-xl text-sm focus:ring-2 focus:ring-teal-500 dark:text-white"
                         />
                         <button
                             type="submit"
                             disabled={!ellaInput.trim() || isAiLoading}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
                         </button>
