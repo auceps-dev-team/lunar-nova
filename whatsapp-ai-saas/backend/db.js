@@ -59,6 +59,18 @@ async function initDB() {
             );
         `);
 
+        // Create Ella memory table
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS wa_ella_memory (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id VARCHAR(255) DEFAULT 'default_user',
+                memory_key VARCHAR(255) NOT NULL,
+                memory_value TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(user_id, memory_key)
+            );
+        `);
+
         // Phase 13: WhatsApp Contact Management Tables
         await client.query(`
             CREATE TABLE IF NOT EXISTS wa_contact_lists (
@@ -130,7 +142,41 @@ async function logCopilotInteraction(instance_id, contact_name, context, proposa
     }
 }
 
+async function getEllaMemories(userId = 'default_user') {
+    if (!isDbConnected) return {};
+    try {
+        const query = `SELECT memory_key, memory_value FROM wa_ella_memory WHERE user_id = $1`;
+        const res = await pool.query(query, [userId]);
+        const memories = {};
+        if (res && res.rows) {
+            res.rows.forEach(r => {
+                memories[r.memory_key] = r.memory_value;
+            });
+        }
+        return memories;
+    } catch(e) {
+        console.error('[SQLite] Error fetching Ella memory:', e);
+        return {};
+    }
+}
+
+async function saveEllaMemory(userId = 'default_user', key, value) {
+    if (!isDbConnected) return;
+    try {
+        const query = `
+            INSERT INTO wa_ella_memory (user_id, memory_key, memory_value)
+            VALUES ($1, $2, $3)
+            ON CONFLICT(user_id, memory_key) DO UPDATE SET memory_value = excluded.memory_value;
+        `;
+        await pool.query(query, [userId, key, value]);
+    } catch(e) {
+        console.error('[SQLite] Error saving Ella memory:', e);
+    }
+}
+
 module.exports = {
     pool,
-    logCopilotInteraction
+    logCopilotInteraction,
+    getEllaMemories,
+    saveEllaMemory
 };

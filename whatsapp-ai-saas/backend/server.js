@@ -4,6 +4,7 @@ const puppeteer = require('puppeteer-core');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const multer = require('multer');
 const { generateProposals, chatWithAgent, generateImage } = require('./geminiService');
 const { logCopilotInteraction, pool } = require('./db');
 const { getCachedProposals, setCachedProposals } = require('./redisClient');
@@ -14,6 +15,34 @@ const PORT = 3000;
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+// Setup static file serving for uploads
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir);
+}
+app.use('/uploads', express.static(uploadDir));
+
+// Configure multer
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, uploadDir);
+    },
+    filename: function (req, file, cb) {
+        cb(null, Date.now() + path.extname(file.originalname));
+    }
+});
+const upload = multer({ storage: storage });
+
+// API route to upload files locally
+app.post('/api/upload', upload.single('file'), (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ error: 'No file uploaded.' });
+    }
+    // Return the local URL for the uploaded file
+    const fileUrl = `http://localhost:${PORT}/uploads/${req.file.filename}`;
+    res.json({ status: 'success', url: fileUrl, filename: req.file.originalname });
+});
 
 // API route to get WhatsApp instances status
 app.get('/api/instances', async (req, res) => {

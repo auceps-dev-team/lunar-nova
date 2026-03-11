@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import useAppStore from '../store';
 import { getTranslation as t } from '../locales';
-import { DndContext, closestCorners, TouchSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { DndContext, closestCorners, TouchSensor, PointerSensor, useSensor, useSensors, useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
@@ -94,8 +94,9 @@ const SortableTask = ({ task, onEdit, onDelete }) => {
 
 // --- Task Column Component ---
 const TaskColumn = ({ id, title, defaultCount, color, tasks, onEdit, onDelete }) => {
+    const { setNodeRef } = useDroppable({ id });
     return (
-        <div style={{ minWidth: '320px', flex: 1, background: 'var(--panel-bg)', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column' }}>
+        <div ref={setNodeRef} style={{ minWidth: '320px', flex: 1, background: 'var(--panel-bg)', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column' }}>
             <div style={{ padding: '16px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: color }}></div>
@@ -134,21 +135,27 @@ const TasksMap = () => {
     const [isAiLoading, setIsAiLoading] = useState(false);
 
     const [isEllaOpen, setIsEllaOpen] = useState(false);
+    const [ellaMode, setEllaMode] = useState('Planning');
     const [ellaInput, setEllaInput] = useState('');
     const [ellaHistory, setEllaHistory] = useState([
         { sender: 'agent', text: 'Bonjour ! Je suis Ella, votre Life Architect. Dites-moi ce que vous avez en tête, je m\'occupe de structurer tout ça dans votre planning.' }
     ]);
 
+    const getLocalDateString = (d) => new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+
     const defaultFormState = {
         title: '',
         tag: 'Development',
-        date: new Date().toISOString().split('T')[0],
+        date: getLocalDateString(new Date()),
         status: 'todo',
         description: '',
-        annotations: ''
+        annotations: '',
+        attachments: []
     };
     
     const [taskForm, setTaskForm] = useState(defaultFormState);
+    const fileInputRef = useRef(null);
+    const [isUploading, setIsUploading] = useState(false);
 
     const [viewMode, setViewMode] = useState('board'); // 'board' or 'calendar'
     const [currentDate, setCurrentDate] = useState(new Date());
@@ -202,10 +209,11 @@ const TasksMap = () => {
         setTaskForm({
             title: task.title || '',
             tag: task.tag || 'Development',
-            date: task.date || new Date().toISOString().split('T')[0],
+            date: task.date || getLocalDateString(new Date()),
             status: task.status || 'todo',
             description: task.description || '',
-            annotations: task.annotations || ''
+            annotations: task.annotations || '',
+            attachments: task.attachments || []
         });
         setEditingTaskId(task.id);
         setIsFormOpen(true);
@@ -240,6 +248,46 @@ const TasksMap = () => {
         }
     };
 
+    const handleFileUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        setIsUploading(true);
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const res = await fetch('http://localhost:3000/api/upload', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+            if (data.status === 'success') {
+                const newAttachment = { name: data.filename, url: data.url };
+                setTaskForm(prev => ({
+                    ...prev,
+                    attachments: [...(prev.attachments || []), newAttachment]
+                }));
+            } else {
+                alert('Upload failed: ' + data.error);
+            }
+        } catch (err) {
+            console.error('File upload error:', err);
+            alert('Upload error.');
+        } finally {
+            setIsUploading(false);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+        }
+    };
+    
+    const removeAttachment = (index) => {
+        setTaskForm(prev => {
+            const newAttachments = [...prev.attachments];
+            newAttachments.splice(index, 1);
+            return { ...prev, attachments: newAttachments };
+        });
+    };
+
     const handleEllaSubmit = async (e) => {
         e.preventDefault();
         if (!ellaInput.trim()) return;
@@ -250,7 +298,11 @@ const TasksMap = () => {
         setIsAiLoading(true);
 
         try {
-            const promptContext = `[CURRENT_TASKS]: ${JSON.stringify(tasks)}\n\nUser instruction: ${userMessage}`;
+            const modeInstruction = ellaMode === 'Planning'
+                ? 'IMPORTANT: Do NOT use ADD_TASK, UPDATE_TASK or DELETE_TASK. Instead, use PROPOSE_TASK for all task creations to ask for user approval first.'
+                : 'IMPORTANT: Use ADD_TASK, UPDATE_TASK, and DELETE_TASK directly. Do not propose.';
+            
+            const promptContext = `[CURRENT_TASKS]: ${JSON.stringify(tasks)}\n\n[MODE INSTRUCTION]: ${modeInstruction}\n\nUser instruction: ${userMessage}`;
             const res = await fetch('http://localhost:3000/api/gemini/agent', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -279,6 +331,8 @@ const TasksMap = () => {
                             editTask(action.payload.id, action.payload);
                         } else if (action.type === 'DELETE_TASK') {
                             deleteTask(action.payload.id);
+                        } else if (action.type === 'PROPOSE_TASK') {
+                            setEllaHistory(prev => [...prev, { sender: 'agent-proposal', action: action.payload }]);
                         }
                     });
                 }
@@ -319,6 +373,12 @@ const TasksMap = () => {
                             className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === 'calendar' ? 'bg-white dark:bg-gray-700 shadow-sm text-primary' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}`}
                         >
                             Calendar
+                        </button>
+                        <button
+                            onClick={() => setViewMode('ai-conversations')}
+                            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === 'ai-conversations' ? 'bg-white dark:bg-gray-700 shadow-sm text-primary' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}`}
+                        >
+                            AI Conversations
                         </button>
                     </div>
                     <button className="btn-primary" onClick={handleOpenAddForm} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -392,10 +452,35 @@ const TasksMap = () => {
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Visual Media & Files (Images, PDFs)</label>
-                                <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-8 flex flex-col items-center justify-center text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer">
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mb-2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-                                    <p className="text-sm font-medium">Drag and drop files here or click to upload</p>
+                                <input 
+                                    type="file" 
+                                    ref={fileInputRef} 
+                                    className="hidden" 
+                                    onChange={handleFileUpload} 
+                                />
+                                <div 
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className={`border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center transition-colors cursor-pointer ${isUploading ? 'border-primary bg-primary/5' : 'border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                                >
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`mb-2 ${isUploading ? 'animate-bounce text-primary' : ''}`}>
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line>
+                                    </svg>
+                                    <p className="text-sm font-medium">{isUploading ? 'Uploading...' : 'Drag and drop files here or click to upload'}</p>
                                 </div>
+                                
+                                {taskForm.attachments && taskForm.attachments.length > 0 && (
+                                    <div className="mt-3 flex flex-wrap gap-2">
+                                        {taskForm.attachments.map((file, idx) => (
+                                            <div key={idx} className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 font-medium whitespace-nowrap overflow-hidden max-w-[200px]">
+                                                <svg className="w-4 h-4 text-gray-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                                                <a href={file.url} target="_blank" rel="noopener noreferrer" className="truncate hover:text-primary transition-colors flex-1">{file.name}</a>
+                                                <button type="button" onClick={() => removeAttachment(idx)} className="text-gray-400 hover:text-red-500 ml-1">
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
 
                             <div>
@@ -453,7 +538,7 @@ const TasksMap = () => {
                 </div>
             )}
 
-            {viewMode === 'board' ? (
+            {viewMode === 'board' && (
                 <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={handleDragEnd}>
                     <div style={{ display: 'flex', gap: '24px', overflowX: 'auto', paddingBottom: '20px' }}>
                         <TaskColumn id="todo" title={t(language, 'toDo')} color="#f59e0b" tasks={todoTasks} onEdit={handleOpenEditForm} onDelete={deleteTask} />
@@ -461,7 +546,9 @@ const TasksMap = () => {
                         <TaskColumn id="completed" title={t(language, 'completed')} color="#10b981" tasks={completedTasks} onEdit={handleOpenEditForm} onDelete={deleteTask} />
                     </div>
                 </DndContext>
-            ) : (
+            )}
+            
+            {viewMode === 'calendar' && (
                 <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
                     {/* Calendar Header */}
                     <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
@@ -530,13 +617,61 @@ const TasksMap = () => {
                 </div>
             )}
 
+            {viewMode === 'ai-conversations' && (
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left text-sm text-gray-700 dark:text-gray-300">
+                            <thead className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700">
+                                <tr>
+                                    <th className="px-6 py-4 font-bold text-gray-900 dark:text-white">Date/Time</th>
+                                    <th className="px-6 py-4 font-bold text-gray-900 dark:text-white">Associated Task</th>
+                                    <th className="px-6 py-4 font-bold text-gray-900 dark:text-white">AI Advice Summary</th>
+                                    <th className="px-6 py-4 font-bold text-gray-900 dark:text-white">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                                <tr className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                                    <td className="px-6 py-4">Oct 24, 10:30 AM</td>
+                                    <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">Contacter les entreprises de BTP</td>
+                                    <td className="px-6 py-4 text-gray-500 dark:text-gray-400">Drafted intro email, generated talking points.</td>
+                                    <td className="px-6 py-4">
+                                        <button onClick={() => setIsEllaOpen(true)} className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-lg transition-colors">View Chat</button>
+                                    </td>
+                                </tr>
+                                <tr className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                                    <td className="px-6 py-4">Oct 23, 2:15 PM</td>
+                                    <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">Collaborative notes in draft.</td>
+                                    <td className="px-6 py-4 text-gray-500 dark:text-gray-400">Analyzed market trends, suggested structure.</td>
+                                    <td className="px-6 py-4">
+                                        <button onClick={() => setIsEllaOpen(true)} className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-lg transition-colors">View Chat</button>
+                                    </td>
+                                </tr>
+                                <tr className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                                    <td className="px-6 py-4">Oct 22, 9:00 AM</td>
+                                    <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">Meet le jeudi à 11h30 et 15h30.</td>
+                                    <td className="px-6 py-4 text-gray-500 dark:text-gray-400">Summarized document, provided questions.</td>
+                                    <td className="px-6 py-4">
+                                        <button onClick={() => setIsEllaOpen(true)} className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-lg transition-colors">View Chat</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+
             {/* Ella Floating Button */}
             <button
                 onClick={() => setIsEllaOpen(true)}
-                className="fixed bottom-6 right-6 w-14 h-14 bg-purple-600 hover:bg-purple-700 text-white rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-105 z-40"
+                className="fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-r from-purple-500 to-indigo-600 hover:shadow-xl text-white rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-105 active:scale-95 z-40"
                 title="Talk to Ella"
             >
-                <div className="text-2xl">🧠</div>
+                <div>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+                        <path d="M5 3v4M7 5H3"/>
+                    </svg>
+                </div>
             </button>
 
             {/* Ella Chat Panel */}
@@ -544,10 +679,21 @@ const TasksMap = () => {
                 {/* Header */}
                 <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center bg-purple-50 dark:bg-purple-900/10">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-purple-200 dark:bg-purple-800 flex items-center justify-center text-xl">🧠</div>
+                        <div className="w-10 h-10 rounded-full bg-purple-200 dark:bg-purple-800 flex items-center justify-center text-purple-600 dark:text-purple-300">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+                                <path d="M5 3v4M7 5H3"/>
+                            </svg>
+                        </div>
                         <div>
                             <h3 className="font-bold text-gray-900 dark:text-white leading-tight">Ella</h3>
-                            <p className="text-xs text-purple-600 dark:text-purple-400 font-medium">Life Architect</p>
+                            <div className="flex items-center gap-2 mt-0.5">
+                                <p className="text-xs text-purple-600 dark:text-purple-400 font-medium truncate">Life Architect</p>
+                                <div className="flex bg-purple-200/50 dark:bg-purple-900/50 rounded-md p-0.5 ml-1">
+                                    <button onClick={() => setEllaMode('Planning')} className={`px-2 py-0.5 text-[10px] uppercase tracking-wider font-bold rounded ${ellaMode === 'Planning' ? 'bg-white dark:bg-gray-700 text-purple-700 dark:text-purple-300 shadow-sm' : 'text-purple-600/70 dark:text-purple-400/70'}`}>Plan</button>
+                                    <button onClick={() => setEllaMode('Fast')} className={`px-2 py-0.5 text-[10px] uppercase tracking-wider font-bold rounded ${ellaMode === 'Fast' ? 'bg-white dark:bg-gray-700 text-purple-700 dark:text-purple-300 shadow-sm' : 'text-purple-600/70 dark:text-purple-400/70'}`}>Fast</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <button onClick={() => setIsEllaOpen(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
@@ -559,11 +705,25 @@ const TasksMap = () => {
                 <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
                     {ellaHistory.map((msg, i) => (
                         <div key={i} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                            <div className={`max-w-[85%] p-3 rounded-2xl text-sm ${msg.sender === 'user' ? 'bg-purple-600 text-white rounded-tr-sm' : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-tl-sm'}`}>
-                                {msg.text.split('\\n').map((line, idx) => (
-                                    <React.Fragment key={idx}>{line}<br/></React.Fragment>
-                                ))}
-                            </div>
+                            {msg.sender === 'agent-proposal' ? (
+                                <div className="bg-white dark:bg-gray-800 p-3 rounded-xl border border-purple-200 dark:border-purple-800 shadow-sm w-[85%] mt-1">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <svg width="14" height="14" className="text-purple-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                                        <p className="text-[11px] font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400">Proposed Task</p>
+                                    </div>
+                                    <p className="text-sm font-semibold mb-1 text-gray-900 dark:text-white leading-snug">{msg.action.title}</p>
+                                    <div className="flex gap-2 mt-3">
+                                        <button onClick={() => { addTask(msg.action); setEllaHistory(prev => prev.filter((_, idx) => idx !== i)); }} className="flex-1 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold rounded-lg transition-colors">Approve</button>
+                                        <button onClick={() => setEllaHistory(prev => prev.filter((_, idx) => idx !== i))} className="flex-1 py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-xs font-semibold rounded-lg transition-colors">Reject</button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className={`max-w-[85%] p-3 rounded-2xl text-sm ${msg.sender === 'user' ? 'bg-purple-600 text-white rounded-tr-sm' : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-tl-sm'}`}>
+                                    {msg.text.split('\\n').map((line, idx) => (
+                                        <React.Fragment key={idx}>{line}<br/></React.Fragment>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     ))}
                     {isAiLoading && (
