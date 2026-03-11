@@ -6,7 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
 const { generateProposals, chatWithAgent, generateImage } = require('./geminiService');
-const { logCopilotInteraction, pool } = require('./db');
+const { logCopilotInteraction, pool, getEllaMemories, saveEllaMemory } = require('./db');
 const { getCachedProposals, setCachedProposals } = require('./redisClient');
 
 const app = express();
@@ -258,7 +258,37 @@ app.post('/api/gemini/agent', async (req, res) => {
     }
 
     try {
-        const aiResponse = await chatWithAgent(persona, message, imageParams, promptFormat);
+        let finalMessage = message;
+        if (persona === 'ella') {
+            const memories = await getEllaMemories('default_user');
+            if (Object.keys(memories).length > 0) {
+                 finalMessage = `[LONG_TERM_MEMORY]: ${JSON.stringify(memories)}\n\n` + message;
+            }
+        }
+
+        const aiResponse = await chatWithAgent(persona, finalMessage, imageParams, promptFormat);
+
+        if (persona === 'ella') {
+             try {
+                 let rawRes = aiResponse.response;
+                 if (rawRes.startsWith('\`\`\`json')) {
+                     rawRes = rawRes.replace(/^\`\`\`json\s*/, '').replace(/\s*\`\`\`$/, '');
+                 } else if (rawRes.startsWith('\`\`\`')) {
+                     rawRes = rawRes.replace(/^\`\`\`\s*/, '').replace(/\s*\`\`\`$/, '');
+                 }
+                 const parsed = JSON.parse(rawRes);
+                 if (parsed.actions && Array.isArray(parsed.actions)) {
+                     for (const act of parsed.actions) {
+                         if (act.type === 'SAVE_MEMORY' && act.payload && act.payload.key && act.payload.value) {
+                              await saveEllaMemory('default_user', act.payload.key, act.payload.value);
+                         }
+                     }
+                 }
+             } catch(e) { 
+                 console.error('Error parsing Ella response for memory saving:', e);
+             }
+        }
+
         res.json({
             status: 'success',
             response: aiResponse.response

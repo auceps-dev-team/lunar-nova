@@ -55,16 +55,25 @@ Tu DOIS formuler ta réponse STRICTEMENT EN JSON en respectant ce format :
        "payload": {
          "id": "12345"
        }
+    },
+    {
+       "type": "SAVE_MEMORY",
+       "payload": {
+         "key": "habitudes_matinales",
+         "value": "L'utilisateur aime courir 30min à 6h du matin."
+       }
     }
   ]
 }
 
-- Pour ajouter une nouvelle tâche, utilise ADD_TASK.
+- Pour ajouter une nouvelle tâche, utilise ADD_TASK (ou PROPOSE_TASK selon la consigne Mode).
 - Pour modifier le statut ou la description d'une tâche existante, utilise UPDATE_TASK (l'ID est obligatoire).
 - Pour supprimer une tâche obsolète/inutile, utilise DELETE_TASK.
+- Pour mémoriser une information importante sur l'utilisateur à long terme (goûts, habitudes, objectifs globaux), utilise SAVE_MEMORY.
 - S'il n'y a aucune action à faire, retourne simplement un tableau "actions" vide [].
 
 Rends ton texte utile, structuré (utilise \n\n pour sauter des lignes), et motive l'utilisateur.
+Prends en compte le champ [LONG_TERM_MEMORY] s'il t'est fourni, pour adapter tes conseils à l'utilisateur.
 `,
     outputFormat: "json"
 };
