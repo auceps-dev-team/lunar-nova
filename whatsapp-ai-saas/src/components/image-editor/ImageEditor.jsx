@@ -104,7 +104,7 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                 }
                 exifObj = piexif.load(jpegData);
             } catch (e) {
-                console.warn('Failed to load EXIF, initializing empty EXIF', e);
+                // Silently initialize empty EXIF for non-standard image formats (PNG, WebP, etc.)
                 exifObj = { '0th': {}, 'Exif': {}, 'GPS': {}, '1st': {}, 'Interop': {} };
             }
 

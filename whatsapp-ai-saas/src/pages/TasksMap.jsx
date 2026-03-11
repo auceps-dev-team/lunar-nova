@@ -219,7 +219,7 @@ const TasksMap = () => {
             const res = await fetch('http://localhost:3000/api/gemini/agent', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: prompt, personaId: 'ella' })
+                body: JSON.stringify({ message: prompt, persona: 'ella' })
             });
             const data = await res.json();
             
@@ -254,7 +254,7 @@ const TasksMap = () => {
             const res = await fetch('http://localhost:3000/api/gemini/agent', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: promptContext, personaId: 'ella' })
+                body: JSON.stringify({ message: promptContext, persona: 'ella' })
             });
             const data = await res.json();
             
