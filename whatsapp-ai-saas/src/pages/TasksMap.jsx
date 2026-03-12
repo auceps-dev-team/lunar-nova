@@ -18,9 +18,9 @@ const SortableTask = ({ task, onEdit, onDelete }) => {
 
     const getTagColor = (tag) => {
         const colors = {
-            'Development': '#3b82f6',
-            'Legal': '#10b981',
-            'Design': '#8b5cf6',
+            'Development': '#10b981',
+            'Legal': '#0b9f84',
+            'Design': '#0d9488',
             'Marketing': '#f59e0b',
             'Sales': '#ef4444'
         };
@@ -457,7 +457,7 @@ const TasksMap = () => {
                 <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={handleDragEnd}>
                     <div style={{ display: 'flex', gap: '24px', overflowX: 'auto', paddingBottom: '20px' }}>
                         <TaskColumn id="todo" title={t(language, 'toDo')} color="#f59e0b" tasks={todoTasks} onEdit={handleOpenEditForm} onDelete={deleteTask} />
-                        <TaskColumn id="in-progress" title={t(language, 'inProgress')} color="#3b82f6" tasks={inProgressTasks} onEdit={handleOpenEditForm} onDelete={deleteTask} />
+                        <TaskColumn id="in-progress" title={t(language, 'inProgress')} color="#0b9f84" tasks={inProgressTasks} onEdit={handleOpenEditForm} onDelete={deleteTask} />
                         <TaskColumn id="completed" title={t(language, 'completed')} color="#10b981" tasks={completedTasks} onEdit={handleOpenEditForm} onDelete={deleteTask} />
                     </div>
                 </DndContext>
@@ -516,7 +516,7 @@ const TasksMap = () => {
                                         <div className="flex-1 overflow-y-auto space-y-1 mt-1 pr-1 custom-scrollbar">
                                             {dayTasks.map(task => (
                                                 <div key={task.id} className="text-[10px] truncate px-1.5 py-1 rounded bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 shadow-sm" title={task.title}>
-                                                    <span style={{ color: task.status === 'completed' ? '#10b981' : task.status === 'in-progress' ? '#3b82f6' : '#f59e0b', marginRight: '4px' }}>•</span>
+                                                    <span style={{ color: task.status === 'completed' ? '#10b981' : task.status === 'in-progress' ? '#0b9f84' : '#f59e0b', marginRight: '4px' }}>•</span>
                                                     {task.title}
                                                 </div>
                                             ))}
@@ -533,7 +533,7 @@ const TasksMap = () => {
             {/* Ella Floating Button */}
             <button
                 onClick={() => setIsEllaOpen(true)}
-                className="fixed bottom-6 right-6 w-14 h-14 bg-purple-600 hover:bg-purple-700 text-white rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-105 z-40"
+                className="fixed bottom-6 right-6 w-14 h-14 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-105 z-40"
                 title="Talk to Ella"
             >
                 <div className="text-2xl">🧠</div>
@@ -542,12 +542,12 @@ const TasksMap = () => {
             {/* Ella Chat Panel */}
             <div className={`fixed top-0 right-0 h-full w-96 bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 shadow-2xl z-50 transform transition-transform duration-300 flex flex-col ${isEllaOpen ? 'translate-x-0' : 'translate-x-full'}`}>
                 {/* Header */}
-                <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center bg-purple-50 dark:bg-purple-900/10">
+                <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center bg-emerald-50 dark:bg-emerald-900/10">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-purple-200 dark:bg-purple-800 flex items-center justify-center text-xl">🧠</div>
+                        <div className="w-10 h-10 rounded-full bg-emerald-200 dark:bg-emerald-800 flex items-center justify-center text-xl">🧠</div>
                         <div>
                             <h3 className="font-bold text-gray-900 dark:text-white leading-tight">Ella</h3>
-                            <p className="text-xs text-purple-600 dark:text-purple-400 font-medium">Life Architect</p>
+                            <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">Life Architect</p>
                         </div>
                     </div>
                     <button onClick={() => setIsEllaOpen(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
@@ -559,7 +559,7 @@ const TasksMap = () => {
                 <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
                     {ellaHistory.map((msg, i) => (
                         <div key={i} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                            <div className={`max-w-[85%] p-3 rounded-2xl text-sm ${msg.sender === 'user' ? 'bg-purple-600 text-white rounded-tr-sm' : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-tl-sm'}`}>
+                            <div className={`max-w-[85%] p-3 rounded-2xl text-sm ${msg.sender === 'user' ? 'bg-emerald-600 text-white rounded-tr-sm' : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-tl-sm'}`}>
                                 {msg.text.split('\\n').map((line, idx) => (
                                     <React.Fragment key={idx}>{line}<br/></React.Fragment>
                                 ))}
@@ -569,9 +569,9 @@ const TasksMap = () => {
                     {isAiLoading && (
                         <div className="flex justify-start">
                             <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-2xl rounded-tl-sm flex gap-1 items-center">
-                                <div className="w-2 h-2 rounded-full bg-purple-400 animate-bounce"></div>
-                                <div className="w-2 h-2 rounded-full bg-purple-400 animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                                <div className="w-2 h-2 rounded-full bg-purple-400 animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-bounce"></div>
+                                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-bounce" style={{animationDelay: '0.2s'}}></div>
                             </div>
                         </div>
                     )}
@@ -585,12 +585,12 @@ const TasksMap = () => {
                             value={ellaInput}
                             onChange={(e) => setEllaInput(e.target.value)}
                             placeholder="Delegate a task to Ella..."
-                            className="w-full pl-4 pr-12 py-3 bg-gray-100 dark:bg-gray-800 border-none rounded-xl text-sm focus:ring-2 focus:ring-purple-500 dark:text-white"
+                            className="w-full pl-4 pr-12 py-3 bg-gray-100 dark:bg-gray-800 border-none rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 dark:text-white"
                         />
                         <button
                             type="submit"
                             disabled={!ellaInput.trim() || isAiLoading}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
                         </button>

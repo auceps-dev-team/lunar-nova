@@ -19,9 +19,9 @@ const Dashboard = () => {
 
     const metrics = [
         { title: t(language, 'activeInstances'), value: activeInstancesCount, trend: "Live", color: "#10b981" },
-        { title: t(language, 'copilotReplies'), value: copilotCount.toLocaleString(), trend: "Tracked", color: "#3b82f6" },
-        { title: t(language, 'automatedInvoices'), value: "0", trend: "0%", color: "#8b5cf6" },
-        { title: t(language, 'tasksCompleted'), value: completedTasksCount.toString(), trend: `${completedPercentage}%`, color: "#f59e0b" },
+        { title: t(language, 'copilotReplies'), value: copilotCount.toLocaleString(), trend: "Tracked", color: "#10b981" },
+        { title: t(language, 'automatedInvoices'), value: "0", trend: "0%", color: "#10b981" },
+        { title: t(language, 'tasksCompleted'), value: completedTasksCount.toString(), trend: `${completedPercentage}%`, color: "#10b981" },
     ];
 
     // Generate mock data for the last 7 days, placing current copilotCount on today
@@ -84,8 +84,8 @@ const Dashboard = () => {
                         <AreaChart data={mockChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                             <defs>
                                 <linearGradient id="colorReplies" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                                 </linearGradient>
                             </defs>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-color)" opacity={0.5} />
@@ -95,7 +95,7 @@ const Dashboard = () => {
                                 contentStyle={{ background: 'var(--panel-bg)', borderColor: 'var(--border-color)', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                                 itemStyle={{ color: 'var(--text-primary)', fontWeight: 600 }}
                             />
-                            <Area type="monotone" dataKey="replies" name="Copilot Replies" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorReplies)" />
+                            <Area type="monotone" dataKey="replies" name="Copilot Replies" stroke="#0b9f84" strokeWidth={3} fillOpacity={1} fill="url(#colorReplies)" />
                         </AreaChart>
                     </ResponsiveContainer>
                 </div>

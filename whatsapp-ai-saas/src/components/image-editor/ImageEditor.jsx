@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Trash2, Download, Wand2, RefreshCw, Info, FileImage, Camera, Sparkles, AlertCircle, Undo2, Redo2, FileText, Eraser } from 'lucide-react';
+import { getTranslation as t_helper } from '../../locales';
 import piexif from 'piexifjs';
+import useAppStore from '../../store';
 
 const ensureJpeg = (base64) => {
     return new Promise((resolve, reject) => {
@@ -32,10 +34,8 @@ const toSafeExifString = (str) => {
 };
 
 export function ImageEditor({ image, onUpdateImage, onRemove }) {
-    const [activeTab, setActiveTab] = useState('ai');
-    const [isProcessing, setIsProcessing] = useState(false);
-    const [customPrompt, setCustomPrompt] = useState('');
     const [error, setError] = useState(null);
+    const language = useAppStore(state => state.appSettings?.language) || 'en';
 
     // Undo/Redo State
     const [history, setHistory] = useState([]);
@@ -515,8 +515,8 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                                                 <Sparkles className="w-6 h-6 text-[#0b9f84] absolute animate-pulse pointer-events-none" />
                                 </div>
                                 <div className="text-center">
-                                    <h3 className="text-base font-semibold text-gray-900 dark:text-zinc-200">Processing with AI</h3>
-                                    <p className="text-sm text-gray-500 dark:text-zinc-500 mt-1">This might take a few seconds...</p>
+                                    <h3 className="text-base font-semibold text-gray-900 dark:text-zinc-200">{t_helper(language, 'processing')}</h3>
+                                    <p className="text-sm text-gray-500 dark:text-zinc-500 mt-1">{t_helper(language, 'processingDesc')}</p>
                                 </div>
                             </div>
                         </div>
@@ -572,7 +572,7 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                             <div className="space-y-8">
                                 <div className="space-y-3">
                                     <h3 className="text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider flex items-center">
-                                        Quick Actions
+                                        {t_helper(language, 'actions')}
                                     </h3>
                                     <div className="grid grid-cols-1 gap-2.5">
                                         <button
@@ -583,7 +583,7 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                                             <div className="w-8 h-8 rounded-lg bg-white dark:bg-zinc-900 flex items-center justify-center mr-3 group-hover:bg-gray-50 dark:group-hover:bg-zinc-800 transition-colors border border-gray-100 dark:border-transparent">
                                                 <FileText className="w-4 h-4 text-gray-400 dark:text-zinc-400 group-hover:text-[#0b9f84]" />
                                             </div>
-                                            Quick Description (EXIF)
+                                            {t_helper(language, 'description')}
                                         </button>
                                         <button
                                             onClick={() => handleAIEdit('Remove the background from this image. Make the background transparent or solid white.')}
@@ -593,7 +593,7 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                                             <div className="w-8 h-8 rounded-lg bg-white dark:bg-zinc-900 flex items-center justify-center mr-3 group-hover:bg-gray-50 dark:group-hover:bg-zinc-800 transition-colors border border-gray-100 dark:border-transparent">
                                                 <Eraser className="w-4 h-4 text-gray-400 dark:text-zinc-400 group-hover:text-[#0b9f84]" />
                                             </div>
-                                            Remove Background
+                                            {t_helper(language, 'removeBg')}
                                         </button>
                                         <button
                                             onClick={() => handleAIEdit('Remove any watermarks, text, or logos from this image. Keep the background intact.')}
@@ -603,7 +603,7 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                                             <div className="w-8 h-8 rounded-lg bg-white dark:bg-zinc-900 flex items-center justify-center mr-3 group-hover:bg-gray-50 dark:group-hover:bg-zinc-800 transition-colors border border-gray-100 dark:border-transparent">
                                                 <Trash2 className="w-4 h-4 text-gray-400 dark:text-zinc-400 group-hover:text-[#0b9f84]" />
                                             </div>
-                                            Remove Watermark
+                                            {t_helper(language, 'removeText')}
                                         </button>
                                         <button
                                             onClick={() => handleAIEdit('Improve the image quality, enhance colors, sharpen details, and reduce noise.')}
@@ -624,7 +624,7 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                                         <textarea
                                             value={customPrompt}
                                             onChange={(e) => setCustomPrompt(e.target.value)}
-                                            placeholder="E.g., Make the sky more blue, remove the person in the background..."
+                                            placeholder={t_helper(language, 'editPlaceholder')}
                                             className="w-full h-28 bg-gray-50 dark:bg-zinc-950/50 border border-gray-200 dark:border-zinc-800 rounded-xl p-3.5 text-sm text-gray-800 dark:text-zinc-200 resize-none focus:outline-none focus:border-[#0b9f84] focus:ring-1 focus:ring-[#0b9f84] transition-all placeholder:text-gray-400 dark:placeholder:text-zinc-600"
                                         />
                                     </div>
@@ -633,7 +633,7 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                                         disabled={isProcessing || !customPrompt.trim()}
                                         className="w-full py-3 bg-[#0b9f84] hover:bg-[#088b73] text-white text-sm font-semibold rounded-xl transition-all duration-200 disabled:opacity-50 shadow-lg shadow-[#0b9f84]/20"
                                     >
-                                        Apply Custom Edit
+                                        {t_helper(language, 'apply')}
                                     </button>
                                 </div>
 

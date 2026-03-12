@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Sparkles } from 'lucide-react';
 import useAppStore from '../store';
+import { getTranslation as t } from '../locales';
 
 // ── Preset Data ────────────────────────────────────────────────
 const MODELS = [
@@ -79,38 +80,6 @@ const PhotoShoot = ({ activeId }) => {
 
     const promptFormat = useAppStore(state => state.appSettings?.promptFormat) || 'json';
     const language = useAppStore(state => state.appSettings?.language) || 'en';
-
-    // ── Translation ──
-    const t = {
-        en: {
-            analyzing: "Analyzing Product...",
-            analyzingDesc: "Clarisse is studying your product and generating the optimal photoshoot strategy",
-            generating: "Génération en cours...",
-            generatingDesc: "L'IA crée votre séance photo, un instant...",
-            generateBtn: "Generate (Imagen 4)",
-            generateDone: "Generated Results",
-            readyTitle: "Ready for a Photo Shoot",
-            readyDesc: "Upload your product, select a model, pose, and background — then hit Analyze to generate your strategy.",
-            strategy: "Strategy",
-            recent: "Récent",
-            results: "image",
-            download: "Download"
-        },
-        fr: {
-            analyzing: "Analyse du produit...",
-            analyzingDesc: "Clarisse étudie votre produit et génère la stratégie de séance photo optimale",
-            generating: "Génération en cours...",
-            generatingDesc: "L'IA crée votre séance photo, un instant...",
-            generateBtn: "Générer (Imagen 4)",
-            generateDone: "Résultats générés",
-            readyTitle: "Prêt pour un shooting photo",
-            readyDesc: "Téléchargez votre produit, sélectionnez un modèle, une pose et un arrière-plan, puis cliquez sur Analyser pour générer votre stratégie.",
-            strategy: "Stratégie",
-            recent: "Récent",
-            results: "image",
-            download: "Télécharger"
-        }
-    }[language];
 
     // ── Handlers ──
     const loadHistoryItem = (hist) => {
@@ -472,7 +441,7 @@ const PhotoShoot = ({ activeId }) => {
                             <div className="shrink-0 flex items-center gap-3 overflow-x-auto bg-gray-50 dark:bg-gray-900 border border-gray-100 rounded-xl p-3 shadow-sm dark:border-gray-700">
                                 <span className="text-[10px] font-semibold text-gray-500 mr-2 flex items-center gap-1 shrink-0">
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                                    Récent
+                                    {t(language, 'recent')}
                                 </span>
                                 {historyForAgent.slice(0, 5).map(hist => (
                                     <div key={hist.id} onClick={() => loadHistoryItem(hist)} className="w-10 h-10 shrink-0 rounded-lg border border-gray-200 hover:border-[#0b9f84] cursor-pointer overflow-hidden bg-gray-200 dark:bg-gray-800 transition-all hover:-translate-y-1">
@@ -590,7 +559,7 @@ const PhotoShoot = ({ activeId }) => {
                                         <circle cx="11" cy="11" r="8"></circle>
                                         <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                                     </svg>
-                                    {t.analyzing}
+                                    {t(language, 'analyzing')}
                                 </>
                             ) : (
                                 <>
@@ -598,7 +567,7 @@ const PhotoShoot = ({ activeId }) => {
                                         <circle cx="11" cy="11" r="8"></circle>
                                         <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                                     </svg>
-                                    {t.analyzing} & Generate Strategy
+                                    {t(language, 'analyzing')} & Generate Strategy
                                 </>
                             )}
                         </button>
@@ -620,16 +589,16 @@ const PhotoShoot = ({ activeId }) => {
                                             <Sparkles className="w-6 h-6 text-[#0b9f84] absolute animate-pulse pointer-events-none" />
                                         </div>
                                         <div className="text-center">
-                                            <h3 className="text-base font-semibold text-gray-900 dark:text-white uppercase tracking-wider">{t.generating}</h3>
-                                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t.generatingDesc}</p>
+                                            <h3 className="text-base font-semibold text-gray-900 dark:text-white uppercase tracking-wider">{t(language, 'generating')}</h3>
+                                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t(language, 'generatingDesc')}</p>
                                         </div>
                                     </div>
                                 </div>
                             )}
 
                             <div className="flex items-center justify-between">
-                                <h3 className="text-lg font-bold text-gray-900 dark:text-white">{t.generateDone}</h3>
-                                <span className="text-xs text-gray-400">{generatedResults.length} {t.results}{generatedResults.length > 1 ? 's' : ''}</span>
+                                <h3 className="text-lg font-bold text-gray-900 dark:text-white">{t(language, 'generateDone')}</h3>
+                                <span className="text-xs text-gray-400">{generatedResults.length} {t(language, 'results')}{generatedResults.length > 1 ? 's' : ''}</span>
                             </div>
 
                             {/* Main image display */}
@@ -640,7 +609,7 @@ const PhotoShoot = ({ activeId }) => {
                                     className="w-full h-full object-contain"
                                 />
                                 <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-xs font-medium flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-green-400"></span> Generated Result
+                                    <span className="w-2 h-2 rounded-full bg-green-400"></span> {t(language, 'generatedResults')}
                                 </div>
                                 <div className="absolute top-4 right-4 flex gap-2">
                                     <button
@@ -667,7 +636,7 @@ const PhotoShoot = ({ activeId }) => {
                                         }}
                                     >
                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                                        {t.download}
+                                        {t(language, 'download')}
                                     </button>
                                 </div>
 
