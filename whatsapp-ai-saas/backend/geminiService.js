@@ -147,7 +147,7 @@ The output image should be a ${dims.label} aspect ratio (approximately ${dims.w}
             }
 
             const response = await ai.models.generateContent({
-                model: 'gemini-2.0-flash-exp-image-generation',
+                model: 'gemini-3.1-flash-image-preview',
                 contents: [
                     {
                         role: 'user',
