@@ -511,8 +511,8 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                         <div className="absolute inset-0 z-20 bg-white/60 dark:bg-zinc-950/60 flex items-center justify-center backdrop-blur-md transition-all duration-300">
                             <div className="flex flex-col items-center space-y-5 p-8 bg-white/90 dark:bg-zinc-900/80 rounded-2xl border border-gray-200 dark:border-zinc-800/50 shadow-2xl">
                                 <div className="relative flex items-center justify-center">
-                                    <div className="w-16 h-16 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
-                                    <Sparkles className="w-6 h-6 text-primary absolute animate-pulse pointer-events-none" />
+                                                <div className="w-16 h-16 border-4 border-[#0b9f84]/20 border-t-[#0b9f84] rounded-full animate-spin"></div>
+                                                <Sparkles className="w-6 h-6 text-[#0b9f84] absolute animate-pulse pointer-events-none" />
                                 </div>
                                 <div className="text-center">
                                     <h3 className="text-base font-semibold text-gray-900 dark:text-zinc-200">Processing with AI</h3>
@@ -529,7 +529,7 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                         <button
                             onClick={() => setActiveTab('ai')}
                             className={`flex-1 py-2 text-xs font-medium rounded-lg transition-all duration-200 flex items-center justify-center ${activeTab === 'ai'
-                                ? 'bg-gray-100 dark:bg-zinc-800 text-primary shadow-sm'
+                                ? 'bg-gray-100 dark:bg-zinc-800 text-[#0b9f84] shadow-sm'
                                 : 'text-gray-500 dark:text-zinc-500 hover:text-gray-700 dark:hover:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800/50'
                                 }`}
                         >
@@ -540,7 +540,7 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                         <button
                             onClick={() => setActiveTab('exif')}
                             className={`flex-1 py-2 text-xs font-medium rounded-lg transition-all duration-200 flex items-center justify-center ${activeTab === 'exif'
-                                ? 'bg-gray-100 dark:bg-zinc-800 text-primary shadow-sm'
+                                ? 'bg-gray-100 dark:bg-zinc-800 text-[#0b9f84] shadow-sm'
                                 : 'text-gray-500 dark:text-zinc-500 hover:text-gray-700 dark:hover:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800/50'
                                 }`}
                         >
@@ -551,7 +551,7 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                         <button
                             onClick={() => setActiveTab('metadata')}
                             className={`flex-1 py-2 text-xs font-medium rounded-lg transition-all duration-200 flex items-center justify-center ${activeTab === 'metadata'
-                                ? 'bg-gray-100 dark:bg-zinc-800 text-primary shadow-sm'
+                                ? 'bg-gray-100 dark:bg-zinc-800 text-[#0b9f84] shadow-sm'
                                 : 'text-gray-500 dark:text-zinc-500 hover:text-gray-700 dark:hover:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800/50'
                                 }`}
                         >
@@ -581,7 +581,7 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                                             className="w-full py-3 px-4 bg-gray-50 dark:bg-zinc-800/80 hover:bg-gray-100 dark:hover:bg-zinc-700 text-sm font-medium text-gray-800 dark:text-zinc-200 rounded-xl transition-all duration-200 text-left disabled:opacity-50 border border-gray-200 dark:border-zinc-700/50 flex items-center group"
                                         >
                                             <div className="w-8 h-8 rounded-lg bg-white dark:bg-zinc-900 flex items-center justify-center mr-3 group-hover:bg-gray-50 dark:group-hover:bg-zinc-800 transition-colors border border-gray-100 dark:border-transparent">
-                                                <FileText className="w-4 h-4 text-gray-400 dark:text-zinc-400 group-hover:text-primary" />
+                                                <FileText className="w-4 h-4 text-gray-400 dark:text-zinc-400 group-hover:text-[#0b9f84]" />
                                             </div>
                                             Quick Description (EXIF)
                                         </button>
@@ -591,7 +591,7 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                                             className="w-full py-3 px-4 bg-gray-50 dark:bg-zinc-800/80 hover:bg-gray-100 dark:hover:bg-zinc-700 text-sm font-medium text-gray-800 dark:text-zinc-200 rounded-xl transition-all duration-200 text-left disabled:opacity-50 border border-gray-200 dark:border-zinc-700/50 flex items-center group"
                                         >
                                             <div className="w-8 h-8 rounded-lg bg-white dark:bg-zinc-900 flex items-center justify-center mr-3 group-hover:bg-gray-50 dark:group-hover:bg-zinc-800 transition-colors border border-gray-100 dark:border-transparent">
-                                                <Eraser className="w-4 h-4 text-gray-400 dark:text-zinc-400 group-hover:text-primary" />
+                                                <Eraser className="w-4 h-4 text-gray-400 dark:text-zinc-400 group-hover:text-[#0b9f84]" />
                                             </div>
                                             Remove Background
                                         </button>
@@ -601,7 +601,7 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                                             className="w-full py-3 px-4 bg-gray-50 dark:bg-zinc-800/80 hover:bg-gray-100 dark:hover:bg-zinc-700 text-sm font-medium text-gray-800 dark:text-zinc-200 rounded-xl transition-all duration-200 text-left disabled:opacity-50 border border-gray-200 dark:border-zinc-700/50 flex items-center group"
                                         >
                                             <div className="w-8 h-8 rounded-lg bg-white dark:bg-zinc-900 flex items-center justify-center mr-3 group-hover:bg-gray-50 dark:group-hover:bg-zinc-800 transition-colors border border-gray-100 dark:border-transparent">
-                                                <Trash2 className="w-4 h-4 text-gray-400 dark:text-zinc-400 group-hover:text-primary" />
+                                                <Trash2 className="w-4 h-4 text-gray-400 dark:text-zinc-400 group-hover:text-[#0b9f84]" />
                                             </div>
                                             Remove Watermark
                                         </button>
@@ -611,7 +611,7 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                                             className="w-full py-3 px-4 bg-gray-50 dark:bg-zinc-800/80 hover:bg-gray-100 dark:hover:bg-zinc-700 text-sm font-medium text-gray-800 dark:text-zinc-200 rounded-xl transition-all duration-200 text-left disabled:opacity-50 border border-gray-200 dark:border-zinc-700/50 flex items-center group"
                                         >
                                             <div className="w-8 h-8 rounded-lg bg-white dark:bg-zinc-900 flex items-center justify-center mr-3 group-hover:bg-gray-50 dark:group-hover:bg-zinc-800 transition-colors border border-gray-100 dark:border-transparent">
-                                                <Sparkles className="w-4 h-4 text-gray-400 dark:text-zinc-400 group-hover:text-primary" />
+                                                <Sparkles className="w-4 h-4 text-gray-400 dark:text-zinc-400 group-hover:text-[#0b9f84]" />
                                             </div>
                                             Improve Quality
                                         </button>
@@ -625,21 +625,21 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                                             value={customPrompt}
                                             onChange={(e) => setCustomPrompt(e.target.value)}
                                             placeholder="E.g., Make the sky more blue, remove the person in the background..."
-                                            className="w-full h-28 bg-gray-50 dark:bg-zinc-950/50 border border-gray-200 dark:border-zinc-800 rounded-xl p-3.5 text-sm text-gray-800 dark:text-zinc-200 resize-none focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-gray-400 dark:placeholder:text-zinc-600"
+                                            className="w-full h-28 bg-gray-50 dark:bg-zinc-950/50 border border-gray-200 dark:border-zinc-800 rounded-xl p-3.5 text-sm text-gray-800 dark:text-zinc-200 resize-none focus:outline-none focus:border-[#0b9f84] focus:ring-1 focus:ring-[#0b9f84] transition-all placeholder:text-gray-400 dark:placeholder:text-zinc-600"
                                         />
                                     </div>
                                     <button
                                         onClick={() => handleAIEdit(customPrompt)}
                                         disabled={isProcessing || !customPrompt.trim()}
-                                        className="w-full py-3 bg-primary hover:bg-primary-dark text-white text-sm font-semibold rounded-xl transition-all duration-200 disabled:opacity-50 shadow-lg shadow-primary/20"
+                                        className="w-full py-3 bg-[#0b9f84] hover:bg-[#088b73] text-white text-sm font-semibold rounded-xl transition-all duration-200 disabled:opacity-50 shadow-lg shadow-[#0b9f84]/20"
                                     >
                                         Apply Custom Edit
                                     </button>
                                 </div>
 
-                                <div className="p-4 bg-primary/5 border border-primary/10 rounded-xl flex items-start space-x-3">
-                                    <Info className="w-5 h-5 text-primary shrink-0" />
-                                    <p className="text-xs text-primary/80 leading-relaxed">
+                                <div className="p-4 bg-[#0b9f84]/5 border border-[#0b9f84]/10 rounded-xl flex items-start space-x-3">
+                                    <Info className="w-5 h-5 text-[#0b9f84] shrink-0" />
+                                    <p className="text-xs text-[#0b9f84]/80 leading-relaxed">
                                         Powered by Gemini 2.5 Flash. The AI will generate a new image based on your prompt and the original image.
                                     </p>
                                 </div>
@@ -657,7 +657,7 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                                                     type="text"
                                                     value={exifForm.artist}
                                                     onChange={(e) => setExifForm({ ...exifForm, artist: e.target.value })}
-                                                    className="w-full bg-gray-50 dark:bg-zinc-950/50 border border-gray-200 dark:border-zinc-800 rounded-xl px-3.5 py-2.5 text-sm text-gray-800 dark:text-zinc-200 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+                                                    className="w-full bg-gray-50 dark:bg-zinc-950/50 border border-gray-200 dark:border-zinc-800 rounded-xl px-3.5 py-2.5 text-sm text-gray-800 dark:text-zinc-200 focus:outline-none focus:border-[#0b9f84] focus:ring-1 focus:ring-[#0b9f84] transition-all"
                                                 />
                                             </div>
                                             <div className="space-y-1.5">
@@ -666,7 +666,7 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                                                     type="text"
                                                     value={exifForm.copyright}
                                                     onChange={(e) => setExifForm({ ...exifForm, copyright: e.target.value })}
-                                                    className="w-full bg-gray-50 dark:bg-zinc-950/50 border border-gray-200 dark:border-zinc-800 rounded-xl px-3.5 py-2.5 text-sm text-gray-800 dark:text-zinc-200 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+                                                    className="w-full bg-gray-50 dark:bg-zinc-950/50 border border-gray-200 dark:border-zinc-800 rounded-xl px-3.5 py-2.5 text-sm text-gray-800 dark:text-zinc-200 focus:outline-none focus:border-[#0b9f84] focus:ring-1 focus:ring-[#0b9f84] transition-all"
                                                 />
                                             </div>
                                             <div className="space-y-1.5">
@@ -675,7 +675,7 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                                                     type="text"
                                                     value={exifForm.software}
                                                     onChange={(e) => setExifForm({ ...exifForm, software: e.target.value })}
-                                                    className="w-full bg-gray-50 dark:bg-zinc-950/50 border border-gray-200 dark:border-zinc-800 rounded-xl px-3.5 py-2.5 text-sm text-gray-800 dark:text-zinc-200 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+                                                    className="w-full bg-gray-50 dark:bg-zinc-950/50 border border-gray-200 dark:border-zinc-800 rounded-xl px-3.5 py-2.5 text-sm text-gray-800 dark:text-zinc-200 focus:outline-none focus:border-[#0b9f84] focus:ring-1 focus:ring-[#0b9f84] transition-all"
                                                 />
                                             </div>
                                             <div className="space-y-1.5">
@@ -685,7 +685,7 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                                                     value={exifForm.dateTime}
                                                     onChange={(e) => setExifForm({ ...exifForm, dateTime: e.target.value })}
                                                     placeholder="YYYY:MM:DD HH:MM:SS"
-                                                    className="w-full bg-gray-50 dark:bg-zinc-950/50 border border-gray-200 dark:border-zinc-800 rounded-xl px-3.5 py-2.5 text-sm text-gray-800 dark:text-zinc-200 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+                                                    className="w-full bg-gray-50 dark:bg-zinc-950/50 border border-gray-200 dark:border-zinc-800 rounded-xl px-3.5 py-2.5 text-sm text-gray-800 dark:text-zinc-200 focus:outline-none focus:border-[#0b9f84] focus:ring-1 focus:ring-[#0b9f84] transition-all"
                                                 />
                                             </div>
                                             <div className="space-y-1.5">
@@ -694,7 +694,7 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                                                     type="text"
                                                     value={exifForm.make}
                                                     onChange={(e) => setExifForm({ ...exifForm, make: e.target.value })}
-                                                    className="w-full bg-gray-50 dark:bg-zinc-950/50 border border-gray-200 dark:border-zinc-800 rounded-xl px-3.5 py-2.5 text-sm text-gray-800 dark:text-zinc-200 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+                                                    className="w-full bg-gray-50 dark:bg-zinc-950/50 border border-gray-200 dark:border-zinc-800 rounded-xl px-3.5 py-2.5 text-sm text-gray-800 dark:text-zinc-200 focus:outline-none focus:border-[#0b9f84] focus:ring-1 focus:ring-[#0b9f84] transition-all"
                                                 />
                                             </div>
                                             <div className="space-y-1.5">
@@ -703,7 +703,7 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                                                     type="text"
                                                     value={exifForm.model}
                                                     onChange={(e) => setExifForm({ ...exifForm, model: e.target.value })}
-                                                    className="w-full bg-gray-50 dark:bg-zinc-950/50 border border-gray-200 dark:border-zinc-800 rounded-xl px-3.5 py-2.5 text-sm text-gray-800 dark:text-zinc-200 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+                                                    className="w-full bg-gray-50 dark:bg-zinc-950/50 border border-gray-200 dark:border-zinc-800 rounded-xl px-3.5 py-2.5 text-sm text-gray-800 dark:text-zinc-200 focus:outline-none focus:border-[#0b9f84] focus:ring-1 focus:ring-[#0b9f84] transition-all"
                                                 />
                                             </div>
                                             <div className="space-y-1.5">
@@ -712,7 +712,7 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                                                     type="text"
                                                     value={exifForm.description}
                                                     onChange={(e) => setExifForm({ ...exifForm, description: e.target.value })}
-                                                    className="w-full bg-gray-50 dark:bg-zinc-950/50 border border-gray-200 dark:border-zinc-800 rounded-xl px-3.5 py-2.5 text-sm text-gray-800 dark:text-zinc-200 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+                                                    className="w-full bg-gray-50 dark:bg-zinc-950/50 border border-gray-200 dark:border-zinc-800 rounded-xl px-3.5 py-2.5 text-sm text-gray-800 dark:text-zinc-200 focus:outline-none focus:border-[#0b9f84] focus:ring-1 focus:ring-[#0b9f84] transition-all"
                                                 />
                                             </div>
                                             <div className="pt-2">
@@ -748,7 +748,7 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                         {activeTab === 'metadata' && (
                             <div className="space-y-4">
                                 <div className="grid grid-cols-2 gap-2 pb-4 border-b border-gray-200 dark:border-zinc-800/50">
-                                    <button onClick={() => setActiveTab('metadata')} className="px-2 py-2 bg-primary/10 text-primary border border-primary/20 text-[10px] uppercase tracking-wider font-semibold rounded-lg transition-colors text-center">
+                                    <button onClick={() => setActiveTab('metadata')} className="px-2 py-2 bg-[#0b9f84]/10 text-[#0b9f84] border border-[#0b9f84]/20 text-[10px] uppercase tracking-wider font-semibold rounded-lg transition-colors text-center">
                                         Voir les métadonnées
                                     </button>
                                     <button onClick={handleRemoveAllMetadata} className="px-2 py-2 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 text-[10px] uppercase tracking-wider font-semibold rounded-lg transition-colors text-center">

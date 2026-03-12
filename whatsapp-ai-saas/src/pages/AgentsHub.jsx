@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Sparkles } from 'lucide-react';
 import useAppStore from '../store';
 
 const AgentsHub = ({ activeId }) => {
@@ -567,9 +568,9 @@ const AgentsHub = ({ activeId }) => {
                                     {generatedImageResults.length > 0 ? (
                                         <div className="relative flex flex-col items-center justify-center w-full h-full">
                                             <div className="relative w-full h-full flex items-center justify-center">
-                                                <img src={generatedImageResults[selectedImageIndex]} alt="Generated" className="max-w-full max-h-full object-contain rounded-lg shadow-xl ring-4 ring-[#4f46e5]/30" />
+                                                <img src={generatedImageResults[selectedImageIndex]} alt="Generated" className="max-w-full max-h-full object-contain rounded-lg shadow-xl ring-4 ring-[#10b981]/30" />
                                                 <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-xs font-medium flex items-center gap-2">
-                                                    <span className="w-2 h-2 rounded-full bg-green-400"></span> Generated Result
+                                                    <span className="w-2 h-2 rounded-full bg-emerald-400"></span> Generated Result
                                                 </div>
                                                 <div className="absolute top-4 right-4 flex gap-2">
                                                     <button
@@ -641,7 +642,7 @@ const AgentsHub = ({ activeId }) => {
                                                 <p className="text-xs text-gray-400 mt-1">Used to guide Gemini Imagen</p>
                                             </div>
                                             <button
-                                                className="mt-1 px-4 py-2 bg-[#4f46e5] hover:bg-[#4338ca] text-white text-sm font-medium rounded-lg shadow transition"
+                                                className="mt-1 px-4 py-2 bg-[#0b9f84] hover:bg-[#088b73] text-white text-sm font-medium rounded-lg shadow transition"
                                                 onClick={(e) => { e.stopPropagation(); genFileInputRef.current?.click(); }}
                                             >
                                                 Choose an image
@@ -649,6 +650,22 @@ const AgentsHub = ({ activeId }) => {
                                         </div>
                                     )}
                                 </div>
+
+                                {/* Premium AI Processing Overlay */}
+                                {isGeneratingImage && (
+                                    <div className="absolute inset-0 z-30 bg-white/60 dark:bg-gray-900/60 backdrop-blur-md flex items-center justify-center p-4 rounded-xl transition-all duration-300">
+                                        <div className="flex flex-col items-center space-y-5 p-8 bg-white/90 dark:bg-[#1a1c23]/90 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-2xl">
+                                            <div className="relative flex items-center justify-center">
+                                                <div className="w-16 h-16 border-4 border-[#0b9f84]/20 border-t-[#0b9f84] rounded-full animate-spin"></div>
+                                                <Sparkles className="w-6 h-6 text-[#0b9f84] absolute animate-pulse pointer-events-none" />
+                                            </div>
+                                            <div className="text-center">
+                                                <h3 className="text-base font-semibold text-gray-900 dark:text-white uppercase tracking-wider">Génération en cours...</h3>
+                                                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">L'IA crée votre image, un instant...</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* Catalog Upload Button Area */}
                                 {generatedImageResults.length > 0 && (
@@ -682,7 +699,7 @@ const AgentsHub = ({ activeId }) => {
                             {/* Right View: Settings Panel */}
                             <div className="w-full md:w-[360px] flex flex-col bg-white dark:bg-[#1a1c23] border border-gray-200 dark:border-gray-800 rounded-2xl p-5 shadow-sm shrink-0 h-fit md:h-full">
                                 <div className="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-lg mb-6">
-                                    <button className="flex-1 py-1.5 bg-white dark:bg-[#2d3039] text-[#4f46e5] dark:text-[#818cf8] text-sm font-semibold rounded-md shadow-sm transition">Create</button>
+                                    <button className="flex-1 py-1.5 bg-white dark:bg-[#2d3039] text-[#0b9f84] dark:text-[#10b981] text-sm font-semibold rounded-md shadow-sm transition">Create</button>
                                     <button className="flex-1 py-1.5 text-gray-600 dark:text-gray-400 text-sm font-medium hover:text-gray-900 transition">Edit image</button>
                                 </div>
 
@@ -690,7 +707,7 @@ const AgentsHub = ({ activeId }) => {
                                     <textarea
                                         value={generatedPrompt}
                                         onChange={e => setGeneratedPrompt(e.target.value)}
-                                        className="w-full h-[180px] md:h-[220px] bg-gray-50 dark:bg-[#111827] border border-gray-200 dark:border-gray-700 rounded-xl p-4 text-sm text-gray-800 dark:text-gray-200 outline-none resize-none focus:border-[#4f46e5] dark:focus:border-[#4f46e5] transition-colors pr-10"
+                                        className="w-full h-[180px] md:h-[220px] bg-gray-50 dark:bg-[#111827] border border-gray-200 dark:border-gray-700 rounded-xl p-4 text-sm text-gray-800 dark:text-gray-200 outline-none resize-none focus:border-[#0b9f84] dark:focus:border-[#0b9f84] transition-colors pr-10"
                                         placeholder="Décrivez l'image que vous souhaitez générer..."
                                     />
                                     <div className="absolute right-3 bottom-3 text-gray-400 cursor-pointer hover:text-gray-600">
@@ -735,8 +752,8 @@ const AgentsHub = ({ activeId }) => {
 
                                 <button
                                     className={`mt-auto w-full py-3.5 rounded-xl font-semibold shadow-md transition-all flex justify-center items-center gap-3 ${isGeneratingImage
-                                        ? 'bg-gradient-to-r from-[#5468ff]/80 to-[#7c3aed]/80 text-white cursor-wait'
-                                        : 'bg-[#5468ff] hover:bg-[#4353cc] text-white'
+                                        ? 'bg-[#0b9f84]/80 text-white cursor-wait'
+                                        : 'bg-[#0b9f84] hover:bg-[#088b73] text-white'
                                         }`}
                                     onClick={handleGenerateImage}
                                     disabled={isGeneratingImage || !generatedPrompt}

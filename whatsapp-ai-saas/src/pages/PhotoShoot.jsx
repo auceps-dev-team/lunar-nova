@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { Sparkles } from 'lucide-react';
 import useAppStore from '../store';
 
 // ── Preset Data ────────────────────────────────────────────────
@@ -506,7 +507,7 @@ const PhotoShoot = ({ activeId }) => {
                             <p className="text-xs text-gray-400 mb-2">{selectedBackground ? selectedBackground.name : 'Random'}</p>
                             <button
                                 onClick={() => setActiveSection(activeSection === 'background' ? null : 'background')}
-                                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all ${activeSection === 'background' ? 'border-[#5468ff] bg-[#5468ff]/5' : 'border-gray-200 dark:border-gray-700 hover:border-[#5468ff]/50'
+                                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all ${activeSection === 'background' ? 'border-[#0b9f84] bg-[#0b9f84]/5' : 'border-gray-200 dark:border-gray-700 hover:border-[#0b9f84]/50'
                                     }`}
                             >
                                 <div className="flex items-center gap-3">
@@ -575,8 +576,24 @@ const PhotoShoot = ({ activeId }) => {
                 <div className="flex-1 overflow-y-auto bg-[#f8f9fb] dark:bg-[#111318] p-6">
                     {activeSection ? (
                         renderSelectionGrid()
-                    ) : (generatedResults.length > 0) ? (
-                        <div className="space-y-6">
+                    ) : (generatedResults.length > 0 || isGeneratingImage) ? (
+                        <div className="space-y-6 relative">
+                            {/* Premium AI Processing Overlay */}
+                            {isGeneratingImage && (
+                                <div className="absolute inset-0 z-30 bg-white/60 dark:bg-gray-900/60 backdrop-blur-md rounded-2xl flex items-center justify-center p-4 transition-all duration-300">
+                                    <div className="flex flex-col items-center space-y-5 p-8 bg-white/90 dark:bg-[#1a1c23]/90 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-2xl">
+                                        <div className="relative flex items-center justify-center">
+                                            <div className="w-16 h-16 border-4 border-[#0b9f84]/20 border-t-[#0b9f84] rounded-full animate-spin"></div>
+                                            <Sparkles className="w-6 h-6 text-[#0b9f84] absolute animate-pulse pointer-events-none" />
+                                        </div>
+                                        <div className="text-center">
+                                            <h3 className="text-base font-semibold text-gray-900 dark:text-white uppercase tracking-wider">Génération en cours...</h3>
+                                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">L'IA crée votre séance photo, un instant...</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="flex items-center justify-between">
                                 <h3 className="text-lg font-bold text-gray-900 dark:text-white">Generated Results</h3>
                                 <span className="text-xs text-gray-400">{generatedResults.length} image{generatedResults.length > 1 ? 's' : ''}</span>
@@ -716,8 +733,8 @@ const PhotoShoot = ({ activeId }) => {
                                     onClick={handleGenerateImage}
                                     disabled={isGeneratingImage}
                                     className={`mt-4 w-full py-3 rounded-xl font-semibold shadow-md transition-all flex justify-center items-center gap-3 ${isGeneratingImage
-                                        ? 'bg-gradient-to-r from-[#5468ff]/80 to-[#7c3aed]/80 text-white cursor-wait'
-                                        : 'bg-gradient-to-r from-[#5468ff] to-[#7c3aed] hover:from-[#4353cc] hover:to-[#6b2fc4] text-white'
+                                        ? 'bg-[#0b9f84]/80 text-white cursor-wait'
+                                        : 'bg-[#0b9f84] hover:bg-[#088b73] text-white'
                                         }`}
                                 >
                                     {isGeneratingImage ? (
