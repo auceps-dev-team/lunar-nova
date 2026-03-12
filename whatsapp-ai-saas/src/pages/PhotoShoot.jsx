@@ -60,20 +60,42 @@ const PhotoShoot = ({ activeId }) => {
     const [selectedModel, setSelectedModel] = useState(null);
     const [selectedPose, setSelectedPose] = useState(null);
     const [selectedBackground, setSelectedBackground] = useState(null);
-    const [activeSection, setActiveSection] = useState(null); // 'model' | 'pose' | 'background' | null
+    const [selectedAspectRatio, setSelectedAspectRatio] = useState('3:4');
+    const [generatedPrompt, setGeneratedPrompt] = useState('');
     const [generatedResults, setGeneratedResults] = useState([]);
     const [selectedResultIndex, setSelectedResultIndex] = useState(0);
+    const [activeSection, setActiveSection] = useState(null);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [isGeneratingImage, setIsGeneratingImage] = useState(false);
-    const [generatedPrompt, setGeneratedPrompt] = useState('');
-    const [selectedAspectRatio, setSelectedAspectRatio] = useState('3:4');
-    const fileInputRef = useRef(null);
-    // Stores the locked model/pose/bg context from Phase 1 for use in Phase 2
+    const [isHistoryOpen, setIsHistoryOpen] = useState(true);
     const sessionContextRef = useRef(null);
+    const fileInputRef = useRef(null);
+
+    const agentHistory = useAppStore(state => state.agentHistory);
+    const addAgentHistory = useAppStore(state => state.addAgentHistory);
+    const removeAgentHistory = useAppStore(state => state.removeAgentHistory);
+    const historyForAgent = agentHistory.filter(h => h.agentId === 'photoshoot');
 
     const promptFormat = useAppStore(state => state.appSettings?.promptFormat) || 'json';
 
     // ── Handlers ──
+    const loadHistoryItem = (hist) => {
+        if (!hist) return;
+        setProductImages(hist.productImages || []);
+        setSelectedModel(hist.selectedModel || null);
+        setSelectedPose(hist.selectedPose || null);
+        setSelectedBackground(hist.selectedBackground || null);
+        setGeneratedPrompt(hist.generatedPrompt || '');
+        setGeneratedResults(hist.generatedResults || []);
+        setSelectedAspectRatio(hist.selectedAspectRatio || '3:4');
+        sessionContextRef.current = hist.sessionContext || null;
+        setSelectedResultIndex(0);
+        setActiveSection(null);
+    };
+
+    const clearAllHistory = () => {
+        historyForAgent.forEach(h => removeAgentHistory(h.id));
+    };
     const handleProductUpload = (e) => {
         const files = Array.from(e.target.files);
         if (files.length === 0) return;
@@ -142,6 +164,20 @@ const PhotoShoot = ({ activeId }) => {
                 }
             }
             setGeneratedPrompt(optimizedPrompt);
+
+            // Persist to history
+            addAgentHistory({
+                id: Date.now().toString(),
+                agentId: 'photoshoot',
+                date: new Date().toISOString(),
+                productImages: productImages,
+                selectedModel: model,
+                selectedPose: pose,
+                selectedBackground: bg,
+                sessionContext: { model, pose, bg },
+                generatedPrompt: optimizedPrompt,
+                selectedAspectRatio: selectedAspectRatio
+            });
         } catch (err) {
             console.error('PhotoShoot analysis error:', err);
         } finally {
@@ -185,6 +221,20 @@ const PhotoShoot = ({ activeId }) => {
 
                 setGeneratedResults(prev => [b64Data, ...prev]);
                 setSelectedResultIndex(0);
+
+                // Update history item with generated image array
+                if (historyForAgent.length > 0) {
+                    const latestHistory = historyForAgent[0];
+                    const updatedImages = latestHistory.generatedResults
+                        ? [b64Data, ...latestHistory.generatedResults]
+                        : [b64Data];
+
+                    removeAgentHistory(latestHistory.id);
+                    addAgentHistory({
+                        ...latestHistory,
+                        generatedResults: updatedImages
+                    });
+                }
             } else {
                 console.error('Generation failed:', genData);
             }
@@ -341,270 +391,291 @@ const PhotoShoot = ({ activeId }) => {
 
     // ── RENDER ──
     return (
-        <div className="flex h-full w-full overflow-hidden">
-            {/* ─── LEFT PANEL: Setup ─── */}
-            <div className="w-[300px] shrink-0 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a1c23] flex flex-col overflow-y-auto">
-                <div className="p-5 border-b border-gray-100 dark:border-gray-800">
-                    <h2 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
-                        Set Up Photoshoot
-                    </h2>
-                </div>
-
-                <div className="flex-1 p-4 space-y-5">
-                    {/* ── Product Upload ── */}
-                    <div>
-                        <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 block">Products</label>
-                        <p className="text-xs text-gray-400 mb-2">Upload up to 3 product images</p>
-                        <input type="file" ref={fileInputRef} className="hidden" accept="image/*" multiple onChange={handleProductUpload} />
-
-                        <div className="flex items-center gap-2 flex-wrap">
-                            {productImages.map((img, idx) => (
-                                <div key={idx} className="relative w-16 h-16 rounded-xl overflow-hidden border-2 border-gray-200 dark:border-gray-700 group">
-                                    <img src={img.data} className="w-full h-full object-cover" alt={img.name} />
-                                    <button
-                                        onClick={() => removeProduct(idx)}
-                                        className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center"
-                                    >
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                                    </button>
-                                </div>
-                            ))}
-                            {productImages.length < 3 && (
-                                <button
-                                    onClick={() => fileInputRef.current?.click()}
-                                    className="w-16 h-16 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center text-gray-400 hover:text-[#5468ff] hover:border-[#5468ff] transition"
-                                >
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                                </button>
-                            )}
-                        </div>
+        <div style={{ display: 'flex', height: '100%', gap: '16px', animation: 'fadeIn 0.3s' }}>
+            {/* ─── MAIN CONTENT ─── */}
+            <div className="flex-1 overflow-hidden flex bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800">
+                {/* ─── LEFT PANEL: Setup ─── */}
+                <div className="w-[300px] shrink-0 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a1c23] flex flex-col overflow-y-auto">
+                    <div className="p-5 border-b border-gray-100 dark:border-gray-800">
+                        <h2 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+                            Set Up Photoshoot
+                        </h2>
                     </div>
 
-                    {/* ── Model Selection ── */}
-                    <div>
-                        <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1 block">Model</label>
-                        <p className="text-xs text-gray-400 mb-2">{selectedModel ? selectedModel.name : 'Random'}</p>
-                        <button
-                            onClick={() => setActiveSection(activeSection === 'model' ? null : 'model')}
-                            className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all ${activeSection === 'model' ? 'border-[#5468ff] bg-[#5468ff]/5' : 'border-gray-200 dark:border-gray-700 hover:border-[#5468ff]/50'
-                                }`}
-                        >
-                            <div className="flex items-center gap-3">
-                                {selectedModel ? (
-                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-600 dark:to-gray-700 flex items-center justify-center text-xs font-bold text-gray-500 dark:text-gray-300 overflow-hidden">
-                                        {selectedModel.img ? (
-                                            <img src={selectedModel.img} alt={selectedModel.name} className="w-full h-full object-cover" />
-                                        ) : (
-                                            getModelInitials(selectedModel.name)
+                    <div className="flex-1 p-4 space-y-5">
+                        {/* ── Product Upload ── */}
+                        <div>
+                            <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 block">Products</label>
+                            <p className="text-xs text-gray-400 mb-2">Upload up to 3 product images</p>
+                            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" multiple onChange={handleProductUpload} />
+
+                            <div className="flex items-center gap-2 flex-wrap">
+                                {productImages.map((img, idx) => (
+                                    <div key={idx} className="relative w-16 h-16 rounded-xl overflow-hidden border-2 border-gray-200 dark:border-gray-700 group">
+                                        <img src={img.data} className="w-full h-full object-cover" alt={img.name} />
+                                        <button
+                                            onClick={() => removeProduct(idx)}
+                                            className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center"
+                                        >
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                        </button>
+                                    </div>
+                                ))}
+                                {productImages.length < 3 && (
+                                    <button
+                                        onClick={() => fileInputRef.current?.click()}
+                                        className="w-16 h-16 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center text-gray-400 hover:text-[#5468ff] hover:border-[#5468ff] transition"
+                                    >
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Recent history strip under Image upload in Setup - Keeping it as requested */}
+                        {historyForAgent.length > 0 && (
+                            <div className="shrink-0 flex items-center gap-3 overflow-x-auto bg-gray-50 dark:bg-gray-900 border border-gray-100 rounded-xl p-3 shadow-sm dark:border-gray-700">
+                                <span className="text-[10px] font-semibold text-gray-500 mr-2 flex items-center gap-1 shrink-0">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                                    Récent
+                                </span>
+                                {historyForAgent.slice(0, 5).map(hist => (
+                                    <div key={hist.id} onClick={() => loadHistoryItem(hist)} className="w-10 h-10 shrink-0 rounded-lg border border-gray-200 hover:border-blue-500 cursor-pointer overflow-hidden bg-gray-200 dark:bg-gray-800 transition-all hover:-translate-y-1">
+                                        {hist.generatedResults?.[0] ? (
+                                            <img src={hist.generatedResults[0]} className="w-full h-full object-cover opacity-90" />
+                                        ) : hist.productImages?.[0] && (
+                                            <img src={hist.productImages[0].data} className="w-full h-full object-cover opacity-90" />
                                         )}
                                     </div>
-                                ) : (
-                                    <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-400"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                                    </div>
-                                )}
-                                <span className="text-sm font-medium text-gray-900 dark:text-white">Select Model</span>
+                                ))}
                             </div>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-400"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                        </button>
-                    </div>
+                        )}
 
-                    {/* ── Pose Selection ── */}
-                    <div>
-                        <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1 block">Pose</label>
-                        <p className="text-xs text-gray-400 mb-2">{selectedPose ? selectedPose.name : 'Random'}</p>
-                        <button
-                            onClick={() => setActiveSection(activeSection === 'pose' ? null : 'pose')}
-                            className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all ${activeSection === 'pose' ? 'border-[#5468ff] bg-[#5468ff]/5' : 'border-gray-200 dark:border-gray-700 hover:border-[#5468ff]/50'
-                                }`}
-                        >
-                            <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-500">
-                                    {getPoseIcon()}
-                                </div>
-                                <span className="text-sm font-medium text-gray-900 dark:text-white">Select Pose</span>
-                            </div>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-400"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                        </button>
-                    </div>
-
-                    {/* ── Background Selection ── */}
-                    <div>
-                        <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1 block">Background</label>
-                        <p className="text-xs text-gray-400 mb-2">{selectedBackground ? selectedBackground.name : 'Random'}</p>
-                        <button
-                            onClick={() => setActiveSection(activeSection === 'background' ? null : 'background')}
-                            className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all ${activeSection === 'background' ? 'border-[#5468ff] bg-[#5468ff]/5' : 'border-gray-200 dark:border-gray-700 hover:border-[#5468ff]/50'
-                                }`}
-                        >
-                            <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-500">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
-                                </div>
-                                <span className="text-sm font-medium text-gray-900 dark:text-white">Select Background</span>
-                            </div>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-400"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                        </button>
-                    </div>
-                </div>
-
-                {/* ── Aspect Ratio ── */}
-                <div className="px-4 pb-3">
-                    <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-2">Aspect Ratio</p>
-                    <div className="flex gap-2">
-                        {['1:1', '3:4', '4:3', '9:16'].map(ratio => (
+                        {/* ── Model Selection ── */}
+                        <div>
+                            <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1 block">Model</label>
+                            <p className="text-xs text-gray-400 mb-2">{selectedModel ? selectedModel.name : 'Random'}</p>
                             <button
-                                key={ratio}
-                                onClick={() => setSelectedAspectRatio(ratio)}
-                                className={`flex-1 py-1.5 rounded-lg text-xs font-semibold border transition-all ${selectedAspectRatio === ratio
-                                        ? 'bg-emerald-500 text-white border-emerald-500'
-                                        : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-emerald-400'
+                                onClick={() => setActiveSection(activeSection === 'model' ? null : 'model')}
+                                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all ${activeSection === 'model' ? 'border-[#5468ff] bg-[#5468ff]/5' : 'border-gray-200 dark:border-gray-700 hover:border-[#5468ff]/50'
                                     }`}
                             >
-                                {ratio}
+                                <div className="flex items-center gap-3">
+                                    {selectedModel ? (
+                                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-600 dark:to-gray-700 flex items-center justify-center text-xs font-bold text-gray-500 dark:text-gray-300 overflow-hidden">
+                                            {selectedModel.img ? (
+                                                <img src={selectedModel.img} alt={selectedModel.name} className="w-full h-full object-cover" />
+                                            ) : (
+                                                getModelInitials(selectedModel.name)
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-400"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                                        </div>
+                                    )}
+                                    <span className="text-sm font-medium text-gray-900 dark:text-white">Select Model</span>
+                                </div>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-400"><polyline points="9 18 15 12 9 6"></polyline></svg>
                             </button>
-                        ))}
-                    </div>
-                </div>
-                {/* ── Analyze Button ── */}
-                <div className="p-4 border-t border-gray-100 dark:border-gray-800">
-                    <button
-                        onClick={handleAnalyze}
-                        disabled={isAnalyzing || productImages.length === 0}
-                        className={`w-full py-3.5 rounded-xl font-semibold shadow-md transition-all flex justify-center items-center gap-3 ${isAnalyzing
-                            ? 'bg-gradient-to-r from-emerald-500/90 to-teal-500/90 text-white cursor-wait'
-                            : productImages.length === 0
-                                ? 'bg-gray-200 dark:bg-gray-700 text-gray-400 cursor-not-allowed'
-                                : 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white'
-                            }`}
-                    >
-                        {isAnalyzing ? (
-                            <>
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="animate-scan-loupe">
-                                    <circle cx="11" cy="11" r="8"></circle>
-                                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                                </svg>
-                                Analyzing Product...
-                            </>
-                        ) : (
-                            <>
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <circle cx="11" cy="11" r="8"></circle>
-                                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                                </svg>
-                                Analyze & Generate Strategy
-                            </>
-                        )}
-                    </button>
-                </div>
-            </div>
-
-            {/* ─── RIGHT PANEL: Grid / Results ─── */}
-            <div className="flex-1 overflow-y-auto bg-[#f8f9fb] dark:bg-[#111318] p-6">
-                {activeSection ? (
-                    renderSelectionGrid()
-                ) : generatedResults.length > 0 ? (
-                    <div className="space-y-6">
-                        <div className="flex items-center justify-between">
-                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Generated Results</h3>
-                            <span className="text-xs text-gray-400">{generatedResults.length} image{generatedResults.length > 1 ? 's' : ''}</span>
                         </div>
 
-                        {/* Main image display */}
-                        <div className="relative bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm" style={{ minHeight: '500px' }}>
-                            <img
-                                src={generatedResults[selectedResultIndex]}
-                                alt="Generated photoshoot"
-                                className="w-full h-full object-contain"
-                            />
-                            <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-xs font-medium flex items-center gap-2">
-                                <span className="w-2 h-2 rounded-full bg-green-400"></span> Generated Result
-                            </div>
-                            <div className="absolute top-4 right-4 flex gap-2">
+                        {/* ── Pose Selection ── */}
+                        <div>
+                            <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1 block">Pose</label>
+                            <p className="text-xs text-gray-400 mb-2">{selectedPose ? selectedPose.name : 'Random'}</p>
+                            <button
+                                onClick={() => setActiveSection(activeSection === 'pose' ? null : 'pose')}
+                                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all ${activeSection === 'pose' ? 'border-[#5468ff] bg-[#5468ff]/5' : 'border-gray-200 dark:border-gray-700 hover:border-[#5468ff]/50'
+                                    }`}
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-500">
+                                        {getPoseIcon()}
+                                    </div>
+                                    <span className="text-sm font-medium text-gray-900 dark:text-white">Select Pose</span>
+                                </div>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-400"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                            </button>
+                        </div>
+
+                        {/* ── Background Selection ── */}
+                        <div>
+                            <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1 block">Background</label>
+                            <p className="text-xs text-gray-400 mb-2">{selectedBackground ? selectedBackground.name : 'Random'}</p>
+                            <button
+                                onClick={() => setActiveSection(activeSection === 'background' ? null : 'background')}
+                                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all ${activeSection === 'background' ? 'border-[#5468ff] bg-[#5468ff]/5' : 'border-gray-200 dark:border-gray-700 hover:border-[#5468ff]/50'
+                                    }`}
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-500">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                                    </div>
+                                    <span className="text-sm font-medium text-gray-900 dark:text-white">Select Background</span>
+                                </div>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-400"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* ── Aspect Ratio ── */}
+                    <div className="px-4 pb-3">
+                        <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-2">Aspect Ratio</p>
+                        <div className="flex gap-2">
+                            {['1:1', '3:4', '4:3', '9:16'].map(ratio => (
                                 <button
-                                    className="w-8 h-8 flex items-center justify-center bg-black/40 backdrop-blur-sm hover:bg-red-500/90 text-white/80 hover:text-white rounded-lg shadow-lg transition-all"
-                                    onClick={() => {
-                                        const newResults = [...generatedResults];
-                                        newResults.splice(selectedResultIndex, 1);
-                                        setGeneratedResults(newResults);
-                                        if (selectedResultIndex >= newResults.length) {
-                                            setSelectedResultIndex(Math.max(0, newResults.length - 1));
-                                        }
-                                    }}
-                                    title="Delete result"
+                                    key={ratio}
+                                    onClick={() => setSelectedAspectRatio(ratio)}
+                                    className={`flex-1 py-1.5 rounded-lg text-xs font-semibold border transition-all ${selectedAspectRatio === ratio
+                                        ? 'bg-emerald-500 text-white border-emerald-500'
+                                        : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-emerald-400'
+                                        }`}
                                 >
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>
+                                    {ratio}
                                 </button>
-                                <button
-                                    className="h-8 flex items-center gap-1.5 bg-black/40 backdrop-blur-sm hover:bg-white/90 hover:text-gray-900 text-white/90 px-3 rounded-lg text-xs font-semibold shadow-lg transition-all"
-                                    onClick={() => {
-                                        const a = document.createElement('a');
-                                        a.href = generatedResults[selectedResultIndex];
-                                        a.download = `photoshoot_${Date.now()}.jpg`;
-                                        a.click();
-                                    }}
-                                >
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                                    Download
-                                </button>
+                            ))}
+                        </div>
+                    </div>
+                    {/* ── Analyze Button ── */}
+                    <div className="p-4 border-t border-gray-100 dark:border-gray-800">
+                        <button
+                            onClick={handleAnalyze}
+                            disabled={isAnalyzing || productImages.length === 0}
+                            className={`w-full py-3.5 rounded-xl font-semibold shadow-md transition-all flex justify-center items-center gap-3 ${isAnalyzing
+                                ? 'bg-gradient-to-r from-emerald-500/90 to-teal-500/90 text-white cursor-wait'
+                                : productImages.length === 0
+                                    ? 'bg-gray-200 dark:bg-gray-700 text-gray-400 cursor-not-allowed'
+                                    : 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white'
+                                }`}
+                        >
+                            {isAnalyzing ? (
+                                <>
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="animate-scan-loupe">
+                                        <circle cx="11" cy="11" r="8"></circle>
+                                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                    </svg>
+                                    Analyzing Product...
+                                </>
+                            ) : (
+                                <>
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <circle cx="11" cy="11" r="8"></circle>
+                                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                    </svg>
+                                    Analyze & Generate Strategy
+                                </>
+                            )}
+                        </button>
+                    </div>
+                </div>
+
+                {/* ─── RIGHT PANEL: Grid / Results ─── */}
+                <div className="flex-1 overflow-y-auto bg-[#f8f9fb] dark:bg-[#111318] p-6">
+                    {activeSection ? (
+                        renderSelectionGrid()
+                    ) : (generatedResults.length > 0) ? (
+                        <div className="space-y-6">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-lg font-bold text-gray-900 dark:text-white">Generated Results</h3>
+                                <span className="text-xs text-gray-400">{generatedResults.length} image{generatedResults.length > 1 ? 's' : ''}</span>
                             </div>
 
-                            {/* Floating card picker */}
-                            {generatedResults.length > 1 && (
-                                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 overflow-x-auto bg-black/50 backdrop-blur-md border border-white/20 rounded-2xl p-2 shadow-2xl z-20">
-                                    {generatedResults.map((imgSrc, idx) => (
-                                        <div
-                                            key={idx}
-                                            onClick={() => setSelectedResultIndex(idx)}
-                                            className={`w-14 h-14 shrink-0 rounded-xl border-2 cursor-pointer overflow-hidden bg-gray-200 dark:bg-gray-800 transition-all hover:-translate-y-1 ${idx === selectedResultIndex
-                                                ? 'border-[#5468ff] ring-2 ring-[#5468ff]/50 shadow-lg scale-110'
-                                                : 'border-transparent opacity-80 hover:opacity-100'
-                                                }`}
-                                        >
-                                            <img src={imgSrc} className="w-full h-full object-cover" alt="" />
-                                        </div>
-                                    ))}
+                            {/* Main image display */}
+                            <div className="relative bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm" style={{ minHeight: '500px' }}>
+                                <img
+                                    src={generatedResults[selectedResultIndex]}
+                                    alt="Generated photoshoot"
+                                    className="w-full h-full object-contain"
+                                />
+                                <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-xs font-medium flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-green-400"></span> Generated Result
+                                </div>
+                                <div className="absolute top-4 right-4 flex gap-2">
+                                    <button
+                                        className="w-8 h-8 flex items-center justify-center bg-black/40 backdrop-blur-sm hover:bg-red-500/90 text-white/80 hover:text-white rounded-lg shadow-lg transition-all"
+                                        onClick={() => {
+                                            const newResults = [...generatedResults];
+                                            newResults.splice(selectedResultIndex, 1);
+                                            setGeneratedResults(newResults);
+                                            if (selectedResultIndex >= newResults.length) {
+                                                setSelectedResultIndex(Math.max(0, newResults.length - 1));
+                                            }
+                                        }}
+                                        title="Delete result"
+                                    >
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>
+                                    </button>
+                                    <button
+                                        className="h-8 flex items-center gap-1.5 bg-black/40 backdrop-blur-sm hover:bg-white/90 hover:text-gray-900 text-white/90 px-3 rounded-lg text-xs font-semibold shadow-lg transition-all"
+                                        onClick={() => {
+                                            const a = document.createElement('a');
+                                            a.href = generatedResults[selectedResultIndex];
+                                            a.download = `photoshoot_${Date.now()}.jpg`;
+                                            a.click();
+                                        }}
+                                    >
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                        Download
+                                    </button>
+                                </div>
+
+                                {/* Floating card picker */}
+                                {generatedResults.length > 1 && (
+                                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 overflow-x-auto bg-black/50 backdrop-blur-md border border-white/20 rounded-2xl p-2 shadow-2xl z-20">
+                                        {generatedResults.map((imgSrc, idx) => (
+                                            <div
+                                                key={idx}
+                                                onClick={() => setSelectedResultIndex(idx)}
+                                                className={`w-14 h-14 shrink-0 rounded-xl border-2 cursor-pointer overflow-hidden bg-gray-200 dark:bg-gray-800 transition-all hover:-translate-y-1 ${idx === selectedResultIndex
+                                                    ? 'border-[#5468ff] ring-2 ring-[#5468ff]/50 shadow-lg scale-110'
+                                                    : 'border-transparent opacity-80 hover:opacity-100'
+                                                    }`}
+                                            >
+                                                <img src={imgSrc} className="w-full h-full object-cover" alt="" />
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Generated prompt preview */}
+                            {generatedPrompt && (
+                                <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-4">
+                                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Generated Prompt</h4>
+                                    <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-4">{generatedPrompt}</p>
+                                    {/* Generate again button */}
+                                    <button
+                                        onClick={handleGenerateImage}
+                                        disabled={isGeneratingImage}
+                                        className={`mt-4 w-full py-3 rounded-xl font-semibold shadow-md transition-all flex justify-center items-center gap-3 ${isGeneratingImage
+                                            ? 'bg-gradient-to-r from-[#5468ff]/80 to-[#7c3aed]/80 text-white cursor-wait'
+                                            : 'bg-gradient-to-r from-[#5468ff] to-[#7c3aed] hover:from-[#4353cc] hover:to-[#6b2fc4] text-white'
+                                            }`}
+                                    >
+                                        {isGeneratingImage ? (
+                                            <>
+                                                <div className="pinterest-loader">
+                                                    <div className="pin"></div>
+                                                    <div className="pin"></div>
+                                                    <div className="pin"></div>
+                                                </div>
+                                                Generating...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                                                </svg>
+                                                Generate (Imagen 4)
+                                            </>
+                                        )}
+                                    </button>
                                 </div>
                             )}
                         </div>
-
-                        {/* Generated prompt preview */}
-                        {generatedPrompt && (
-                            <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-4">
-                                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Generated Prompt</h4>
-                                <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-4">{generatedPrompt}</p>
-                                {/* Generate again button */}
-                                <button
-                                    onClick={handleGenerateImage}
-                                    disabled={isGeneratingImage}
-                                    className={`mt-4 w-full py-3 rounded-xl font-semibold shadow-md transition-all flex justify-center items-center gap-3 ${isGeneratingImage
-                                        ? 'bg-gradient-to-r from-[#5468ff]/80 to-[#7c3aed]/80 text-white cursor-wait'
-                                        : 'bg-gradient-to-r from-[#5468ff] to-[#7c3aed] hover:from-[#4353cc] hover:to-[#6b2fc4] text-white'
-                                        }`}
-                                >
-                                    {isGeneratingImage ? (
-                                        <>
-                                            <div className="pinterest-loader">
-                                                <div className="pin"></div>
-                                                <div className="pin"></div>
-                                                <div className="pin"></div>
-                                            </div>
-                                            Generating...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-                                            </svg>
-                                            Generate (Imagen 4)
-                                        </>
-                                    )}
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                ) : (generatedPrompt || isAnalyzing) ? (
+                    ) : (generatedPrompt || isAnalyzing) ? (
                     /* Prompt view after analysis, before image generation */
                     <div className="space-y-6">
                         <div className="flex items-center justify-between">
@@ -684,7 +755,81 @@ const PhotoShoot = ({ activeId }) => {
                     </div>
                 )}
             </div>
+
+            {/* Right Sidebar - Minimized Agent History Log */}
+            <div className={`transition-all duration-300 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 flex flex-col shrink-0 ${isHistoryOpen ? 'w-[260px]' : 'w-[64px] items-center'}`}>
+                <div className="p-3 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between w-full gap-2">
+                    <div onClick={() => setIsHistoryOpen(!isHistoryOpen)} className="flex items-center gap-2 cursor-pointer hover:opacity-70 flex-1">
+                        {isHistoryOpen ? (
+                            <>
+                                <h2 className="text-sm font-semibold text-gray-900 dark:text-white">Récents</h2>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6" /></svg>
+                            </>
+                        ) : (
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-500"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                        )}
+                    </div>
+                    {isHistoryOpen && historyForAgent.length > 0 && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); clearAllHistory(); }}
+                            title="Supprimer tout l'historique"
+                            className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/30 text-gray-400 hover:text-red-500 transition-colors"
+                        >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>
+                        </button>
+                    )}
+                </div>
+
+                <div className={`p-2 flex flex-col gap-2 overflow-y-auto flex-1 ${!isHistoryOpen && 'items-center'}`}>
+                    {historyForAgent.map(hist => (
+                        <div
+                            key={hist.id}
+                            className={`rounded-lg border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden relative group ${isHistoryOpen ? 'p-3' : 'w-10 h-10'}`}
+                        >
+                            <button
+                                onClick={(e) => { e.stopPropagation(); removeAgentHistory(hist.id); }}
+                                className="absolute top-1 right-1 z-10 bg-white/90 dark:bg-gray-900/90 text-red-400 hover:text-red-600 rounded-full w-5 h-5 items-center justify-center hidden group-hover:flex transition-all shadow"
+                                title="Supprimer"
+                            >
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                            </button>
+
+                            <div onClick={() => loadHistoryItem(hist)} className="cursor-pointer w-full h-full">
+                                {isHistoryOpen ? (
+                                    <>
+                                        <div className="flex justify-between items-start mb-1">
+                                            <span className="text-xs font-medium text-gray-900 dark:text-white truncate pe-2">
+                                                {hist.selectedModel?.name} • {hist.selectedPose?.name}
+                                            </span>
+                                        </div>
+                                        {hist.generatedResults && hist.generatedResults.length > 0 ? (
+                                            <div className="flex gap-1 overflow-hidden h-12">
+                                                {hist.generatedResults.slice(0, 2).map((img, i) => (
+                                                    <img key={i} src={img} className="w-1/2 h-full object-cover rounded" />
+                                                ))}
+                                            </div>
+                                        ) : hist.productImages?.[0] && (
+                                            <div className="h-12 w-full rounded overflow-hidden bg-gray-100 dark:bg-gray-800">
+                                                <img src={hist.productImages[0].data} alt="thumb" className="w-full h-full object-cover" />
+                                            </div>
+                                        )}
+                                    </>
+                                ) : (
+                                    hist.generatedResults?.[0] ? (
+                                        <img src={hist.generatedResults[0]} alt="thumb" className="w-full h-full object-cover" />
+                                    ) : hist.productImages?.[0] ? (
+                                        <img src={hist.productImages[0].data} alt="thumb" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <div className="w-full h-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-[10px]">IMG</div>
+                                    )
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
         </div>
+    </div>
     );
 };
 
