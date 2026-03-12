@@ -167,7 +167,8 @@ const PhotoShoot = ({ activeId }) => {
                 imageParams: {
                     data: productImages[0].data.split(',')[1],
                     mimeType: 'image/jpeg'
-                }
+                },
+                mode: 'fashion'
             };
 
             const genRes = await fetch('http://localhost:3000/api/gemini/generate-image', {

@@ -181,7 +181,8 @@ const AgentsHub = ({ activeId }) => {
         try {
             const body = {
                 prompt: generatedPrompt,
-                aspectRatio: aspectRatio
+                aspectRatio: aspectRatio,
+                mode: 'product'
             };
 
             // Attach reference image (from gen tab or analysis tab) if available

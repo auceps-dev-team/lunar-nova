@@ -167,7 +167,8 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                 imageParams: {
                     data: image.base64.split(',')[1],
                     mimeType: image.mimeType
-                }
+                },
+                mode: 'product'
             };
 
             const resProxy = await fetch('http://localhost:3000/api/gemini/generate-image', {

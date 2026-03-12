@@ -104,7 +104,25 @@ async function chatWithAgent(personaId, message, imageParams, promptFormat = 'te
     }
 }
 
-async function generateImage(prompt, configAspectRatio = '1:1', imageParams = null, editMode = false) {
+const PROMPT_TEMPLATES = {
+    product: (prompt, dims) => `Generate a high-end commercial product photograph. The EXACT product shown in the reference image must be center-stage. 
+    
+CRITICAL: The product's identity, labels, logo, and shape must remain 100% IDENTICAL. Do NOT alter the product. 
+
+${prompt}
+
+The output image should be a ${dims.label} aspect ratio. Create a clean, premium visual for a business catalog with professional studio lighting.`,
+
+    fashion: (prompt, dims) => `Generate a high-end fashion photoshoot image. A professional model is wearing the EXACT product shown in the reference image.
+
+CRITICAL: The garment/product in the reference image must appear IDENTICALLY on the model — same color, material, texture, pattern, logos, labels, and design details. Do NOT change the product in any way.
+
+${prompt}
+
+The output image should be a ${dims.label} aspect ratio (approximately ${dims.w}x${dims.h} pixels). Create a photorealistic, magazine-quality editorial photo.`
+};
+
+async function generateImage(prompt, configAspectRatio = '1:1', imageParams = null, editMode = false, mode = 'product') {
     // --- STRATEGY --- 
     // If a reference image is provided: use Gemini Flash Image (image editing/uplifting mode)
     //   → This PRESERVES the product identity (logo, shape, labels)
@@ -136,14 +154,9 @@ async function generateImage(prompt, configAspectRatio = '1:1', imageParams = nu
             if (editMode) {
                 console.log(`[generateImage] Pure edit mode active. Using raw prompt: ${prompt}`);
             } else {
-                console.log(`[generateImage] Image reference received — using Gemini Flash image-edit mode (aspect: ${dims.label})`);
-                finalPrompt = `Generate a high-end fashion photoshoot image. A professional model is wearing the EXACT product shown in the reference image.
-
-CRITICAL: The product/garment in the reference image must appear IDENTICALLY on the model — same color, material, texture, pattern, logos, labels, and design details. Do NOT change the product in any way.
-
-${prompt}
-
-The output image should be a ${dims.label} aspect ratio (approximately ${dims.w}x${dims.h} pixels). Create a photorealistic, magazine-quality editorial photo.`;
+                const template = PROMPT_TEMPLATES[mode] || PROMPT_TEMPLATES.product;
+                console.log(`[generateImage] Image reference received — using mode: ${mode} (aspect: ${dims.label})`);
+                finalPrompt = template(prompt, dims);
             }
 
             const response = await ai.models.generateContent({
