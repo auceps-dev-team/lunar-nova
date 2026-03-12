@@ -78,6 +78,39 @@ const PhotoShoot = ({ activeId }) => {
     const historyForAgent = agentHistory.filter(h => h.agentId === 'photoshoot');
 
     const promptFormat = useAppStore(state => state.appSettings?.promptFormat) || 'json';
+    const language = useAppStore(state => state.appSettings?.language) || 'en';
+
+    // ── Translation ──
+    const t = {
+        en: {
+            analyzing: "Analyzing Product...",
+            analyzingDesc: "Clarisse is studying your product and generating the optimal photoshoot strategy",
+            generating: "Génération en cours...",
+            generatingDesc: "L'IA crée votre séance photo, un instant...",
+            generateBtn: "Generate (Imagen 4)",
+            generateDone: "Generated Results",
+            readyTitle: "Ready for a Photo Shoot",
+            readyDesc: "Upload your product, select a model, pose, and background — then hit Analyze to generate your strategy.",
+            strategy: "Strategy",
+            recent: "Récent",
+            results: "image",
+            download: "Download"
+        },
+        fr: {
+            analyzing: "Analyse du produit...",
+            analyzingDesc: "Clarisse étudie votre produit et génère la stratégie de séance photo optimale",
+            generating: "Génération en cours...",
+            generatingDesc: "L'IA crée votre séance photo, un instant...",
+            generateBtn: "Générer (Imagen 4)",
+            generateDone: "Résultats générés",
+            readyTitle: "Prêt pour un shooting photo",
+            readyDesc: "Téléchargez votre produit, sélectionnez un modèle, une pose et un arrière-plan, puis cliquez sur Analyser pour générer votre stratégie.",
+            strategy: "Stratégie",
+            recent: "Récent",
+            results: "image",
+            download: "Télécharger"
+        }
+    }[language];
 
     // ── Handlers ──
     const loadHistoryItem = (hist) => {
@@ -426,7 +459,7 @@ const PhotoShoot = ({ activeId }) => {
                                 {productImages.length < 3 && (
                                     <button
                                         onClick={() => fileInputRef.current?.click()}
-                                        className="w-16 h-16 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center text-gray-400 hover:text-[#5468ff] hover:border-[#5468ff] transition"
+                                        className="w-16 h-16 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center text-gray-400 hover:text-[#0b9f84] hover:border-[#0b9f84] transition"
                                     >
                                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                                     </button>
@@ -442,7 +475,7 @@ const PhotoShoot = ({ activeId }) => {
                                     Récent
                                 </span>
                                 {historyForAgent.slice(0, 5).map(hist => (
-                                    <div key={hist.id} onClick={() => loadHistoryItem(hist)} className="w-10 h-10 shrink-0 rounded-lg border border-gray-200 hover:border-blue-500 cursor-pointer overflow-hidden bg-gray-200 dark:bg-gray-800 transition-all hover:-translate-y-1">
+                                    <div key={hist.id} onClick={() => loadHistoryItem(hist)} className="w-10 h-10 shrink-0 rounded-lg border border-gray-200 hover:border-[#0b9f84] cursor-pointer overflow-hidden bg-gray-200 dark:bg-gray-800 transition-all hover:-translate-y-1">
                                         {hist.generatedResults?.[0] ? (
                                             <img src={hist.generatedResults[0]} className="w-full h-full object-cover opacity-90" />
                                         ) : hist.productImages?.[0] && (
@@ -459,7 +492,7 @@ const PhotoShoot = ({ activeId }) => {
                             <p className="text-xs text-gray-400 mb-2">{selectedModel ? selectedModel.name : 'Random'}</p>
                             <button
                                 onClick={() => setActiveSection(activeSection === 'model' ? null : 'model')}
-                                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all ${activeSection === 'model' ? 'border-[#5468ff] bg-[#5468ff]/5' : 'border-gray-200 dark:border-gray-700 hover:border-[#5468ff]/50'
+                                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all ${activeSection === 'model' ? 'border-[#0b9f84] bg-[#0b9f84]/5' : 'border-gray-200 dark:border-gray-700 hover:border-[#0b9f84]/50'
                                     }`}
                             >
                                 <div className="flex items-center gap-3">
@@ -488,7 +521,7 @@ const PhotoShoot = ({ activeId }) => {
                             <p className="text-xs text-gray-400 mb-2">{selectedPose ? selectedPose.name : 'Random'}</p>
                             <button
                                 onClick={() => setActiveSection(activeSection === 'pose' ? null : 'pose')}
-                                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all ${activeSection === 'pose' ? 'border-[#5468ff] bg-[#5468ff]/5' : 'border-gray-200 dark:border-gray-700 hover:border-[#5468ff]/50'
+                                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all ${activeSection === 'pose' ? 'border-[#0b9f84] bg-[#0b9f84]/5' : 'border-gray-200 dark:border-gray-700 hover:border-[#0b9f84]/50'
                                     }`}
                             >
                                 <div className="flex items-center gap-3">
@@ -557,7 +590,7 @@ const PhotoShoot = ({ activeId }) => {
                                         <circle cx="11" cy="11" r="8"></circle>
                                         <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                                     </svg>
-                                    Analyzing Product...
+                                    {t.analyzing}
                                 </>
                             ) : (
                                 <>
@@ -565,7 +598,7 @@ const PhotoShoot = ({ activeId }) => {
                                         <circle cx="11" cy="11" r="8"></circle>
                                         <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                                     </svg>
-                                    Analyze & Generate Strategy
+                                    {t.analyzing} & Generate Strategy
                                 </>
                             )}
                         </button>
@@ -587,16 +620,16 @@ const PhotoShoot = ({ activeId }) => {
                                             <Sparkles className="w-6 h-6 text-[#0b9f84] absolute animate-pulse pointer-events-none" />
                                         </div>
                                         <div className="text-center">
-                                            <h3 className="text-base font-semibold text-gray-900 dark:text-white uppercase tracking-wider">Génération en cours...</h3>
-                                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">L'IA crée votre séance photo, un instant...</p>
+                                            <h3 className="text-base font-semibold text-gray-900 dark:text-white uppercase tracking-wider">{t.generating}</h3>
+                                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t.generatingDesc}</p>
                                         </div>
                                     </div>
                                 </div>
                             )}
 
                             <div className="flex items-center justify-between">
-                                <h3 className="text-lg font-bold text-gray-900 dark:text-white">Generated Results</h3>
-                                <span className="text-xs text-gray-400">{generatedResults.length} image{generatedResults.length > 1 ? 's' : ''}</span>
+                                <h3 className="text-lg font-bold text-gray-900 dark:text-white">{t.generateDone}</h3>
+                                <span className="text-xs text-gray-400">{generatedResults.length} {t.results}{generatedResults.length > 1 ? 's' : ''}</span>
                             </div>
 
                             {/* Main image display */}
@@ -634,7 +667,7 @@ const PhotoShoot = ({ activeId }) => {
                                         }}
                                     >
                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                                        Download
+                                        {t.download}
                                     </button>
                                 </div>
 
@@ -646,7 +679,7 @@ const PhotoShoot = ({ activeId }) => {
                                                 key={idx}
                                                 onClick={() => setSelectedResultIndex(idx)}
                                                 className={`w-14 h-14 shrink-0 rounded-xl border-2 cursor-pointer overflow-hidden bg-gray-200 dark:bg-gray-800 transition-all hover:-translate-y-1 ${idx === selectedResultIndex
-                                                    ? 'border-[#5468ff] ring-2 ring-[#5468ff]/50 shadow-lg scale-110'
+                                                    ? 'border-[#0b9f84] ring-2 ring-[#0b9f84]/50 shadow-lg scale-110'
                                                     : 'border-transparent opacity-80 hover:opacity-100'
                                                     }`}
                                             >
@@ -667,8 +700,8 @@ const PhotoShoot = ({ activeId }) => {
                                         onClick={handleGenerateImage}
                                         disabled={isGeneratingImage}
                                         className={`mt-4 w-full py-3 rounded-xl font-semibold shadow-md transition-all flex justify-center items-center gap-3 ${isGeneratingImage
-                                            ? 'bg-gradient-to-r from-[#5468ff]/80 to-[#7c3aed]/80 text-white cursor-wait'
-                                            : 'bg-gradient-to-r from-[#5468ff] to-[#7c3aed] hover:from-[#4353cc] hover:to-[#6b2fc4] text-white'
+                                            ? 'bg-[#0b9f84]/80 text-white cursor-wait'
+                                            : 'bg-[#0b9f84] hover:bg-[#088b73] text-white'
                                             }`}
                                     >
                                         {isGeneratingImage ? (
@@ -678,14 +711,14 @@ const PhotoShoot = ({ activeId }) => {
                                                     <div className="pin"></div>
                                                     <div className="pin"></div>
                                                 </div>
-                                                Generating...
+                                                {t.generating}
                                             </>
                                         ) : (
                                             <>
                                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                                     <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
                                                 </svg>
-                                                Generate (Imagen 4)
+                                                {t.generateBtn}
                                             </>
                                         )}
                                     </button>
@@ -696,7 +729,7 @@ const PhotoShoot = ({ activeId }) => {
                     /* Prompt view after analysis, before image generation */
                     <div className="space-y-6">
                         <div className="flex items-center justify-between">
-                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Strategy</h3>
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">{t.strategy}</h3>
                         </div>
 
                         {isAnalyzing ? (
@@ -715,8 +748,8 @@ const PhotoShoot = ({ activeId }) => {
                                         </div>
                                     </div>
                                     <div className="text-center">
-                                        <p className="text-sm font-semibold text-gray-900 dark:text-white mb-1">Analyzing Product...</p>
-                                        <p className="text-xs text-gray-500">Clarisse is studying your product and generating the optimal photoshoot strategy</p>
+                                        <p className="text-sm font-semibold text-gray-900 dark:text-white mb-1">{t.analyzing}</p>
+                                        <p className="text-xs text-gray-500">{t.analyzingDesc}</p>
                                     </div>
                                     {/* Progress bar */}
                                     <div className="w-64 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
@@ -744,14 +777,14 @@ const PhotoShoot = ({ activeId }) => {
                                                 <div className="pin"></div>
                                                 <div className="pin"></div>
                                             </div>
-                                            Generating...
+                                            {t.generating}
                                         </>
                                     ) : (
                                         <>
                                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                                 <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
                                             </svg>
-                                            Generate (Imagen 4)
+                                            {t.generateBtn}
                                         </>
                                     )}
                                 </button>
@@ -767,8 +800,8 @@ const PhotoShoot = ({ activeId }) => {
                                 <circle cx="12" cy="13" r="4"></circle>
                             </svg>
                         </div>
-                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Ready for a Photo Shoot</h3>
-                        <p className="text-sm text-gray-500 max-w-sm">Upload your product, select a model, pose, and background — then hit Analyze to generate your strategy.</p>
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{t.readyTitle}</h3>
+                        <p className="text-sm text-gray-500 max-w-sm">{t.readyDesc}</p>
                     </div>
                 )}
             </div>
@@ -779,7 +812,7 @@ const PhotoShoot = ({ activeId }) => {
                     <div onClick={() => setIsHistoryOpen(!isHistoryOpen)} className="flex items-center gap-2 cursor-pointer hover:opacity-70 flex-1">
                         {isHistoryOpen ? (
                             <>
-                                <h2 className="text-sm font-semibold text-gray-900 dark:text-white">Récents</h2>
+                                <h2 className="text-sm font-semibold text-gray-900 dark:text-white">{t.recent}</h2>
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6" /></svg>
                             </>
                         ) : (

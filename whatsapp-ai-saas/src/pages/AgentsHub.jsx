@@ -31,6 +31,45 @@ const AgentsHub = ({ activeId }) => {
     const setCopilotNotification = useAppStore(state => state.setCopilotNotification);
     const showAppNotification = useAppStore(state => state.showAppNotification);
     const promptFormat = useAppStore(state => state.appSettings?.promptFormat) || 'json';
+    const language = useAppStore(state => state.appSettings?.language) || 'en';
+
+    // ── Translation ──
+    const t = {
+        en: {
+            analyzing: "Analyzing product...",
+            scanning: "Scanning & Analyzing...",
+            genPromptTitle: "Generated Visual Prompt",
+            goToGen: "Go to Generation",
+            generating: "Génération en cours...",
+            generatingDesc: "L'IA crée votre image, un instant...",
+            generateBtn: "Generate (Imagen 4)",
+            generateDone: "Generated Result",
+            publish: "Publish product",
+            deploying: "Deploying...",
+            instanceNotFound: "Instance not found",
+            recent: "Récent",
+            results: "result",
+            delete: "Delete result",
+            download: "Download"
+        },
+        fr: {
+            analyzing: "Analyse du produit...",
+            scanning: "Numérisation & Analyse...",
+            genPromptTitle: "Prompt Visuel Généré",
+            goToGen: "Aller à la Génération",
+            generating: "Génération en cours...",
+            generatingDesc: "L'IA crée votre image, un instant...",
+            generateBtn: "Générer (Imagen 4)",
+            generateDone: "Résultat généré",
+            publish: "Publier le produit",
+            deploying: "Déploiement...",
+            instanceNotFound: "Instance non trouvée",
+            recent: "Récent",
+            results: "résultat",
+            delete: "Supprimer le résultat",
+            download: "Télécharger"
+        }
+    }[language];
     const clearAllHistory = () => {
         historyForAgent.forEach(h => removeAgentHistory(h.id));
     };
@@ -42,7 +81,7 @@ const AgentsHub = ({ activeId }) => {
             name: 'Product Photo',
             description: 'Specialized in generating prompts for high-end product uplifting.',
             icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>,
-            color: '#3b82f6' // Blue match for photo icon
+            color: '#0b9f84' // Green theme match
         }
     ];
 
@@ -438,7 +477,7 @@ const AgentsHub = ({ activeId }) => {
                                                     <div className="w-16 h-16 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
                                                         <img src={selectedImage.data} className="w-full h-full object-cover" alt="preview" />
                                                     </div>
-                                                    <div className="text-sm font-medium text-blue-500">{selectedImage.name}</div>
+                                                    <div className="text-sm font-medium text-[#0b9f84]">{selectedImage.name}</div>
                                                 </div>
                                             ) : (
                                                 <>
@@ -459,7 +498,7 @@ const AgentsHub = ({ activeId }) => {
                                             </div>
                                             <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-sm text-emerald-300 text-xs font-medium px-4 py-1.5 rounded-full flex items-center gap-2 z-20">
                                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                                                Analyzing product...
+                                                {t.analyzing}
                                             </div>
                                         </div>
                                     )}
@@ -472,7 +511,7 @@ const AgentsHub = ({ activeId }) => {
                                                 Récent
                                             </span>
                                             {historyForAgent.slice(0, 5).map(hist => (
-                                                <div key={hist.id} onClick={() => loadHistoryItem(hist)} className="w-12 h-12 shrink-0 rounded-lg border border-gray-200 hover:border-blue-500 cursor-pointer overflow-hidden bg-gray-200 dark:bg-gray-800 transition-all hover:-translate-y-1">
+                                                <div key={hist.id} onClick={() => loadHistoryItem(hist)} className="w-12 h-12 shrink-0 rounded-lg border border-gray-200 hover:border-[#0b9f84] cursor-pointer overflow-hidden bg-gray-200 dark:bg-gray-800 transition-all hover:-translate-y-1">
                                                     {hist.image && <img src={hist.image.data} className="w-full h-full object-cover opacity-90" />}
                                                 </div>
                                             ))}
@@ -501,7 +540,7 @@ const AgentsHub = ({ activeId }) => {
                                     </div>
 
                                     <button
-                                        className={`w-full py-3 mt-2 rounded-lg font-medium shadow flex justify-center items-center gap-2 transition-all ${isLoading ? 'bg-emerald-600/80 text-white cursor-wait' : 'bg-[#10b981] hover:bg-[#059669] text-white'
+                                        className={`w-full py-3 mt-2 rounded-lg font-medium shadow flex justify-center items-center gap-2 transition-all ${isLoading ? 'bg-[#0b9f84]/80 text-white cursor-wait' : 'bg-[#0b9f84] hover:bg-[#088b73] text-white'
                                             }`}
                                         onClick={handleGenerateAnalysis}
                                         disabled={isLoading}
@@ -512,7 +551,7 @@ const AgentsHub = ({ activeId }) => {
                                                     <circle cx="11" cy="11" r="8" strokeDasharray="50" strokeDashoffset="20"></circle>
                                                     <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                                                 </svg>
-                                                Scanning &amp; Analyzing...
+                                                {t.scanning}
                                             </>
                                         ) : (
                                             <>
@@ -528,10 +567,10 @@ const AgentsHub = ({ activeId }) => {
                             </div>
 
                             {generatedPrompt && (
-                                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-[#10b981]/30 shadow-sm animate-fadeIn">
-                                    <h3 className="text-[#10b981] font-semibold text-sm mb-2 flex items-center gap-2">
+                                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-[#0b9f84]/30 shadow-sm animate-fadeIn">
+                                    <h3 className="text-[#0b9f84] font-semibold text-sm mb-2 flex items-center gap-2">
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
-                                        Generated Visual Prompt
+                                        {t.genPromptTitle}
                                     </h3>
                                     <p className="text-gray-600 dark:text-gray-300 text-sm mb-4">You can now proceed to the Generation tab to tweak settings.</p>
                                     <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg font-mono text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap border border-gray-200 dark:border-gray-700">
@@ -545,10 +584,10 @@ const AgentsHub = ({ activeId }) => {
                                             Copier le texte
                                         </button>
                                         <button
-                                            className="px-4 py-2 bg-[#4f46e5] text-white rounded-lg text-sm font-medium hover:bg-[#4338ca] transition shadow"
+                                            className="px-4 py-2 bg-[#0b9f84] text-white rounded-lg text-sm font-medium hover:bg-[#088b73] transition shadow"
                                             onClick={() => setActiveTab('generation')}
                                         >
-                                            Go to Generation &rarr;
+                                            {t.goToGen} &rarr;
                                         </button>
                                     </div>
                                 </div>
@@ -570,7 +609,7 @@ const AgentsHub = ({ activeId }) => {
                                             <div className="relative w-full h-full flex items-center justify-center">
                                                 <img src={generatedImageResults[selectedImageIndex]} alt="Generated" className="max-w-full max-h-full object-contain rounded-lg shadow-xl ring-4 ring-[#10b981]/30" />
                                                 <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-xs font-medium flex items-center gap-2">
-                                                    <span className="w-2 h-2 rounded-full bg-emerald-400"></span> Generated Result
+                                                    <span className="w-2 h-2 rounded-full bg-emerald-400"></span> {t.generateDone}
                                                 </div>
                                                 <div className="absolute top-4 right-4 flex gap-2">
                                                     <button
@@ -597,7 +636,7 @@ const AgentsHub = ({ activeId }) => {
                                                         }}
                                                     >
                                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                                                        Download
+                                                        {t.download}
                                                     </button>
                                                 </div>
                                             </div>
@@ -609,7 +648,7 @@ const AgentsHub = ({ activeId }) => {
                                                         <div
                                                             key={idx}
                                                             onClick={() => setSelectedImageIndex(idx)}
-                                                            className={`w-14 h-14 shrink-0 rounded-xl border-2 cursor-pointer overflow-hidden bg-gray-200 dark:bg-gray-800 transition-all hover:-translate-y-1 ${idx === selectedImageIndex ? 'border-primary ring-2 ring-primary/50 shadow-lg scale-110' : 'border-transparent opacity-80 hover:opacity-100'}`}
+                                                            className={`w-14 h-14 shrink-0 rounded-xl border-2 cursor-pointer overflow-hidden bg-gray-200 dark:bg-gray-800 transition-all hover:-translate-y-1 ${idx === selectedImageIndex ? 'border-[#0b9f84] ring-2 ring-[#0b9f84]/50 shadow-lg scale-110' : 'border-transparent opacity-80 hover:opacity-100'}`}
                                                         >
                                                             <img src={imgSrc} className="w-full h-full object-cover" />
                                                         </div>
@@ -660,8 +699,8 @@ const AgentsHub = ({ activeId }) => {
                                                 <Sparkles className="w-6 h-6 text-[#0b9f84] absolute animate-pulse pointer-events-none" />
                                             </div>
                                             <div className="text-center">
-                                                <h3 className="text-base font-semibold text-gray-900 dark:text-white uppercase tracking-wider">Génération en cours...</h3>
-                                                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">L'IA crée votre image, un instant...</p>
+                                                <h3 className="text-base font-semibold text-gray-900 dark:text-white uppercase tracking-wider">{t.generating}</h3>
+                                                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t.generatingDesc}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -685,11 +724,11 @@ const AgentsHub = ({ activeId }) => {
                                             className={`px-4 py-2 rounded-lg text-sm font-semibold shadow transition flex items-center gap-2 ${isUploadingCatalog || !activeId ? 'bg-gray-300 dark:bg-gray-700 text-gray-500 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700 text-white'}`}
                                         >
                                             {isUploadingCatalog ? (
-                                                <><span className="pulse w-2 h-2 rounded-full bg-current"></span> Deploying...</>
+                                                <><span className="pulse w-2 h-2 rounded-full bg-current"></span> {t.deploying}</>
                                             ) : !activeId ? (
-                                                'Instance not found'
+                                                t.instanceNotFound
                                             ) : (
-                                                'Publish product'
+                                                t.publish
                                             )}
                                         </button>
                                     </div>
@@ -765,14 +804,14 @@ const AgentsHub = ({ activeId }) => {
                                                 <div className="pin"></div>
                                                 <div className="pin"></div>
                                             </div>
-                                            Generating...
+                                            {t.generating}
                                         </>
                                     ) : (
                                         <>
                                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                                 <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
                                             </svg>
-                                            Generate (Imagen 4)
+                                            {t.generateBtn}
                                         </>
                                     )}
                                 </button>
