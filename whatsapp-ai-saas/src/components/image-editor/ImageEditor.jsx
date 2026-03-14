@@ -640,7 +640,7 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                                 <div className="p-4 bg-[#0b9f84]/5 border border-[#0b9f84]/10 rounded-xl flex items-start space-x-3">
                                     <Info className="w-5 h-5 text-[#0b9f84] shrink-0" />
                                     <p className="text-xs text-[#0b9f84]/80 leading-relaxed">
-                                        Powered by Gemini 2.5 Flash. The AI will generate a new image based on your prompt and the original image.
+                                        {t_helper(language, 'poweredBy')}
                                     </p>
                                 </div>
                             </div>

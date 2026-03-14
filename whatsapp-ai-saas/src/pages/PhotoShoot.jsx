@@ -567,7 +567,8 @@ const PhotoShoot = ({ activeId }) => {
                                         <circle cx="11" cy="11" r="8"></circle>
                                         <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                                     </svg>
-                                    {t(language, 'analyzing')} & Generate Strategy
+                                    {/*{t(language, 'analyzing')} & */}
+                                    Generate Strategy
                                 </>
                             )}
                         </button>
@@ -680,14 +681,14 @@ const PhotoShoot = ({ activeId }) => {
                                                     <div className="pin"></div>
                                                     <div className="pin"></div>
                                                 </div>
-                                                {t.generating}
+                                                {t(language, 'generating')}
                                             </>
                                         ) : (
                                             <>
                                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                                     <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
                                                 </svg>
-                                                {t.generateBtn}
+                                                {t(language, 'generateBtn')}
                                             </>
                                         )}
                                     </button>
@@ -695,160 +696,160 @@ const PhotoShoot = ({ activeId }) => {
                             )}
                         </div>
                     ) : (generatedPrompt || isAnalyzing) ? (
-                    /* Prompt view after analysis, before image generation */
-                    <div className="space-y-6">
-                        <div className="flex items-center justify-between">
-                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">{t.strategy}</h3>
-                        </div>
+                        /* Prompt view after analysis, before image generation */
+                        <div className="space-y-6">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-lg font-bold text-gray-900 dark:text-white">{t(language, 'strategy')}</h3>
+                            </div>
 
-                        {isAnalyzing ? (
-                            /* Analysis animation overlay */
-                            <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-8 relative overflow-hidden" style={{ minHeight: '300px' }}>
-                                <div className="flex flex-col items-center justify-center h-full gap-6">
-                                    <div className="relative w-24 h-24">
-                                        {productImages[0] && (
-                                            <img src={productImages[0].data} alt="Analyzing" className="w-full h-full object-cover rounded-xl opacity-60" />
-                                        )}
-                                        <div className="absolute inset-0 flex items-center justify-center">
-                                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-emerald-500 animate-scan-loupe">
-                                                <circle cx="11" cy="11" r="8"></circle>
-                                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                                            </svg>
+                            {isAnalyzing ? (
+                                /* Analysis animation overlay */
+                                <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-8 relative overflow-hidden" style={{ minHeight: '300px' }}>
+                                    <div className="flex flex-col items-center justify-center h-full gap-6">
+                                        <div className="relative w-24 h-24">
+                                            {productImages[0] && (
+                                                <img src={productImages[0].data} alt="Analyzing" className="w-full h-full object-cover rounded-xl opacity-60" />
+                                            )}
+                                            <div className="absolute inset-0 flex items-center justify-center">
+                                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-emerald-500 animate-scan-loupe">
+                                                    <circle cx="11" cy="11" r="8"></circle>
+                                                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                                </svg>
+                                            </div>
+                                        </div>
+                                        <div className="text-center">
+                                            <p className="text-sm font-semibold text-gray-900 dark:text-white mb-1">{t(language, 'analyzing')}</p>
+                                            <p className="text-xs text-gray-500">{t(language, 'analyzingDesc')}</p>
+                                        </div>
+                                        {/* Progress bar */}
+                                        <div className="w-64 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                                            <div className="h-full bg-gradient-to-r from-emerald-400 to-teal-500 rounded-full animate-progress-indeterminate"></div>
                                         </div>
                                     </div>
-                                    <div className="text-center">
-                                        <p className="text-sm font-semibold text-gray-900 dark:text-white mb-1">{t.analyzing}</p>
-                                        <p className="text-xs text-gray-500">{t.analyzingDesc}</p>
-                                    </div>
-                                    {/* Progress bar */}
-                                    <div className="w-64 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                                        <div className="h-full bg-gradient-to-r from-emerald-400 to-teal-500 rounded-full animate-progress-indeterminate"></div>
-                                    </div>
                                 </div>
-                            </div>
-                        ) : (
-                            <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-4">
-                                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Generated Prompt</h4>
-                                <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{generatedPrompt}</p>
-                                {/* Generate Image button */}
-                                <button
-                                    onClick={handleGenerateImage}
-                                    disabled={isGeneratingImage}
-                                    className={`mt-4 w-full py-3 rounded-xl font-semibold shadow-md transition-all flex justify-center items-center gap-3 ${isGeneratingImage
-                                        ? 'bg-[#0b9f84]/80 text-white cursor-wait'
-                                        : 'bg-[#0b9f84] hover:bg-[#088b73] text-white'
-                                        }`}
-                                >
-                                    {isGeneratingImage ? (
-                                        <>
-                                            <div className="pinterest-loader">
-                                                <div className="pin"></div>
-                                                <div className="pin"></div>
-                                                <div className="pin"></div>
-                                            </div>
-                                            {t.generating}
-                                        </>
-                                    ) : (
-                                        <>
-                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-                                            </svg>
-                                            {t.generateBtn}
-                                        </>
-                                    )}
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                ) : (
-                    /* Empty state */
-                    <div className="h-full flex flex-col items-center justify-center text-center">
-                        <div className="w-20 h-20 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-6">
-                            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-gray-400">
-                                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
-                                <circle cx="12" cy="13" r="4"></circle>
-                            </svg>
+                            ) : (
+                                <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-4">
+                                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Generated Prompt</h4>
+                                    <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{generatedPrompt}</p>
+                                    {/* Generate Image button */}
+                                    <button
+                                        onClick={handleGenerateImage}
+                                        disabled={isGeneratingImage}
+                                        className={`mt-4 w-full py-3 rounded-xl font-semibold shadow-md transition-all flex justify-center items-center gap-3 ${isGeneratingImage
+                                            ? 'bg-[#0b9f84]/80 text-white cursor-wait'
+                                            : 'bg-[#0b9f84] hover:bg-[#088b73] text-white'
+                                            }`}
+                                    >
+                                        {isGeneratingImage ? (
+                                            <>
+                                                <div className="pinterest-loader">
+                                                    <div className="pin"></div>
+                                                    <div className="pin"></div>
+                                                    <div className="pin"></div>
+                                                </div>
+                                                {t(language, 'generating')}
+                                            </>
+                                        ) : (
+                                            <>
+                                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                                                </svg>
+                                                {t(language, 'generateBtn')}
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                            )}
                         </div>
-                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{t.readyTitle}</h3>
-                        <p className="text-sm text-gray-500 max-w-sm">{t.readyDesc}</p>
-                    </div>
-                )}
-            </div>
-
-            {/* Right Sidebar - Minimized Agent History Log */}
-            <div className={`transition-all duration-300 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 flex flex-col shrink-0 ${isHistoryOpen ? 'w-[260px]' : 'w-[64px] items-center'}`}>
-                <div className="p-3 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between w-full gap-2">
-                    <div onClick={() => setIsHistoryOpen(!isHistoryOpen)} className="flex items-center gap-2 cursor-pointer hover:opacity-70 flex-1">
-                        {isHistoryOpen ? (
-                            <>
-                                <h2 className="text-sm font-semibold text-gray-900 dark:text-white">{t.recent}</h2>
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6" /></svg>
-                            </>
-                        ) : (
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-500"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                        )}
-                    </div>
-                    {isHistoryOpen && historyForAgent.length > 0 && (
-                        <button
-                            onClick={(e) => { e.stopPropagation(); clearAllHistory(); }}
-                            title="Supprimer tout l'historique"
-                            className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/30 text-gray-400 hover:text-red-500 transition-colors"
-                        >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>
-                        </button>
+                    ) : (
+                        /* Empty state */
+                        <div className="h-full flex flex-col items-center justify-center text-center">
+                            <div className="w-20 h-20 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-6">
+                                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-gray-400">
+                                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                                    <circle cx="12" cy="13" r="4"></circle>
+                                </svg>
+                            </div>
+                            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{t(language, 'readyShootTitle')}</h3>
+                            <p className="text-sm text-gray-500 max-w-sm">{t(language, 'readyShootDesc')}</p>
+                        </div>
                     )}
                 </div>
 
-                <div className={`p-2 flex flex-col gap-2 overflow-y-auto flex-1 ${!isHistoryOpen && 'items-center'}`}>
-                    {historyForAgent.map(hist => (
-                        <div
-                            key={hist.id}
-                            className={`rounded-lg border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden relative group ${isHistoryOpen ? 'p-3' : 'w-10 h-10'}`}
-                        >
-                            <button
-                                onClick={(e) => { e.stopPropagation(); removeAgentHistory(hist.id); }}
-                                className="absolute top-1 right-1 z-10 bg-white/90 dark:bg-gray-900/90 text-red-400 hover:text-red-600 rounded-full w-5 h-5 items-center justify-center hidden group-hover:flex transition-all shadow"
-                                title="Supprimer"
-                            >
-                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                            </button>
-
-                            <div onClick={() => loadHistoryItem(hist)} className="cursor-pointer w-full h-full">
-                                {isHistoryOpen ? (
-                                    <>
-                                        <div className="flex justify-between items-start mb-1">
-                                            <span className="text-xs font-medium text-gray-900 dark:text-white truncate pe-2">
-                                                {hist.selectedModel?.name} • {hist.selectedPose?.name}
-                                            </span>
-                                        </div>
-                                        {hist.generatedResults && hist.generatedResults.length > 0 ? (
-                                            <div className="flex gap-1 overflow-hidden h-12">
-                                                {hist.generatedResults.slice(0, 2).map((img, i) => (
-                                                    <img key={i} src={img} className="w-1/2 h-full object-cover rounded" />
-                                                ))}
-                                            </div>
-                                        ) : hist.productImages?.[0] && (
-                                            <div className="h-12 w-full rounded overflow-hidden bg-gray-100 dark:bg-gray-800">
-                                                <img src={hist.productImages[0].data} alt="thumb" className="w-full h-full object-cover" />
-                                            </div>
-                                        )}
-                                    </>
-                                ) : (
-                                    hist.generatedResults?.[0] ? (
-                                        <img src={hist.generatedResults[0]} alt="thumb" className="w-full h-full object-cover" />
-                                    ) : hist.productImages?.[0] ? (
-                                        <img src={hist.productImages[0].data} alt="thumb" className="w-full h-full object-cover" />
-                                    ) : (
-                                        <div className="w-full h-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-[10px]">IMG</div>
-                                    )
-                                )}
-                            </div>
+                {/* Right Sidebar - Minimized Agent History Log */}
+                <div className={`transition-all duration-300 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 flex flex-col shrink-0 ${isHistoryOpen ? 'w-[260px]' : 'w-[64px] items-center'}`}>
+                    <div className="p-3 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between w-full gap-2">
+                        <div onClick={() => setIsHistoryOpen(!isHistoryOpen)} className="flex items-center gap-2 cursor-pointer hover:opacity-70 flex-1">
+                            {isHistoryOpen ? (
+                                <>
+                                    <h2 className="text-sm font-semibold text-gray-900 dark:text-white">{t(language, 'recent')}</h2>
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6" /></svg>
+                                </>
+                            ) : (
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-500"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                            )}
                         </div>
-                    ))}
+                        {isHistoryOpen && historyForAgent.length > 0 && (
+                            <button
+                                onClick={(e) => { e.stopPropagation(); clearAllHistory(); }}
+                                title="Supprimer tout l'historique"
+                                className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/30 text-gray-400 hover:text-red-500 transition-colors"
+                            >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>
+                            </button>
+                        )}
+                    </div>
+
+                    <div className={`p-2 flex flex-col gap-2 overflow-y-auto flex-1 ${!isHistoryOpen && 'items-center'}`}>
+                        {historyForAgent.map(hist => (
+                            <div
+                                key={hist.id}
+                                className={`rounded-lg border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden relative group ${isHistoryOpen ? 'p-3' : 'w-10 h-10'}`}
+                            >
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); removeAgentHistory(hist.id); }}
+                                    className="absolute top-1 right-1 z-10 bg-white/90 dark:bg-gray-900/90 text-red-400 hover:text-red-600 rounded-full w-5 h-5 items-center justify-center hidden group-hover:flex transition-all shadow"
+                                    title="Supprimer"
+                                >
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                </button>
+
+                                <div onClick={() => loadHistoryItem(hist)} className="cursor-pointer w-full h-full">
+                                    {isHistoryOpen ? (
+                                        <>
+                                            <div className="flex justify-between items-start mb-1">
+                                                <span className="text-xs font-medium text-gray-900 dark:text-white truncate pe-2">
+                                                    {hist.selectedModel?.name} • {hist.selectedPose?.name}
+                                                </span>
+                                            </div>
+                                            {hist.generatedResults && hist.generatedResults.length > 0 ? (
+                                                <div className="flex gap-1 overflow-hidden h-12">
+                                                    {hist.generatedResults.slice(0, 2).map((img, i) => (
+                                                        <img key={i} src={img} className="w-1/2 h-full object-cover rounded" />
+                                                    ))}
+                                                </div>
+                                            ) : hist.productImages?.[0] && (
+                                                <div className="h-12 w-full rounded overflow-hidden bg-gray-100 dark:bg-gray-800">
+                                                    <img src={hist.productImages[0].data} alt="thumb" className="w-full h-full object-cover" />
+                                                </div>
+                                            )}
+                                        </>
+                                    ) : (
+                                        hist.generatedResults?.[0] ? (
+                                            <img src={hist.generatedResults[0]} alt="thumb" className="w-full h-full object-cover" />
+                                        ) : hist.productImages?.[0] ? (
+                                            <img src={hist.productImages[0].data} alt="thumb" className="w-full h-full object-cover" />
+                                        ) : (
+                                            <div className="w-full h-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-[10px]">IMG</div>
+                                        )
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
     );
 };
 

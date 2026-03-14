@@ -114,12 +114,19 @@ ${prompt}
 The output image should be a ${dims.label} aspect ratio. Create a clean, premium visual for a business catalog with professional studio lighting.`,
 
     fashion: (prompt, dims) => `Generate a high-end fashion photoshoot image. A professional model is wearing the EXACT product shown in the reference image.
+    
+    CRITICAL: The garment/product in the reference image must appear IDENTICALLY on the model — same color, material, texture, pattern, logos, labels, and design details. Do NOT change the product in any way.
+    
+    SAFETY & MODESTY RULES:
+    - The model MUST be wearing a complete, professional, and modest outfit.
+    - If the product is a top (T-shirt, polo, shirt), the model MUST also be wearing matching pants, a long skirt, or professional trousers.
+    - The model MUST look directly at the camera (maintaining eye contact).
+    - Suggestive poses, semi-nude results, swimsuits, or underwear looks are STRICTLY FORBIDDEN.
+    - Ensure the model is fully clothed in a way that is appropriate for a high-end commercial fashion catalogue.
 
-CRITICAL: The garment/product in the reference image must appear IDENTICALLY on the model — same color, material, texture, pattern, logos, labels, and design details. Do NOT change the product in any way.
+    ${prompt}
 
-${prompt}
-
-The output image should be a ${dims.label} aspect ratio (approximately ${dims.w}x${dims.h} pixels). Create a photorealistic, magazine-quality editorial photo.`
+    The output image should be a ${dims.label} aspect ratio (approximately ${dims.w}x${dims.h} pixels). Create a photorealistic, magazine-quality editorial photo.`
 };
 
 async function generateImage(prompt, configAspectRatio = '1:1', imageParams = null, editMode = false, mode = 'product') {
