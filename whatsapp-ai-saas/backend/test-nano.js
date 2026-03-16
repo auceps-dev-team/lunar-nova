@@ -18,8 +18,7 @@ async function verifyModelsAccess() {
     const modelsToTest = [
         'gemini-3-pro-image-preview',
         'gemini-3.1-flash-image-preview', // L'ancien modèle que tu utilisais
-        'imagen-4', // Le modèle Nano Banana spécifique
-        'gemini-2.0-pro-exp-02-05' // Un autre modèle pro expérimental récent
+        'gemini-2.5-flash', // Le modèle Nano Banana spécifique
     ];
 
     console.log("⏳ Test des connexions en cours...\n");

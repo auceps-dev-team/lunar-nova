@@ -1,7 +1,15 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import { get, set, del } from 'idb-keyval';
 
-// Global store to share contexts across Phase 2 apps and persist to LocalStorage
+// IndexedDB storage adapter for Zustand — replaces localStorage (5MB limit → hundreds of MB)
+const idbStorage = {
+    getItem: (name) => get(name),
+    setItem: (name, value) => set(name, value),
+    removeItem: (name) => del(name),
+};
+
+// Global store to share contexts across Phase 2 apps and persist to IndexedDB
 const useAppStore = create(
     persist(
         (set, get) => ({
@@ -22,7 +30,7 @@ const useAppStore = create(
 
             userProfile: {
                 isAuthenticated: false,
-                authMethod: null, // 'email' or 'google'
+                authMethod: null,
                 firstName: '',
                 lastName: '',
                 email: '',
@@ -35,7 +43,7 @@ const useAppStore = create(
             appSettings: {
                 theme: 'light',
                 language: 'en',
-                model: 'gemini-1.5-pro',
+                model: 'gemini-2.5-flash',
                 allowAiRead: true,
                 promptFormat: 'json'
             },
@@ -44,7 +52,7 @@ const useAppStore = create(
             agentChats: {
                 creative: [{ sender: 'agent', text: 'Hello! I am your Visual & Creative Agent. How can I assist you with your workload today?' }],
                 legal: [{ sender: 'agent', text: 'Hello! I am your Legal & Admin Agent. How can I assist you with your workload today?' }],
-                copywriter: [{ sender: 'agent', text: 'Bonjour ! Je suis l\'Experte en Copywriting de Vente et SDR Senior. Donnez-moi une CIBLE et un OBJECTIF, je vous rédige 3 approches irrésistibles.' }]
+                copywriter: [{ sender: 'agent', text: "Bonjour ! Je suis l'Experte en Copywriting de Vente et SDR Senior. Donnez-moi une CIBLE et un OBJECTIF, je vous rédige 3 approches irrésistibles." }]
             },
 
             agentHistory: [],
@@ -88,9 +96,11 @@ const useAppStore = create(
                 }
             })),
 
-            addAgentHistory: (historyItem) => set((state) => ({
-                agentHistory: [historyItem, ...state.agentHistory]
-            })),
+            addAgentHistory: (historyItem) => set((state) => {
+                const MAX_HISTORY = 20;
+                const updated = [historyItem, ...state.agentHistory];
+                return { agentHistory: updated.slice(0, MAX_HISTORY) };
+            }),
 
             removeAgentHistory: (historyId) => set((state) => ({
                 agentHistory: state.agentHistory.filter(h => h.id !== historyId)
@@ -98,12 +108,12 @@ const useAppStore = create(
 
             // --- Task Management Actions ---
             addTask: (task) => set((state) => ({
-                tasks: [...state.tasks, { 
-                    description: '', 
-                    attachments: [], 
-                    annotations: '', 
-                    ...task, 
-                    id: Date.now().toString() 
+                tasks: [...state.tasks, {
+                    description: '',
+                    attachments: [],
+                    annotations: '',
+                    ...task,
+                    id: Date.now().toString()
                 }]
             })),
 
@@ -120,7 +130,8 @@ const useAppStore = create(
             }))
         }),
         {
-            name: 'whatsapp-saas-storage', // name of the item in the storage (must be unique)
+            name: 'whatsapp-saas-storage',
+            storage: createJSONStorage(() => idbStorage),
         }
     )
 );
