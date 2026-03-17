@@ -220,6 +220,15 @@ app.delete('/api/agents/:id', async (req, res) => {
     }
 });
 
+app.get('/api/ai/models', async (req, res) => {
+    try {
+        const models = await aiController.listModels();
+        res.json({ status: 'success', models });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Endpoint to fetch Copilot Generative Replies
 app.post('/api/ai/copilot', async (req, res) => {
     // Requires instance_id for DB logging in a multi-tenant environment.

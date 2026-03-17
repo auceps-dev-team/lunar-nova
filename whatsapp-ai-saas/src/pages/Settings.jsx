@@ -11,6 +11,8 @@ const Settings = () => {
         default_ai_provider: 'gemini',
         openrouter_api_key: ''
     });
+    const [availableModels, setAvailableModels] = useState([]);
+    const [isLoadingModels, setIsLoadingModels] = useState(false);
 
     useEffect(() => {
         fetch('http://localhost:3000/api/settings')
@@ -20,16 +22,37 @@ const Settings = () => {
                     setBackendSettings(prev => ({ ...prev, ...data.settings }));
                 }
             })
-            .catch(console.error);
+            .catch(console.error)
+            .finally(() => fetchModels());
     }, []);
 
-    const handleBackendChange = (key, value) => {
+    const fetchModels = () => {
+        setIsLoadingModels(true);
+        fetch('http://localhost:3000/api/ai/models')
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    setAvailableModels(data.models || []);
+                }
+            })
+            .catch(console.error)
+            .finally(() => setIsLoadingModels(false));
+    };
+
+    const handleBackendChange = async (key, value) => {
         setBackendSettings(prev => ({ ...prev, [key]: value }));
-        fetch('http://localhost:3000/api/settings', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ [key]: value })
-        }).catch(console.error);
+        try {
+            await fetch('http://localhost:3000/api/settings', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ [key]: value })
+            });
+            if (key === 'default_ai_provider' || key === 'openrouter_api_key') {
+                fetchModels();
+            }
+        } catch (err) {
+            console.error(err);
+        }
     };
 
     const handleToggle = (key) => {
@@ -147,16 +170,23 @@ const Settings = () => {
                     <div className="flex items-center justify-between mb-6">
                         <div>
                             <p className="text-base font-medium text-gray-800 dark:text-gray-100">{t(language, 'llmModel')}</p>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">{t(language, 'llmModelDesc')} (Gemini)</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">{t(language, 'llmModelDesc')}</p>
                         </div>
                         <select
                             value={settings.model}
                             onChange={(e) => handleChange('model', e.target.value)}
-                            className="border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none bg-white dark:bg-gray-700 dark:text-white min-w-[200px]"
+                            disabled={isLoadingModels}
+                            className="border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none bg-white dark:bg-gray-700 dark:text-white min-w-[200px] disabled:opacity-50"
                         >
-                            <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
-                            <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
-                            <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                            {isLoadingModels ? (
+                                <option value="">Chargement...</option>
+                            ) : availableModels.length > 0 ? (
+                                availableModels.map(m => (
+                                    <option key={m.id} value={m.id}>{m.name}</option>
+                                ))
+                            ) : (
+                                <option value={settings.model}>{settings.model}</option>
+                            )}
                         </select>
                     </div>
 

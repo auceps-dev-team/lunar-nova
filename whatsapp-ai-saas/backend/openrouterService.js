@@ -143,7 +143,39 @@ async function chatWithAgent(persona, message, imageParams, promptFormat, apiKey
     }
 }
 
+async function listModels(apiKey) {
+    if (!apiKey) {
+        return [{ id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet (Clé API requise)' }];
+    }
+
+    try {
+        const response = await fetch("https://openrouter.ai/api/v1/models", {
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'HTTP-Referer': 'http://localhost:3000',
+                'X-Title': 'Lunar Nova'
+            }
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+            throw new Error(data.error.message || 'OpenRouter Error');
+        }
+
+        if (data.data && Array.isArray(data.data)) {
+            return data.data.map(m => ({ id: m.id, name: m.name || m.id }));
+        }
+
+        return [{ id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet' }];
+    } catch (error) {
+        console.error("OpenRouter List Models Error:", error);
+        return [{ id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet (Erreur Fetch)' }];
+    }
+}
+
 module.exports = {
     generateProposals,
-    chatWithAgent
+    chatWithAgent,
+    listModels
 };

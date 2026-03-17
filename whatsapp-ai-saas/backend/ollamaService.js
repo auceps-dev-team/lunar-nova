@@ -135,7 +135,24 @@ async function chatWithAgent(persona, message, imageParams, promptFormat, dbAgen
     }
 }
 
+async function listModels() {
+    try {
+        const response = await fetch("http://localhost:11434/api/tags");
+        const data = await response.json();
+
+        if (data.models && Array.isArray(data.models)) {
+            return data.models.map(m => ({ id: m.name, name: m.name }));
+        }
+
+        return [{ id: 'llama3', name: 'Llama 3' }];
+    } catch (error) {
+        console.error("Ollama List Models Error:", error);
+        return [{ id: 'llama3', name: 'Llama 3 (Ollama Hors Ligne)' }];
+    }
+}
+
 module.exports = {
     generateProposals,
-    chatWithAgent
+    chatWithAgent,
+    listModels
 };

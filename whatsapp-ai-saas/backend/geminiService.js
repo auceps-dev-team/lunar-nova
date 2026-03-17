@@ -241,8 +241,44 @@ async function generateImage(prompt, configAspectRatio = '1:1', imageParams = nu
     }
 }
 
+async function listModels() {
+    try {
+        const fetch = require('node-fetch');
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${process.env.GEMINI_API_KEY}`);
+        const data = await res.json();
+
+        if (data.error) {
+            throw new Error(data.error.message);
+        }
+
+        const models = [];
+        if (data.models) {
+            data.models.forEach(m => {
+                const id = m.name.replace('models/', '');
+                if (id.includes('gemini') && !id.includes('embedding') && !id.includes('vision') && !id.includes('aqa')) {
+                    models.push({ id: id, name: m.displayName || id });
+                }
+            });
+        }
+
+        return models.length > 0 ? models : [
+            { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro' },
+            { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash' },
+            { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash' }
+        ];
+    } catch (error) {
+        console.error("Gemini List Models Error:", error);
+        return [
+            { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro' },
+            { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash' },
+            { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash' }
+        ];
+    }
+}
+
 module.exports = {
     generateProposals,
     chatWithAgent,
-    generateImage
+    generateImage,
+    listModels
 };
