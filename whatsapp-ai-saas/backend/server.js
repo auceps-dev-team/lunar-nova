@@ -4,8 +4,8 @@ const puppeteer = require('puppeteer-core');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
-const { generateProposals, chatWithAgent, generateImage } = require('./geminiService');
-const { logCopilotInteraction, pool } = require('./db');
+const aiController = require('./aiController');
+const { logCopilotInteraction, pool, getSetting, setSetting } = require('./db');
 const { getCachedProposals, setCachedProposals } = require('./redisClient');
 
 const app = express();
@@ -163,8 +163,65 @@ app.get('/api/context/:instance_id', async (req, res) => {
     }
 });
 
+// --- Phase 15: Modularity APIs ---
+app.get('/api/settings', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM app_settings');
+        const settings = {};
+        result.rows.forEach(row => {
+            settings[row.setting_key] = row.setting_value;
+        });
+        res.json({ status: 'success', settings });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.put('/api/settings', async (req, res) => {
+    try {
+        for (const [key, value] of Object.entries(req.body)) {
+            await setSetting(key, value);
+        }
+        res.json({ status: 'success' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/agents', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM ai_agents');
+        res.json({ status: 'success', data: result.rows });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/agents', async (req, res) => {
+    const { id, name, system_instruction, response_format, provider_override } = req.body;
+    try {
+        const agentId = id || `agent_${Date.now()}`;
+        await pool.query(
+            'INSERT INTO ai_agents (id, name, system_instruction, response_format, provider_override) VALUES ($1, $2, $3, $4, $5) ON CONFLICT(id) DO UPDATE SET name = $2, system_instruction = $3, response_format = $4, provider_override = $5',
+            [agentId, name, system_instruction, response_format || 'text', provider_override || null]
+        );
+        res.json({ status: 'success', id: agentId });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.delete('/api/agents/:id', async (req, res) => {
+    try {
+        await pool.query('DELETE FROM ai_agents WHERE id = $1', [req.params.id]);
+        res.json({ status: 'success' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Endpoint to fetch Copilot Generative Replies
-app.post('/api/gemini/copilot', async (req, res) => {
+app.post('/api/ai/copilot', async (req, res) => {
     // Requires instance_id for DB logging in a multi-tenant environment.
     // Usually passed as part of the request. Let's assume frontend passes it.
     const { instance_id, chatContext, model } = req.body;
@@ -192,9 +249,9 @@ app.post('/api/gemini/copilot', async (req, res) => {
             });
         }
 
-        // Generate via Gemini
+        // Generate via AI Controller
         console.log(`[Cache Miss] Generating new proposals for ${chatContext.contactName}`);
-        const proposalsObj = await generateProposals(chatContext, model);
+        const proposalsObj = await aiController.generateProposals(chatContext, model);
         const proposals = proposalsObj.proposed_replies || [];
 
         // Cache for 60 seconds
@@ -221,7 +278,7 @@ app.post('/api/gemini/copilot', async (req, res) => {
 });
 
 // Endpoint for specialized Persona AI Agents (Legal, Creative)
-app.post('/api/gemini/agent', async (req, res) => {
+app.post('/api/ai/agent', async (req, res) => {
     const { persona, message, imageParams, promptFormat } = req.body;
 
     if (!message) {
@@ -229,7 +286,7 @@ app.post('/api/gemini/agent', async (req, res) => {
     }
 
     try {
-        const aiResponse = await chatWithAgent(persona, message, imageParams, promptFormat);
+        const aiResponse = await aiController.chatWithAgent(persona, message, imageParams, promptFormat);
         res.json({
             status: 'success',
             response: aiResponse.response
@@ -241,7 +298,7 @@ app.post('/api/gemini/agent', async (req, res) => {
 });
 
 // Endpoint to generate an image via Gemini Imagen 4
-app.post('/api/gemini/generate-image', async (req, res) => {
+app.post('/api/ai/generate-image', async (req, res) => {
     const { prompt, aspectRatio, imageParams, editMode, mode } = req.body;
 
     if (!prompt) {
@@ -249,7 +306,7 @@ app.post('/api/gemini/generate-image', async (req, res) => {
     }
 
     try {
-        const generationResponse = await generateImage(prompt, aspectRatio, imageParams, editMode, mode);
+        const generationResponse = await aiController.generateImage(prompt, aspectRatio, imageParams, editMode, mode);
         if (generationResponse.error) {
             return res.status(500).json({ error: generationResponse.error });
         }

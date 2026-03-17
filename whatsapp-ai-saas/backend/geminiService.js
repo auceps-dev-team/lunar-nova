@@ -56,14 +56,20 @@ async function generateProposals(chatContext, modelParam) {
     }
 }
 
-async function chatWithAgent(personaId, message, imageParams, promptFormat = 'text') {
+async function chatWithAgent(personaId, message, imageParams, promptFormat = 'text', dbAgent = null) {
     if (!message) return { response: "I didn't catch that. How can I help?" };
 
-    const persona = orchestrator.getPersona(personaId) || orchestrator.getPersona('creative');
+    let personaInstruction = "";
+    let finalPromptFormat = promptFormat;
 
-    // Default to the persona config, fallback to passed args
-    const finalPromptFormat = orchestrator.requiresJsonFormat(personaId) ? 'json' : promptFormat;
-    const personaInstruction = persona.systemInstruction;
+    if (dbAgent) {
+        personaInstruction = dbAgent.system_instruction;
+        finalPromptFormat = dbAgent.response_format === 'json' ? 'json' : promptFormat;
+    } else {
+        const persona = orchestrator.getPersona(personaId) || orchestrator.getPersona('creative');
+        finalPromptFormat = orchestrator.requiresJsonFormat(personaId) ? 'json' : promptFormat;
+        personaInstruction = persona.systemInstruction;
+    }
 
     try {
         let contents;

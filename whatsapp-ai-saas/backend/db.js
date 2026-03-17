@@ -95,6 +95,31 @@ async function initDB() {
             // Ignore error if column already exists (SQLite throws if column exists)
         }
 
+        // Phase 15: AI Modularity
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS app_settings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                setting_key VARCHAR(255) UNIQUE NOT NULL,
+                setting_value TEXT
+            );
+        `);
+
+        await client.query(`
+            INSERT OR IGNORE INTO app_settings (setting_key, setting_value)
+            VALUES ('default_ai_provider', 'gemini')
+        `);
+
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS ai_agents (
+                id VARCHAR(255) PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                system_instruction TEXT NOT NULL,
+                response_format VARCHAR(50) DEFAULT 'text',
+                provider_override VARCHAR(50) DEFAULT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        `);
+
         client.release();
         isDbConnected = true;
         console.log('[SQLite] Connected and tables verified.');
@@ -130,7 +155,46 @@ async function logCopilotInteraction(instance_id, contact_name, context, proposa
     }
 }
 
+// --- Phase 15 Helpers ---
+async function getSetting(key, defaultValue = null) {
+    if (!isDbConnected) return defaultValue;
+    try {
+        const result = await pool.query('SELECT setting_value FROM app_settings WHERE setting_key = $1', [key]);
+        if (result.rows.length > 0) return result.rows[0].setting_value;
+    } catch (e) {
+        console.error('[DB] getSetting Error:', e.message);
+    }
+    return defaultValue;
+}
+
+async function setSetting(key, value) {
+    if (!isDbConnected) return;
+    try {
+        await pool.query(`
+            INSERT INTO app_settings (setting_key, setting_value) 
+            VALUES ($1, $2) 
+            ON CONFLICT(setting_key) DO UPDATE SET setting_value = $2
+        `, [key, value]);
+    } catch (e) {
+        console.error('[DB] setSetting Error:', e.message);
+    }
+}
+
+async function getAgent(id) {
+    if (!isDbConnected) return null;
+    try {
+        const result = await pool.query('SELECT * FROM ai_agents WHERE id = $1', [id]);
+        if (result.rows.length > 0) return result.rows[0];
+    } catch (e) {
+        console.error('[DB] getAgent Error:', e.message);
+    }
+    return null;
+}
+
 module.exports = {
     pool,
-    logCopilotInteraction
+    logCopilotInteraction,
+    getSetting,
+    setSetting,
+    getAgent
 };

@@ -82,7 +82,7 @@ const AgentsHub = ({ activeId }) => {
 
         setIsLoading(true);
         try {
-            const res = await fetch('http://localhost:3000/api/gemini/agent', {
+            const res = await fetch('http://localhost:3000/api/ai/agent', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -197,7 +197,7 @@ const AgentsHub = ({ activeId }) => {
                 };
             }
 
-            const res = await fetch('http://localhost:3000/api/gemini/generate-image', {
+            const res = await fetch('http://localhost:3000/api/ai/generate-image', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body)

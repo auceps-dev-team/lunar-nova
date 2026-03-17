@@ -160,7 +160,7 @@ const WorkArea = ({ instances, activeId }) => {
 
             if (ctxDataContext && !ctxDataContext.error && ctxDataContext.messages && ctxDataContext.messages.length > 0) {
                 // 2. Process via Gemini Assistive Copilot
-                const geminiRes = await fetch('http://localhost:3000/api/gemini/copilot', {
+                const geminiRes = await fetch('http://localhost:3000/api/ai/copilot', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({

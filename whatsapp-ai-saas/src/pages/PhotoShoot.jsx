@@ -140,7 +140,7 @@ const PhotoShoot = ({ activeId }) => {
 <POSE>: ${pose.name} — ${pose.desc}
 <BACKGROUND>: ${bg.name} — ${bg.desc}`;
 
-            const agentRes = await fetch('http://localhost:3000/api/gemini/agent', {
+            const agentRes = await fetch('http://localhost:3000/api/ai/agent', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -210,7 +210,7 @@ const PhotoShoot = ({ activeId }) => {
                 mode: 'fashion'
             };
 
-            const genRes = await fetch('http://localhost:3000/api/gemini/generate-image', {
+            const genRes = await fetch('http://localhost:3000/api/ai/generate-image', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(genBody)

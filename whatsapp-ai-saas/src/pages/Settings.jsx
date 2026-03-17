@@ -1,10 +1,36 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import useAppStore from '../store';
 import { getTranslation as t } from '../locales';
 
 const Settings = () => {
     const settings = useAppStore(state => state.appSettings) || { theme: 'light', language: 'en', model: 'gemini-pro-latest', allowAiRead: true };
     const updateSettings = useAppStore(state => state.updateSettings);
+
+    const [backendSettings, setBackendSettings] = useState({
+        default_ai_provider: 'gemini',
+        openrouter_api_key: ''
+    });
+
+    useEffect(() => {
+        fetch('http://localhost:3000/api/settings')
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success' && data.settings) {
+                    setBackendSettings(prev => ({ ...prev, ...data.settings }));
+                }
+            })
+            .catch(console.error);
+    }, []);
+
+    const handleBackendChange = (key, value) => {
+        setBackendSettings(prev => ({ ...prev, [key]: value }));
+        fetch('http://localhost:3000/api/settings', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ [key]: value })
+        }).catch(console.error);
+    };
 
     const handleToggle = (key) => {
         updateSettings({ [key]: !settings[key] });
@@ -18,9 +44,17 @@ const Settings = () => {
 
     return (
         <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-            <div className="mb-8">
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t(language, 'appSettings')}</h1>
-                <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Configure your Workspace preferences and AI models.</p>
+            <div className="flex justify-between items-center mb-8">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t(language, 'appSettings')}</h1>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Configure your Workspace preferences and AI models.</p>
+                </div>
+                <Link
+                    to="/agents-manager"
+                    className="px-4 py-2 bg-[#0b9f84] hover:bg-[#088b73] text-white text-sm font-medium rounded-lg shadow transition"
+                >
+                    Gérer les Agents IA
+                </Link>
             </div>
 
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-card dark:shadow-none border border-gray-100 dark:border-gray-700 overflow-hidden divide-y divide-gray-100 dark:divide-gray-700">
@@ -71,25 +105,58 @@ const Settings = () => {
                     </div>
                 </div>
 
-                {/* AI & Copilot settings */}
+                {/* AI Providers & Global Configuration */}
                 <div className="p-6">
-                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider mb-4">{t(language, 'aiCopilotDefaults')}</h3>
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider mb-4">Moteur d'Intelligence Artificielle</h3>
+
+                    <div className="flex items-center justify-between mb-6">
+                        <div>
+                            <p className="text-base font-medium text-gray-800 dark:text-gray-100">Fournisseur par défaut</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">Le moteur utilisé pour les interactions générales (Assistive Copilot, etc.)</p>
+                        </div>
+                        <select
+                            value={backendSettings.default_ai_provider}
+                            onChange={(e) => handleBackendChange('default_ai_provider', e.target.value)}
+                            className="border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none bg-white dark:bg-gray-700 dark:text-white min-w-[200px]"
+                        >
+                            <option value="gemini">Google Gemini (Défaut)</option>
+                            <option value="openrouter">OpenRouter (GPT-4, Claude)</option>
+                            <option value="ollama">Ollama (Local / Gratuit)</option>
+                        </select>
+                    </div>
+
+                    {backendSettings.default_ai_provider === 'openrouter' && (
+                        <div className="flex items-center justify-between mb-6 bg-gray-50 dark:bg-gray-750 p-4 rounded-lg">
+                            <div className="w-1/2">
+                                <p className="text-sm font-medium text-gray-800 dark:text-gray-100">Clé API OpenRouter</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Requis pour utiliser Claude 3.5 ou GPT-4o via OpenRouter.</p>
+                            </div>
+                            <div className="w-1/2 flex justify-end">
+                                <input
+                                    type="password"
+                                    placeholder="sk-or-v1-..."
+                                    value={backendSettings.openrouter_api_key || ''}
+                                    onChange={(e) => setBackendSettings(prev => ({ ...prev, openrouter_api_key: e.target.value }))}
+                                    onBlur={(e) => handleBackendChange('openrouter_api_key', e.target.value)}
+                                    className="border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none bg-white dark:bg-gray-700 dark:text-white w-full max-w-[300px]"
+                                />
+                            </div>
+                        </div>
+                    )}
 
                     <div className="flex items-center justify-between mb-6">
                         <div>
                             <p className="text-base font-medium text-gray-800 dark:text-gray-100">{t(language, 'llmModel')}</p>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">{t(language, 'llmModelDesc')}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">{t(language, 'llmModelDesc')} (Gemini)</p>
                         </div>
                         <select
                             value={settings.model}
                             onChange={(e) => handleChange('model', e.target.value)}
                             className="border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none bg-white dark:bg-gray-700 dark:text-white min-w-[200px]"
                         >
-                            <option value="gemini-pro-latest">Gemini Pro (Latest)</option>
-                            <option value="gemini-flash-latest">Gemini Flash (Faster)</option>
+                            <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                            <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
                             <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
-                            <option value="gpt-4" disabled>GPT-4 (Premium Only)</option>
-                            <option value="claude-3" disabled>Claude 3 (Premium Only)</option>
                         </select>
                     </div>
 

@@ -216,7 +216,7 @@ const TasksMap = () => {
         setIsAiLoading(true);
         try {
             const prompt = `Refine and expand the following task description to make it professional and clear. Here is the draft: \n\n${taskForm.description}`;
-            const res = await fetch('http://localhost:3000/api/gemini/agent', {
+            const res = await fetch('http://localhost:3000/api/ai/agent', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ message: prompt, personaId: 'ella' })
@@ -251,7 +251,7 @@ const TasksMap = () => {
 
         try {
             const promptContext = `[CURRENT_TASKS]: ${JSON.stringify(tasks)}\n\nUser instruction: ${userMessage}`;
-            const res = await fetch('http://localhost:3000/api/gemini/agent', {
+            const res = await fetch('http://localhost:3000/api/ai/agent', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ message: promptContext, personaId: 'ella' })

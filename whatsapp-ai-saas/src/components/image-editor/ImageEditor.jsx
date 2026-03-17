@@ -171,7 +171,7 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                 mode: 'product'
             };
 
-            const resProxy = await fetch('http://localhost:3000/api/gemini/generate-image', {
+            const resProxy = await fetch('http://localhost:3000/api/ai/generate-image', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(genBody)
@@ -347,7 +347,7 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
         setError(null);
         try {
             // Connect to our local Express backend agent for image description
-            const agentRes = await fetch('http://localhost:3000/api/gemini/agent', {
+            const agentRes = await fetch('http://localhost:3000/api/ai/agent', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
