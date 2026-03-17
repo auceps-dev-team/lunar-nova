@@ -24,7 +24,8 @@ async function generateProposals(chatContext, modelParam) {
         const apiKey = await db.getSetting('openrouter_api_key', '');
         return await openrouterService.generateProposals(chatContext, modelParam, apiKey);
     } else if (provider === 'ollama') {
-        return await ollamaService.generateProposals(chatContext, modelParam);
+        const apiKey = await db.getSetting('ollama_api_key', '');
+        return await ollamaService.generateProposals(chatContext, modelParam, apiKey);
     } else {
         // Default to Gemini
         return await geminiService.generateProposals(chatContext, modelParam);
@@ -38,7 +39,8 @@ async function chatWithAgent(personaId, message, imageParams, promptFormat) {
         const apiKey = await db.getSetting('openrouter_api_key', '');
         return await openrouterService.chatWithAgent(personaId, message, imageParams, promptFormat, apiKey, dbAgent);
     } else if (provider === 'ollama') {
-        return await ollamaService.chatWithAgent(personaId, message, imageParams, promptFormat, dbAgent);
+        const apiKey = await db.getSetting('ollama_api_key', '');
+        return await ollamaService.chatWithAgent(personaId, message, imageParams, promptFormat, dbAgent, apiKey);
     } else {
         // Default to Gemini
         return await geminiService.chatWithAgent(personaId, message, imageParams, promptFormat, dbAgent);
@@ -75,7 +77,8 @@ async function listModels(providerOverride = null, apiKeyOverride = null) {
         const apiKey = apiKeyOverride || await db.getSetting('openrouter_api_key', '');
         return await openrouterService.listModels(apiKey);
     } else if (provider === 'ollama') {
-        return await ollamaService.listModels();
+        const apiKey = apiKeyOverride || await db.getSetting('ollama_api_key', '');
+        return await ollamaService.listModels(apiKey);
     } else {
         return await geminiService.listModels();
     }

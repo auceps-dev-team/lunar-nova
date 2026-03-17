@@ -10,6 +10,7 @@ const Settings = () => {
     const [backendSettings, setBackendSettings] = useState({
         default_ai_provider: 'gemini',
         openrouter_api_key: '',
+        ollama_api_key: '',
         default_image_model: ''
     });
     const [availableChatModels, setAvailableChatModels] = useState([]);
@@ -214,6 +215,25 @@ const Settings = () => {
                                     placeholder="sk-or-v1-..."
                                     value={backendSettings.openrouter_api_key || ''}
                                     onChange={(e) => setBackendSettings(prev => ({ ...prev, openrouter_api_key: e.target.value }))}
+                                    onBlur={() => fetchModels()}
+                                    className="border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none bg-white dark:bg-gray-700 dark:text-white w-full max-w-[300px]"
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {backendSettings.default_ai_provider === 'ollama' && (
+                        <div className="flex items-center justify-between mb-6 bg-gray-50 dark:bg-gray-750 p-4 rounded-lg">
+                            <div className="w-1/2">
+                                <p className="text-sm font-medium text-gray-800 dark:text-gray-100">Clé API Ollama Cloud (Optionnel)</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Laissez vide pour utiliser les modèles téléchargés localement. Ajoutez une clé pour accéder à ollama.com.</p>
+                            </div>
+                            <div className="w-1/2 flex justify-end">
+                                <input
+                                    type="password"
+                                    placeholder="your_api_key..."
+                                    value={backendSettings.ollama_api_key || ''}
+                                    onChange={(e) => setBackendSettings(prev => ({ ...prev, ollama_api_key: e.target.value }))}
                                     onBlur={() => fetchModels()}
                                     className="border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none bg-white dark:bg-gray-700 dark:text-white w-full max-w-[300px]"
                                 />
