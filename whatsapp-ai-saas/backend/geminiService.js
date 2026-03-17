@@ -6,6 +6,56 @@ const { GoogleGenAI } = require('@google/genai');
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 const orchestrator = require('./agents/orchestrator');
+const db = require('./db');
+
+// S'exécute au lancement pour cacher les modèles Gemini dans la DB
+async function syncGeminiModels() {
+    try {
+        console.log('[Gemini] Vérification et synchronisation des modèles...');
+        const cached = await db.getSetting('gemini_models_cache', null);
+
+        const _fetch = typeof fetch !== 'undefined' ? fetch : (await import('node-fetch')).default;
+        const res = await _fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${process.env.GEMINI_API_KEY}`);
+        const data = await res.json();
+
+        if (data.error) {
+            throw new Error(data.error.message);
+        }
+
+        const chatModels = [];
+        const imageModels = [];
+        if (data.models) {
+            data.models.forEach(m => {
+                const id = m.name.replace('models/', '');
+                if (id.includes('gemini') && !id.includes('embedding') && !id.includes('aqa')) {
+                    chatModels.push({ id: id, name: m.displayName || id });
+                }
+                if (id.includes('imagen') || id.includes('veo')) {
+                    imageModels.push({ id: id, name: m.displayName || id });
+                }
+            });
+        }
+
+        // Manual fallback for Imagen if it isn't listed
+        if (imageModels.length === 0) {
+            imageModels.push({ id: 'imagen-4.0-generate-001', name: 'Imagen 4' });
+        }
+
+        const modelsJson = JSON.stringify({ chat: chatModels, image: imageModels });
+
+        if (modelsJson !== cached) {
+            await db.setSetting('gemini_models_cache', modelsJson);
+            console.log(`[Gemini] Base de données mise à jour avec ${chatModels.length} modèles de conversation et ${imageModels.length} modèles d'images.`);
+        } else {
+            console.log('[Gemini] La liste des modèles est déjà à jour dans la base de données.');
+        }
+    } catch (error) {
+        console.error("[Gemini] Échec de la synchronisation des modèles:", error.message);
+    }
+}
+
+// Retarder de 3 secondes pour s'assurer que la connexion SQLite est prête
+setTimeout(syncGeminiModels, 3000);
 
 async function generateProposals(chatContext, modelParam) {
     if (!chatContext || !chatContext.messages || chatContext.messages.length === 0) {
@@ -255,45 +305,19 @@ async function generateImage(prompt, configAspectRatio = '1:1', imageParams = nu
 
 async function listModels() {
     try {
-        const fetch = require('node-fetch');
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${process.env.GEMINI_API_KEY}`);
-        const data = await res.json();
-
-        if (data.error) {
-            throw new Error(data.error.message);
+        const cached = await db.getSetting('gemini_models_cache', null);
+        if (cached) {
+            return JSON.parse(cached);
         }
-
-        const chatModels = [];
-        const imageModels = [];
-        if (data.models) {
-            data.models.forEach(m => {
-                const id = m.name.replace('models/', '');
-                if (id.includes('gemini') && !id.includes('embedding') && !id.includes('aqa')) {
-                    chatModels.push({ id: id, name: m.displayName || id });
-                }
-                if (id.includes('imagen') || id.includes('veo')) {
-                    imageModels.push({ id: id, name: m.displayName || id });
-                }
-            });
-        }
-
-        // Manual fallback for Imagen if it isn't listed
-        if (imageModels.length === 0) {
-            imageModels.push({ id: 'imagen-4.0-generate-001', name: 'Imagen 4' });
-        }
-
-        return { chat: chatModels, image: imageModels };
-    } catch (error) {
-        console.error("Gemini List Models Error:", error);
         return {
-            chat: [
-                { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro' },
-                { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash' },
-                { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash' }
-            ],
-            image: [
-                { id: 'imagen-4.0-generate-001', name: 'Imagen 4' }
-            ]
+            chat: [{ id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash (En attente de synchro...)' }],
+            image: [{ id: 'imagen-4.0-generate-001', name: 'Imagen 4 (En attente de synchro...)' }]
+        };
+    } catch (error) {
+        console.error("Gemini DB Read Error:", error);
+        return {
+            chat: [{ id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash (Erreur Base de données)' }],
+            image: [{ id: 'imagen-4.0-generate-001', name: 'Imagen 4 (Erreur Base de données)' }]
         };
     }
 }

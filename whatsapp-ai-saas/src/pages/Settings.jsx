@@ -30,19 +30,45 @@ const Settings = () => {
             .finally(() => fetchModels());
     }, []);
 
-    const fetchModels = () => {
+    const fetchModels = (providerOverride) => {
         setIsLoadingModels(true);
-        fetch('http://localhost:3000/api/ai/models')
+        const provider = providerOverride || backendSettings.default_ai_provider;
+
+        // Pass the API key if it's OpenRouter so we can test it before saving
+        const apiKeyParam = provider === 'openrouter' && backendSettings.openrouter_api_key
+            ? `&apiKey=${encodeURIComponent(backendSettings.openrouter_api_key)}`
+            : '';
+
+        fetch(`http://localhost:3000/api/ai/models?provider=${provider}${apiKeyParam}`)
             .then(res => res.json())
             .then(data => {
                 if (data.status === 'success') {
+                    let newChat = [];
+                    let newImage = [];
                     if (data.models && data.models.chat) {
-                        setAvailableChatModels(data.models.chat);
-                        setAvailableImageModels(data.models.image);
+                        newChat = data.models.chat;
+                        newImage = data.models.image;
                     } else if (Array.isArray(data.models)) {
-                        setAvailableChatModels(data.models);
-                        setAvailableImageModels([]);
+                        newChat = data.models;
                     }
+
+                    setAvailableChatModels(newChat);
+                    setAvailableImageModels(newImage);
+
+                    // Auto-select first model if current is invalid
+                    if (newChat.length > 0 && !newChat.some(m => m.id === settings.model)) {
+                        handleChange('model', newChat[0].id);
+                    }
+
+                    setBackendSettings(prev => {
+                        let updatedImageModel = prev.default_image_model;
+                        if (newImage.length > 0 && !newImage.some(m => m.id === prev.default_image_model)) {
+                            updatedImageModel = newImage[0].id;
+                        } else if (newImage.length === 0) {
+                            updatedImageModel = '';
+                        }
+                        return { ...prev, default_image_model: updatedImageModel };
+                    });
                 }
             })
             .catch(console.error)
@@ -52,12 +78,7 @@ const Settings = () => {
     const handleBackendChange = (key, value) => {
         setBackendSettings(prev => ({ ...prev, [key]: value }));
         if (key === 'default_ai_provider') {
-            // Save immediately just the provider so the model fetch can use the updated value on backend
-            fetch('http://localhost:3000/api/settings', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ [key]: value })
-            }).then(() => fetchModels()).catch(console.error);
+            fetchModels(value);
         }
     };
 
@@ -193,6 +214,7 @@ const Settings = () => {
                                     placeholder="sk-or-v1-..."
                                     value={backendSettings.openrouter_api_key || ''}
                                     onChange={(e) => setBackendSettings(prev => ({ ...prev, openrouter_api_key: e.target.value }))}
+                                    onBlur={() => fetchModels()}
                                     className="border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none bg-white dark:bg-gray-700 dark:text-white w-full max-w-[300px]"
                                 />
                             </div>
@@ -217,7 +239,7 @@ const Settings = () => {
                                     <option key={m.id} value={m.id}>{m.name}</option>
                                 ))
                             ) : (
-                                <option value={settings.model}>{settings.model}</option>
+                                <option value="" disabled>Aucun modèle disponible</option>
                             )}
                         </select>
                     </div>
@@ -240,7 +262,7 @@ const Settings = () => {
                                     <option key={m.id} value={m.id}>{m.name}</option>
                                 ))
                             ) : (
-                                <option value={backendSettings.default_image_model}>{backendSettings.default_image_model || 'Non supporté'}</option>
+                                <option value="" disabled>Génération d'image non supportée</option>
                             )}
                         </select>
                     </div>

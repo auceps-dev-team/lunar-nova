@@ -1,7 +1,56 @@
-const fetch = require('node-fetch');
 const orchestrator = require('./agents/orchestrator');
+const db = require('./db');
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
+const OPENROUTER_FALLBACK_API_KEY = "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";
+
+// S'exécute au lancement pour cacher les modèles d'OpenRouter dans la DB
+async function syncOpenRouterModels() {
+    try {
+        console.log('[OpenRouter] Vérification et synchronisation des modèles...');
+        const cached = await db.getSetting('openrouter_models_cache', null);
+
+        const _fetch = typeof fetch !== 'undefined' ? fetch : (await import('node-fetch')).default;
+
+        const response = await _fetch("https://openrouter.ai/api/v1/models", {
+            headers: {
+                'Authorization': `Bearer ${OPENROUTER_FALLBACK_API_KEY}`,
+                'HTTP-Referer': 'http://localhost:3000',
+                'X-Title': 'Lunar Nova'
+            }
+        });
+
+        const data = await response.json();
+
+        if (data.data && Array.isArray(data.data)) {
+            const chatModels = [];
+            const imageModels = [];
+            data.data.forEach(m => {
+                if (m.architecture && m.architecture.modality && m.architecture.modality.includes('image')) {
+                    imageModels.push({ id: m.id, name: m.name || m.id });
+                } else {
+                    chatModels.push({ id: m.id, name: m.name || m.id });
+                }
+            });
+            if (imageModels.length === 0) imageModels.push({ id: 'none', name: 'Aucun modèle d\'image trouvé sur OpenRouter' });
+
+            const modelsJson = JSON.stringify({ chat: chatModels, image: imageModels });
+
+            if (modelsJson !== cached) {
+                await db.setSetting('openrouter_models_cache', modelsJson);
+                console.log(`[OpenRouter] Base de données mise à jour avec ${chatModels.length} modèles de conversation et ${imageModels.length} modèles d'images.`);
+            } else {
+                console.log('[OpenRouter] La liste des modèles est déjà à jour dans la base de données.');
+            }
+        }
+    } catch (error) {
+        console.error("[OpenRouter] Échec de la synchronisation des modèles:", error.message);
+    }
+}
+
+// Retarder de 3 secondes pour s'assurer que la connexion SQLite est prête
+setTimeout(syncOpenRouterModels, 3000);
+
 
 async function generateProposals(chatContext, modelParam, apiKey) {
     if (!apiKey) {
@@ -22,7 +71,8 @@ async function generateProposals(chatContext, modelParam, apiKey) {
     const systemInstruction = copilotPersona ? copilotPersona.systemInstruction : "You are an assistive copilot.";
 
     try {
-        const response = await fetch(OPENROUTER_URL, {
+        const _fetch = typeof fetch !== 'undefined' ? fetch : (await import('node-fetch')).default;
+        const response = await _fetch(OPENROUTER_URL, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${apiKey}`,
@@ -87,6 +137,7 @@ async function chatWithAgent(persona, message, imageParams, promptFormat, apiKey
     }
 
     try {
+        const _fetch = typeof fetch !== 'undefined' ? fetch : (await import('node-fetch')).default;
         const messages = [
             { role: "system", content: personaInstruction }
         ];
@@ -111,7 +162,7 @@ async function chatWithAgent(persona, message, imageParams, promptFormat, apiKey
             messages[0].content += "\n\nCRITICAL: Return ONLY a valid JSON output. No markdown, no conversational text.";
         }
 
-        const response = await fetch(OPENROUTER_URL, {
+        const response = await _fetch(OPENROUTER_URL, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${apiKey}`,
@@ -144,43 +195,16 @@ async function chatWithAgent(persona, message, imageParams, promptFormat, apiKey
 }
 
 async function listModels(apiKey) {
-    if (!apiKey) {
-        return { chat: [{ id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet (Clé API requise)' }], image: [] };
-    }
-
+    // Lecture directe et immédiate depuis le cache SQLite
     try {
-        const response = await fetch("https://openrouter.ai/api/v1/models", {
-            headers: {
-                'Authorization': `Bearer ${apiKey}`,
-                'HTTP-Referer': 'http://localhost:3000',
-                'X-Title': 'Lunar Nova'
-            }
-        });
-
-        const data = await response.json();
-
-        if (data.error) {
-            throw new Error(data.error.message || 'OpenRouter Error');
+        const cached = await db.getSetting('openrouter_models_cache', null);
+        if (cached) {
+            return JSON.parse(cached);
         }
-
-        if (data.data && Array.isArray(data.data)) {
-            const chatModels = [];
-            const imageModels = [];
-            data.data.forEach(m => {
-                if (m.architecture && m.architecture.modality && m.architecture.modality.includes('image')) {
-                    imageModels.push({ id: m.id, name: m.name || m.id });
-                } else {
-                    chatModels.push({ id: m.id, name: m.name || m.id });
-                }
-            });
-            if (imageModels.length === 0) imageModels.push({ id: 'none', name: 'Aucun modèle d\'image trouvé sur OpenRouter' });
-            return { chat: chatModels, image: imageModels };
-        }
-
-        return { chat: [{ id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet' }], image: [] };
+        return { chat: [{ id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet (En attente de synchro...)' }], image: [] };
     } catch (error) {
-        console.error("OpenRouter List Models Error:", error);
-        return { chat: [{ id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet (Erreur Fetch)' }], image: [] };
+        console.error("OpenRouter DB Read Error:", error);
+        return { chat: [{ id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet (Erreur Base de données)' }], image: [] };
     }
 }
 

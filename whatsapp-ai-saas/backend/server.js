@@ -222,7 +222,9 @@ app.delete('/api/agents/:id', async (req, res) => {
 
 app.get('/api/ai/models', async (req, res) => {
     try {
-        const models = await aiController.listModels();
+        const provider = req.query.provider;
+        const apiKey = req.query.apiKey;
+        const models = await aiController.listModels(provider, apiKey);
         res.json({ status: 'success', models });
     } catch (err) {
         res.status(500).json({ error: err.message });

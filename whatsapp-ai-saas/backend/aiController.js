@@ -68,11 +68,11 @@ async function generateImage(prompt, aspectRatio, imageParams, editMode, mode) {
     }
 }
 
-async function listModels() {
-    const provider = await db.getSetting('default_ai_provider', 'gemini');
+async function listModels(providerOverride = null, apiKeyOverride = null) {
+    const provider = providerOverride || await db.getSetting('default_ai_provider', 'gemini');
 
     if (provider === 'openrouter') {
-        const apiKey = await db.getSetting('openrouter_api_key', '');
+        const apiKey = apiKeyOverride || await db.getSetting('openrouter_api_key', '');
         return await openrouterService.listModels(apiKey);
     } else if (provider === 'ollama') {
         return await ollamaService.listModels();

@@ -170,11 +170,12 @@ async function getSetting(key, defaultValue = null) {
 async function setSetting(key, value) {
     if (!isDbConnected) return;
     try {
-        await pool.query(`
-            INSERT INTO app_settings (setting_key, setting_value) 
-            VALUES ($1, $2) 
-            ON CONFLICT(setting_key) DO UPDATE SET setting_value = $2
-        `, [key, value]);
+        const existing = await pool.query('SELECT id FROM app_settings WHERE setting_key = $1', [key]);
+        if (existing.rows.length > 0) {
+            await pool.query('UPDATE app_settings SET setting_value = $1 WHERE setting_key = $2', [value, key]);
+        } else {
+            await pool.query('INSERT INTO app_settings (setting_key, setting_value) VALUES ($1, $2)', [key, value]);
+        }
     } catch (e) {
         console.error('[DB] setSetting Error:', e.message);
     }
