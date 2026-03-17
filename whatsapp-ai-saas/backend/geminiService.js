@@ -135,7 +135,7 @@ The output image should be a ${dims.label} aspect ratio. Create a clean, premium
     The output image should be a ${dims.label} aspect ratio (approximately ${dims.w}x${dims.h} pixels). Create a photorealistic, magazine-quality editorial photo.`
 };
 
-async function generateImage(prompt, configAspectRatio = '1:1', imageParams = null, editMode = false, mode = 'product') {
+async function generateImage(prompt, configAspectRatio = '1:1', imageParams = null, editMode = false, mode = 'product', imageModel = '') {
     // --- STRATEGY --- 
     // If a reference image is provided: use Gemini Flash Image (image editing/uplifting mode)
     //   → This PRESERVES the product identity (logo, shape, labels)
@@ -172,8 +172,14 @@ async function generateImage(prompt, configAspectRatio = '1:1', imageParams = nu
                 finalPrompt = template(prompt, dims);
             }
 
+            const editModel = imageModel && imageModel.includes('gemini') ? imageModel : 'gemini-3.1-flash-image-preview';
+
+            if (imageModel && imageModel.includes('imagen')) {
+                return { error: "Erreur : Vous avez sélectionné un modèle Text-to-Image (Imagen) pour une tâche de retouche d'image (Image-to-Image). Veuillez sélectionner un modèle multimodal (ex: Gemini Flash) dans les paramètres pour cette action." };
+            }
+
             const response = await ai.models.generateContent({
-                model: 'gemini-3.1-flash-image-preview',
+                model: editModel,
                 contents: [
                     {
                         role: 'user',
@@ -211,8 +217,14 @@ async function generateImage(prompt, configAspectRatio = '1:1', imageParams = nu
 
     // ---- TEXT-TO-IMAGE MODE (Imagen 4) ----
     try {
+        const genModel = imageModel && imageModel.includes('imagen') ? imageModel : 'imagen-4.0-generate-001';
+
+        if (imageModel && imageModel.includes('gemini')) {
+            return { error: "Erreur : Vous avez sélectionné un modèle Multimodal (Gemini Flash) pour une tâche de création pure (Text-to-Image). Veuillez sélectionner un modèle Imagen dans les paramètres." };
+        }
+
         const response = await ai.models.generateImages({
-            model: 'imagen-4.0-generate-001',
+            model: genModel,
             prompt: prompt,
             config: {
                 numberOfImages: 1,
@@ -251,28 +263,38 @@ async function listModels() {
             throw new Error(data.error.message);
         }
 
-        const models = [];
+        const chatModels = [];
+        const imageModels = [];
         if (data.models) {
             data.models.forEach(m => {
                 const id = m.name.replace('models/', '');
-                if (id.includes('gemini') && !id.includes('embedding') && !id.includes('vision') && !id.includes('aqa')) {
-                    models.push({ id: id, name: m.displayName || id });
+                if (id.includes('gemini') && !id.includes('embedding') && !id.includes('aqa')) {
+                    chatModels.push({ id: id, name: m.displayName || id });
+                }
+                if (id.includes('imagen') || id.includes('veo')) {
+                    imageModels.push({ id: id, name: m.displayName || id });
                 }
             });
         }
 
-        return models.length > 0 ? models : [
-            { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro' },
-            { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash' },
-            { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash' }
-        ];
+        // Manual fallback for Imagen if it isn't listed
+        if (imageModels.length === 0) {
+            imageModels.push({ id: 'imagen-4.0-generate-001', name: 'Imagen 4' });
+        }
+
+        return { chat: chatModels, image: imageModels };
     } catch (error) {
         console.error("Gemini List Models Error:", error);
-        return [
-            { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro' },
-            { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash' },
-            { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash' }
-        ];
+        return {
+            chat: [
+                { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro' },
+                { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash' },
+                { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash' }
+            ],
+            image: [
+                { id: 'imagen-4.0-generate-001', name: 'Imagen 4' }
+            ]
+        };
     }
 }
 

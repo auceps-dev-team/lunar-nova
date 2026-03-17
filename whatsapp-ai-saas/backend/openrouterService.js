@@ -145,7 +145,7 @@ async function chatWithAgent(persona, message, imageParams, promptFormat, apiKey
 
 async function listModels(apiKey) {
     if (!apiKey) {
-        return [{ id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet (Clé API requise)' }];
+        return { chat: [{ id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet (Clé API requise)' }], image: [] };
     }
 
     try {
@@ -164,13 +164,23 @@ async function listModels(apiKey) {
         }
 
         if (data.data && Array.isArray(data.data)) {
-            return data.data.map(m => ({ id: m.id, name: m.name || m.id }));
+            const chatModels = [];
+            const imageModels = [];
+            data.data.forEach(m => {
+                if (m.architecture && m.architecture.modality && m.architecture.modality.includes('image')) {
+                    imageModels.push({ id: m.id, name: m.name || m.id });
+                } else {
+                    chatModels.push({ id: m.id, name: m.name || m.id });
+                }
+            });
+            if (imageModels.length === 0) imageModels.push({ id: 'none', name: 'Aucun modèle d\'image trouvé sur OpenRouter' });
+            return { chat: chatModels, image: imageModels };
         }
 
-        return [{ id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet' }];
+        return { chat: [{ id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet' }], image: [] };
     } catch (error) {
         console.error("OpenRouter List Models Error:", error);
-        return [{ id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet (Erreur Fetch)' }];
+        return { chat: [{ id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet (Erreur Fetch)' }], image: [] };
     }
 }
 

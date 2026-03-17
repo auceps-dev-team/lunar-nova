@@ -9,10 +9,14 @@ const Settings = () => {
 
     const [backendSettings, setBackendSettings] = useState({
         default_ai_provider: 'gemini',
-        openrouter_api_key: ''
+        openrouter_api_key: '',
+        default_image_model: ''
     });
-    const [availableModels, setAvailableModels] = useState([]);
+    const [availableChatModels, setAvailableChatModels] = useState([]);
+    const [availableImageModels, setAvailableImageModels] = useState([]);
     const [isLoadingModels, setIsLoadingModels] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const showAppNotification = useAppStore(state => state.showAppNotification);
 
     useEffect(() => {
         fetch('http://localhost:3000/api/settings')
@@ -32,26 +36,46 @@ const Settings = () => {
             .then(res => res.json())
             .then(data => {
                 if (data.status === 'success') {
-                    setAvailableModels(data.models || []);
+                    if (data.models && data.models.chat) {
+                        setAvailableChatModels(data.models.chat);
+                        setAvailableImageModels(data.models.image);
+                    } else if (Array.isArray(data.models)) {
+                        setAvailableChatModels(data.models);
+                        setAvailableImageModels([]);
+                    }
                 }
             })
             .catch(console.error)
             .finally(() => setIsLoadingModels(false));
     };
 
-    const handleBackendChange = async (key, value) => {
+    const handleBackendChange = (key, value) => {
         setBackendSettings(prev => ({ ...prev, [key]: value }));
+        if (key === 'default_ai_provider') {
+            // Save immediately just the provider so the model fetch can use the updated value on backend
+            fetch('http://localhost:3000/api/settings', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ [key]: value })
+            }).then(() => fetchModels()).catch(console.error);
+        }
+    };
+
+    const handleSaveAll = async () => {
+        setIsSaving(true);
         try {
             await fetch('http://localhost:3000/api/settings', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ [key]: value })
+                body: JSON.stringify(backendSettings)
             });
-            if (key === 'default_ai_provider' || key === 'openrouter_api_key') {
-                fetchModels();
-            }
+            showAppNotification("Configuration IA enregistrée avec succès !", "success");
+            fetchModels();
         } catch (err) {
             console.error(err);
+            showAppNotification("Erreur lors de l'enregistrement.", "error");
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -72,12 +96,21 @@ const Settings = () => {
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t(language, 'appSettings')}</h1>
                     <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Configure your Workspace preferences and AI models.</p>
                 </div>
-                <Link
-                    to="/agents-manager"
-                    className="px-4 py-2 bg-[#0b9f84] hover:bg-[#088b73] text-white text-sm font-medium rounded-lg shadow transition"
-                >
-                    Gérer les Agents IA
-                </Link>
+                <div className="flex gap-3">
+                    <button
+                        onClick={handleSaveAll}
+                        disabled={isSaving}
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg shadow transition disabled:opacity-70"
+                    >
+                        {isSaving ? "Enregistrement..." : "Enregistrer la config"}
+                    </button>
+                    <Link
+                        to="/agents-manager"
+                        className="px-4 py-2 bg-[#0b9f84] hover:bg-[#088b73] text-white text-sm font-medium rounded-lg shadow transition"
+                    >
+                        Gérer les Agents IA
+                    </Link>
+                </div>
             </div>
 
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-card dark:shadow-none border border-gray-100 dark:border-gray-700 overflow-hidden divide-y divide-gray-100 dark:divide-gray-700">
@@ -160,7 +193,6 @@ const Settings = () => {
                                     placeholder="sk-or-v1-..."
                                     value={backendSettings.openrouter_api_key || ''}
                                     onChange={(e) => setBackendSettings(prev => ({ ...prev, openrouter_api_key: e.target.value }))}
-                                    onBlur={(e) => handleBackendChange('openrouter_api_key', e.target.value)}
                                     className="border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none bg-white dark:bg-gray-700 dark:text-white w-full max-w-[300px]"
                                 />
                             </div>
@@ -180,12 +212,35 @@ const Settings = () => {
                         >
                             {isLoadingModels ? (
                                 <option value="">Chargement...</option>
-                            ) : availableModels.length > 0 ? (
-                                availableModels.map(m => (
+                            ) : availableChatModels.length > 0 ? (
+                                availableChatModels.map(m => (
                                     <option key={m.id} value={m.id}>{m.name}</option>
                                 ))
                             ) : (
                                 <option value={settings.model}>{settings.model}</option>
+                            )}
+                        </select>
+                    </div>
+
+                    <div className="flex items-center justify-between mb-6">
+                        <div>
+                            <p className="text-base font-medium text-gray-800 dark:text-gray-100">Modèle de Génération d'Images</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">Sélectionnez le modèle utilisé pour la création visuelle.</p>
+                        </div>
+                        <select
+                            value={backendSettings.default_image_model || ''}
+                            onChange={(e) => setBackendSettings(prev => ({ ...prev, default_image_model: e.target.value }))}
+                            disabled={isLoadingModels}
+                            className="border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none bg-white dark:bg-gray-700 dark:text-white min-w-[200px] disabled:opacity-50"
+                        >
+                            {isLoadingModels ? (
+                                <option value="">Chargement...</option>
+                            ) : availableImageModels.length > 0 ? (
+                                availableImageModels.map(m => (
+                                    <option key={m.id} value={m.id}>{m.name}</option>
+                                ))
+                            ) : (
+                                <option value={backendSettings.default_image_model}>{backendSettings.default_image_model || 'Non supporté'}</option>
                             )}
                         </select>
                     </div>

@@ -141,13 +141,14 @@ async function listModels() {
         const data = await response.json();
 
         if (data.models && Array.isArray(data.models)) {
-            return data.models.map(m => ({ id: m.name, name: m.name }));
+            const chatModels = data.models.map(m => ({ id: m.name, name: m.name }));
+            return { chat: chatModels, image: [{ id: 'none', name: 'Génération d\'image non supportée en local' }] };
         }
 
-        return [{ id: 'llama3', name: 'Llama 3' }];
+        return { chat: [{ id: 'llama3', name: 'Llama 3' }], image: [] };
     } catch (error) {
         console.error("Ollama List Models Error:", error);
-        return [{ id: 'llama3', name: 'Llama 3 (Ollama Hors Ligne)' }];
+        return { chat: [{ id: 'llama3', name: 'Llama 3 (Ollama Hors Ligne)' }], image: [] };
     }
 }
 

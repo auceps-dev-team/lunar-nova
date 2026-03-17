@@ -46,8 +46,26 @@ async function chatWithAgent(personaId, message, imageParams, promptFormat) {
 }
 
 async function generateImage(prompt, aspectRatio, imageParams, editMode, mode) {
-    // Toujours utiliser Gemini pour la génération et retouche d'image
-    return await geminiService.generateImage(prompt, aspectRatio, imageParams, editMode, mode);
+    const provider = await db.getSetting('default_ai_provider', 'gemini');
+    let imageModel = await db.getSetting('default_image_model', '');
+
+    if (provider === 'openrouter') {
+        const apiKey = await db.getSetting('openrouter_api_key', '');
+        // For now OpenRouter image generation might need specific implementation, 
+        // falling back to basic chat completion or a specific image endpoint if supported.
+        // If not, we block text models from being used for image generation.
+        if (!imageModel || imageModel === 'none' || imageModel.includes('Génération d\'image non supportée')) {
+            return { error: "Erreur : Ce modèle OpenRouter (ou le fournisseur actuel) ne supporte pas la génération d'images, veuillez choisir un fournisseur ou modèle compatible dans les paramètres." };
+        }
+        // Since OpenRouter doesn't have a standardized image generation endpoint like Gemini Imagen, 
+        // we return an error for now unless it's a known supported model (which requires additional impl).
+        return { error: "Erreur : La génération d'images via OpenRouter nécessite une intégration spécifique à l'API d'image. Veuillez utiliser Gemini pour l'instant." };
+    } else if (provider === 'ollama') {
+        return { error: "Erreur : Ollama local ne supporte pas nativement la génération d'images dans cette version. Veuillez configurer Gemini dans les paramètres." };
+    } else {
+        // Default to Gemini
+        return await geminiService.generateImage(prompt, aspectRatio, imageParams, editMode, mode, imageModel);
+    }
 }
 
 async function listModels() {
