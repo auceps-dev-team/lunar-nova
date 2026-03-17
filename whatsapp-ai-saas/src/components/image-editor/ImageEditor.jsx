@@ -35,6 +35,12 @@ const toSafeExifString = (str) => {
 
 export function ImageEditor({ image, onUpdateImage, onRemove }) {
     const [error, setError] = useState(null);
+
+    // ADD THESE TWO MISSING STATES:
+    const [activeTab, setActiveTab] = useState('ai');       // 'ai' | 'exif' | 'metadata'
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [customPrompt, setCustomPrompt] = useState('');
+
     const language = useAppStore(state => state.appSettings?.language) || 'en';
 
     // Undo/Redo State
@@ -511,8 +517,8 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                         <div className="absolute inset-0 z-20 bg-white/60 dark:bg-zinc-950/60 flex items-center justify-center backdrop-blur-md transition-all duration-300">
                             <div className="flex flex-col items-center space-y-5 p-8 bg-white/90 dark:bg-zinc-900/80 rounded-2xl border border-gray-200 dark:border-zinc-800/50 shadow-2xl">
                                 <div className="relative flex items-center justify-center">
-                                                <div className="w-16 h-16 border-4 border-[#0b9f84]/20 border-t-[#0b9f84] rounded-full animate-spin"></div>
-                                                <Sparkles className="w-6 h-6 text-[#0b9f84] absolute animate-pulse pointer-events-none" />
+                                    <div className="w-16 h-16 border-4 border-[#0b9f84]/20 border-t-[#0b9f84] rounded-full animate-spin"></div>
+                                    <Sparkles className="w-6 h-6 text-[#0b9f84] absolute animate-pulse pointer-events-none" />
                                 </div>
                                 <div className="text-center">
                                     <h3 className="text-base font-semibold text-gray-900 dark:text-zinc-200">{t_helper(language, 'processing')}</h3>
