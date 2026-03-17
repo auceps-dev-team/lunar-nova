@@ -36,16 +36,40 @@ async function syncGeminiModels() {
             });
         }
 
+        console.log(`[Gemini] Début du ping de vérification sur ${chatModels.length} modèles conversationnels (pour écarter les inaccessibles)...`);
+        const verifiedChatModels = [];
+
+        for (const m of chatModels) {
+            try {
+                // Ping test minimal
+                await ai.models.generateContent({
+                    model: m.id,
+                    contents: "ping",
+                    config: { maxOutputTokens: 1 }
+                });
+                verifiedChatModels.push(m);
+            } catch (err) {
+                // Si c'est un problème de quota (429) ou de sécurité, c'est que le modèle est accessible techniquement
+                if (err.status === 429 || (err.message && err.message.toLowerCase().includes('quota'))) {
+                    verifiedChatModels.push(m);
+                } else {
+                    console.log(`[Gemini] ⚠️ Modèle ignoré (non accessible / facturation) : ${m.id}`);
+                }
+            }
+            // Petit délai pour éviter de déclencher trop vite le Rate Limit de l'API gratuite
+            await new Promise(r => setTimeout(r, 400));
+        }
+
         // Manual fallback for Imagen if it isn't listed
         if (imageModels.length === 0) {
             imageModels.push({ id: 'imagen-4.0-generate-001', name: 'Imagen 4' });
         }
 
-        const modelsJson = JSON.stringify({ chat: chatModels, image: imageModels });
+        const modelsJson = JSON.stringify({ chat: verifiedChatModels, image: imageModels });
 
         if (modelsJson !== cached) {
             await db.setSetting('gemini_models_cache', modelsJson);
-            console.log(`[Gemini] Base de données mise à jour avec ${chatModels.length} modèles de conversation et ${imageModels.length} modèles d'images.`);
+            console.log(`[Gemini] Base de données mise à jour avec ${verifiedChatModels.length} modèles validés et ${imageModels.length} modèles d'images.`);
         } else {
             console.log('[Gemini] La liste des modèles est déjà à jour dans la base de données.');
         }
