@@ -32,18 +32,18 @@ async function generateProposals(chatContext, modelParam) {
     }
 }
 
-async function chatWithAgent(personaId, message, imageParams, promptFormat) {
+async function chatWithAgent(personaId, message, imageParams, promptFormat, messages = null, currentTasks = null) {
     const { provider, dbAgent } = await getProviderConfig(personaId);
 
     if (provider === 'openrouter') {
         const apiKey = await db.getSetting('openrouter_api_key', '');
-        return await openrouterService.chatWithAgent(personaId, message, imageParams, promptFormat, apiKey, dbAgent);
+        return await openrouterService.chatWithAgent(personaId, message, imageParams, promptFormat, apiKey, dbAgent, messages, currentTasks);
     } else if (provider === 'ollama') {
         const apiKey = await db.getSetting('ollama_api_key', '');
-        return await ollamaService.chatWithAgent(personaId, message, imageParams, promptFormat, dbAgent, apiKey);
+        return await ollamaService.chatWithAgent(personaId, message, imageParams, promptFormat, dbAgent, apiKey, messages, currentTasks);
     } else {
         // Default to Gemini
-        return await geminiService.chatWithAgent(personaId, message, imageParams, promptFormat, dbAgent);
+        return await geminiService.chatWithAgent(personaId, message, imageParams, promptFormat, dbAgent, messages, currentTasks);
     }
 }
 

@@ -55,6 +55,8 @@ const useAppStore = create(
                 copywriter: [{ sender: 'agent', text: "Bonjour ! Je suis l'Experte en Copywriting de Vente et SDR Senior. Donnez-moi une CIBLE et un OBJECTIF, je vous rédige 3 approches irrésistibles." }]
             },
 
+            aiChatConversations: {},
+            aiChatSessions: {},
             agentHistory: [],
 
             // --- Actions ---
@@ -93,6 +95,20 @@ const useAppStore = create(
                 agentChats: {
                     ...state.agentChats,
                     [agentId]: updatedChat
+                }
+            })),
+
+            updateAiChatConversations: (agentId, messages) => set((state) => ({
+                aiChatConversations: {
+                    ...state.aiChatConversations,
+                    [agentId]: messages
+                }
+            })),
+
+            updateAiChatSessions: (agentId, sessions) => set((state) => ({
+                aiChatSessions: {
+                    ...state.aiChatSessions,
+                    [agentId]: sessions
                 }
             })),
 

@@ -30,7 +30,7 @@ async function syncGeminiModels() {
                 if (id.includes('gemini') && !id.includes('embedding') && !id.includes('aqa')) {
                     chatModels.push({ id: id, name: m.displayName || id });
                 }
-                if (id.includes('imagen') || id.includes('veo') || 
+                if (id.includes('imagen') || id.includes('veo') ||
                     id.includes('flash-image') || id.includes('pro-image')) {
                     imageModels.push({ id: id, name: m.displayName || id });
                 }
@@ -41,10 +41,10 @@ async function syncGeminiModels() {
         if (imageModels.length === 0) {
             imageModels.push(
                 { id: 'gemini-3.1-flash-image-preview', name: ' Nano Banana 2 (Gemini 3.1 Flash Image)' },
-                { id: 'gemini-3-pro-image-preview',      name: ' Nano Banana Pro (Gemini 3 Pro Image)' },
-                { id: 'gemini-2.5-flash-image',          name: ' Nano Banana (Gemini 2.5 Flash Image)' },
-                { id: 'imagen-4.0-generate-001',         name: 'Imagen 4' },
-                { id: 'imagen-4.0-ultra-generate-001',   name: 'Imagen 4 Ultra' }
+                { id: 'gemini-3-pro-image-preview', name: ' Nano Banana Pro (Gemini 3 Pro Image)' },
+                { id: 'gemini-2.5-flash-image', name: ' Nano Banana (Gemini 2.5 Flash Image)' },
+                { id: 'imagen-4.0-generate-001', name: 'Imagen 4' },
+                { id: 'imagen-4.0-ultra-generate-001', name: 'Imagen 4 Ultra' }
             );
         }
 
@@ -113,34 +113,61 @@ async function generateProposals(chatContext, modelParam) {
     }
 }
 
-async function chatWithAgent(personaId, message, imageParams, promptFormat = 'text') {
-    if (!message) return { response: "I didn't catch that. How can I help?" };
+async function chatWithAgent(personaId, message, imageParams, promptFormat = 'text', dbAgent = null, chatHistory = null, currentTasks = null) {
+    if (!message && (!chatHistory || chatHistory.length === 0)) return { response: "I didn't catch that. How can I help?" };
 
-    const persona = orchestrator.getPersona(personaId) || orchestrator.getPersona('creative');
+    let personaInstruction = "";
+    let finalPromptFormat = promptFormat;
 
-    // Default to the persona config, fallback to passed args
-    const finalPromptFormat = orchestrator.requiresJsonFormat(personaId) ? 'json' : promptFormat;
-    const personaInstruction = persona.systemInstruction;
+    if (dbAgent) {
+        personaInstruction = dbAgent.system_instruction;
+        finalPromptFormat = dbAgent.response_format === 'json' ? 'json' : promptFormat;
+    } else {
+        const persona = orchestrator.getPersona(personaId) || orchestrator.getPersona('creative');
+        finalPromptFormat = orchestrator.requiresJsonFormat(personaId) ? 'json' : promptFormat;
+        personaInstruction = persona.systemInstruction;
+    }
+
+    if (currentTasks && personaId === 'ella') {
+        personaInstruction += `\n\n[CURRENT_TASKS]: ${JSON.stringify(currentTasks)}`;
+    }
 
     try {
-        let contents;
-        if (imageParams && imageParams.data && imageParams.mimeType) {
-            contents = [
-                {
-                    role: 'user',
-                    parts: [
-                        { text: message },
-                        {
-                            inlineData: {
-                                data: imageParams.data,
-                                mimeType: imageParams.mimeType
-                            }
-                        }
-                    ]
+        let contents = [];
+
+        if (chatHistory && Array.isArray(chatHistory) && chatHistory.length > 0) {
+            contents = chatHistory.map(msg => ({
+                role: msg.role === 'agent' ? 'model' : 'user',
+                parts: [{ text: msg.text }]
+            }));
+
+            if (imageParams && imageParams.data && imageParams.mimeType) {
+                const lastMsg = contents[contents.length - 1];
+                if (lastMsg.role === 'user') {
+                    lastMsg.parts.push({
+                        inlineData: { data: imageParams.data, mimeType: imageParams.mimeType }
+                    });
                 }
-            ];
+            }
         } else {
-            contents = message;
+            if (imageParams && imageParams.data && imageParams.mimeType) {
+                contents = [
+                    {
+                        role: 'user',
+                        parts: [
+                            { text: message },
+                            {
+                                inlineData: {
+                                    data: imageParams.data,
+                                    mimeType: imageParams.mimeType
+                                }
+                            }
+                        ]
+                    }
+                ];
+            } else {
+                contents = message;
+            }
         }
 
         const config = { systemInstruction: personaInstruction };
@@ -224,7 +251,7 @@ async function generateImage(prompt, configAspectRatio = '1:1', imageParams = nu
             }
 
             const editModel = imageModel && imageModel.includes('gemini') ? imageModel : 'gemini-3.1-flash-image-preview';
-            
+
             if (imageModel && imageModel.includes('imagen')) {
                 return { error: "Erreur : Vous avez sélectionné un modèle Text-to-Image (Imagen) pour une tâche de retouche d'image (Image-to-Image). Veuillez sélectionner un modèle multimodal (ex: Gemini Flash) dans les paramètres." };
             }
@@ -274,7 +301,7 @@ async function generateImage(prompt, configAspectRatio = '1:1', imageParams = nu
         'gemini-2.5-flash-image',
     ];
     const isNanoBanana = imageModel && NANO_BANANA_MODELS.includes(imageModel);
-    const isImagen     = imageModel && imageModel.includes('imagen');
+    const isImagen = imageModel && imageModel.includes('imagen');
 
     try {
         if (isNanoBanana) {
@@ -332,10 +359,10 @@ async function generateImage(prompt, configAspectRatio = '1:1', imageParams = nu
 async function listModels() {
     const FALLBACK_IMAGE = [
         { id: 'gemini-3.1-flash-image-preview', name: ' Nano Banana 2 (Gemini 3.1 Flash Image)' },
-        { id: 'gemini-3-pro-image-preview',      name: ' Nano Banana Pro (Gemini 3 Pro Image)' },
-        { id: 'gemini-2.5-flash-image',          name: ' Nano Banana (Gemini 2.5 Flash Image)' },
-        { id: 'imagen-4.0-generate-001',         name: 'Imagen 4' },
-        { id: 'imagen-4.0-ultra-generate-001',   name: 'Imagen 4 Ultra' }
+        { id: 'gemini-3-pro-image-preview', name: ' Nano Banana Pro (Gemini 3 Pro Image)' },
+        { id: 'gemini-2.5-flash-image', name: ' Nano Banana (Gemini 2.5 Flash Image)' },
+        { id: 'imagen-4.0-generate-001', name: 'Imagen 4' },
+        { id: 'imagen-4.0-ultra-generate-001', name: 'Imagen 4 Ultra' }
     ];
     const FALLBACK_CHAT = [{ id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash' }];
 

@@ -15,6 +15,7 @@ import ToolsBox from './pages/ToolsBox';
 import Settings from './pages/Settings';
 import PhotoShoot from './pages/PhotoShoot';
 import AgentManager from './pages/AgentManager';
+import AiChat from './pages/AiChat';
 import { ImageWorkspace } from './components/image-editor/ImageWorkspace';
 
 // WhatsApp Plugin Pages (Phase 13)
@@ -114,6 +115,7 @@ function AppContent() {
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/agents" element={<AgentsHub activeId={activeId} />} />
                   <Route path="/agents-manager" element={<AgentManager />} />
+                  <Route path="/ai-chat" element={<AiChat />} />
                   <Route path="/tasks" element={<TasksMap />} />
                   <Route path="/invoice-builder" element={<InvoiceBuilder />} />
                   <Route path="/tools" element={<ToolsBox />} />
