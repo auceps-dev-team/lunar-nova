@@ -49,15 +49,16 @@ export default function AiChat() {
     // Conversations par agent — { [agentId]: [{ role, text, ts }] }
     const conversations = useAppStore(state => state.aiChatConversations) || {};
     const setConversations = (updater) => {
-        const nextState = typeof updater === 'function' ? updater(conversations) : updater;
+        const currentState = useAppStore.getState().aiChatConversations || {};
+        const nextState = typeof updater === 'function' ? updater(currentState) : updater;
         useAppStore.getState().updateAiChatConversations(selectedAgent?.id || 'temp', nextState[selectedAgent?.id || 'temp']);
-        // The above is slightly hacky because updater expects the full object, let's fix it below
     };
 
     // Historique des sessions — { [agentId]: [{ id, title, messages, ts }] }
     const sessions = useAppStore(state => state.aiChatSessions) || {};
     const setSessions = (updater) => {
-        const nextState = typeof updater === 'function' ? updater(sessions) : updater;
+        const currentState = useAppStore.getState().aiChatSessions || {};
+        const nextState = typeof updater === 'function' ? updater(currentState) : updater;
         useAppStore.getState().updateAiChatSessions(selectedAgent?.id || 'temp', nextState[selectedAgent?.id || 'temp']);
     };
     const [activeSessionId, setActiveSessionId] = useState({});
@@ -68,10 +69,23 @@ export default function AiChat() {
     const [switchSearch, setSwitchSearch] = useState('');
     const [isRealTime, setIsRealTime] = useState(false);
     const [showSidebar, setShowSidebar] = useState(true);
+    const [attachedImage, setAttachedImage] = useState(null);
 
     const chatEndRef = useRef(null);
     const inputRef = useRef(null);
     const switchRef = useRef(null);
+    const chatFileInputRef = useRef(null);
+
+    const handleChatImageUpload = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setAttachedImage({ name: file.name, data: reader.result, mimeType: file.type });
+            };
+            reader.readAsDataURL(file);
+        }
+    };
 
     // ── Charger les agents custom depuis la DB ────────────────────────────
     useEffect(() => {
@@ -159,21 +173,27 @@ export default function AiChat() {
     // ── Envoyer un message ────────────────────────────────────────────────
     const sendMessage = async (e) => {
         e?.preventDefault();
-        if (!input.trim() || !selectedAgent || isLoading) return;
+        if ((!input.trim() && !attachedImage) || !selectedAgent || isLoading) return;
 
-        const userMsg = { role: 'user', text: input.trim(), ts: Date.now() };
+        const userMsg = { role: 'user', text: input.trim() || '[Image envoyée]', ts: Date.now(), image: attachedImage };
         const currentHistory = conversations[selectedAgent.id] || [];
         const fullHistory = [...currentHistory, userMsg];
 
         setConversations(prev => ({ ...prev, [selectedAgent.id]: fullHistory }));
         setInput('');
+        const currentImageParams = attachedImage ? {
+            data: attachedImage.data.split(',')[1],
+            mimeType: attachedImage.mimeType
+        } : null;
+        setAttachedImage(null);
         setIsLoading(true);
 
         try {
             const bodyData = {
                 persona: selectedAgent.id,
                 message: userMsg.text,
-                messages: fullHistory,
+                messages: fullHistory.map(m => ({ role: m.role, text: m.text })), // clean history for backend
+                imageParams: currentImageParams,
                 promptFormat: selectedAgent.response_format || 'text'
             };
 
@@ -192,11 +212,27 @@ export default function AiChat() {
 
             // Si JSON, essayer d'extraire le texte lisible
             try {
-                const parsed = JSON.parse(responseText);
+                let cleanText = responseText;
+                const startIndex = cleanText.indexOf('{');
+                const endIndex = cleanText.lastIndexOf('}');
+                if (startIndex !== -1 && endIndex !== -1 && endIndex > startIndex) {
+                    cleanText = cleanText.substring(startIndex, endIndex + 1);
+                    // Remplacer les "\n" littéraux générés par certains modèles par de vrais sauts de ligne ou espaces
+                    cleanText = cleanText.replace(/\\n/g, '\n');
+                }
+                const parsed = JSON.parse(cleanText);
                 if (parsed.text) responseText = parsed.text;
                 else if (parsed.proposed_replies) responseText = parsed.proposed_replies.join('\n\n---\n\n');
                 else responseText = JSON.stringify(parsed, null, 2);
-            } catch { /* pas du JSON, garder tel quel */ }
+            } catch {
+                // Si le parse échoue, on tente d'extraire la clé "text" avec une regex basique pour nettoyer le rendu
+                const textMatch = responseText.match(/"text"\s*:\s*"([\s\S]*?)"/);
+                if (textMatch && textMatch[1]) {
+                    responseText = textMatch[1].replace(/\\n/g, '\n');
+                } else {
+                    responseText = responseText.replace(/\\n/g, '\n');
+                }
+            }
 
             setConversations(prev => ({
                 ...prev,
@@ -484,19 +520,30 @@ export default function AiChat() {
                                     {getInitials(selectedAgent.name)}
                                 </div>
                             )}
-                            <div style={{
-                                maxWidth: '70%',
-                                padding: '12px 16px',
-                                borderRadius: msg.role === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-                                background: msg.role === 'user' ? '#4f46e5' : '#fff',
-                                color: msg.role === 'user' ? '#fff' : '#0f172a',
-                                fontSize: 14,
-                                lineHeight: 1.6,
-                                boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-                                border: msg.role === 'agent' ? '1px solid #f1f5f9' : 'none',
-                            }}
-                                dangerouslySetInnerHTML={{ __html: formatMessage(msg.text) }}
-                            />
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '70%' }}>
+                                {msg.image && (
+                                    <div style={{ marginBottom: 8, borderRadius: 12, overflow: 'hidden', border: '2px solid #0b9f84', maxWidth: 200 }}>
+                                        <img src={msg.image.data} alt="attachment" style={{ width: '100%', display: 'block' }} />
+                                    </div>
+                                )}
+                                <div style={{
+                                    padding: '12px 16px',
+                                    borderRadius: msg.role === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+                                    background: msg.role === 'user' ? '#0b9f84' : '#fff',
+                                    color: msg.role === 'user' ? '#fff' : '#0f172a',
+                                    fontSize: 14,
+                                    lineHeight: 1.6,
+                                    boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+                                    border: msg.role === 'agent' ? '1px solid #f1f5f9' : 'none',
+                                }}
+                                    dangerouslySetInnerHTML={{ __html: formatMessage(msg.text) }}
+                                />
+                            </div>
+                            {msg.role === 'user' && (
+                                <div style={{ width: 30, height: 30, borderRadius: '50%', background: '#e2e8f0', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, flexShrink: 0 }}>
+                                    VOUS
+                                </div>
+                            )}
                         </div>
                     ))}
 
@@ -522,9 +569,19 @@ export default function AiChat() {
 
                 {/* Input zone */}
                 <div style={{ background: '#fff', borderTop: '1px solid #f1f5f9', padding: '16px 24px', flexShrink: 0 }}>
+                    {attachedImage && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, padding: '8px 12px', background: '#f1f5f9', borderRadius: 8, width: 'fit-content' }}>
+                            <img src={attachedImage.data} alt="preview" style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 4 }} />
+                            <span style={{ fontSize: 13, color: '#475569', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{attachedImage.name}</span>
+                            <button type="button" onClick={() => setAttachedImage(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: 4 }}>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                            </button>
+                        </div>
+                    )}
                     <form onSubmit={sendMessage} style={{ display: 'flex', alignItems: 'flex-end', gap: 10, background: '#f8fafc', borderRadius: 14, padding: '10px 12px', border: '1px solid #e2e8f0' }}>
                         {/* Attach */}
-                        <button type="button" style={{ background: '#0b9f84', border: 'none', borderRadius: 8, width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
+                        <input type="file" ref={chatFileInputRef} className="hidden" accept="image/*" onChange={handleChatImageUpload} style={{ display: 'none' }} />
+                        <button type="button" onClick={() => chatFileInputRef.current?.click()} style={{ background: '#0b9f84', border: 'none', borderRadius: 8, width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, transition: 'background 0.15s' }}>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" /></svg>
                         </button>
 
@@ -540,16 +597,16 @@ export default function AiChat() {
 
                         {/* Format / Mic icons */}
                         <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0 }}>
-                            <button type="button" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 4 }}>
+                            <button type="button" onClick={() => showAppNotification("Formatage avancé à venir", "success")} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 4 }}>
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 6h16M4 12h8M4 18h16" /></svg>
                             </button>
-                            <button type="button" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 4 }}>
+                            <button type="button" onClick={() => showAppNotification("Notes vocales bientôt disponibles", "success")} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 4 }}>
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="2" width="6" height="11" rx="3" /><path d="M5 10a7 7 0 0 0 14 0" /><line x1="12" y1="19" x2="12" y2="22" /></svg>
                             </button>
                             <button
                                 type="submit"
-                                disabled={!input.trim() || isLoading}
-                                style={{ width: 36, height: 36, borderRadius: 8, background: input.trim() && !isLoading ? '#4f46e5' : '#e2e8f0', border: 'none', cursor: input.trim() && !isLoading ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.15s' }}
+                                disabled={(!input.trim() && !attachedImage) || isLoading}
+                                style={{ width: 36, height: 36, borderRadius: 8, background: (input.trim() || attachedImage) && !isLoading ? '#0b9f84' : '#e2e8f0', border: 'none', cursor: (input.trim() || attachedImage) && !isLoading ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.15s' }}
                             >
                                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>
                             </button>
