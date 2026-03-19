@@ -18,9 +18,24 @@ const getInitials = (name) => name.split(' ').map(w => w[0]).join('').toUpperCas
 const SYSTEM_AGENTS = [
     { id: 'copywriter', name: 'Jarvis - SDR Senior', description: 'Expert en Copywriting de Vente et Social Selling.', isSystem: true },
     { id: 'legal', name: 'Legal & Admin', description: 'Rédaction de contrats, factures et assistance légale.', isSystem: true },
-    { id: 'creative', name: 'Creative Visual', description: 'Agent spécialisé en photographie produit IA.', isSystem: true },
     { id: 'ella', name: 'Ella - Life Architect', description: 'Assistante personnelle, gestion du temps et productivité.', isSystem: true },
-    { id: 'copilot', name: 'WhatCopilote', description: 'Copilot WhatsApp Business, propose des réponses.', isSystem: true },
+    { id: 'brand_guardian', name: 'Claris - Brand Guardian', description: 'Expert brand strategist and guardian specializing in brand identity.', isSystem: true },
+    { id: 'paid_social_strategist', name: 'Marc - Paid Social Strategist', description: 'Cross-platform paid social advertising specialist.', isSystem: true },
+    { id: 'ad_creative_strategist', name: 'Léa - Ad Creative Strategist', description: 'Paid media creative specialist focused on ad copywriting.', isSystem: true },
+    { id: 'outbound_strategist', name: 'Antoine - Outbound Strategist', description: 'Lead generation and outbound sales strategy expert.', isSystem: true },
+    { id: 'sales_engineer', name: 'Christ - Sales Engineer', description: 'Senior pre-sales engineer specializing in technical discovery.', isSystem: true },
+    { id: 'sales_coach', name: 'Camille - Sales Coach', description: 'Expert sales performance coach focusing on psychological mastery.', isSystem: true },
+    { id: 'growth_hacker', name: 'Julien - Growth Hacker', description: 'Expert growth strategist specializing in rapid user acquisition.', isSystem: true },
+    { id: 'content_creator', name: 'Sophie - Content Creator', description: 'Multi-format content strategist and creative storyteller.', isSystem: true },
+    { id: 'twitter_engager', name: 'Théo - Twitter Engager', description: 'Expert Twitter marketing specialist focused on real-time engagement.', isSystem: true },
+    { id: 'tiktok_strategist', name: 'Inès - TikTok Strategist', description: 'Expert TikTok marketing specialist focused on viral content.', isSystem: true },
+    { id: 'instagram_curator', name: 'Lucas - Instagram Curator', description: 'Expert Instagram marketing specialist focused on visual storytelling.', isSystem: true },
+    { id: 'social_media_strategist', name: 'Manon - Social Media Strategist', description: 'Expert social media strategist focused on organic performance.', isSystem: true },
+    { id: 'seo_specialist', name: 'Romain - SEO Specialist', description: 'Expert search engine optimization strategist.', isSystem: true },
+    { id: 'podcast_strategist', name: 'Elodie - Podcast Strategist', description: 'Content strategy and operations expert for the podcast market.', isSystem: true },
+    { id: 'support_responder', name: 'Karim - Support Responder', description: 'Expert customer support specialist delivering exceptional service.', isSystem: true },
+    { id: 'legal_compliance', name: 'Aicha - Legal Compliance Checker', description: 'Expert legal and compliance specialist ensuring business health.', isSystem: true },
+    { id: 'account_strategist', name: 'Maël - Account Strategist', description: 'Expert post-sale account strategist specializing in expansion.', isSystem: true },
 ];
 
 // ─── Formatage markdown simple ────────────────────────────────────────────

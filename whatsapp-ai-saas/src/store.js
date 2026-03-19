@@ -50,9 +50,26 @@ const useAppStore = create(
 
             // --- Agent Chats & History ---
             agentChats: {
-                creative: [{ sender: 'agent', text: 'Hello! I am your Visual & Creative Agent. How can I assist you with your workload today?' }],
                 legal: [{ sender: 'agent', text: 'Hello! I am your Legal & Admin Agent. How can I assist you with your workload today?' }],
-                copywriter: [{ sender: 'agent', text: "Bonjour ! Je suis l'Experte en Copywriting de Vente et SDR Senior. Donnez-moi une CIBLE et un OBJECTIF, je vous rédige 3 approches irrésistibles." }]
+                copywriter: [{ sender: 'agent', text: "Bonjour ! Je suis l'Experte en Copywriting de Vente et SDR Senior. Donnez-moi une CIBLE et un OBJECTIF, je vous rédige 3 approches irrésistibles." }],
+                ella: [{ sender: 'agent', text: 'Hello! I am Ella, your Life Architect. How can I help you organize your tasks today?' }],
+                brand_guardian: [{ sender: 'agent', text: 'Hello! I am Claris, your Brand Guardian. How can I help protect and grow your brand identity today?' }],
+                paid_social_strategist: [{ sender: 'agent', text: 'Hello! I am Marc, your Paid Social Strategist. Ready to optimize your ad spend?' }],
+                ad_creative_strategist: [{ sender: 'agent', text: 'Hello! I am Léa, your Ad Creative Strategist. Let’s create ads that convert.' }],
+                outbound_strategist: [{ sender: 'agent', text: 'Hello! I am Antoine, your Outbound Strategist. Ready to scale your prospecting?' }],
+                sales_engineer: [{ sender: 'agent', text: 'Hello! I am Christ, your Sales Engineer. How can I help with your technical discovery?' }],
+                sales_coach: [{ sender: 'agent', text: 'Hello! I am Camille, your Sales Coach. Ready to master the psychology of the sale?' }],
+                growth_hacker: [{ sender: 'agent', text: 'Hello! I am Julien, your Growth Hacker. Let’s find your next big growth lever.' }],
+                content_creator: [{ sender: 'agent', text: 'Hello! I am Sophie, your Content Creator. What story are we telling today?' }],
+                twitter_engager: [{ sender: 'agent', text: 'Hello! I am Théo, your Twitter Engager. Ready to build your authority 280 characters at a time?' }],
+                tiktok_strategist: [{ sender: 'agent', text: 'Hello! I am Inès, your TikTok Strategist. Let’s make your brand go viral.' }],
+                instagram_curator: [{ sender: 'agent', text: 'Hello! I am Lucas, your Instagram Curator. Ready to master your visual aesthetic?' }],
+                social_media_strategist: [{ sender: 'agent', text: 'Hello! I am Manon, your Social Media Strategist. Let’s drive organic performance.' }],
+                seo_specialist: [{ sender: 'agent', text: 'Hello! I am Romain, your SEO Specialist. Ready to climb the SERP rankings?' }],
+                podcast_strategist: [{ sender: 'agent', text: 'Hello! I am Elodie, your Podcast Strategist. How can I help with your audio content strategy?' }],
+                support_responder: [{ sender: 'agent', text: 'Hello! I am Karim, your Support Responder. How can I help resolve customer issues today?' }],
+                legal_compliance: [{ sender: 'agent', text: 'Hello! I am Aicha, your Legal Compliance Checker. Is your business staying compliant?' }],
+                account_strategist: [{ sender: 'agent', text: 'Hello! I am Maël, your Account Strategist. Ready to expand your account relationships?' }],
             },
 
             aiChatConversations: {},
