@@ -38,7 +38,10 @@ async function generateProposals(chatContext, modelParam, apiKey) {
                 { role: "user", content: formattedChat }
             ],
             format: "json",
-            stream: false
+            stream: false,
+            options: {
+                num_predict: 4096
+            }
         });
 
         let jsonText = response.message.content;
@@ -100,17 +103,20 @@ async function chatWithAgent(persona, message, imageParams, promptFormat, dbAgen
         }
 
         const ollama = getClient(apiKey);
-        const options = {
+        const chatRequest = {
             model: 'llama3', // Default local model
             messages: messages,
-            stream: false
+            stream: false,
+            options: {
+                num_predict: 4096
+            }
         };
 
         if (finalPromptFormat === 'json') {
-            options.format = 'json';
+            chatRequest.format = 'json';
         }
 
-        const response = await ollama.chat(options);
+        const response = await ollama.chat(chatRequest);
         let resultText = response.message.content;
 
         if (finalPromptFormat === 'json') {
@@ -131,9 +137,9 @@ async function listModels(apiKey) {
 
         if (response.models && Array.isArray(response.models)) {
             const chatModels = response.models.map(m => ({ id: m.name, name: m.name }));
-            return { 
-                chat: chatModels, 
-                image: [{ id: 'none', name: 'Génération d\'image non supportée en local' }] 
+            return {
+                chat: chatModels,
+                image: [{ id: 'none', name: 'Génération d\'image non supportée en local' }]
             };
         }
 

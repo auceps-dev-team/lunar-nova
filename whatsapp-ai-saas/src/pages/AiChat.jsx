@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { Sparkles, Copy, Trash2, Search, Plus, Menu, ArrowLeft, Send, Paperclip, Type, Mic, X } from 'lucide-react';
 import useAppStore from '../store';
 
 // ─── Couleurs pastel générées déterministement par nom ────────────────────
@@ -161,6 +162,44 @@ export default function AiChat() {
         setActiveSessionId(prev => ({ ...prev, [agentId]: session.id }));
     };
 
+    // ── Supprimer une session ─────────────────────────────────────────────
+    const deleteSession = (e, agentId, sessionId) => {
+        e.stopPropagation();
+        setSessions(prev => {
+            const agentSessions = prev[agentId] || [];
+            return {
+                ...prev,
+                [agentId]: agentSessions.filter(s => s.id !== sessionId)
+            };
+        });
+        if (activeSessionId[agentId] === sessionId) {
+            setConversations(prev => ({ ...prev, [agentId]: [] }));
+            setActiveSessionId(prev => ({ ...prev, [agentId]: null }));
+        }
+    };
+
+    // ── Vider tout l'historique de l'agent ────────────────────────────────
+    const clearAllSessions = () => {
+        if (!selectedAgent || !window.confirm("Supprimer tout l'historique ?")) return;
+        setSessions(prev => ({ ...prev, [selectedAgent.id]: [] }));
+        setConversations(prev => ({ ...prev, [selectedAgent.id]: [] }));
+        setActiveSessionId(prev => ({ ...prev, [selectedAgent.id]: null }));
+    };
+
+    // ── Copier la conversation entière ────────────────────────────────────
+    const copyConversation = () => {
+        const msgs = conversations[selectedAgent?.id] || [];
+        const text = msgs.map(m => `${m.role === 'agent' ? selectedAgent?.name : 'Vous'}:\n${m.text}`).join('\n\n');
+        navigator.clipboard.writeText(text);
+        showAppNotification("Conversation copiée !", "success");
+    };
+
+    // ── Copier un message spécifique ──────────────────────────────────────
+    const copyMessage = (text) => {
+        navigator.clipboard.writeText(text);
+        showAppNotification("Message copié !", "success");
+    };
+
     // ── Favori toggle ─────────────────────────────────────────────────────
     const toggleFavorite = (agentId) => {
         setFavorites(prev => {
@@ -215,22 +254,39 @@ export default function AiChat() {
                 let cleanText = responseText;
                 const startIndex = cleanText.indexOf('{');
                 const endIndex = cleanText.lastIndexOf('}');
+
                 if (startIndex !== -1 && endIndex !== -1 && endIndex > startIndex) {
                     cleanText = cleanText.substring(startIndex, endIndex + 1);
-                    // Remplacer les "\n" littéraux générés par certains modèles par de vrais sauts de ligne ou espaces
-                    cleanText = cleanText.replace(/\\n/g, '\n');
                 }
+
+                // Parser le JSON
                 const parsed = JSON.parse(cleanText);
-                if (parsed.text) responseText = parsed.text;
-                else if (parsed.proposed_replies) responseText = parsed.proposed_replies.join('\n\n---\n\n');
-                else responseText = JSON.stringify(parsed, null, 2);
-            } catch {
-                // Si le parse échoue, on tente d'extraire la clé "text" avec une regex basique pour nettoyer le rendu
-                const textMatch = responseText.match(/"text"\s*:\s*"([\s\S]*?)"/);
-                if (textMatch && textMatch[1]) {
-                    responseText = textMatch[1].replace(/\\n/g, '\n');
+
+                if (parsed.text) {
+                    responseText = parsed.text;
+                } else if (parsed.proposed_replies) {
+                    responseText = parsed.proposed_replies.join('\n\n---\n\n');
                 } else {
-                    responseText = responseText.replace(/\\n/g, '\n');
+                    responseText = typeof parsed === 'string' ? parsed : JSON.stringify(parsed, null, 2);
+                }
+            } catch (err) {
+                // FALLBACK ROBUSTE : Si le JSON est mal formé ou tronqué
+                // 1. Tenter d'extraire la valeur du champ "text" via Regex même si c'est tronqué
+                const textRegex = /"text"\s*:\s*"([\s\S]*?)(?:"|$)/;
+                const match = responseText.match(textRegex);
+
+                if (match && match[1]) {
+                    responseText = match[1];
+                }
+
+                // 2. Nettoyer les \n littéraux
+                responseText = responseText.replace(/\\n/g, '\n');
+
+                // 3. Retirer les accolades et guillemets de structure si le parse a échoué mais que c'est du JSON brut
+                if (responseText.trim().startsWith('{') || responseText.includes('"text":')) {
+                    let cleaned = responseText.replace(/^[^{]*\{/, '').replace(/\}[^}]*$/, '');
+                    cleaned = cleaned.replace(/"text"\s*:\s*"/, '').replace(/"\s*$/, '');
+                    responseText = cleaned;
                 }
             }
 
@@ -364,11 +420,14 @@ export default function AiChat() {
                     </div>
 
                     {/* Search sessions */}
-                    <div style={{ padding: '0 12px 12px' }}>
-                        <div style={{ position: 'relative' }}>
+                    <div style={{ padding: '0 12px 12px', display: 'flex', gap: 8 }}>
+                        <div style={{ position: 'relative', flex: 1 }}>
                             <svg style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" /></svg>
                             <input placeholder="Search" style={{ width: '100%', padding: '8px 10px 8px 32px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
                         </div>
+                        <button onClick={clearAllSessions} style={{ width: 36, height: 36, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#64748b' }}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" /></svg>
+                        </button>
                     </div>
 
                     {/* Trash / sessions */}
@@ -379,18 +438,26 @@ export default function AiChat() {
                         {currentSessions.map(s => (
                             <div
                                 key={s.id}
+                                className="group relative"
                                 onClick={() => loadSession(selectedAgent.id, s)}
-                                style={{ padding: '10px 12px', borderRadius: 8, cursor: 'pointer', marginBottom: 4, background: activeSessionId[selectedAgent?.id] === s.id ? '#f0f9ff' : 'transparent', borderLeft: activeSessionId[selectedAgent?.id] === s.id ? '2px solid #0b9f84' : '2px solid transparent' }}
+                                style={{ padding: '10px 12px', borderRadius: 8, cursor: 'pointer', marginBottom: 4, background: activeSessionId[selectedAgent?.id] === s.id ? '#f0f9ff' : 'transparent', borderLeft: activeSessionId[selectedAgent?.id] === s.id ? '2px solid #4f46e5' : '2px solid transparent' }}
                                 onMouseEnter={e => { if (activeSessionId[selectedAgent?.id] !== s.id) e.currentTarget.style.background = '#f8fafc'; }}
                                 onMouseLeave={e => { if (activeSessionId[selectedAgent?.id] !== s.id) e.currentTarget.style.background = 'transparent'; }}
                             >
                                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
                                     <svg style={{ color: '#94a3b8', marginTop: 2, flexShrink: 0 }} width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
-                                    <div>
-                                        <p style={{ fontSize: 13, fontWeight: 500, color: '#0f172a', lineHeight: 1.3, marginBottom: 2 }}>{s.title}</p>
+                                    <div style={{ flex: 1, minWidth: 0, paddingRight: 20 }}>
+                                        <p style={{ fontSize: 13, fontWeight: 500, color: '#0f172a', lineHeight: 1.3, marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.title}</p>
                                         <p style={{ fontSize: 11, color: '#94a3b8' }}>{new Date(s.ts).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
                                     </div>
                                 </div>
+                                <button
+                                    onClick={(e) => deleteSession(e, selectedAgent.id, s.id)}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: 4 }}
+                                >
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" /></svg>
+                                </button>
                             </div>
                         ))}
                     </div>
@@ -490,14 +557,17 @@ export default function AiChat() {
                     {/* Real-Time toggle + New */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <span style={{ fontSize: 13, color: '#64748b' }}>Real-Time Data</span>
+                            <span style={{ fontSize: 13, color: '#64748b', fontWeight: 500 }}>Real-Time Data</span>
                             <button
                                 onClick={() => setIsRealTime(v => !v)}
-                                style={{ width: 42, height: 24, borderRadius: 12, background: isRealTime ? '#0b9f84' : '#e2e8f0', border: 'none', cursor: 'pointer', position: 'relative', transition: 'background 0.2s' }}
+                                style={{ width: 42, height: 24, borderRadius: 12, background: isRealTime ? '#4f46e5' : '#e2e8f0', border: 'none', cursor: 'pointer', position: 'relative', transition: 'background 0.2s' }}
                             >
                                 <div style={{ position: 'absolute', top: 3, left: isRealTime ? 21 : 3, width: 18, height: 18, borderRadius: '50%', background: '#fff', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
                             </button>
                         </div>
+                        <button onClick={copyConversation} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', padding: '6px' }} title="Copier la conversation">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+                        </button>
                         <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}>
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" /></svg>
                         </button>
@@ -514,13 +584,13 @@ export default function AiChat() {
                 {/* Messages */}
                 <div style={{ flex: 1, overflowY: 'auto', padding: '24px 32px', display: 'flex', flexDirection: 'column', gap: 16 }}>
                     {currentMessages.map((msg, i) => (
-                        <div key={i} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start', alignItems: 'flex-end', gap: 10 }}>
+                        <div key={i} className="group" style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start', alignItems: 'flex-end', gap: 10 }}>
                             {msg.role === 'agent' && agentColor && (
                                 <div style={{ width: 30, height: 30, borderRadius: '50%', background: agentColor.bg, color: agentColor.text, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, flexShrink: 0 }}>
                                     {getInitials(selectedAgent.name)}
                                 </div>
                             )}
-                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '70%' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '70%', position: 'relative' }}>
                                 {msg.image && (
                                     <div style={{ marginBottom: 8, borderRadius: 12, overflow: 'hidden', border: '2px solid #0b9f84', maxWidth: 200 }}>
                                         <img src={msg.image.data} alt="attachment" style={{ width: '100%', display: 'block' }} />
@@ -535,13 +605,27 @@ export default function AiChat() {
                                     lineHeight: 1.6,
                                     boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
                                     border: msg.role === 'agent' ? '1px solid #f1f5f9' : 'none',
+                                    position: 'relative'
                                 }}
                                     dangerouslySetInnerHTML={{ __html: formatMessage(msg.text) }}
                                 />
+
+                                {/* Copy button for agent messages */}
+                                {msg.role === 'agent' && (
+                                    <div className="absolute top-1/2 -right-10 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button
+                                            onClick={() => copyMessage(msg.text)}
+                                            className="p-1.5 bg-white border border-gray-200 rounded-md text-gray-500 hover:text-indigo-600 hover:bg-gray-50 shadow-sm"
+                                            title="Copy to clipboard"
+                                        >
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                             {msg.role === 'user' && (
-                                <div style={{ width: 30, height: 30, borderRadius: '50%', background: '#e2e8f0', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, flexShrink: 0 }}>
-                                    VOUS
+                                <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'linear-gradient(135deg, #0b9f84 0%, #3b82f6 100%)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}>
+                                    <Sparkles size={14} fill="white" />
                                 </div>
                             )}
                         </div>

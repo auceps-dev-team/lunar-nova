@@ -170,7 +170,13 @@ async function chatWithAgent(personaId, message, imageParams, promptFormat = 'te
             }
         }
 
-        const config = { systemInstruction: personaInstruction };
+        const config = {
+            systemInstruction: personaInstruction,
+            generationConfig: {
+                maxOutputTokens: 4096,
+                temperature: 0.7,
+            }
+        };
         if (finalPromptFormat === 'json') {
             config.responseMimeType = "application/json";
         }

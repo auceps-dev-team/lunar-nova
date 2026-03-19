@@ -86,7 +86,8 @@ async function generateProposals(chatContext, modelParam, apiKey) {
                     { role: "system", content: systemInstruction + "\n\nCRITICAL: Return ONLY a valid JSON object with a 'proposed_replies' array of strings. Do not include markdown formatting or extra text." },
                     { role: "user", content: formattedChat }
                 ],
-                response_format: { type: "json_object" }
+                response_format: { type: "json_object" },
+                max_tokens: 4096
             })
         });
 
@@ -172,7 +173,8 @@ async function chatWithAgent(persona, message, imageParams, promptFormat, apiKey
             },
             body: JSON.stringify({
                 model: 'anthropic/claude-3.5-sonnet', // Default robust model
-                messages: messages
+                messages: messages,
+                max_tokens: 4096
             })
         });
 
