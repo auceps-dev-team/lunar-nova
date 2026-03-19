@@ -301,14 +301,33 @@ export default function InvoiceBuilder() {
         setSaved(true);
     };
 
-    const handleExportPDF = () => {
+    const handleExportPDF = async () => {
         if (!draft) return;
         const html = buildInvoiceHTML(draft);
-        const win = window.open('', '_blank', 'width=800,height=1100');
-        if (!win) return alert('Veuillez autoriser les popups pour exporter en PDF.');
-        win.document.write(html);
-        win.document.close();
-        setTimeout(() => { win.focus(); win.print(); }, 400);
+        const fileName = `${(draft.invoiceNumber || 'facture').replace(/[^a-zA-Z0-9-]/g, '_')}.pdf`;
+
+        // Use Electron native PDF export if available
+        if (window.electronAPI?.printToPDF) {
+            try {
+                const result = await window.electronAPI.printToPDF(html, fileName);
+                if (result?.success) {
+                    // Show a brief success indicator
+                    setSaved(true);
+                } else if (result?.reason !== 'cancelled') {
+                    alert('Erreur lors de l\'export PDF : ' + (result?.reason || 'inconnue'));
+                }
+            } catch (err) {
+                console.error('PDF export error:', err);
+                alert('Erreur lors de l\'export PDF.');
+            }
+        } else {
+            // Fallback for browser: open in new tab + print
+            const win = window.open('', '_blank', 'width=800,height=1100');
+            if (!win) return alert('Veuillez autoriser les popups pour exporter en PDF.');
+            win.document.write(html);
+            win.document.close();
+            setTimeout(() => { win.focus(); win.print(); }, 400);
+        }
     };
 
     const updateItem = useCallback((id, field, val) => {

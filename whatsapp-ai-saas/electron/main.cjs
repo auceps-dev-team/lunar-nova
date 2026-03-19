@@ -1,5 +1,6 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
+const fs = require('fs');
 
 // Mute CSP warning in development
 process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true';
@@ -51,6 +52,53 @@ app.whenReady().then(() => {
     ipcMain.handle('remove-instance', (event, id) => {
         console.log(`[Main] Remove instance requested: ${id}`);
         return true;
+    });
+
+    // ── PDF Export: render HTML in hidden window → printToPDF → save dialog ──
+    ipcMain.handle('print-to-pdf', async (event, htmlContent, defaultFileName) => {
+        try {
+            // Create a hidden BrowserWindow to render the invoice HTML
+            const pdfWin = new BrowserWindow({
+                width: 794,   // A4 at 96 DPI
+                height: 1123,
+                show: false,
+                webPreferences: { nodeIntegration: false, contextIsolation: true }
+            });
+
+            // Load the HTML content as a data URI
+            await pdfWin.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`);
+
+            // Wait a moment for rendering (fonts, images)
+            await new Promise(resolve => setTimeout(resolve, 600));
+
+            // Generate the PDF buffer
+            const pdfBuffer = await pdfWin.webContents.printToPDF({
+                marginsType: 0,
+                printBackground: true,
+                pageSize: 'A4',
+                landscape: false,
+            });
+
+            pdfWin.close();
+
+            // Show save dialog
+            const { filePath, canceled } = await dialog.showSaveDialog(mainWindow, {
+                title: 'Exporter en PDF',
+                defaultPath: defaultFileName || 'facture.pdf',
+                filters: [{ name: 'PDF', extensions: ['pdf'] }],
+            });
+
+            if (canceled || !filePath) return { success: false, reason: 'cancelled' };
+
+            // Write the PDF to disk
+            fs.writeFileSync(filePath, pdfBuffer);
+            console.log(`[Main] PDF saved to: ${filePath}`);
+            return { success: true, path: filePath };
+
+        } catch (err) {
+            console.error('[Main] PDF export error:', err);
+            return { success: false, reason: err.message };
+        }
     });
 
     createWindow();
