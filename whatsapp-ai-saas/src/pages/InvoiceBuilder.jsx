@@ -12,641 +12,593 @@ import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
 
-// ─── Color palettes per template ────────────────────────────────────────────
-const TEMPLATES = {
-    classic: {
-        id: 'classic',
-        label: 'Classic Minimal',
-        accent: '#067d55',
-        bg: '#ffffff',
-        headerBg: '#f8faf9',
-        textPrimary: '#1a1c1b',
-        textSecondary: '#5f6260',
-        border: '#e0e3e1',
-    },
-    modern: {
-        id: 'modern',
-        label: 'Modern Dark',
-        accent: '#48d99a',
-        bg: '#1a1c1a',
-        headerBg: '#0d1f17',
-        textPrimary: '#e8f0ed',
-        textSecondary: '#9ab5a5',
-        border: '#2e3d33',
-    },
-    contrast: {
-        id: 'contrast',
-        label: 'High Contrast',
-        accent: '#0040dd',
-        bg: '#ffffff',
-        headerBg: '#f0f4ff',
-        textPrimary: '#050a1a',
-        textSecondary: '#4a5270',
-        border: '#c8d0e8',
-    },
-};
-
+/* ═══════════════════════════════════════════════════════
+   CONSTANTS
+   ═══════════════════════════════════════════════════════ */
 const CURRENCIES = ['EUR', 'USD', 'GBP', 'CHF', 'XOF'];
-const STATUS_COLORS = {
-    paid: { bg: 'bg-emerald-100 dark:bg-emerald-900/40', text: 'text-emerald-700 dark:text-emerald-300' },
-    pending: { bg: 'bg-amber-100 dark:bg-amber-900/40', text: 'text-amber-700 dark:text-amber-300' },
-    overdue: { bg: 'bg-red-100 dark:bg-red-900/40', text: 'text-red-700 dark:text-red-300' },
-    draft: { bg: 'bg-gray-100 dark:bg-gray-800', text: 'text-gray-600 dark:text-gray-400' },
+
+const STATUS_MAP = {
+    paid:    { label: 'Payée',     dot: '#10b981', bg: '#ecfdf5', text: '#047857' },
+    pending: { label: 'En attente', dot: '#f59e0b', bg: '#fffbeb', text: '#92400e' },
+    overdue: { label: 'En retard', dot: '#ef4444', bg: '#fef2f2', text: '#991b1b' },
+    draft:   { label: 'Brouillon', dot: '#94a3b8', bg: '#f8fafc', text: '#475569' },
 };
 
-// ─── Helper: calculate invoice totals ────────────────────────────────────────
-function calcTotals(items, taxRate = 0) {
-    const subtotal = items.reduce((s, i) => s + (i.qty * i.price), 0);
-    const tax = subtotal * (taxRate / 100);
-    return { subtotal, tax, total: subtotal + tax };
+/* ═══════════════════════════════════════════════════════
+   HELPERS
+   ═══════════════════════════════════════════════════════ */
+function calc(items, taxRate = 0) {
+    const sub = (items || []).reduce((s, i) => s + (i.qty || 0) * (i.price || 0), 0);
+    const tax = sub * (taxRate / 100);
+    return { sub, tax, total: sub + tax };
 }
 
-function fmtCurrency(amount, currency = 'EUR') {
-    return amount.toLocaleString('fr-FR', { style: 'currency', currency, minimumFractionDigits: 2 });
+function fmt(n, cur = 'EUR') {
+    return n.toLocaleString('fr-FR', { style: 'currency', currency: cur, minimumFractionDigits: 2 });
 }
 
-function getMonthlyRevenue(invoices) {
-    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    const data = months.map((m, idx) => ({ month: m, revenue: 0 }));
+function monthlyRevenue(invoices) {
+    const m = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+    const d = m.map(name => ({ name, rev: 0 }));
     invoices.forEach(inv => {
         if (!inv.createdAt) return;
-        const d = new Date(inv.createdAt);
-        const { total } = calcTotals(inv.items || [], inv.taxRate || 0);
-        data[d.getMonth()].revenue += total;
+        d[new Date(inv.createdAt).getMonth()].rev += calc(inv.items, inv.taxRate).total;
     });
-    return data;
+    return d;
 }
 
-// ─── Sortable row for drag-and-drop ─────────────────────────────────────────
-function SortableRow({ item, onUpdate, onRemove, currency, tpl }) {
-    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
-    const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
-    const lineTotal = item.qty * item.price;
+function freshInvoice() {
+    const today = new Date();
+    const due = new Date(today); due.setDate(due.getDate() + 30);
+    return {
+        id: `inv-${Date.now()}`,
+        invoiceNumber: `INV-${today.getFullYear()}-${String(Math.floor(Math.random()*900)+100)}`,
+        companyName: '', companyTagline: '', senderInfo: '',
+        companyLogo: null, clientLogo: null,
+        clientName: '', clientEmail: '', clientAddress: '',
+        issueDate: today.toISOString().split('T')[0],
+        dueDate: due.toISOString().split('T')[0],
+        items: [{ id: `li-${Date.now()}`, description: '', qty: 1, price: 0 }],
+        taxRate: 20, notes: '', status: 'draft', template: 'clean', currency: 'EUR',
+        createdAt: today.toISOString(),
+    };
+}
 
+/* ═══════════════════════════════════════════════════════
+   LOGO PICKER
+   ═══════════════════════════════════════════════════════ */
+function LogoPicker({ value, onChange, label, size = 56 }) {
+    const ref = useRef(null);
+    const handleFile = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => onChange(ev.target.result);
+        reader.readAsDataURL(file);
+    };
     return (
-        <div ref={setNodeRef} style={style} className={`grid items-center gap-2 py-3 border-b group ${isDragging ? 'shadow-lg rounded-xl z-50' : ''}`}
-            style={{ ...style, gridTemplateColumns: '24px 1fr 80px 100px 100px 32px', borderColor: tpl.border }}>
-            {/* Drag handle */}
-            <div {...attributes} {...listeners} className="cursor-grab opacity-30 hover:opacity-80 transition-opacity" title="Drag to reorder">
-                <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <line x1="9" y1="5" x2="15" y2="5"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="19" x2="15" y2="19"/>
-                </svg>
+        <div className="flex flex-col items-center gap-1 group cursor-pointer" onClick={() => ref.current?.click()}>
+            <input ref={ref} type="file" accept="image/*" className="hidden" onChange={handleFile}/>
+            <div className="rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700 hover:border-emerald-400 transition-all flex items-center justify-center overflow-hidden"
+                 style={{ width: size, height: size, background: value ? 'transparent' : '#f9fafb' }}>
+                {value ? (
+                    <img src={value} alt="logo" className="w-full h-full object-contain"/>
+                ) : (
+                    <svg width="20" height="20" fill="none" stroke="#9ca3af" strokeWidth="1.5" viewBox="0 0 24 24">
+                        <rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>
+                    </svg>
+                )}
             </div>
-            <input
-                className="w-full bg-transparent border-b focus:border-current outline-none text-sm font-medium transition-colors"
-                style={{ borderColor: 'transparent', color: tpl.textPrimary }}
-                value={item.description} placeholder="Description du service..."
-                onChange={e => onUpdate(item.id, 'description', e.target.value)}
-            />
-            <input type="number" min="1"
-                className="w-full text-center rounded-lg px-2 py-1 text-sm outline-none focus:ring-2 ring-opacity-50 transition"
-                style={{ background: tpl.headerBg, color: tpl.textPrimary, focusRingColor: tpl.accent }}
-                value={item.qty} onChange={e => onUpdate(item.id, 'qty', parseFloat(e.target.value) || 1)}
-            />
-            <input type="number" min="0" step="0.01"
-                className="w-full text-right rounded-lg px-2 py-1 text-sm outline-none focus:ring-2 transition"
-                style={{ background: tpl.headerBg, color: tpl.textPrimary }}
-                value={item.price} onChange={e => onUpdate(item.id, 'price', parseFloat(e.target.value) || 0)}
-            />
-            <div className="text-right text-sm font-bold" style={{ color: tpl.accent }}>
-                {fmtCurrency(lineTotal, currency)}
-            </div>
-            <button onClick={() => onRemove(item.id)}
-                className="p-1 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-red-50 transition-all text-red-400 hover:text-red-600">
-                <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                </svg>
-            </button>
+            <span className="text-[10px] font-medium text-gray-400 group-hover:text-emerald-500 transition-colors no-print">{label}</span>
         </div>
     );
 }
 
-// ─── Template thumbnail preview ───────────────────────────────────────────────
-function TemplateThumbnail({ tpl, active, onClick }) {
+/* ═══════════════════════════════════════════════════════
+   SORTABLE LINE ITEM
+   ═══════════════════════════════════════════════════════ */
+function SortableLine({ item, onUpdate, onRemove, currency }) {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
+    const rowStyle = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? .45 : 1 };
+    const total = (item.qty || 0) * (item.price || 0);
+
     return (
-        <button onClick={onClick} className="w-full text-left group transition-all">
-            <div className={`aspect-[3/4] rounded-xl overflow-hidden p-3 shadow-md transition-all ${active ? 'ring-2 ring-offset-2' : 'hover:ring-2 hover:ring-offset-1 ring-gray-300'}`}
-                style={{ background: tpl.bg, ringColor: tpl.accent }}>
-                <div className="w-full h-full rounded-lg p-2 space-y-2" style={{ background: tpl.headerBg }}>
-                    <div className="h-2 w-1/2 rounded" style={{ background: tpl.accent + '60' }}></div>
-                    <div className="h-1 w-full rounded" style={{ background: tpl.border }}></div>
-                    <div className="h-1 w-3/4 rounded" style={{ background: tpl.border }}></div>
-                    <div className="mt-3 h-10 w-full rounded" style={{ background: tpl.bg, border: `1px solid ${tpl.border}` }}></div>
-                    <div className="h-1 w-full rounded" style={{ background: tpl.border }}></div>
-                    <div className="h-1 w-2/3 rounded" style={{ background: tpl.border }}></div>
+        <tr ref={setNodeRef} style={rowStyle} className={`group ${isDragging ? 'bg-emerald-50/50 dark:bg-emerald-900/10' : ''}`}>
+            <td className="py-3 pr-2 w-6 no-print">
+                <span {...attributes} {...listeners} className="cursor-grab text-gray-300 hover:text-gray-500 transition-colors">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/></svg>
+                </span>
+            </td>
+            <td className="py-3">
+                <input className="w-full bg-transparent text-sm font-medium text-gray-800 dark:text-gray-200 outline-none placeholder:text-gray-300"
+                    value={item.description} placeholder="Description du service ou produit..."
+                    onChange={e => onUpdate(item.id, 'description', e.target.value)}/>
+            </td>
+            <td className="py-3 w-20">
+                <input type="number" min="1" className="w-full text-center text-sm bg-gray-50 dark:bg-gray-800 rounded-lg py-1 outline-none focus:ring-1 ring-emerald-400 text-gray-800 dark:text-gray-200"
+                    value={item.qty} onChange={e => onUpdate(item.id, 'qty', parseFloat(e.target.value) || 1)}/>
+            </td>
+            <td className="py-3 w-28">
+                <input type="number" min="0" step="0.01" className="w-full text-right text-sm bg-gray-50 dark:bg-gray-800 rounded-lg py-1 px-2 outline-none focus:ring-1 ring-emerald-400 text-gray-800 dark:text-gray-200"
+                    value={item.price} onChange={e => onUpdate(item.id, 'price', parseFloat(e.target.value) || 0)}/>
+            </td>
+            <td className="py-3 w-28 text-right text-sm font-semibold text-gray-800 dark:text-gray-200">{fmt(total, currency)}</td>
+            <td className="py-3 w-8 text-right no-print">
+                <button onClick={() => onRemove(item.id)} className="p-1 rounded-lg opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 transition-all">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </td>
+        </tr>
+    );
+}
+
+/* ═══════════════════════════════════════════════════════
+   HTML INVOICE TEMPLATE (for PDF rendering)
+   ═══════════════════════════════════════════════════════ */
+function buildInvoiceHTML(draft) {
+    const { sub, tax, total } = calc(draft.items, draft.taxRate);
+    const rows = (draft.items || []).map(it => `
+        <tr>
+            <td style="padding:10px 8px;border-bottom:1px solid #f1f5f9;font-size:13px;color:#334155">${it.description || '—'}</td>
+            <td style="padding:10px 8px;border-bottom:1px solid #f1f5f9;font-size:13px;color:#334155;text-align:center">${it.qty}</td>
+            <td style="padding:10px 8px;border-bottom:1px solid #f1f5f9;font-size:13px;color:#334155;text-align:right">${fmt(it.price, draft.currency)}</td>
+            <td style="padding:10px 8px;border-bottom:1px solid #f1f5f9;font-size:13px;color:#0f172a;text-align:right;font-weight:600">${fmt(it.qty * it.price, draft.currency)}</td>
+        </tr>
+    `).join('');
+
+    const logoHTML = draft.companyLogo ? `<img src="${draft.companyLogo}" style="width:52px;height:52px;border-radius:12px;object-fit:contain" alt="logo"/>` : `<div style="width:52px;height:52px;border-radius:12px;background:#ecfdf5;display:flex;align-items:center;justify-content:center;color:#10b981;font-weight:800;font-size:22px">${(draft.companyName || '?')[0]}</div>`;
+    const clientLogoHTML = draft.clientLogo ? `<img src="${draft.clientLogo}" style="width:36px;height:36px;border-radius:8px;object-fit:contain;margin-bottom:6px" alt="client"/>` : '';
+
+    return `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
+        @page { margin: 20mm; size: A4; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', 'Inter', -apple-system, sans-serif; color: #1e293b; background: #fff; }
+        .accent { color: #059669; }
+        .container { max-width: 680px; margin: 0 auto; }
+    </style></head><body>
+    <div class="container">
+        <!-- Top accent bar -->
+        <div style="height:4px;background:linear-gradient(90deg,#059669,#34d399);border-radius:0 0 4px 4px;margin-bottom:36px"></div>
+
+        <!-- Header -->
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:36px">
+            <div style="display:flex;align-items:center;gap:14px">
+                ${logoHTML}
+                <div>
+                    <div style="font-size:20px;font-weight:800;color:#0f172a;letter-spacing:-0.3px">${draft.companyName || 'Votre Entreprise'}</div>
+                    <div style="font-size:12px;color:#64748b;margin-top:2px">${draft.companyTagline || ''}</div>
                 </div>
             </div>
-            <div className="mt-2 flex items-center justify-between">
-                <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{tpl.label}</span>
-                {active && (
-                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" className="text-emerald-500">
-                        <path d="M20 6L9 17l-5-5"/>
-                    </svg>
-                )}
+            <div style="text-align:right">
+                <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:2px;margin-bottom:4px">Facture</div>
+                <div style="font-size:22px;font-weight:800;color:#0f172a">${draft.invoiceNumber}</div>
+                <div style="display:flex;gap:24px;justify-content:flex-end;margin-top:10px">
+                    <div><div style="font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1px">Date</div><div style="font-size:13px;color:#334155;margin-top:2px">${draft.issueDate}</div></div>
+                    <div><div style="font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1px">Échéance</div><div style="font-size:13px;color:#334155;margin-top:2px">${draft.dueDate}</div></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Addresses -->
+        <div style="display:flex;gap:40px;margin-bottom:36px">
+            <div style="flex:1;background:#f8fafc;border-radius:12px;padding:18px">
+                <div style="font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:2px;margin-bottom:10px">De</div>
+                <div style="font-size:13px;color:#334155;white-space:pre-line;line-height:1.7">${draft.senderInfo || '—'}</div>
+            </div>
+            <div style="flex:1;padding:18px">
+                <div style="font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:2px;margin-bottom:10px">Facturé à</div>
+                ${clientLogoHTML}
+                <div style="font-size:15px;font-weight:700;color:#0f172a;margin-bottom:4px">${draft.clientName || '—'}</div>
+                <div style="font-size:13px;color:#64748b;white-space:pre-line;line-height:1.7">${draft.clientAddress || ''}</div>
+            </div>
+        </div>
+
+        <!-- Items table -->
+        <table style="width:100%;border-collapse:collapse;margin-bottom:24px">
+            <thead><tr>
+                <th style="padding:10px 8px;text-align:left;font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1.5px;border-bottom:2px solid #e2e8f0">Description</th>
+                <th style="padding:10px 8px;text-align:center;font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1.5px;border-bottom:2px solid #e2e8f0;width:60px">Qté</th>
+                <th style="padding:10px 8px;text-align:right;font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1.5px;border-bottom:2px solid #e2e8f0;width:100px">Prix</th>
+                <th style="padding:10px 8px;text-align:right;font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1.5px;border-bottom:2px solid #e2e8f0;width:100px">Total</th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+        </table>
+
+        <!-- Totals -->
+        <div style="display:flex;justify-content:flex-end;margin-bottom:36px">
+            <div style="width:260px">
+                <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;color:#64748b"><span>Sous-total</span><span>${fmt(sub, draft.currency)}</span></div>
+                <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;color:#64748b"><span>TVA (${draft.taxRate}%)</span><span>${fmt(tax, draft.currency)}</span></div>
+                <div style="display:flex;justify-content:space-between;padding:10px 0;margin-top:8px;border-top:2px solid #e2e8f0;font-size:18px;font-weight:800"><span style="color:#0f172a">Total</span><span class="accent">${fmt(total, draft.currency)}</span></div>
+            </div>
+        </div>
+
+        ${draft.notes ? `<div style="background:#f8fafc;border-radius:12px;padding:16px;margin-bottom:24px"><div style="font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:2px;margin-bottom:6px">Notes</div><div style="font-size:12px;color:#64748b;line-height:1.6">${draft.notes}</div></div>` : ''}
+
+        <div style="text-align:center;padding-top:24px;border-top:1px solid #f1f5f9;font-size:10px;color:#cbd5e1">Facture générée automatiquement · ${draft.companyName || 'Votre Entreprise'}</div>
+    </div>
+    </body></html>`;
+}
+
+/* ═══════════════════════════════════════════════════════
+   KPI CARD
+   ═══════════════════════════════════════════════════════ */
+function KPI({ label, value, sub, icon, accent }) {
+    return (
+        <div className="bg-white dark:bg-[#1a1f25] rounded-2xl p-5 border border-gray-100 dark:border-gray-800 hover:shadow-lg transition-shadow duration-300">
+            <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg" style={{ background: accent + '18', color: accent }}>{icon}</div>
+                <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400">{label}</span>
+            </div>
+            <p className="text-[26px] font-extrabold text-gray-900 dark:text-white leading-none tracking-tight">{value}</p>
+            {sub && <p className="text-xs text-gray-400 mt-1">{sub}</p>}
+        </div>
+    );
+}
+
+/* ═══════════════════════════════════════════════════════
+   TEMPLATE THUMBNAILS
+   ═══════════════════════════════════════════════════════ */
+const TPL_PREVIEWS = [
+    { id: 'clean', label: 'Modern Clean', colors: ['#059669','#ecfdf5','#fff'] },
+    { id: 'bold', label: 'Bold Header', colors: ['#1e293b','#f8fafc','#fff'] },
+    { id: 'stripe', label: 'Stripe Accent', colors: ['#6366f1','#eef2ff','#fff'] },
+];
+
+function TplThumb({ tpl, active, onClick }) {
+    return (
+        <button onClick={onClick} className={`w-full text-left transition-all duration-200 ${active ? 'scale-[1.02]' : 'hover:scale-[1.01]'}`}>
+            <div className={`aspect-[3/4] rounded-xl overflow-hidden border-2 transition-all duration-200 ${active ? 'border-emerald-500 shadow-lg shadow-emerald-500/10' : 'border-gray-100 dark:border-gray-700 hover:border-gray-300'}`}>
+                <div style={{ background: tpl.colors[0] }} className="h-[28%]"></div>
+                <div style={{ background: tpl.colors[2] }} className="flex-1 p-2 space-y-1.5">
+                    <div className="h-1.5 w-1/2 rounded-full" style={{ background: tpl.colors[0] + '30' }}></div>
+                    <div className="h-1 w-full rounded-full bg-gray-100"></div>
+                    <div className="h-1 w-3/4 rounded-full bg-gray-100"></div>
+                    <div className="h-6 w-full mt-2 rounded bg-gray-50 border border-gray-100"></div>
+                    <div className="h-1 w-full rounded-full bg-gray-100"></div>
+                </div>
+            </div>
+            <div className="flex items-center justify-between mt-2">
+                <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{tpl.label}</span>
+                {active && <div className="w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center"><svg width="10" height="10" fill="none" stroke="#fff" strokeWidth="3" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div>}
             </div>
         </button>
     );
 }
 
-// ─── KPI Card ─────────────────────────────────────────────────────────────────
-function KPICard({ label, value, sub, icon, color }) {
-    return (
-        <div className={`rounded-2xl p-5 flex items-start gap-4 bg-white dark:bg-gray-800 shadow-soft border border-transparent dark:border-gray-700`}>
-            <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white text-xl flex-shrink-0`} style={{ background: color }}>
-                {icon}
-            </div>
-            <div>
-                <p className="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">{label}</p>
-                <p className="text-2xl font-extrabold text-gray-900 dark:text-white mt-0.5">{value}</p>
-                {sub && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{sub}</p>}
-            </div>
-        </div>
-    );
-}
-
-// ─── Invoice Canvas (printable) ───────────────────────────────────────────────
-function InvoiceCanvas({ draft, onChange, tpl, sensors, handleDragEnd }) {
-    const { subtotal, tax, total } = calcTotals(draft.items, draft.taxRate);
-    const invoiceNum = draft.invoiceNumber || `#INV-${Date.now().toString().slice(-6)}`;
-
-    const updateItem = useCallback((id, field, value) => {
-        onChange({ ...draft, items: draft.items.map(it => it.id === id ? { ...it, [field]: value } : it) });
-    }, [draft, onChange]);
-
-    const removeItem = useCallback(id => {
-        onChange({ ...draft, items: draft.items.filter(it => it.id !== id) });
-    }, [draft, onChange]);
-
-    const addItem = () => {
-        onChange({ ...draft, items: [...draft.items, { id: `i-${Date.now()}`, description: '', qty: 1, price: 0 }] });
-    };
-
-    const onDragEnd = (event) => {
-        const { active, over } = event;
-        if (active.id !== over?.id) {
-            const oldIdx = draft.items.findIndex(i => i.id === active.id);
-            const newIdx = draft.items.findIndex(i => i.id === over.id);
-            onChange({ ...draft, items: arrayMove(draft.items, oldIdx, newIdx) });
-        }
-    };
-
-    return (
-        <div id="invoice-canvas" className="rounded-2xl overflow-hidden shadow-xl"
-            style={{ background: tpl.bg, color: tpl.textPrimary, fontFamily: "'Inter', sans-serif" }}>
-            {/* Accent strip */}
-            <div className="h-1.5" style={{ background: `linear-gradient(90deg, ${tpl.accent}, ${tpl.accent}99)` }}></div>
-
-            <div className="p-10 space-y-10">
-                {/* Header: Brand + Invoice # */}
-                <div className="flex justify-between items-start">
-                    <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 rounded-xl flex items-center justify-center text-2xl"
-                            style={{ background: tpl.accent + '20' }}>
-                            <span style={{ color: tpl.accent }}>●</span>
-                        </div>
-                        <div>
-                            <input className="text-xl font-extrabold tracking-tight bg-transparent outline-none border-b border-transparent focus:border-current w-full"
-                                style={{ color: tpl.textPrimary, borderColor: 'transparent' }}
-                                value={draft.companyName || ''}
-                                onChange={e => onChange({ ...draft, companyName: e.target.value })}
-                                placeholder="Votre entreprise"
-                            />
-                            <input className="text-sm mt-0.5 bg-transparent outline-none w-full"
-                                style={{ color: tpl.textSecondary }}
-                                value={draft.companyTagline || ''}
-                                onChange={e => onChange({ ...draft, companyTagline: e.target.value })}
-                                placeholder="Sous-titre / secteur"
-                            />
-                        </div>
-                    </div>
-                    <div className="text-right">
-                        <p className="text-xs font-bold uppercase tracking-widest mb-1" style={{ color: tpl.textSecondary }}>Numéro de facture</p>
-                        <input className="text-xl font-bold bg-transparent outline-none text-right"
-                            style={{ color: tpl.textPrimary }}
-                            value={invoiceNum}
-                            onChange={e => onChange({ ...draft, invoiceNumber: e.target.value })}
-                        />
-                        <div className="grid grid-cols-2 gap-6 mt-3 text-right">
-                            <div>
-                                <p className="text-xs font-bold uppercase" style={{ color: tpl.textSecondary }}>Date</p>
-                                <input type="date" className="text-sm bg-transparent outline-none text-right"
-                                    style={{ color: tpl.textPrimary }}
-                                    value={draft.issueDate || ''}
-                                    onChange={e => onChange({ ...draft, issueDate: e.target.value })}
-                                />
-                            </div>
-                            <div>
-                                <p className="text-xs font-bold uppercase" style={{ color: tpl.textSecondary }}>Échéance</p>
-                                <input type="date" className="text-sm bg-transparent outline-none text-right"
-                                    style={{ color: tpl.textPrimary }}
-                                    value={draft.dueDate || ''}
-                                    onChange={e => onChange({ ...draft, dueDate: e.target.value })}
-                                />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Client addresses */}
-                <div className="grid grid-cols-2 gap-12">
-                    <div className="p-5 rounded-xl" style={{ background: tpl.headerBg }}>
-                        <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: tpl.textSecondary }}>Expéditeur</p>
-                        <textarea className="w-full bg-transparent outline-none text-sm resize-none leading-relaxed"
-                            style={{ color: tpl.textPrimary }}
-                            value={draft.senderInfo || ''}
-                            rows={4}
-                            onChange={e => onChange({ ...draft, senderInfo: e.target.value })}
-                            placeholder={"Votre nom\nVotre adresse\nVotre email"}
-                        />
-                    </div>
-                    <div>
-                        <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: tpl.textSecondary }}>Facturé à</p>
-                        <input className="w-full text-lg font-bold bg-transparent outline-none border-b pb-1 transition"
-                            style={{ color: tpl.textPrimary, borderColor: tpl.border }}
-                            value={draft.clientName || ''}
-                            onChange={e => onChange({ ...draft, clientName: e.target.value })}
-                            placeholder="Nom du client ou société"
-                        />
-                        <textarea className="w-full bg-transparent outline-none text-sm resize-none leading-relaxed mt-2"
-                            style={{ color: tpl.textSecondary }}
-                            value={draft.clientAddress || ''}
-                            rows={3}
-                            onChange={e => onChange({ ...draft, clientAddress: e.target.value })}
-                            placeholder={"Adresse du client\nVille, code postal"}
-                        />
-                    </div>
-                </div>
-
-                {/* Line items table */}
-                <div>
-                    {/* Table header */}
-                    <div className="grid text-xs font-bold uppercase tracking-widest pb-3 border-b"
-                        style={{ gridTemplateColumns: '24px 1fr 80px 100px 100px 32px', color: tpl.textSecondary, borderColor: tpl.border }}>
-                        <span></span>
-                        <span>Description</span>
-                        <span className="text-center">Qté</span>
-                        <span className="text-right">Prix unit.</span>
-                        <span className="text-right">Total</span>
-                        <span></span>
-                    </div>
-
-                    {/* Sortable rows */}
-                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-                        <SortableContext items={draft.items} strategy={verticalListSortingStrategy}>
-                            {draft.items.map(item => (
-                                <SortableRow key={item.id} item={item} onUpdate={updateItem} onRemove={removeItem} currency={draft.currency} tpl={tpl} />
-                            ))}
-                        </SortableContext>
-                    </DndContext>
-
-                    <button onClick={addItem}
-                        className="mt-4 flex items-center gap-2 text-sm font-semibold transition-opacity hover:opacity-70 no-print"
-                        style={{ color: tpl.accent }}>
-                        <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
-                        </svg>
-                        Ajouter une ligne
-                    </button>
-                </div>
-
-                {/* Footer: Notes + Totals */}
-                <div className="pt-8 border-t flex justify-between gap-8" style={{ borderColor: tpl.border }}>
-                    <div className="flex-1 max-w-xs">
-                        <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: tpl.textSecondary }}>Notes</p>
-                        <textarea
-                            className="w-full text-sm rounded-xl p-4 resize-none outline-none focus:ring-2 transition"
-                            style={{ background: tpl.headerBg, color: tpl.textPrimary, border: `1px solid ${tpl.border}` }}
-                            rows={4}
-                            placeholder="Note personnalisée pour le client..."
-                            value={draft.notes || ''}
-                            onChange={e => onChange({ ...draft, notes: e.target.value })}
-                        />
-                    </div>
-                    <div className="w-72 space-y-3">
-                        <div className="flex justify-between text-sm" style={{ color: tpl.textSecondary }}>
-                            <span>Sous-total</span>
-                            <span>{fmtCurrency(subtotal, draft.currency)}</span>
-                        </div>
-                        <div className="flex justify-between items-center text-sm" style={{ color: tpl.textSecondary }}>
-                            <span className="flex items-center gap-2">
-                                TVA
-                                <input type="number" min="0" max="100" step="0.5"
-                                    className="w-12 text-center rounded-lg px-1 py-0.5 text-xs outline-none no-print"
-                                    style={{ background: tpl.headerBg, color: tpl.textPrimary, border: `1px solid ${tpl.border}` }}
-                                    value={draft.taxRate || 0}
-                                    onChange={e => onChange({ ...draft, taxRate: parseFloat(e.target.value) || 0 })}
-                                />
-                                %
-                            </span>
-                            <span>{fmtCurrency(tax, draft.currency)}</span>
-                        </div>
-                        <div className="pt-4 border-t flex justify-between items-center" style={{ borderColor: tpl.border }}>
-                            <span className="font-bold text-base" style={{ color: tpl.textPrimary }}>Total dû</span>
-                            <span className="text-2xl font-extrabold" style={{ color: tpl.accent }}>{fmtCurrency(total, draft.currency)}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-// ─── Empty invoice template ───────────────────────────────────────────────────
-function newInvoiceDraft() {
-    const today = new Date();
-    const due = new Date(today);
-    due.setDate(due.getDate() + 30);
-    return {
-        id: `inv-${Date.now()}`,
-        invoiceNumber: `#INV-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 900) + 100)}`,
-        companyName: 'Votre Entreprise',
-        companyTagline: 'Secteur d\'activité',
-        senderInfo: 'Votre nom\n123 Rue de la Paix\ncity@email.com',
-        clientName: '',
-        clientEmail: '',
-        clientAddress: '',
-        issueDate: today.toISOString().split('T')[0],
-        dueDate: due.toISOString().split('T')[0],
-        items: [{ id: `i-${Date.now()}`, description: '', qty: 1, price: 0 }],
-        taxRate: 20,
-        notes: '',
-        status: 'draft',
-        template: 'classic',
-        currency: 'EUR',
-        createdAt: new Date().toISOString(),
-    };
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// MAIN PAGE COMPONENT
-// ═══════════════════════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════
+   MAIN COMPONENT
+   ═══════════════════════════════════════════════════════ */
 export default function InvoiceBuilder() {
     const invoices = useAppStore(s => s.invoices) || [];
     const addInvoice = useAppStore(s => s.addInvoice);
     const updateInvoice = useAppStore(s => s.updateInvoice);
     const deleteInvoice = useAppStore(s => s.deleteInvoice);
 
-    const [view, setView] = useState('dashboard'); // 'dashboard' | 'editor'
+    const [view, setView] = useState('dashboard');
     const [draft, setDraft] = useState(null);
-    const [selectedTemplate, setSelectedTemplate] = useState('classic');
-    const [saved, setSaved] = useState(false);
     const [filterStatus, setFilterStatus] = useState('all');
+    const [saved, setSaved] = useState(false);
 
     const sensors = useSensors(
-        useSensor(PointerSensor),
+        useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     );
 
-    const tpl = TEMPLATES[draft?.template || selectedTemplate] || TEMPLATES.classic;
+    // KPI
+    const totalRev = invoices.reduce((s, i) => s + calc(i.items, i.taxRate).total, 0);
+    const paidN = invoices.filter(i => i.status === 'paid').length;
+    const pendN = invoices.filter(i => i.status === 'pending').length;
+    const chartData = useMemo(() => monthlyRevenue(invoices), [invoices]);
+    const filtered = filterStatus === 'all' ? invoices : invoices.filter(i => i.status === filterStatus);
 
-    // KPI computations
-    const totalRevenue = invoices.reduce((s, inv) => s + calcTotals(inv.items || [], inv.taxRate || 0).total, 0);
-    const paidCount = invoices.filter(i => i.status === 'paid').length;
-    const pendingCount = invoices.filter(i => i.status === 'pending').length;
-    const monthlyData = useMemo(() => getMonthlyRevenue(invoices), [invoices]);
-    const filteredInvoices = filterStatus === 'all' ? invoices : invoices.filter(i => i.status === filterStatus);
+    const handleNew = () => { setDraft(freshInvoice()); setSaved(false); setView('editor'); };
+    const handleEdit = (inv) => { setDraft({ ...inv }); setSaved(true); setView('editor'); };
 
-    // Open a new invoice in editor
-    const handleCreateNew = () => {
-        const d = newInvoiceDraft();
-        d.template = selectedTemplate;
-        setDraft(d);
-        setSaved(false);
-        setView('editor');
-    };
-
-    // Open existing invoice for editing
-    const handleEdit = (inv) => {
-        setDraft({ ...inv });
-        setSelectedTemplate(inv.template || 'classic');
-        setSaved(true);
-        setView('editor');
-    };
-
-    // Save invoice to store
     const handleSave = () => {
         if (!draft) return;
-        const exists = invoices.find(i => i.id === draft.id);
-        if (exists) {
-            updateInvoice(draft.id, draft);
-        } else {
-            addInvoice(draft);
-        }
+        invoices.find(i => i.id === draft.id) ? updateInvoice(draft.id, draft) : addInvoice(draft);
         setSaved(true);
     };
 
-    // PDF Print
-    const handlePrint = () => window.print();
-
-    // Change template on draft
-    const handleTemplateChange = (tplId) => {
-        setSelectedTemplate(tplId);
-        if (draft) setDraft({ ...draft, template: tplId });
+    const handleExportPDF = () => {
+        if (!draft) return;
+        const html = buildInvoiceHTML(draft);
+        const win = window.open('', '_blank', 'width=800,height=1100');
+        if (!win) return alert('Veuillez autoriser les popups pour exporter en PDF.');
+        win.document.write(html);
+        win.document.close();
+        setTimeout(() => { win.focus(); win.print(); }, 400);
     };
 
-    // ── DASHBOARD VIEW ─────────────────────────────────────────────────────────
+    const updateItem = useCallback((id, field, val) => {
+        setDraft(d => ({ ...d, items: d.items.map(it => it.id === id ? { ...it, [field]: val } : it) }));
+    }, []);
+    const removeItem = useCallback(id => { setDraft(d => ({ ...d, items: d.items.filter(it => it.id !== id) })); }, []);
+    const addItem = () => { setDraft(d => ({ ...d, items: [...d.items, { id: `li-${Date.now()}`, description: '', qty: 1, price: 0 }] })); };
+
+    const onDragEnd = (ev) => {
+        const { active, over } = ev;
+        if (!over || active.id === over.id) return;
+        setDraft(d => {
+            const o = d.items.findIndex(i => i.id === active.id);
+            const n = d.items.findIndex(i => i.id === over.id);
+            return { ...d, items: arrayMove(d.items, o, n) };
+        });
+    };
+
+    // ── DASHBOARD ─────────────────────────────────────────
     if (view === 'dashboard') {
         return (
-            <div className="min-h-full p-0">
-                {/* Page header */}
-                <div className="flex items-center justify-between mb-8">
+            <div className="space-y-6">
+                {/* Header */}
+                <div className="flex items-end justify-between">
                     <div>
-                        <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight">Invoice Builder</h1>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Gérez vos factures et suivez vos revenus.</p>
+                        <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight">Facturation</h1>
+                        <p className="text-sm text-gray-400 mt-0.5">Tableau de bord et gestion des factures</p>
                     </div>
-                    <button onClick={handleCreateNew}
-                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm text-white shadow-md hover:opacity-90 active:scale-[.98] transition-all"
-                        style={{ background: 'linear-gradient(135deg, #067d55, #04543a)' }}>
-                        <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-                        </svg>
+                    <button onClick={handleNew}
+                        className="h-10 px-5 rounded-xl text-white text-sm font-bold flex items-center gap-2 active:scale-[.97] transition-transform shadow-lg shadow-emerald-600/20"
+                        style={{ background: 'linear-gradient(135deg,#059669,#047857)' }}>
+                        <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                         Nouvelle facture
                     </button>
                 </div>
 
-                {/* KPI Cards */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                    <KPICard label="Total factures" value={invoices.length} icon="📄" color="#067d55" />
-                    <KPICard label="Chiffre d'affaires" value={fmtCurrency(totalRevenue, 'EUR')} icon="💰" color="#0e7490" />
-                    <KPICard label="Payées" value={paidCount} sub={`sur ${invoices.length} factures`} icon="✅" color="#16a34a" />
-                    <KPICard label="En attente" value={pendingCount} icon="⏳" color="#d97706" />
+                {/* KPIs */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <KPI label="Total factures" value={invoices.length} icon="📄" accent="#059669"/>
+                    <KPI label="Chiffre d'affaires" value={fmt(totalRev)} icon="💰" accent="#0891b2"/>
+                    <KPI label="Payées" value={paidN} sub={`sur ${invoices.length}`} icon="✅" accent="#16a34a"/>
+                    <KPI label="En attente" value={pendN} icon="⏳" accent="#d97706"/>
                 </div>
 
-                {/* Monthly Revenue Chart */}
-                <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-soft border border-transparent dark:border-gray-700 mb-8">
-                    <h3 className="text-sm font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-4">Revenus mensuels</h3>
-                    <ResponsiveContainer width="100%" height={220}>
-                        <BarChart data={monthlyData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                            <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
-                            <YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
-                            <Tooltip formatter={(v) => fmtCurrency(v, 'EUR')} contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }} />
-                            <Bar dataKey="revenue" fill="#067d55" radius={[6, 6, 0, 0]} />
+                {/* Chart */}
+                <div className="bg-white dark:bg-[#1a1f25] rounded-2xl p-6 border border-gray-100 dark:border-gray-800">
+                    <p className="text-[10px] font-bold uppercase tracking-[.15em] text-gray-400 mb-4">Revenus mensuels</p>
+                    <ResponsiveContainer width="100%" height={200}>
+                        <BarChart data={chartData} margin={{ left: -20 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9"/>
+                            <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false}/>
+                            <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false}/>
+                            <Tooltip formatter={v => fmt(v)} contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 8px 30px rgba(0,0,0,.08)', fontSize: 12 }}/>
+                            <Bar dataKey="rev" fill="url(#barGrad)" radius={[6,6,0,0]}/>
+                            <defs><linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#059669"/><stop offset="100%" stopColor="#34d399"/></linearGradient></defs>
                         </BarChart>
                     </ResponsiveContainer>
                 </div>
 
                 {/* Invoice list */}
-                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-soft border border-transparent dark:border-gray-700">
-                    <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-700">
-                        <h3 className="text-sm font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">Factures récentes</h3>
-                        <div className="flex items-center gap-2">
-                            {['all', 'paid', 'pending', 'overdue', 'draft'].map(s => (
+                <div className="bg-white dark:bg-[#1a1f25] rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden">
+                    <div className="flex items-center justify-between px-5 py-4 border-b border-gray-50 dark:border-gray-800">
+                        <p className="text-[10px] font-bold uppercase tracking-[.15em] text-gray-400">Factures</p>
+                        <div className="flex gap-1.5">
+                            {['all','paid','pending','overdue','draft'].map(s => (
                                 <button key={s} onClick={() => setFilterStatus(s)}
-                                    className={`px-3 py-1 rounded-full text-xs font-bold uppercase transition-all ${filterStatus === s ? 'bg-emerald-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20'}`}>
-                                    {s === 'all' ? 'Toutes' : s}
+                                    className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all ${filterStatus === s ? 'bg-emerald-600 text-white' : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}>
+                                    {s === 'all' ? 'Toutes' : STATUS_MAP[s]?.label || s}
                                 </button>
                             ))}
                         </div>
                     </div>
-                    <div className="divide-y divide-gray-50 dark:divide-gray-700">
-                        {filteredInvoices.length === 0 && (
-                            <div className="text-center py-16 text-gray-400">
-                                <div className="text-5xl mb-3">📋</div>
-                                <p className="text-sm">Aucune facture trouvée.</p>
-                                <button onClick={handleCreateNew} className="mt-4 text-sm text-emerald-600 font-semibold hover:underline">Créer une facture →</button>
-                            </div>
-                        )}
-                        {filteredInvoices.map(inv => {
-                            const { total } = calcTotals(inv.items || [], inv.taxRate || 0);
-                            const sc = STATUS_COLORS[inv.status] || STATUS_COLORS.draft;
-                            return (
-                                <div key={inv.id} className="flex items-center justify-between px-5 py-4 hover:bg-gray-50 dark:hover:bg-gray-750 cursor-pointer transition-colors group" onClick={() => handleEdit(inv)}>
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold" style={{ background: '#067d5520', color: '#067d55' }}>
-                                            {inv.clientName?.slice(0, 2).toUpperCase() || '??'}
-                                        </div>
-                                        <div>
-                                            <p className="font-semibold text-sm text-gray-900 dark:text-white">{inv.clientName || 'Sans nom'}</p>
-                                            <p className="text-xs text-gray-400">{inv.invoiceNumber} · Émise le {inv.issueDate}</p>
-                                        </div>
+
+                    {filtered.length === 0 ? (
+                        <div className="text-center py-20 text-gray-300">
+                            <div className="text-4xl mb-3">📋</div>
+                            <p className="text-sm">Aucune facture.</p>
+                            <button onClick={handleNew} className="mt-3 text-sm text-emerald-600 font-semibold hover:underline">Créer →</button>
+                        </div>
+                    ) : filtered.map(inv => {
+                        const { total } = calc(inv.items, inv.taxRate);
+                        const st = STATUS_MAP[inv.status] || STATUS_MAP.draft;
+                        return (
+                            <div key={inv.id} onClick={() => handleEdit(inv)}
+                                className="flex items-center justify-between px-5 py-3.5 hover:bg-gray-50/60 dark:hover:bg-gray-800/40 cursor-pointer transition-colors border-b border-gray-50 dark:border-gray-800/50 last:border-0 group">
+                                <div className="flex items-center gap-3.5">
+                                    <div className="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold" style={{ background: '#05966915', color: '#059669' }}>
+                                        {inv.clientName?.slice(0,2).toUpperCase() || '??'}
                                     </div>
-                                    <div className="flex items-center gap-4">
-                                        <span className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase ${sc.bg} ${sc.text}`}>{inv.status}</span>
-                                        <span className="font-bold text-sm text-gray-800 dark:text-gray-200 w-28 text-right">{fmtCurrency(total, inv.currency || 'EUR')}</span>
-                                        <button onClick={e => { e.stopPropagation(); if(window.confirm('Supprimer cette facture ?')) deleteInvoice(inv.id); }}
-                                            className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-red-50 transition-all text-red-400 hover:text-red-600">
-                                            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                                <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/>
-                                            </svg>
-                                        </button>
+                                    <div>
+                                        <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">{inv.clientName || '—'}</p>
+                                        <p className="text-[11px] text-gray-400">{inv.invoiceNumber} · {inv.issueDate}</p>
                                     </div>
                                 </div>
-                            );
-                        })}
-                    </div>
+                                <div className="flex items-center gap-3">
+                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold" style={{ background: st.bg, color: st.text }}>{st.label}</span>
+                                    <span className="text-sm font-bold text-gray-800 dark:text-gray-100 w-28 text-right tabular-nums">{fmt(total, inv.currency)}</span>
+                                    <button onClick={e => { e.stopPropagation(); window.confirm('Supprimer ?') && deleteInvoice(inv.id); }}
+                                        className="p-1 rounded-lg opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 transition-all">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+                                    </button>
+                                </div>
+                            </div>
+                        );
+                    })}
                 </div>
             </div>
         );
     }
 
-    // ── EDITOR VIEW ────────────────────────────────────────────────────────────
-    return (
-        <div className="min-h-full" style={{ margin: '-24px' }}>
-            <style>{`
-                @media print {
-                    body * { visibility: hidden !important; }
-                    #invoice-canvas, #invoice-canvas * { visibility: visible !important; }
-                    #invoice-canvas { position: fixed; inset: 0; width: 100%; padding: 20mm; box-sizing: border-box; }
-                    .no-print { display: none !important; }
-                }
-            `}</style>
+    // ── EDITOR ──────────────────────────────────────────────
+    if (!draft) return null;
+    const { sub, tax, total } = calc(draft.items, draft.taxRate);
 
-            {/* Editor Topbar */}
-            <div className="no-print flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 sticky top-0 z-30">
+    return (
+        <div style={{ margin: '-24px' }} className="min-h-full flex flex-col">
+            {/* Editor toolbar */}
+            <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 sticky top-0 z-30">
                 <div className="flex items-center gap-3">
-                    <button onClick={() => setView('dashboard')}
-                        className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors font-medium">
-                        <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 5 5 12 12 19"/></svg>
-                        Retour
+                    <button onClick={() => setView('dashboard')} className="text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors">
+                        <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 5 5 12 12 19"/></svg>
                     </button>
-                    <span className="text-gray-300 dark:text-gray-600">/</span>
                     <div>
-                        <h2 className="text-sm font-bold text-gray-900 dark:text-white">{draft?.invoiceNumber || 'Nouvelle facture'}</h2>
-                        <p className="text-xs text-gray-400">{saved ? 'Sauvegardé ✓' : 'Non sauvegardé'}</p>
+                        <p className="text-sm font-bold text-gray-800 dark:text-white">{draft.invoiceNumber}</p>
+                        <p className="text-[10px] text-gray-400">{saved ? '✓ Sauvegardé' : '• Non sauvegardé'}</p>
                     </div>
                 </div>
-
-                <div className="flex items-center gap-3">
-                    {/* Status selector */}
-                    <select value={draft?.status || 'draft'} onChange={e => setDraft(d => ({ ...d, status: e.target.value }))}
-                        className="text-xs font-bold uppercase border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 bg-transparent text-gray-700 dark:text-gray-300 outline-none cursor-pointer">
-                        <option value="draft">Draft</option>
-                        <option value="pending">Pending</option>
-                        <option value="paid">Paid</option>
-                        <option value="overdue">Overdue</option>
+                <div className="flex items-center gap-2">
+                    <select value={draft.status} onChange={e => setDraft(d => ({...d, status: e.target.value}))}
+                        className="text-[10px] font-bold uppercase border border-gray-200 dark:border-gray-700 rounded-lg px-2.5 py-1.5 bg-transparent text-gray-600 dark:text-gray-300 outline-none cursor-pointer">
+                        {Object.entries(STATUS_MAP).map(([k,v]) => <option key={k} value={k}>{v.label}</option>)}
                     </select>
-                    {/* Currency */}
-                    <select value={draft?.currency || 'EUR'} onChange={e => setDraft(d => ({ ...d, currency: e.target.value }))}
-                        className="text-xs font-bold border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 bg-transparent text-gray-700 dark:text-gray-300 outline-none cursor-pointer">
+                    <select value={draft.currency} onChange={e => setDraft(d => ({...d, currency: e.target.value}))}
+                        className="text-[10px] font-bold border border-gray-200 dark:border-gray-700 rounded-lg px-2.5 py-1.5 bg-transparent text-gray-600 dark:text-gray-300 outline-none cursor-pointer">
                         {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
-                    <button onClick={handlePrint}
-                        className="flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
-                        <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                            <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>
-                        </svg>
+                    <button onClick={handleExportPDF}
+                        className="h-8 px-4 rounded-lg border border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all flex items-center gap-1.5">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
                         Export PDF
                     </button>
                     <button onClick={handleSave}
-                        className="flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold text-white shadow-md hover:opacity-90 active:scale-[.98] transition-all"
-                        style={{ background: 'linear-gradient(135deg, #067d55, #04543a)' }}>
-                        <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                            <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
-                        </svg>
+                        className="h-8 px-5 rounded-lg text-xs font-bold text-white flex items-center gap-1.5 active:scale-[.97] transition-transform"
+                        style={{ background: 'linear-gradient(135deg,#059669,#047857)' }}>
+                        <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
                         Sauvegarder
                     </button>
                 </div>
             </div>
 
-            {/* Main editor area */}
-            <div className="flex min-h-[calc(100vh-64px)]">
-                {/* Invoice canvas */}
-                <div className="flex-1 p-8 bg-gray-50 dark:bg-gray-950 overflow-y-auto">
-                    <div className="max-w-4xl mx-auto">
-                        {draft && (
-                            <InvoiceCanvas
-                                draft={draft}
-                                onChange={setDraft}
-                                tpl={tpl}
-                                sensors={sensors}
-                            />
-                        )}
+            {/* Main body */}
+            <div className="flex flex-1 min-h-0">
+                {/* Canvas */}
+                <div className="flex-1 overflow-y-auto p-8 bg-[#f5f6f8] dark:bg-[#0f1115]">
+                    <div className="max-w-3xl mx-auto bg-white dark:bg-[#1a1f25] rounded-2xl shadow-xl border border-gray-100 dark:border-gray-800 overflow-hidden">
+
+                        {/* Accent bar */}
+                        <div className="h-1.5 bg-gradient-to-r from-emerald-600 to-emerald-400"></div>
+
+                        <div className="p-10 space-y-10">
+                            {/* Header: Logo + Invoice # */}
+                            <div className="flex justify-between items-start">
+                                <div className="flex items-center gap-4">
+                                    <LogoPicker value={draft.companyLogo} onChange={v => setDraft(d => ({...d, companyLogo: v}))} label="Logo" size={56}/>
+                                    <div>
+                                        <input className="text-xl font-extrabold text-gray-900 dark:text-white bg-transparent outline-none w-full placeholder:text-gray-300 tracking-tight"
+                                            value={draft.companyName} onChange={e => setDraft(d => ({...d, companyName: e.target.value}))} placeholder="Votre entreprise"/>
+                                        <input className="text-sm text-gray-400 bg-transparent outline-none w-full placeholder:text-gray-300 mt-0.5"
+                                            value={draft.companyTagline} onChange={e => setDraft(d => ({...d, companyTagline: e.target.value}))} placeholder="Sous-titre"/>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-[9px] font-bold uppercase tracking-[.2em] text-gray-400 mb-1">Facture</p>
+                                    <input className="text-xl font-extrabold text-gray-900 dark:text-white bg-transparent outline-none text-right w-48 tracking-tight"
+                                        value={draft.invoiceNumber} onChange={e => setDraft(d => ({...d, invoiceNumber: e.target.value}))}/>
+                                    <div className="flex gap-6 justify-end mt-3">
+                                        <div>
+                                            <p className="text-[9px] font-bold uppercase text-gray-400">Date</p>
+                                            <input type="date" className="text-sm text-gray-700 dark:text-gray-300 bg-transparent outline-none" value={draft.issueDate} onChange={e => setDraft(d => ({...d, issueDate: e.target.value}))}/>
+                                        </div>
+                                        <div>
+                                            <p className="text-[9px] font-bold uppercase text-gray-400">Échéance</p>
+                                            <input type="date" className="text-sm text-gray-700 dark:text-gray-300 bg-transparent outline-none" value={draft.dueDate} onChange={e => setDraft(d => ({...d, dueDate: e.target.value}))}/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Addresses */}
+                            <div className="grid grid-cols-2 gap-10">
+                                <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-5">
+                                    <p className="text-[9px] font-bold uppercase tracking-[.2em] text-gray-400 mb-3">De</p>
+                                    <textarea className="w-full bg-transparent text-sm text-gray-700 dark:text-gray-300 outline-none resize-none leading-relaxed" rows={4}
+                                        value={draft.senderInfo} onChange={e => setDraft(d => ({...d, senderInfo: e.target.value}))}
+                                        placeholder={"Nom de l'entreprise\nAdresse\nEmail"}/>
+                                </div>
+                                <div className="p-5">
+                                    <p className="text-[9px] font-bold uppercase tracking-[.2em] text-gray-400 mb-3">Facturé à</p>
+                                    <div className="flex items-start gap-3">
+                                        <LogoPicker value={draft.clientLogo} onChange={v => setDraft(d => ({...d, clientLogo: v}))} label="Client" size={40}/>
+                                        <div className="flex-1">
+                                            <input className="w-full text-base font-bold text-gray-900 dark:text-white bg-transparent outline-none border-b border-gray-200 dark:border-gray-700 pb-1 placeholder:text-gray-300 focus:border-emerald-500 transition-colors"
+                                                value={draft.clientName} onChange={e => setDraft(d => ({...d, clientName: e.target.value}))} placeholder="Client / Société"/>
+                                            <textarea className="w-full bg-transparent text-sm text-gray-500 outline-none resize-none mt-2 leading-relaxed" rows={2}
+                                                value={draft.clientAddress} onChange={e => setDraft(d => ({...d, clientAddress: e.target.value}))} placeholder="Adresse du client"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Line items */}
+                            <div>
+                                <table className="w-full">
+                                    <thead>
+                                        <tr className="border-b-2 border-gray-100 dark:border-gray-700">
+                                            <th className="w-6"></th>
+                                            <th className="text-left text-[9px] font-bold uppercase tracking-[.15em] text-gray-400 pb-3">Description</th>
+                                            <th className="text-center text-[9px] font-bold uppercase tracking-[.15em] text-gray-400 pb-3 w-20">Qté</th>
+                                            <th className="text-right text-[9px] font-bold uppercase tracking-[.15em] text-gray-400 pb-3 w-28">Prix</th>
+                                            <th className="text-right text-[9px] font-bold uppercase tracking-[.15em] text-gray-400 pb-3 w-28">Total</th>
+                                            <th className="w-8"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+                                            <SortableContext items={draft.items} strategy={verticalListSortingStrategy}>
+                                                {draft.items.map(item => (
+                                                    <SortableLine key={item.id} item={item} onUpdate={updateItem} onRemove={removeItem} currency={draft.currency}/>
+                                                ))}
+                                            </SortableContext>
+                                        </DndContext>
+                                    </tbody>
+                                </table>
+                                <button onClick={addItem}
+                                    className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-emerald-600 hover:text-emerald-700 transition-colors no-print">
+                                    <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                                    Ajouter une ligne
+                                </button>
+                            </div>
+
+                            {/* Totals + Notes */}
+                            <div className="flex justify-between gap-8 pt-8 border-t border-gray-100 dark:border-gray-700">
+                                <div className="flex-1 max-w-xs">
+                                    <p className="text-[9px] font-bold uppercase tracking-[.2em] text-gray-400 mb-2">Notes</p>
+                                    <textarea className="w-full text-sm bg-gray-50 dark:bg-gray-800/50 rounded-xl p-3.5 outline-none resize-none text-gray-600 dark:text-gray-400 border border-gray-100 dark:border-gray-700 focus:border-emerald-400 transition-colors" rows={4}
+                                        value={draft.notes} onChange={e => setDraft(d => ({...d, notes: e.target.value}))} placeholder="Note au client..."/>
+                                </div>
+                                <div className="w-64 space-y-2.5">
+                                    <div className="flex justify-between text-sm text-gray-500"><span>Sous-total</span><span className="tabular-nums">{fmt(sub, draft.currency)}</span></div>
+                                    <div className="flex justify-between text-sm text-gray-500 items-center">
+                                        <span className="flex items-center gap-1.5">TVA
+                                            <input type="number" min="0" max="100" step="0.5"
+                                                className="w-10 text-center text-xs bg-gray-50 dark:bg-gray-800 rounded-md py-0.5 outline-none border border-gray-200 dark:border-gray-700 no-print"
+                                                value={draft.taxRate} onChange={e => setDraft(d => ({...d, taxRate: parseFloat(e.target.value) || 0}))}/>%
+                                        </span>
+                                        <span className="tabular-nums">{fmt(tax, draft.currency)}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center pt-3 border-t border-gray-100 dark:border-gray-700">
+                                        <span className="text-sm font-bold text-gray-800 dark:text-white">Total</span>
+                                        <span className="text-2xl font-extrabold text-emerald-600 tabular-nums">{fmt(total, draft.currency)}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                {/* Template sidebar */}
-                <aside className="no-print w-72 bg-white dark:bg-gray-900 border-l border-gray-100 dark:border-gray-800 p-6 flex flex-col gap-8 overflow-y-auto">
+                {/* Sidebar: Templates */}
+                <aside className="w-64 bg-white dark:bg-gray-900 border-l border-gray-100 dark:border-gray-800 p-5 flex flex-col gap-6 overflow-y-auto no-print">
                     <div>
-                        <h4 className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-5">Choisir un modèle</h4>
-                        <div className="space-y-5">
-                            {Object.values(TEMPLATES).map(t => (
-                                <TemplateThumbnail
-                                    key={t.id}
-                                    tpl={t}
-                                    active={selectedTemplate === t.id}
-                                    onClick={() => handleTemplateChange(t.id)}
-                                />
+                        <p className="text-[9px] font-bold uppercase tracking-[.2em] text-gray-400 mb-4">Modèle</p>
+                        <div className="space-y-4">
+                            {TPL_PREVIEWS.map(t => (
+                                <TplThumb key={t.id} tpl={t} active={draft.template === t.id} onClick={() => setDraft(d => ({...d, template: t.id}))}/>
                             ))}
                         </div>
                     </div>
 
-                    {/* Quick totals summary */}
-                    {draft && (() => {
-                        const { subtotal, tax, total } = calcTotals(draft.items, draft.taxRate);
-                        return (
-                            <div className="mt-auto pt-6 border-t border-gray-100 dark:border-gray-800">
-                                <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3">Résumé</p>
-                                <div className="space-y-2 text-sm">
-                                    <div className="flex justify-between text-gray-500"><span>Sous-total</span><span className="font-semibold">{fmtCurrency(subtotal, draft.currency)}</span></div>
-                                    <div className="flex justify-between text-gray-500"><span>TVA ({draft.taxRate || 0}%)</span><span className="font-semibold">{fmtCurrency(tax, draft.currency)}</span></div>
-                                    <div className="flex justify-between font-bold text-gray-900 dark:text-white pt-2 border-t border-gray-100 dark:border-gray-800">
-                                        <span>Total</span><span className="text-emerald-600">{fmtCurrency(total, draft.currency)}</span>
-                                    </div>
-                                </div>
+                    {/* Quick summary */}
+                    <div className="mt-auto pt-5 border-t border-gray-100 dark:border-gray-800">
+                        <p className="text-[9px] font-bold uppercase tracking-[.2em] text-gray-400 mb-3">Résumé</p>
+                        <div className="space-y-2 text-xs">
+                            <div className="flex justify-between text-gray-500"><span>Lignes</span><span className="font-semibold">{draft.items.length}</span></div>
+                            <div className="flex justify-between text-gray-500"><span>Sous-total</span><span className="font-semibold">{fmt(sub, draft.currency)}</span></div>
+                            <div className="flex justify-between text-gray-500"><span>TVA</span><span className="font-semibold">{fmt(tax, draft.currency)}</span></div>
+                            <div className="flex justify-between font-bold text-gray-800 dark:text-white pt-2 border-t border-gray-100 dark:border-gray-800">
+                                <span>Total</span><span className="text-emerald-600">{fmt(total, draft.currency)}</span>
                             </div>
-                        );
-                    })()}
+                        </div>
+                    </div>
                 </aside>
             </div>
         </div>
