@@ -71,6 +71,7 @@ export default function AiChat() {
     const [isRealTime, setIsRealTime] = useState(false);
     const [showSidebar, setShowSidebar] = useState(true);
     const [attachedImage, setAttachedImage] = useState(null);
+    const [sessionSearchQuery, setSessionSearchQuery] = useState('');
 
     const chatEndRef = useRef(null);
     const inputRef = useRef(null);
@@ -323,6 +324,9 @@ export default function AiChat() {
 
     const currentMessages = selectedAgent ? (conversations[selectedAgent.id] || []) : [];
     const currentSessions = selectedAgent ? (sessions[selectedAgent.id] || []) : [];
+    const filteredSessions = currentSessions.filter(s =>
+        s.title.toLowerCase().includes(sessionSearchQuery.toLowerCase())
+    );
     const agentColor = selectedAgent ? getAgentColor(selectedAgent.id) : null;
 
     // ══════════════════════════════════════════════════════════════════════
@@ -423,7 +427,12 @@ export default function AiChat() {
                     <div style={{ padding: '0 12px 12px', display: 'flex', gap: 8 }}>
                         <div style={{ position: 'relative', flex: 1 }}>
                             <svg style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" /></svg>
-                            <input placeholder="Search" style={{ width: '100%', padding: '8px 10px 8px 32px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
+                            <input
+                                placeholder="Search"
+                                value={sessionSearchQuery}
+                                onChange={e => setSessionSearchQuery(e.target.value)}
+                                style={{ width: '100%', padding: '8px 10px 8px 32px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
+                            />
                         </div>
                         <button onClick={clearAllSessions} style={{ width: 36, height: 36, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#64748b' }}>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" /></svg>
@@ -432,10 +441,10 @@ export default function AiChat() {
 
                     {/* Trash / sessions */}
                     <div style={{ flex: 1, overflowY: 'auto', padding: '0 8px' }}>
-                        {currentSessions.length === 0 && (
-                            <p style={{ fontSize: 12, color: '#cbd5e1', textAlign: 'center', marginTop: 32 }}>Aucune conversation sauvegardée</p>
+                        {filteredSessions.length === 0 && (
+                            <p style={{ fontSize: 12, color: '#cbd5e1', textAlign: 'center', marginTop: 32 }}>Aucune conversation trouvée</p>
                         )}
-                        {currentSessions.map(s => (
+                        {filteredSessions.map(s => (
                             <div
                                 key={s.id}
                                 className="group relative"

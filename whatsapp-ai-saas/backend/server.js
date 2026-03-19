@@ -290,14 +290,14 @@ app.post('/api/ai/copilot', async (req, res) => {
 
 // Endpoint for specialized Persona AI Agents (Legal, Creative)
 app.post('/api/ai/agent', async (req, res) => {
-    const { persona, message, messages, imageParams, promptFormat, currentTasks } = req.body;
+    const { persona, message, messages, imageParams, promptFormat, currentTasks, isRealTime } = req.body;
 
     if (!message && (!messages || messages.length === 0)) {
         return res.status(400).json({ error: 'Missing message.' });
     }
 
     try {
-        const aiResponse = await aiController.chatWithAgent(persona, message, imageParams, promptFormat, messages, currentTasks);
+        const aiResponse = await aiController.chatWithAgent(persona, message, imageParams, promptFormat, messages, currentTasks, isRealTime);
         res.json({
             status: 'success',
             response: aiResponse.response
