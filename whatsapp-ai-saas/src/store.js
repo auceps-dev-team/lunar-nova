@@ -76,6 +76,66 @@ const useAppStore = create(
             aiChatSessions: {},
             agentHistory: [],
 
+            // --- Invoice Builder (Phase 18) ---
+            invoices: [
+                {
+                    id: 'inv-001',
+                    invoiceNumber: '#INV-2025-001',
+                    clientName: 'Acme Corporation',
+                    clientEmail: 'billing@acme.com',
+                    clientAddress: '123 Main St, Paris, France',
+                    issueDate: '2025-01-10',
+                    dueDate: '2025-02-10',
+                    items: [
+                        { id: 'i1', description: 'Social Media Strategy Q1', qty: 1, price: 1500 },
+                        { id: 'i2', description: 'Monthly Consultation', qty: 5, price: 120 },
+                    ],
+                    taxRate: 20,
+                    notes: 'Merci pour votre confiance.',
+                    status: 'paid',
+                    template: 'classic',
+                    currency: 'EUR',
+                    createdAt: '2025-01-10T10:00:00Z',
+                },
+                {
+                    id: 'inv-002',
+                    invoiceNumber: '#INV-2025-002',
+                    clientName: 'Starlight Agency',
+                    clientEmail: 'finance@starlight.io',
+                    clientAddress: '456 Rue de Rivoli, Paris, France',
+                    issueDate: '2025-02-05',
+                    dueDate: '2025-03-05',
+                    items: [
+                        { id: 'i3', description: 'Landing Page Copywriting', qty: 1, price: 850 },
+                        { id: 'i4', description: 'SEO Audit Report', qty: 1, price: 600 },
+                    ],
+                    taxRate: 20,
+                    notes: '',
+                    status: 'pending',
+                    template: 'modern',
+                    currency: 'EUR',
+                    createdAt: '2025-02-05T09:00:00Z',
+                },
+                {
+                    id: 'inv-003',
+                    invoiceNumber: '#INV-2025-003',
+                    clientName: 'Nexus Tech',
+                    clientEmail: 'pay@nexus.io',
+                    clientAddress: '789 Tech Park, Lyon, France',
+                    issueDate: '2025-03-01',
+                    dueDate: '2025-03-31',
+                    items: [
+                        { id: 'i5', description: 'Brand Identity Design', qty: 1, price: 2200 },
+                    ],
+                    taxRate: 20,
+                    notes: 'Paiement à 30 jours.',
+                    status: 'overdue',
+                    template: 'classic',
+                    currency: 'EUR',
+                    createdAt: '2025-03-01T11:00:00Z',
+                },
+            ],
+
             // --- Actions ---
             updateSettings: (updates) => set((state) => ({
                 appSettings: { ...state.appSettings, ...updates }
@@ -160,7 +220,20 @@ const useAppStore = create(
 
             deleteTask: (taskId) => set((state) => ({
                 tasks: state.tasks.filter(t => t.id !== taskId)
-            }))
+            })),
+
+            // --- Invoice Actions (Phase 18) ---
+            addInvoice: (invoice) => set((state) => ({
+                invoices: [invoice, ...state.invoices]
+            })),
+
+            updateInvoice: (invoiceId, updatedData) => set((state) => ({
+                invoices: state.invoices.map(inv => inv.id === invoiceId ? { ...inv, ...updatedData } : inv)
+            })),
+
+            deleteInvoice: (invoiceId) => set((state) => ({
+                invoices: state.invoices.filter(inv => inv.id !== invoiceId)
+            })),
         }),
         {
             name: 'whatsapp-saas-storage',
