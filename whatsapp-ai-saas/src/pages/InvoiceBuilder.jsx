@@ -379,37 +379,60 @@ export default function InvoiceBuilder({ activeId }) {
             alert('Veuillez d\'abord sélectionner un contact avec un numéro de téléphone.');
             return;
         }
+        if (!activeId) {
+            alert('Aucune instance WhatsApp active. Veuillez en démarrer une.');
+            return;
+        }
         setSendingWhatsApp(true);
         try {
-            // First export the PDF
+            // Step 1: Generate PDF to temp file
             const html = buildInvoiceHTML(draft);
             const fileName = `${(draft.invoiceNumber || 'facture').replace(/[^a-zA-Z0-9-]/g, '_')}.pdf`;
-            if (window.electronAPI?.printToPDF) {
-                const result = await window.electronAPI.printToPDF(html, fileName);
-                if (!result?.success && result?.reason !== 'cancelled') {
-                    throw new Error(result?.reason || 'PDF export failed');
-                }
-            }
 
-            // Then open the WhatsApp chat
-            if (!activeId) {
-                alert('Aucune instance WhatsApp active. Veuillez en démarrer une.');
+            let pdfPath = null;
+            if (window.electronAPI?.savePdfTemp) {
+                const result = await window.electronAPI.savePdfTemp(html, fileName);
+                if (result?.success) {
+                    pdfPath = result.path;
+                } else {
+                    throw new Error(result?.reason || 'Échec de la génération PDF');
+                }
+            } else {
+                alert('L\'envoi WhatsApp n\'est disponible que dans l\'application Electron.');
                 return;
             }
 
+            // Step 2: Open the WhatsApp chat
             const rawPhone = (draft.clientPhone || '').replace(/[^0-9]/g, '');
-            const res = await fetch('http://localhost:3000/api/wa/open-chat', {
+            const openRes = await fetch('http://localhost:3000/api/wa/open-chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ instance_id: activeId, phone: rawPhone })
             });
-            const data = await res.json();
-            if (data.status === 'success') {
-                await new Promise(r => setTimeout(r, 1200));
+            const openData = await openRes.json();
+            if (openData.status !== 'success') {
+                throw new Error(openData.error || 'Impossible d\'ouvrir le chat');
+            }
+
+            // Step 3: Wait for chat to load, then send the file
+            await new Promise(r => setTimeout(r, 3000));
+
+            const sendRes = await fetch('http://localhost:3000/api/wa/send-file', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ instance_id: activeId, filePath: pdfPath })
+            });
+            const sendData = await sendRes.json();
+
+            if (sendData.status === 'success') {
+                navigate('/whatsapp-hub');
+            } else if (sendData.status === 'partial') {
+                alert(sendData.message);
                 navigate('/whatsapp-hub');
             } else {
-                throw new Error(data.error || 'Failed to open chat');
+                throw new Error(sendData.error || 'Impossible d\'envoyer le fichier');
             }
+
         } catch (err) {
             console.error('WhatsApp send error:', err);
             alert('Erreur: ' + err.message);

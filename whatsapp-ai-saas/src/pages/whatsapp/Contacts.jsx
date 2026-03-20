@@ -374,6 +374,7 @@ export default function Contacts({ activeId }) {
                                 </th>
                                 <th className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800">Phone</th>
                                 <th className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800">Email</th>
+                                <th className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800">Adresse</th>
                                 <th className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800">Segment</th>
                                 <th className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800 text-right min-w-[150px]">Action</th>
                             </tr>
@@ -413,6 +414,7 @@ export default function Contacts({ activeId }) {
                                     </td>
                                     <td className="px-6 py-4 font-mono text-gray-600 dark:text-gray-400">{contact.phone}</td>
                                     <td className="px-6 py-4 text-gray-500 dark:text-gray-400 text-xs truncate max-w-[180px]" title={contact.email || ''}>{contact.email || '-'}</td>
+                                    <td className="px-6 py-4 text-gray-500 dark:text-gray-400 text-xs truncate max-w-[160px]" title={contact.address || ''}>{contact.address || '-'}</td>
                                     <td className="px-6 py-4 text-gray-600 dark:text-gray-400 text-xs">{contact.segment_name || '-'}</td>
                                     <td className="px-6 py-4 text-right">
                                         <button

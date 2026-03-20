@@ -827,6 +827,118 @@ app.post('/api/wa/open-chat', async (req, res) => {
     }
 });
 
+// Phase 18.3: Send a file in the currently open WhatsApp conversation
+app.post('/api/wa/send-file', async (req, res) => {
+    const { instance_id, filePath } = req.body;
+    if (!instance_id || !filePath) return res.status(400).json({ error: 'Missing instance_id or filePath' });
+
+    // Check that file exists
+    const pathModule = require('path');
+    const fsModule = require('fs');
+    if (!fsModule.existsSync(filePath)) {
+        return res.status(400).json({ error: 'File not found: ' + filePath });
+    }
+
+    let browser;
+    try {
+        const cdpUrl = `http://localhost:8315`;
+        browser = await puppeteer.connect({
+            browserURL: cdpUrl,
+            defaultViewport: null
+        });
+
+        const targets = await browser.targets();
+        let targetPage = null;
+
+        for (const target of targets) {
+            if (target.type() === 'webview' && target.url().includes('whatsapp')) {
+                const p = await target.page();
+                if (p) {
+                    try {
+                        const id = await p.evaluate(() => window.__whatsapp_instance_id);
+                        if (id === instance_id) {
+                            targetPage = p;
+                            break;
+                        }
+                    } catch (e) { }
+                    if (!targetPage) targetPage = p;
+                }
+            }
+        }
+
+        if (!targetPage) {
+            browser.disconnect();
+            return res.status(404).json({ error: 'WhatsApp instance not found or not ready.' });
+        }
+
+        // Wait for the chat to be fully loaded
+        await new Promise(r => setTimeout(r, 2000));
+
+        // Click the attachment/clip button using the plus icon button
+        const attachClicked = await targetPage.evaluate(() => {
+            // Try the "+" button (attachment) — WhatsApp uses different selectors
+            const btns = document.querySelectorAll('div[title="Joindre"], div[title="Attach"], span[data-icon="plus"], span[data-icon="clip"]');
+            for (const btn of btns) {
+                const clickTarget = btn.closest('button') || btn.closest('[role="button"]') || btn;
+                clickTarget.click();
+                return true;
+            }
+            return false;
+        });
+
+        if (!attachClicked) {
+            browser.disconnect();
+            return res.status(500).json({ error: 'Could not find attachment button in WhatsApp.' });
+        }
+
+        await new Promise(r => setTimeout(r, 800));
+
+        // Find the document file input and upload the file
+        // WhatsApp creates a hidden input[type=file] when the attachment menu opens
+        const fileInputFound = await targetPage.evaluate(() => {
+            const inputs = document.querySelectorAll('input[type="file"]');
+            return inputs.length > 0;
+        });
+
+        if (fileInputFound) {
+            const fileInput = await targetPage.$('input[type="file"][accept="*"]') || await targetPage.$('input[type="file"]');
+            if (fileInput) {
+                await fileInput.uploadFile(filePath);
+                console.log('[WA] File uploaded to WhatsApp input:', filePath);
+
+                // Wait for the preview to load then click send
+                await new Promise(r => setTimeout(r, 2000));
+
+                const sendClicked = await targetPage.evaluate(() => {
+                    const sendBtn = document.querySelector('span[data-icon="send"]') || document.querySelector('div[aria-label="Send"], div[aria-label="Envoyer"]');
+                    if (sendBtn) {
+                        const clickTarget = sendBtn.closest('button') || sendBtn.closest('[role="button"]') || sendBtn;
+                        clickTarget.click();
+                        return true;
+                    }
+                    return false;
+                });
+
+                if (sendClicked) {
+                    res.json({ status: 'success', message: 'File sent via WhatsApp' });
+                } else {
+                    res.json({ status: 'partial', message: 'File attached but send button not found. Please click send manually.' });
+                }
+            } else {
+                res.status(500).json({ error: 'File input found but could not upload.' });
+            }
+        } else {
+            res.status(500).json({ error: 'No file input detected after clicking attach.' });
+        }
+
+    } catch (err) {
+        console.error('[WA] Send file error:', err);
+        res.status(500).json({ error: err.message });
+    } finally {
+        if (browser) browser.disconnect();
+    }
+});
+
 app.post('/api/wa/verify-contact', async (req, res) => {
     const { instance_id, phone } = req.body;
 
