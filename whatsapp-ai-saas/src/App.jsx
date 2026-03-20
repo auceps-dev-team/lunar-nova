@@ -117,7 +117,7 @@ function AppContent() {
                   <Route path="/agents-manager" element={<AgentManager />} />
                   <Route path="/ai-chat" element={<AiChat />} />
                   <Route path="/tasks" element={<TasksMap />} />
-                  <Route path="/invoice-builder" element={<InvoiceBuilder />} />
+                  <Route path="/invoice-builder" element={<InvoiceBuilder activeId={activeId} />} />
                   <Route path="/tools" element={<ToolsBox />} />
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/fashion/photoshoot" element={<PhotoShoot activeId={activeId} />} />

@@ -373,6 +373,7 @@ export default function Contacts({ activeId }) {
                                     <div className="flex items-center gap-1">Name {sortField === 'name' && (sortDirection === 'asc' ? '↑' : '↓')}</div>
                                 </th>
                                 <th className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800">Phone</th>
+                                <th className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800">Email</th>
                                 <th className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800">Segment</th>
                                 <th className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800 text-right min-w-[150px]">Action</th>
                             </tr>
@@ -380,13 +381,13 @@ export default function Contacts({ activeId }) {
                         <tbody className="divide-y divide-gray-100 dark:divide-zinc-800 text-gray-800 dark:text-zinc-200">
                             {isLoading ? (
                                 <tr>
-                                    <td colSpan="6" className="px-6 py-12 text-center text-gray-500 dark:text-zinc-500">
+                                    <td colSpan="8" className="px-6 py-12 text-center text-gray-500 dark:text-zinc-500">
                                         Loading contacts...
                                     </td>
                                 </tr>
                             ) : contactsOnPage.length === 0 ? (
                                 <tr>
-                                    <td colSpan="6" className="px-6 py-12 text-center text-gray-500 dark:text-zinc-500">
+                                    <td colSpan="8" className="px-6 py-12 text-center text-gray-500 dark:text-zinc-500">
                                         No contacts found.
                                     </td>
                                 </tr>
@@ -411,6 +412,7 @@ export default function Contacts({ activeId }) {
                                         {contactStatus[contact.id] === 'error' && <span className="text-yellow-500 flex-shrink-0 text-xs" title="API Error">⚠️</span>}
                                     </td>
                                     <td className="px-6 py-4 font-mono text-gray-600 dark:text-gray-400">{contact.phone}</td>
+                                    <td className="px-6 py-4 text-gray-500 dark:text-gray-400 text-xs truncate max-w-[180px]" title={contact.email || ''}>{contact.email || '-'}</td>
                                     <td className="px-6 py-4 text-gray-600 dark:text-gray-400 text-xs">{contact.segment_name || '-'}</td>
                                     <td className="px-6 py-4 text-right">
                                         <button

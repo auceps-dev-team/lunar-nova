@@ -270,7 +270,7 @@ function TplThumb({ tpl, active, onClick }) {
 /* ═══════════════════════════════════════════════════════
    MAIN COMPONENT
    ═══════════════════════════════════════════════════════ */
-export default function InvoiceBuilder() {
+export default function InvoiceBuilder({ activeId }) {
     const invoices = useAppStore(s => s.invoices) || [];
     const addInvoice = useAppStore(s => s.addInvoice);
     const updateInvoice = useAppStore(s => s.updateInvoice);
@@ -392,9 +392,7 @@ export default function InvoiceBuilder() {
             }
 
             // Then open the WhatsApp chat
-            const instances = useAppStore.getState().instances || [];
-            const activeInstance = instances.find(i => i.status === 'running' || i.status === 'ready');
-            if (!activeInstance) {
+            if (!activeId) {
                 alert('Aucune instance WhatsApp active. Veuillez en démarrer une.');
                 return;
             }
@@ -403,7 +401,7 @@ export default function InvoiceBuilder() {
             const res = await fetch('http://localhost:3000/api/wa/open-chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ instance_id: activeInstance.id, phone: rawPhone })
+                body: JSON.stringify({ instance_id: activeId, phone: rawPhone })
             });
             const data = await res.json();
             if (data.status === 'success') {
@@ -696,6 +694,7 @@ export default function InvoiceBuilder() {
 
                             {/* Line items */}
                             <div>
+                                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
                                 <table className="w-full">
                                     <thead>
                                         <tr className="border-b-2 border-gray-100 dark:border-gray-700">
@@ -708,15 +707,14 @@ export default function InvoiceBuilder() {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-                                            <SortableContext items={draft.items} strategy={verticalListSortingStrategy}>
-                                                {draft.items.map(item => (
-                                                    <SortableLine key={item.id} item={item} onUpdate={updateItem} onRemove={removeItem} currency={draft.currency}/>
-                                                ))}
-                                            </SortableContext>
-                                        </DndContext>
+                                        <SortableContext items={draft.items} strategy={verticalListSortingStrategy}>
+                                            {draft.items.map(item => (
+                                                <SortableLine key={item.id} item={item} onUpdate={updateItem} onRemove={removeItem} currency={draft.currency}/>
+                                            ))}
+                                        </SortableContext>
                                     </tbody>
                                 </table>
+                                </DndContext>
                                 <button onClick={addItem}
                                     className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-emerald-600 hover:text-emerald-700 transition-colors no-print">
                                     <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
