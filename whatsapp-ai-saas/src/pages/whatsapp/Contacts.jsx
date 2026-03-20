@@ -232,12 +232,15 @@ export default function Contacts({ activeId }) {
         showAppNotification(`Page Analysis: ${validCount} valid WhatsApp numbers found, ${invalidCount} invalid/missing.`, 'success');
     };
 
-    const handleOpenChat = async (phone) => {
+    const [openingChatFor, setOpeningChatFor] = useState(null);
+
+    const handleOpenChat = async (phone, contactId) => {
         if (!activeId) {
-            showAppNotification('Please start a WhatsApp session first.', 'error');
+            showAppNotification('Veuillez démarrer une session WhatsApp d\'abord.', 'error');
             return;
         }
 
+        setOpeningChatFor(contactId);
         try {
             const rawPhone = phone.replace(/[^0-9]/g, '');
             const res = await fetch('http://localhost:3000/api/wa/open-chat', {
@@ -247,14 +250,18 @@ export default function Contacts({ activeId }) {
             });
             const data = await res.json();
             if (data.status === 'success') {
-                showAppNotification('WhatsApp Chat successfully opening on active instance', 'success');
-                navigate('/whatsapp-hub'); // Send user back to the webview!
+                showAppNotification('Ouverture de la conversation WhatsApp...', 'success');
+                // Give WhatsApp time to load the chat before navigating
+                await new Promise(r => setTimeout(r, 1200));
+                navigate('/whatsapp-hub');
             } else {
                 throw new Error(data.error);
             }
         } catch (error) {
             console.error(error);
-            showAppNotification('Failed to open chat window', 'error');
+            showAppNotification('Impossible d\'ouvrir la conversation', 'error');
+        } finally {
+            setOpeningChatFor(null);
         }
     };
 
@@ -407,12 +414,17 @@ export default function Contacts({ activeId }) {
                                     <td className="px-6 py-4 text-gray-600 dark:text-gray-400 text-xs">{contact.segment_name || '-'}</td>
                                     <td className="px-6 py-4 text-right">
                                         <button
-                                            onClick={() => handleOpenChat(contact.phone)}
-                                            className="text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300 font-medium text-xs bg-emerald-50 dark:bg-emerald-900/20 px-3 py-1.5 rounded-md transition-colors flex items-center justify-center gap-1 ml-auto"
+                                            onClick={() => handleOpenChat(contact.phone, contact.id)}
+                                            disabled={openingChatFor === contact.id}
+                                            className="text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300 font-medium text-xs bg-emerald-50 dark:bg-emerald-900/20 px-3 py-1.5 rounded-md transition-all flex items-center justify-center gap-1 ml-auto disabled:opacity-50"
                                             title="Contacter sur WhatsApp"
                                         >
-                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-                                            Contacter
+                                            {openingChatFor === contact.id ? (
+                                                <svg className="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                            ) : (
+                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                                            )}
+                                            {openingChatFor === contact.id ? 'Ouverture...' : 'Contacter'}
                                         </button>
                                         <div className="flex justify-end gap-2 mt-2">
                                             <button

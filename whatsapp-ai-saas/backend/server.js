@@ -668,12 +668,11 @@ app.post('/api/wa/contacts/bulk', async (req, res) => {
 });
 
 app.post('/api/wa/contacts', async (req, res) => {
-    const { name, phone, list_id, segment_id } = req.body;
+    const { name, phone, list_id, segment_id, email, address } = req.body;
     try {
-        // Simple insert parsing optional logic where necessary
         const result = await pool.query(
-            'INSERT INTO wa_contacts (name, phone, list_id, segment_id) VALUES ($1, $2, $3, $4) RETURNING *',
-            [name, phone, list_id || null, segment_id || null]
+            'INSERT INTO wa_contacts (name, phone, list_id, segment_id, email, address) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+            [name, phone, list_id || null, segment_id || null, email || null, address || null]
         );
         res.json({ status: 'success', data: result.rows[0] });
     } catch (err) {
@@ -692,11 +691,11 @@ app.get('/api/wa/contacts/:id', async (req, res) => {
 });
 
 app.put('/api/wa/contacts/:id', async (req, res) => {
-    const { name, phone, list_id, segment_id } = req.body;
+    const { name, phone, list_id, segment_id, email, address } = req.body;
     try {
         const result = await pool.query(
-            'UPDATE wa_contacts SET name = $1, phone = $2, list_id = $3, segment_id = $4 WHERE id = $5 RETURNING *',
-            [name, phone, list_id || null, segment_id || null, req.params.id]
+            'UPDATE wa_contacts SET name = $1, phone = $2, list_id = $3, segment_id = $4, email = $5, address = $6 WHERE id = $7 RETURNING *',
+            [name, phone, list_id || null, segment_id || null, email || null, address || null, req.params.id]
         );
         console.log(`[WA] Updated contact ${req.params.id}`);
         res.json({ status: 'success', data: result.rows[0] });
@@ -934,7 +933,20 @@ app.post('/api/wa/verify-contact', async (req, res) => {
 
 // Nodemon trigger
 
-app.listen(PORT, () => {
-    console.log(`[Orchestrator] Running on http://localhost:${PORT}`);
-    console.log(`[Orchestrator] Ready to connect to Electron CDP at port 8315`);
+// --- Phase 18.3: DB Migration — add email + address to wa_contacts ---
+async function runMigrations() {
+    try {
+        await pool.query(`ALTER TABLE wa_contacts ADD COLUMN IF NOT EXISTS email TEXT`);
+        await pool.query(`ALTER TABLE wa_contacts ADD COLUMN IF NOT EXISTS address TEXT`);
+        console.log('[Migration] wa_contacts: email + address columns ensured');
+    } catch (err) {
+        console.warn('[Migration] Skipped (table may not exist yet):', err.message);
+    }
+}
+
+runMigrations().then(() => {
+    app.listen(PORT, () => {
+        console.log(`[Orchestrator] Running on http://localhost:${PORT}`);
+        console.log(`[Orchestrator] Ready to connect to Electron CDP at port 8315`);
+    });
 });

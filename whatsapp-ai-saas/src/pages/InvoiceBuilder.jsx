@@ -1,4 +1,5 @@
-import React, { useState, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import useAppStore from '../store';
 import {
     DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors,
@@ -275,10 +276,52 @@ export default function InvoiceBuilder() {
     const updateInvoice = useAppStore(s => s.updateInvoice);
     const deleteInvoice = useAppStore(s => s.deleteInvoice);
 
+    const navigate = useNavigate();
     const [view, setView] = useState('dashboard');
     const [draft, setDraft] = useState(null);
     const [filterStatus, setFilterStatus] = useState('all');
     const [saved, setSaved] = useState(false);
+
+    // Contact search state
+    const [showContactSearch, setShowContactSearch] = useState(false);
+    const [allContacts, setAllContacts] = useState([]);
+    const [contactSearchQuery, setContactSearchQuery] = useState('');
+    const [contactFilterSegment, setContactFilterSegment] = useState('all');
+    const [sendingWhatsApp, setSendingWhatsApp] = useState(false);
+
+    // Fetch contacts for search
+    useEffect(() => {
+        fetch('http://localhost:3000/api/wa/contacts')
+            .then(r => r.json())
+            .then(d => { if (d.status === 'success') setAllContacts(d.data || []); })
+            .catch(() => {});
+    }, []);
+
+    const contactSegments = useMemo(() => {
+        return [...new Set(allContacts.map(c => c.segment_name).filter(Boolean))];
+    }, [allContacts]);
+
+    const filteredContacts = useMemo(() => {
+        let list = allContacts;
+        if (contactFilterSegment !== 'all') list = list.filter(c => c.segment_name === contactFilterSegment);
+        if (contactSearchQuery) {
+            const q = contactSearchQuery.toLowerCase();
+            list = list.filter(c => (c.name || '').toLowerCase().includes(q) || (c.phone || '').includes(q) || (c.email || '').toLowerCase().includes(q));
+        }
+        return list.slice(0, 20);
+    }, [allContacts, contactFilterSegment, contactSearchQuery]);
+
+    const handleSelectContact = (contact) => {
+        setDraft(d => ({
+            ...d,
+            clientName: contact.name || '',
+            clientAddress: [contact.address, contact.email, contact.phone].filter(Boolean).join('\n'),
+            clientEmail: contact.email || '',
+            clientPhone: contact.phone || '',
+        }));
+        setShowContactSearch(false);
+        setContactSearchQuery('');
+    };
 
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -327,6 +370,53 @@ export default function InvoiceBuilder() {
             win.document.write(html);
             win.document.close();
             setTimeout(() => { win.focus(); win.print(); }, 400);
+        }
+    };
+
+    // Send invoice via WhatsApp
+    const handleSendWhatsApp = async () => {
+        if (!draft || !draft.clientPhone) {
+            alert('Veuillez d\'abord sélectionner un contact avec un numéro de téléphone.');
+            return;
+        }
+        setSendingWhatsApp(true);
+        try {
+            // First export the PDF
+            const html = buildInvoiceHTML(draft);
+            const fileName = `${(draft.invoiceNumber || 'facture').replace(/[^a-zA-Z0-9-]/g, '_')}.pdf`;
+            if (window.electronAPI?.printToPDF) {
+                const result = await window.electronAPI.printToPDF(html, fileName);
+                if (!result?.success && result?.reason !== 'cancelled') {
+                    throw new Error(result?.reason || 'PDF export failed');
+                }
+            }
+
+            // Then open the WhatsApp chat
+            const instances = useAppStore.getState().instances || [];
+            const activeInstance = instances.find(i => i.status === 'running' || i.status === 'ready');
+            if (!activeInstance) {
+                alert('Aucune instance WhatsApp active. Veuillez en démarrer une.');
+                return;
+            }
+
+            const rawPhone = (draft.clientPhone || '').replace(/[^0-9]/g, '');
+            const res = await fetch('http://localhost:3000/api/wa/open-chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ instance_id: activeInstance.id, phone: rawPhone })
+            });
+            const data = await res.json();
+            if (data.status === 'success') {
+                await new Promise(r => setTimeout(r, 1200));
+                navigate('/whatsapp-hub');
+            } else {
+                throw new Error(data.error || 'Failed to open chat');
+            }
+        } catch (err) {
+            console.error('WhatsApp send error:', err);
+            alert('Erreur: ' + err.message);
+        } finally {
+            setSendingWhatsApp(false);
         }
     };
 
@@ -464,6 +554,25 @@ export default function InvoiceBuilder() {
                         className="text-[10px] font-bold border border-gray-200 dark:border-gray-700 rounded-lg px-2.5 py-1.5 bg-transparent text-gray-600 dark:text-gray-300 outline-none cursor-pointer">
                         {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
+                    {/* Contact search button */}
+                    <button onClick={() => setShowContactSearch(true)}
+                        className="h-8 px-3 rounded-lg border border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all flex items-center gap-1.5"
+                        title="Rechercher un contact">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        Contact
+                    </button>
+                    {/* WhatsApp send button */}
+                    <button onClick={handleSendWhatsApp} disabled={sendingWhatsApp || !draft.clientPhone}
+                        className="h-8 px-3 rounded-lg text-xs font-semibold text-white flex items-center gap-1.5 transition-all disabled:opacity-40 active:scale-[.97]"
+                        style={{ background: '#25D366' }}
+                        title="Envoyer via WhatsApp">
+                        {sendingWhatsApp ? (
+                            <svg className="animate-spin h-3.5 w-3.5" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        ) : (
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492l4.624-1.467A11.95 11.95 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818c-2.168 0-4.19-.585-5.931-1.605l-.425-.253-2.742.87.883-2.659-.277-.44A9.778 9.778 0 012.182 12c0-5.414 4.404-9.818 9.818-9.818S21.818 6.586 21.818 12 17.414 21.818 12 21.818z"/></svg>
+                        )}
+                        WhatsApp
+                    </button>
                     <button onClick={handleExportPDF}
                         className="h-8 px-4 rounded-lg border border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all flex items-center gap-1.5">
                         <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
@@ -477,6 +586,53 @@ export default function InvoiceBuilder() {
                     </button>
                 </div>
             </div>
+
+            {/* Contact Search Modal */}
+            {showContactSearch && (
+                <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 bg-black/40 backdrop-blur-sm" onClick={() => setShowContactSearch(false)}>
+                    <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-gray-100 dark:border-gray-800 animate-in" onClick={e => e.stopPropagation()}>
+                        <div className="p-5 border-b border-gray-100 dark:border-gray-800">
+                            <p className="text-sm font-bold text-gray-800 dark:text-white mb-3">Rechercher un contact</p>
+                            <div className="flex gap-2">
+                                <input
+                                    autoFocus
+                                    className="flex-1 h-9 px-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm text-gray-800 dark:text-gray-200 outline-none focus:ring-2 ring-emerald-400 placeholder:text-gray-400 transition"
+                                    placeholder="Nom, email ou téléphone..."
+                                    value={contactSearchQuery}
+                                    onChange={e => setContactSearchQuery(e.target.value)}
+                                />
+                                <select value={contactFilterSegment} onChange={e => setContactFilterSegment(e.target.value)}
+                                    className="h-9 px-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-xs font-semibold text-gray-600 dark:text-gray-300 outline-none cursor-pointer">
+                                    <option value="all">Tous segments</option>
+                                    {contactSegments.map(s => <option key={s} value={s}>{s}</option>)}
+                                </select>
+                            </div>
+                        </div>
+                        <div className="max-h-72 overflow-y-auto divide-y divide-gray-50 dark:divide-gray-800">
+                            {filteredContacts.length === 0 ? (
+                                <div className="text-center py-10 text-gray-400 text-sm">Aucun contact trouvé</div>
+                            ) : filteredContacts.map(c => (
+                                <button key={c.id} onClick={() => handleSelectContact(c)}
+                                    className="w-full text-left px-5 py-3 hover:bg-emerald-50 dark:hover:bg-emerald-900/10 transition-colors flex items-center justify-between group">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold" style={{ background: '#05966915', color: '#059669' }}>
+                                            {(c.name || '?').slice(0,2).toUpperCase()}
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">{c.name}</p>
+                                            <p className="text-[11px] text-gray-400">{c.phone} {c.email ? `· ${c.email}` : ''}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        {c.segment_name && <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500">{c.segment_name}</span>}
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" className="text-gray-300 group-hover:text-emerald-500 transition-colors"><polyline points="9 18 15 12 9 6"/></svg>
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Main body */}
             <div className="flex flex-1 min-h-0">
