@@ -1,7 +1,6 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const os = require('os');
 
 // Mute CSP warning in development
 process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true';
@@ -98,31 +97,6 @@ app.whenReady().then(() => {
 
         } catch (err) {
             console.error('[Main] PDF export error:', err);
-            return { success: false, reason: err.message };
-        }
-    });
-
-    // Phase 18.3: Save PDF to temp file (for WhatsApp send)
-    ipcMain.handle('save-pdf-temp', async (event, htmlContent, fileName) => {
-        try {
-            const tempWin = new BrowserWindow({ show: false, width: 800, height: 1100 });
-            await tempWin.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`);
-            await new Promise(r => setTimeout(r, 500));
-            const pdfBuffer = await tempWin.webContents.printToPDF({
-                printBackground: true,
-                preferCSSPageSize: true,
-                margins: { marginType: 'default' }
-            });
-            tempWin.close();
-
-            const tempDir = path.join(os.tmpdir(), 'whatsai-invoices');
-            if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
-            const filePath = path.join(tempDir, fileName);
-            fs.writeFileSync(filePath, pdfBuffer);
-            console.log('[Main] PDF saved to temp:', filePath);
-            return { success: true, path: filePath };
-        } catch (err) {
-            console.error('[Main] Temp PDF error:', err);
             return { success: false, reason: err.message };
         }
     });

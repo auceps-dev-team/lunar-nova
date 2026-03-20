@@ -69,6 +69,8 @@ export default function ContactImport() {
                 const contact = {
                     name: '',
                     phone: '',
+                    email: '',
+                    address: '',
                     segment_name: '',
                 };
 
@@ -77,6 +79,8 @@ export default function ContactImport() {
                     const mappedTo = mapping[header];
                     if (mappedTo === 'name') contact.name = row[header] || '';
                     if (mappedTo === 'phone') contact.phone = row[header] || '';
+                    if (mappedTo === 'email') contact.email = row[header] || '';
+                    if (mappedTo === 'address') contact.address = row[header] || '';
                     if (mappedTo === 'segment') contact.segment_name = row[header] || '';
                     // If multiple columns map to same (e.g., location), could append, but screenshot only uses Catégorie
                 });
@@ -222,6 +226,8 @@ export default function ContactImport() {
                                         <option value="none">Ne pas importer</option>
                                         <option value="name">Nom / Name</option>
                                         <option value="phone">Numéro / Phone</option>
+                                        <option value="email">Email</option>
+                                        <option value="address">Adresse / Address</option>
                                         <option value="segment">Catégorie / Segment</option>
                                     </select>
                                 </div>

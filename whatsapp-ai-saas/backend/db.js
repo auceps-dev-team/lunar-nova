@@ -95,6 +95,18 @@ async function initDB() {
             // Ignore error if column already exists (SQLite throws if column exists)
         }
 
+        // Migration for Phase 18.3: Add 'email' and 'address' columns
+        try {
+            await client.query("ALTER TABLE wa_contacts ADD COLUMN email TEXT");
+        } catch (err) {
+            // Column already exists
+        }
+        try {
+            await client.query("ALTER TABLE wa_contacts ADD COLUMN address TEXT");
+        } catch (err) {
+            // Column already exists
+        }
+
         // Phase 15: AI Modularity
         await client.query(`
             CREATE TABLE IF NOT EXISTS app_settings (

@@ -329,7 +329,21 @@ export default function InvoiceBuilder({ activeId }) {
     );
 
     // KPI
-    const totalRev = invoices.reduce((s, i) => s + calc(i.items, i.taxRate).total, 0);
+    const revByCurrency = useMemo(() => {
+        const acc = {};
+        invoices.forEach(inv => {
+            const { total } = calc(inv.items, inv.taxRate);
+            const cur = inv.currency || 'EUR';
+            acc[cur] = (acc[cur] || 0) + total;
+        });
+        return acc;
+    }, [invoices]);
+
+    const primaryCurrency = Object.keys(revByCurrency)[0] || 'EUR';
+    const totalRevStr = Object.keys(revByCurrency).length === 0 
+        ? fmt(0) 
+        : Object.entries(revByCurrency).map(([cur, amt]) => fmt(amt, cur)).join(' + ');
+
     const paidN = invoices.filter(i => i.status === 'paid').length;
     const pendN = invoices.filter(i => i.status === 'pending').length;
     const chartData = useMemo(() => monthlyRevenue(invoices), [invoices]);
@@ -379,60 +393,37 @@ export default function InvoiceBuilder({ activeId }) {
             alert('Veuillez d\'abord sélectionner un contact avec un numéro de téléphone.');
             return;
         }
-        if (!activeId) {
-            alert('Aucune instance WhatsApp active. Veuillez en démarrer une.');
-            return;
-        }
         setSendingWhatsApp(true);
         try {
-            // Step 1: Generate PDF to temp file
+            // First export the PDF
             const html = buildInvoiceHTML(draft);
             const fileName = `${(draft.invoiceNumber || 'facture').replace(/[^a-zA-Z0-9-]/g, '_')}.pdf`;
-
-            let pdfPath = null;
-            if (window.electronAPI?.savePdfTemp) {
-                const result = await window.electronAPI.savePdfTemp(html, fileName);
-                if (result?.success) {
-                    pdfPath = result.path;
-                } else {
-                    throw new Error(result?.reason || 'Échec de la génération PDF');
+            if (window.electronAPI?.printToPDF) {
+                const result = await window.electronAPI.printToPDF(html, fileName);
+                if (!result?.success && result?.reason !== 'cancelled') {
+                    throw new Error(result?.reason || 'PDF export failed');
                 }
-            } else {
-                alert('L\'envoi WhatsApp n\'est disponible que dans l\'application Electron.');
+            }
+
+            // Then open the WhatsApp chat
+            if (!activeId) {
+                alert('Aucune instance WhatsApp active. Veuillez en démarrer une.');
                 return;
             }
 
-            // Step 2: Open the WhatsApp chat
             const rawPhone = (draft.clientPhone || '').replace(/[^0-9]/g, '');
-            const openRes = await fetch('http://localhost:3000/api/wa/open-chat', {
+            const res = await fetch('http://localhost:3000/api/wa/open-chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ instance_id: activeId, phone: rawPhone })
             });
-            const openData = await openRes.json();
-            if (openData.status !== 'success') {
-                throw new Error(openData.error || 'Impossible d\'ouvrir le chat');
-            }
-
-            // Step 3: Wait for chat to load, then send the file
-            await new Promise(r => setTimeout(r, 3000));
-
-            const sendRes = await fetch('http://localhost:3000/api/wa/send-file', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ instance_id: activeId, filePath: pdfPath })
-            });
-            const sendData = await sendRes.json();
-
-            if (sendData.status === 'success') {
-                navigate('/whatsapp-hub');
-            } else if (sendData.status === 'partial') {
-                alert(sendData.message);
+            const data = await res.json();
+            if (data.status === 'success') {
+                await new Promise(r => setTimeout(r, 1200));
                 navigate('/whatsapp-hub');
             } else {
-                throw new Error(sendData.error || 'Impossible d\'envoyer le fichier');
+                throw new Error(data.error || 'Failed to open chat');
             }
-
         } catch (err) {
             console.error('WhatsApp send error:', err);
             alert('Erreur: ' + err.message);
@@ -478,7 +469,7 @@ export default function InvoiceBuilder({ activeId }) {
                 {/* KPIs */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                     <KPI label="Total factures" value={invoices.length} icon="📄" accent="#059669"/>
-                    <KPI label="Chiffre d'affaires" value={fmt(totalRev)} icon="💰" accent="#0891b2"/>
+                    <KPI label="Chiffre d'affaires" value={totalRevStr} icon="💰" accent="#0891b2"/>
                     <KPI label="Payées" value={paidN} sub={`sur ${invoices.length}`} icon="✅" accent="#16a34a"/>
                     <KPI label="En attente" value={pendN} icon="⏳" accent="#d97706"/>
                 </div>
@@ -491,7 +482,7 @@ export default function InvoiceBuilder({ activeId }) {
                             <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9"/>
                             <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false}/>
                             <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false}/>
-                            <Tooltip formatter={v => fmt(v)} contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 8px 30px rgba(0,0,0,.08)', fontSize: 12 }}/>
+                            <Tooltip formatter={v => fmt(v, primaryCurrency)} contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 8px 30px rgba(0,0,0,.08)', fontSize: 12 }}/>
                             <Bar dataKey="rev" fill="url(#barGrad)" radius={[6,6,0,0]}/>
                             <defs><linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#059669"/><stop offset="100%" stopColor="#34d399"/></linearGradient></defs>
                         </BarChart>

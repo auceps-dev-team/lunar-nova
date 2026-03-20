@@ -1,8 +1,6 @@
 const fs = require('fs');
 const path = require('path');
 
-// PersonaOrchestrator: Manages dynamic loading of AI agents from the personas folder.
-
 class PersonaOrchestrator {
     constructor() {
         this.personas = new Map();
