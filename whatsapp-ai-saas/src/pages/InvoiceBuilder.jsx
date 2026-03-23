@@ -16,7 +16,7 @@ import {
 /* ═══════════════════════════════════════════════════════
    CONSTANTS
    ═══════════════════════════════════════════════════════ */
-const CURRENCIES = ['EUR', 'USD', 'GBP', 'CHF', 'XOF'];
+const CURRENCIES = ['XOF', 'EUR', 'USD', 'GBP', 'CHF'];
 
 const STATUS_MAP = {
     paid:    { label: 'Payée',     dot: '#10b981', bg: '#ecfdf5', text: '#047857' },
@@ -34,7 +34,7 @@ function calc(items, taxRate = 0) {
     return { sub, tax, total: sub + tax };
 }
 
-function fmt(n, cur = 'EUR') {
+function fmt(n, cur = 'XOF') {
     return n.toLocaleString('fr-FR', { style: 'currency', currency: cur, minimumFractionDigits: 2 });
 }
 
@@ -60,7 +60,7 @@ function freshInvoice() {
         issueDate: today.toISOString().split('T')[0],
         dueDate: due.toISOString().split('T')[0],
         items: [{ id: `li-${Date.now()}`, description: '', qty: 1, price: 0 }],
-        taxRate: 20, notes: '', status: 'draft', template: 'clean', currency: 'EUR',
+        taxRate: 20, notes: '', status: 'draft', template: 'clean', currency: 'XOF',
         createdAt: today.toISOString(),
     };
 }
