@@ -87,6 +87,7 @@ const Dashboard = () => {
     const instances = useAppStore(state => state.instances) || [];
     const copilotCount = useAppStore(state => state.copilotRepliesGenerated) || 0;
     const tasks = useAppStore(state => state.tasks) || [];
+    const invoices = useAppStore(state => state.invoices) || [];
     const userProfile = useAppStore(state => state.userProfile) || {};
     const language = useAppStore(state => state.appSettings?.language) || 'en';
 
@@ -140,15 +141,15 @@ const Dashboard = () => {
                 <KPICard 
                     icon={Icons.fileText} 
                     label={t(language, 'automatedInvoices') || 'Factures Générées'} 
-                    value="0" 
-                    sub="Facturation automatique" 
+                    value={invoices.length.toString()} 
+                    sub="Factures créées" 
                     color={C.blue} 
                 />
                 <KPICard 
                     icon={Icons.checkCircle} 
                     label={t(language, 'tasksCompleted') || 'Tâches Complétées'} 
-                    value={`${completedTasksCount}/${totalTasksCount}`} 
-                    sub={`${completedPercentage}% d'avancement`} 
+                    value={completedTasksCount.toString()} 
+                    sub={`${completedPercentage}% progression (${totalTasksCount} au total)`} 
                     color={C.amber} 
                 />
             </div>
