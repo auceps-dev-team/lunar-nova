@@ -12,6 +12,7 @@ export default function Contacts({ activeId }) {
     const [sortDirection, setSortDirection] = useState('desc');
     const [filterStatus, setFilterStatus] = useState('all');
     const [filterSegment, setFilterSegment] = useState('all');
+    const [filterList, setFilterList] = useState('all');
 
     // Bulk Actions State
     const [selectedContacts, setSelectedContacts] = useState([]);
@@ -122,6 +123,7 @@ export default function Contacts({ activeId }) {
 
     // Derive unique segments for the filter dropdown
     const uniqueSegments = [...new Set(contacts.map(c => c.segment_name).filter(Boolean))];
+    const uniqueLists = [...new Set(contacts.map(c => c.list_name).filter(Boolean))];
     // Also get segments with IDs for bulk update modal
     const segments = [...new Map(contacts.filter(c => c.segment_name && c.segment_id).map(item => [item.segment_id, { id: item.segment_id, name: item.segment_name }])).values()];
 
@@ -130,6 +132,7 @@ export default function Contacts({ activeId }) {
     let processedContacts = contacts.filter(c => {
         let matchStatus = true;
         let matchSegment = true;
+        let matchList = true;
 
         // Status filter: unverified, valid, invalid
         if (filterStatus !== 'all') {
@@ -141,7 +144,12 @@ export default function Contacts({ activeId }) {
             matchSegment = c.segment_name === filterSegment;
         }
 
-        return matchStatus && matchSegment;
+        // List filter
+        if (filterList !== 'all') {
+            matchList = c.list_name === filterList;
+        }
+
+        return matchStatus && matchSegment && matchList;
     });
 
     // Apply sorting
@@ -422,6 +430,20 @@ export default function Contacts({ activeId }) {
                     </select>
                 </div>
 
+                <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Liste:</label>
+                    <select
+                        value={filterList}
+                        onChange={(e) => { setFilterList(e.target.value); setCurrentPage(1); }}
+                        className="bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-gray-800 dark:text-gray-200 text-sm rounded-lg py-1.5 px-3 focus:ring-emerald-500 focus:border-emerald-500 outline-none max-w-[200px]"
+                    >
+                        <option value="all">All Lists</option>
+                        {uniqueLists.map(lst => (
+                            <option key={lst} value={lst}>{lst}</option>
+                        ))}
+                    </select>
+                </div>
+
                 <div className="ml-auto text-sm text-gray-500 dark:text-gray-400 font-medium">
                     {totalFiltered} Contacts Found
                 </div>
@@ -455,6 +477,7 @@ export default function Contacts({ activeId }) {
                                 <th className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800">Phone</th>
                                 <th className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800">Email</th>
                                 <th className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800">Adresse</th>
+                                <th className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800">Liste</th>
                                 <th className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800">Segment</th>
                                 <th className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800 text-right min-w-[150px]">Action</th>
                             </tr>
@@ -462,13 +485,13 @@ export default function Contacts({ activeId }) {
                         <tbody className="divide-y divide-gray-100 dark:divide-zinc-800 text-gray-800 dark:text-zinc-200">
                             {isLoading ? (
                                 <tr>
-                                    <td colSpan="8" className="px-6 py-12 text-center text-gray-500 dark:text-zinc-500">
+                                    <td colSpan="9" className="px-6 py-12 text-center text-gray-500 dark:text-zinc-500">
                                         Loading contacts...
                                     </td>
                                 </tr>
                             ) : contactsOnPage.length === 0 ? (
                                 <tr>
-                                    <td colSpan="8" className="px-6 py-12 text-center text-gray-500 dark:text-zinc-500">
+                                    <td colSpan="9" className="px-6 py-12 text-center text-gray-500 dark:text-zinc-500">
                                         No contacts found.
                                     </td>
                                 </tr>
@@ -495,6 +518,7 @@ export default function Contacts({ activeId }) {
                                     <td className="px-6 py-4 font-mono text-gray-600 dark:text-gray-400">{contact.phone}</td>
                                     <td className="px-6 py-4 text-gray-500 dark:text-gray-400 text-xs truncate max-w-[180px]" title={contact.email || ''}>{contact.email || '-'}</td>
                                     <td className="px-6 py-4 text-gray-500 dark:text-gray-400 text-xs truncate max-w-[160px]" title={contact.address || ''}>{contact.address || '-'}</td>
+                                    <td className="px-6 py-4 text-gray-600 dark:text-gray-400 text-xs truncate max-w-[120px]" title={contact.list_name || ''}>{contact.list_name || '-'}</td>
                                     <td className="px-6 py-4 text-gray-600 dark:text-gray-400 text-xs">{contact.segment_name || '-'}</td>
                                     <td className="px-6 py-4 text-right">
                                         <button
