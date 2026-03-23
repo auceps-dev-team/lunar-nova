@@ -13,6 +13,8 @@ export default function Contacts({ activeId }) {
     const [filterStatus, setFilterStatus] = useState('all');
     const [filterSegment, setFilterSegment] = useState('all');
     const [filterList, setFilterList] = useState('all');
+    const [allSegments, setAllSegments] = useState([]);
+    const [allLists, setAllLists] = useState([]);
 
     // Bulk Actions State
     const [selectedContacts, setSelectedContacts] = useState([]);
@@ -108,7 +110,23 @@ export default function Contacts({ activeId }) {
     useEffect(() => {
         fetchContacts();
         fetchSettings();
+        fetchMetadata();
     }, []);
+
+    const fetchMetadata = async () => {
+        try {
+            const [listsRes, segmentsRes] = await Promise.all([
+                fetch('http://localhost:3000/api/wa/contact-lists'),
+                fetch('http://localhost:3000/api/wa/segments')
+            ]);
+            const listsData = await listsRes.json();
+            const segmentsData = await segmentsRes.json();
+            if (listsData.status === 'success') setAllLists(listsData.data);
+            if (segmentsData.status === 'success') setAllSegments(segmentsData.data);
+        } catch (error) {
+            console.error('Fetch metadata error:', error);
+        }
+    };
 
     const handleDelete = async (id) => {
         if (!window.confirm("Are you sure you want to delete this contact?")) return;
@@ -404,7 +422,7 @@ export default function Contacts({ activeId }) {
                             </button>
                             <button
                                 onClick={() => setIsBulkListEditModalOpen(true)}
-                                className="text-sm font-medium text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 transition-colors ml-2"
+                                className="text-sm font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors ml-2"
                             >
                                 Edit List
                             </button>
@@ -665,7 +683,7 @@ export default function Contacts({ activeId }) {
                                         required
                                     >
                                         <option value="">Choose a segment</option>
-                                        {segments.map(s => (
+                                        {allSegments.map(s => (
                                             <option key={s.id} value={s.id}>{s.name}</option>
                                         ))}
                                     </select>
@@ -715,13 +733,13 @@ export default function Contacts({ activeId }) {
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Select New List</label>
                                     <select
-                                        className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-purple-500 focus:border-purple-500 block p-2.5 dark:bg-zinc-800 dark:border-zinc-700 dark:placeholder-gray-400 dark:text-white transition-colors"
+                                        className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-zinc-800 dark:border-zinc-700 dark:placeholder-gray-400 dark:text-white transition-colors"
                                         value={bulkListId}
                                         onChange={(e) => setBulkListId(e.target.value)}
                                         required
                                     >
                                         <option value="">Choose a list</option>
-                                        {listsMap.map(l => (
+                                        {allLists.map(l => (
                                             <option key={l.id} value={l.id}>{l.name}</option>
                                         ))}
                                     </select>
@@ -738,7 +756,7 @@ export default function Contacts({ activeId }) {
                                     <button
                                         type="submit"
                                         disabled={isSubmittingBulk}
-                                        className="flex-1 text-white bg-purple-600 hover:bg-purple-700 focus:ring-4 focus:outline-none focus:ring-purple-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors disabled:opacity-50"
+                                        className="flex-1 text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors disabled:opacity-50"
                                     >
                                         {isSubmittingBulk ? 'Updating...' : 'Update'}
                                     </button>

@@ -27,10 +27,10 @@ const pool = {
 
         if (isSelect) {
             const rows = await db.all(sqliteText, params);
-            return { rows };
+            return { rows, rowCount: rows.length };
         } else {
             const result = await db.run(sqliteText, params);
-            return { rows: [], lastID: result.lastID, changes: result.changes };
+            return { rows: [], lastID: result.lastID, changes: result.changes, rowCount: result.changes };
         }
     },
 
@@ -103,6 +103,13 @@ async function initDB() {
         }
         try {
             await client.query("ALTER TABLE wa_contacts ADD COLUMN address TEXT");
+        } catch (err) {
+            // Column already exists
+        }
+
+        // Migration for missing list_id
+        try {
+            await client.query("ALTER TABLE wa_contacts ADD COLUMN list_id INTEGER REFERENCES wa_contact_lists(id) ON DELETE SET NULL");
         } catch (err) {
             // Column already exists
         }
