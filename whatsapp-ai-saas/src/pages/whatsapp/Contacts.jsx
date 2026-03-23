@@ -7,10 +7,17 @@ export default function Contacts({ activeId }) {
     const [isLoading, setIsLoading] = useState(true);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [contactStatus, setContactStatus] = useState({});
-    const [currentPage, setCurrentPage] = useState(1);
+    const [currentPage, setCurrentPage] = useState(() => {
+        const saved = sessionStorage.getItem('wa_contacts_page');
+        return saved ? parseInt(saved, 10) : 1;
+    });
     const [sortField, setSortField] = useState('id');
     const [sortDirection, setSortDirection] = useState('desc');
     const [filterStatus, setFilterStatus] = useState('all');
+
+    useEffect(() => {
+        sessionStorage.setItem('wa_contacts_page', currentPage.toString());
+    }, [currentPage]);
     const [filterSegment, setFilterSegment] = useState('all');
     const [filterList, setFilterList] = useState('all');
     const [allSegments, setAllSegments] = useState([]);
