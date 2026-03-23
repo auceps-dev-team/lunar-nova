@@ -84,6 +84,23 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 const Dashboard = () => {
+    const [contactAnalytics, setContactAnalytics] = React.useState(null);
+
+    React.useEffect(() => {
+        const fetchAnalytics = async () => {
+            try {
+                const res = await fetch('http://localhost:3000/api/wa/analytics');
+                const data = await res.json();
+                if (data.status === 'success') {
+                    setContactAnalytics(data.data);
+                }
+            } catch (err) {
+                console.error("Failed to fetch contact analytics", err);
+            }
+        };
+        fetchAnalytics();
+    }, []);
+
     const instances = useAppStore(state => state.instances) || [];
     const copilotCount = useAppStore(state => state.copilotRepliesGenerated) || 0;
     const tasks = useAppStore(state => state.tasks) || [];
@@ -124,6 +141,20 @@ const Dashboard = () => {
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 28 }}>
+                <KPICard 
+                    icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>} 
+                    label="Contacts Total" 
+                    value={(contactAnalytics?.totalContacts || 0).toLocaleString()} 
+                    sub="Dans la base de données" 
+                    color={C.primary2} 
+                />
+                <KPICard 
+                    icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path><circle cx="12" cy="10" r="3"></circle></svg>} 
+                    label="Messages Envoyés" 
+                    value={(contactAnalytics?.totalMessagesSent || 0).toLocaleString()} 
+                    sub="Initiés via la plateforme" 
+                    color={C.accent} 
+                />
                 <KPICard 
                     icon={Icons.phone} 
                     label={t(language, 'activeInstances') || 'Instances WhatsApp'} 

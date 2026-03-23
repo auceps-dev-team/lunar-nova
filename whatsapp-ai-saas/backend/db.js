@@ -114,6 +114,16 @@ async function initDB() {
             // Column already exists
         }
 
+        // Phase 19.5: Message Tracking
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS wa_message_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                contact_id INTEGER REFERENCES wa_contacts(id) ON DELETE SET NULL,
+                message TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        `);
+
         // Phase 15: AI Modularity
         await client.query(`
             CREATE TABLE IF NOT EXISTS app_settings (

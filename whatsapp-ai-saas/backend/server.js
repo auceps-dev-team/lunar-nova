@@ -825,6 +825,16 @@ app.post('/api/wa/open-chat', async (req, res) => {
                         .replace(/\[Adresse\]/gi, contact.address || '');
                 }
             }
+            
+            // Phase 19.5: Message Tracking
+            try {
+                await pool.query(
+                    'INSERT INTO wa_message_logs (contact_id, message) VALUES ($1, $2)',
+                    [contact_id, formattedMessage || 'Direct link manually opened']
+                );
+            } catch (logErr) {
+                console.error('[WA] Silently caught error logging message:', logErr);
+            }
         }
     } catch (dbErr) {
         console.error("Error formatting template", dbErr);
@@ -999,6 +1009,45 @@ app.post('/api/wa/verify-contact', async (req, res) => {
 // Nodemon trigger
 
 // Nodemon trigger
+
+// --- Phase 19.5: Contact Analytics Endpoint ---
+app.get('/api/wa/analytics', async (req, res) => {
+    try {
+        const totalRes = await pool.query('SELECT COUNT(*) as count FROM wa_contacts');
+        const segmentRes = await pool.query(`
+            SELECT s.name, COUNT(c.id) as count 
+            FROM wa_segments s 
+            LEFT JOIN wa_contacts c ON s.id = c.segment_id 
+            GROUP BY s.id, s.name
+        `);
+        const listRes = await pool.query(`
+            SELECT l.name, COUNT(c.id) as count 
+            FROM wa_contact_lists l 
+            LEFT JOIN wa_contacts c ON l.id = c.list_id 
+            GROUP BY l.id, l.name
+        `);
+        const statusRes = await pool.query(`
+            SELECT status, COUNT(id) as count 
+            FROM wa_contacts 
+            GROUP BY status
+        `);
+        const messagesRes = await pool.query('SELECT COUNT(*) as count FROM wa_message_logs');
+
+        res.json({
+            status: 'success',
+            data: {
+                totalContacts: parseInt(totalRes.rows[0]?.count || 0, 10),
+                bySegment: segmentRes.rows.map(r => ({ name: r.name, count: parseInt(r.count, 10) })),
+                byList: listRes.rows.map(r => ({ name: r.name, count: parseInt(r.count, 10) })),
+                byStatus: statusRes.rows.map(r => ({ name: r.status, count: parseInt(r.count, 10) })),
+                totalMessagesSent: parseInt(messagesRes.rows[0]?.count || 0, 10)
+            }
+        });
+    } catch (err) {
+        console.error('[WA] Error fetching analytics:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
 
 app.listen(PORT, () => {
     console.log(`[Orchestrator] Running on http://localhost:${PORT}`);

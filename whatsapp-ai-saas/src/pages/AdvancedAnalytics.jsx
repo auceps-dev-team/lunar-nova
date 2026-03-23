@@ -264,6 +264,22 @@ export default function AdvancedAnalytics() {
     const userProfile  = useAppStore(s => s.userProfile) || {};
 
     const [activeTab, setActiveTab] = useState('overview');
+    const [contactAnalytics, setContactAnalytics] = useState(null);
+
+    React.useEffect(() => {
+        const fetchAnalytics = async () => {
+            try {
+                const res = await fetch('http://localhost:3000/api/wa/analytics');
+                const data = await res.json();
+                if (data.status === 'success') {
+                    setContactAnalytics(data.data);
+                }
+            } catch (err) {
+                console.error("Failed to fetch contact analytics", err);
+            }
+        };
+        fetchAnalytics();
+    }, []);
 
     // ── Computed metrics ──────────────────────────────────────────
     const taskStats = useMemo(() => buildTaskStats(tasks), [tasks]);
@@ -317,6 +333,7 @@ export default function AdvancedAnalytics() {
     // ── Tabs ──────────────────────────────────────────────────────
     const TABS = [
         { id: 'overview',  label: 'Vue d\'ensemble' },
+        { id: 'audience',  label: 'Audience WA' },
         { id: 'agents',    label: 'Agents IA' },
         { id: 'revenue',   label: 'Revenus' },
         { id: 'tasks',     label: 'Tâches' },
@@ -429,6 +446,68 @@ export default function AdvancedAnalytics() {
                                 </>
                             ) : (
                                 <div style={{ textAlign: 'center', padding: '40px 0', color: C.gray400, fontSize: 13 }}>Aucune tâche</div>
+                            )}
+                        </Panel>
+                    </div>
+                </div>
+            )}
+
+            {/* ════════════ TAB: AUDIENCE WA ════════════ */}
+            {activeTab === 'audience' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
+                        <KPICard icon={Icons.users} label="Contacts Total" value={(contactAnalytics?.totalContacts || 0).toLocaleString()} color={C.primary2} />
+                        <KPICard icon={Icons.message} label="Messages Envoyés" value={(contactAnalytics?.totalMessagesSent || 0).toLocaleString()} color={C.accent} />
+                        <KPICard icon={Icons.checkCircle} label="Contacts Valides" value={(contactAnalytics?.byStatus?.find(s => s.name === 'valid')?.count || 0).toLocaleString()} color={C.blue} />
+                    </div>
+                    
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
+                        <Panel>
+                            <SectionTitle sub="Répartition de l'audience globale">Contacts par Segment</SectionTitle>
+                            {contactAnalytics?.bySegment?.length > 0 ? (
+                                <ResponsiveContainer width="100%" height={220}>
+                                    <PieChart>
+                                        <Pie data={contactAnalytics.bySegment} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={2} dataKey="count" nameKey="name">
+                                            {contactAnalytics.bySegment.map((e, i) => <Cell key={i} fill={[C.primary2, C.accent, C.blue, C.amber, C.purple, C.gray500][i % 6]} />)}
+                                        </Pie>
+                                        <Tooltip />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            ) : (
+                                <div style={{ textAlign: 'center', padding: '40px 0', color: C.gray400, fontSize: 13 }}>Aucune donnée</div>
+                            )}
+                        </Panel>
+
+                        <Panel>
+                            <SectionTitle sub="Volume par liste de diffusion">Contacts par Liste</SectionTitle>
+                            {contactAnalytics?.byList?.length > 0 ? (
+                                <ResponsiveContainer width="100%" height={220}>
+                                    <BarChart data={contactAnalytics.byList} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={C.gray200} />
+                                        <XAxis dataKey="name" tick={{ fontSize: 11, fill: C.gray400 }} axisLine={false} tickLine={false} />
+                                        <YAxis tick={{ fontSize: 11, fill: C.gray400 }} axisLine={false} tickLine={false} />
+                                        <Tooltip content={<CustomTooltip />} />
+                                        <Bar dataKey="count" name="Contacts" fill={C.blue} radius={[4, 4, 0, 0]} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            ) : (
+                                <div style={{ textAlign: 'center', padding: '40px 0', color: C.gray400, fontSize: 13 }}>Aucune donnée</div>
+                            )}
+                        </Panel>
+                        
+                        <Panel>
+                            <SectionTitle sub="Santé de la base de données">Vérification des numéros</SectionTitle>
+                            {contactAnalytics?.byStatus?.length > 0 ? (
+                                <ResponsiveContainer width="100%" height={220}>
+                                    <PieChart>
+                                        <Pie data={contactAnalytics.byStatus} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={2} dataKey="count" nameKey="name">
+                                            {contactAnalytics.byStatus.map((e, i) => <Cell key={i} fill={e.name === 'valid' ? C.primary2 : (e.name === 'invalid' ? C.red : C.gray400)} />)}
+                                        </Pie>
+                                        <Tooltip />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            ) : (
+                                <div style={{ textAlign: 'center', padding: '40px 0', color: C.gray400, fontSize: 13 }}>Aucune donnée</div>
                             )}
                         </Panel>
                     </div>
