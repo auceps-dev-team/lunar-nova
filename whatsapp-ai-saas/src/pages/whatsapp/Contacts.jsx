@@ -23,6 +23,27 @@ export default function Contacts({ activeId }) {
     const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
     const [dynamicTemplate, setDynamicTemplate] = useState('');
     const [isSavingTemplate, setIsSavingTemplate] = useState(false);
+    const templateTextareaRef = useRef(null);
+
+    const insertVariable = (variable) => {
+        const textarea = templateTextareaRef.current;
+        if (textarea) {
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const textBefore = dynamicTemplate.substring(0, start);
+            const textAfter = dynamicTemplate.substring(end);
+            const newValue = textBefore + variable + textAfter;
+            setDynamicTemplate(newValue);
+            
+            // Re-focus and set cursor position (setTimeout to allow React state update)
+            setTimeout(() => {
+                textarea.focus();
+                textarea.setSelectionRange(start + variable.length, start + variable.length);
+            }, 0);
+        } else {
+            setDynamicTemplate(prev => prev + variable);
+        }
+    };
 
     const itemsPerPage = 10;
 
@@ -630,6 +651,7 @@ export default function Contacts({ activeId }) {
                             <form onSubmit={handleSaveTemplate} className="space-y-4">
                                 <div>
                                     <textarea
+                                        ref={templateTextareaRef}
                                         value={dynamicTemplate}
                                         onChange={(e) => setDynamicTemplate(e.target.value)}
                                         rows={5}
@@ -638,9 +660,9 @@ export default function Contacts({ activeId }) {
                                     ></textarea>
                                     <div className="flex flex-wrap items-center gap-2 mt-2">
                                         <span className="text-xs text-gray-500 dark:text-gray-400">Cliquez pour insérer :</span>
-                                        <button type="button" onClick={() => setDynamicTemplate(prev => prev + '[Nom] ')} className="text-[11px] bg-gray-100 dark:bg-zinc-800 px-2 py-1 rounded text-emerald-600 dark:text-emerald-400 font-mono hover:bg-gray-200 dark:hover:bg-zinc-700 transition">[Nom]</button>
-                                        <button type="button" onClick={() => setDynamicTemplate(prev => prev + '[Email] ')} className="text-[11px] bg-gray-100 dark:bg-zinc-800 px-2 py-1 rounded text-emerald-600 dark:text-emerald-400 font-mono hover:bg-gray-200 dark:hover:bg-zinc-700 transition">[Email]</button>
-                                        <button type="button" onClick={() => setDynamicTemplate(prev => prev + '[Adresse] ')} className="text-[11px] bg-gray-100 dark:bg-zinc-800 px-2 py-1 rounded text-emerald-600 dark:text-emerald-400 font-mono hover:bg-gray-200 dark:hover:bg-zinc-700 transition">[Adresse]</button>
+                                        <button type="button" onClick={() => insertVariable('[Nom]')} className="text-[11px] bg-gray-100 dark:bg-zinc-800 px-2 py-1 rounded text-emerald-600 dark:text-emerald-400 font-mono hover:bg-gray-200 dark:hover:bg-zinc-700 transition">[Nom]</button>
+                                        <button type="button" onClick={() => insertVariable('[Email]')} className="text-[11px] bg-gray-100 dark:bg-zinc-800 px-2 py-1 rounded text-emerald-600 dark:text-emerald-400 font-mono hover:bg-gray-200 dark:hover:bg-zinc-700 transition">[Email]</button>
+                                        <button type="button" onClick={() => insertVariable('[Adresse]')} className="text-[11px] bg-gray-100 dark:bg-zinc-800 px-2 py-1 rounded text-emerald-600 dark:text-emerald-400 font-mono hover:bg-gray-200 dark:hover:bg-zinc-700 transition">[Adresse]</button>
                                     </div>
                                 </div>
 
