@@ -778,8 +778,29 @@ app.delete('/api/wa/contacts/:id', async (req, res) => {
 });
 
 app.post('/api/wa/open-chat', async (req, res) => {
-    const { instance_id, phone } = req.body;
+    const { instance_id, phone, contact_id } = req.body;
     if (!instance_id || !phone) return res.status(400).json({ error: 'Missing instance_id or phone' });
+
+    let formattedMessage = '';
+    
+    try {
+        if (contact_id) {
+            const contactRes = await pool.query('SELECT * FROM wa_contacts WHERE id = $1', [contact_id]);
+            const settingsRes = await pool.query("SELECT setting_value FROM app_settings WHERE setting_key = 'dynamic_message_template'");
+            if (contactRes.rows.length > 0 && settingsRes.rows.length > 0) {
+                const contact = contactRes.rows[0];
+                const template = settingsRes.rows[0].setting_value;
+                if (template) {
+                    formattedMessage = template
+                        .replace(/\[Nom\]/gi, contact.name || '')
+                        .replace(/\[Email\]/gi, contact.email || '')
+                        .replace(/\[Adresse\]/gi, contact.address || '');
+                }
+            }
+        }
+    } catch (dbErr) {
+        console.error("Error formatting template", dbErr);
+    }
 
     let browser;
     try {
@@ -818,7 +839,7 @@ app.post('/api/wa/open-chat', async (req, res) => {
         const url = `https://web.whatsapp.com/send?phone=${cleanPhone}`;
         await targetPage.goto(url);
 
-        res.json({ status: 'success', message: 'Chat opened' });
+        res.json({ status: 'success', message: 'Chat opened', formattedMessage });
     } catch (err) {
         console.error("Open chat error:", err);
         res.status(500).json({ error: err.message });

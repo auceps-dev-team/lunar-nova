@@ -307,6 +307,31 @@ const Settings = () => {
                     </div>
 
                 </div>
+
+                {/* WhatsApp Dynamic Messaging Template */}
+                <div className="p-6">
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider mb-4">Messages WhatsApp Dynamiques</h3>
+                    <div className="mb-4 flex flex-col gap-1">
+                        <p className="text-base font-medium text-gray-800 dark:text-gray-100">Modèle de Message Rapide (Copie Intelligente)</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Ce message sera automatiquement généré, complété avec les informations du contact, et copié dans votre presse-papiers lorsque vous cliquez sur "Contacter".</p>
+                    </div>
+                    <div>
+                        <textarea
+                            value={backendSettings.dynamic_message_template || ''}
+                            onChange={(e) => setBackendSettings(prev => ({ ...prev, dynamic_message_template: e.target.value }))}
+                            rows={4}
+                            placeholder="Bonjour [Nom], merci pour votre intérêt..."
+                            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-3 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none bg-white dark:bg-gray-700 dark:text-white mb-3"
+                        ></textarea>
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs text-gray-500 dark:text-gray-400">Variables disponibles :</span>
+                            <code className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-primary font-mono select-all">[Nom]</code>
+                            <code className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-primary font-mono select-all">[Email]</code>
+                            <code className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-primary font-mono select-all">[Adresse]</code>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
     );
