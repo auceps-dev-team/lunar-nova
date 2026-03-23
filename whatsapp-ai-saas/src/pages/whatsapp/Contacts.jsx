@@ -321,7 +321,7 @@ export default function Contacts({ activeId }) {
             });
             const data = await res.json();
             if (data.status === 'success') {
-                if (data.formattedMessage) {
+                if (data.formattedMessage && data.formattedMessage.trim().length > 0) {
                     try {
                         await navigator.clipboard.writeText(data.formattedMessage);
                         showAppNotification('Chat ouvert et message copié ! Faites Ctrl+V', 'success');
