@@ -6,6 +6,7 @@ import Topbar from './components/Topbar';
 import WorkArea from './components/WorkArea';
 
 import Dashboard from './pages/Dashboard';
+import AdvancedAnalytics from './pages/AdvancedAnalytics';
 import AgentsHub from './pages/AgentsHub';
 import TasksMap from './pages/TasksMap';
 
@@ -112,6 +113,7 @@ function AppContent() {
               <div className="overflow-y-auto p-6 flex-1 bg-surface dark:bg-gray-900">
                 <Routes>
                   <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/analytics" element={<AdvancedAnalytics />} />
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/agents" element={<AgentsHub activeId={activeId} />} />
                   <Route path="/agents-manager" element={<AgentManager />} />

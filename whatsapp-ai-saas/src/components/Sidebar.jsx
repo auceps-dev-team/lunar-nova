@@ -89,6 +89,11 @@ const Sidebar = ({ instances, activeId, onSelect, onAdd, onRemove, onUpdate, cur
                         <span className="text-sm font-medium">{t(language, 'whatsappHub')}</span>
                     </Link>
 
+                    <Link to="/analytics" className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors group ${currentPath === '/analytics' ? 'bg-primary/20 text-primary border border-primary/20' : 'text-gray-300 hover:bg-white/5 hover:text-white'}`}>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"></path><path d="m19 9-5 5-4-4-3 3"></path></svg>
+                        <span className="text-sm font-medium">Analytics</span>
+                    </Link>
+
                     {/* AI Fashion Studio Dropdown */}
                     <div>
                         <button
