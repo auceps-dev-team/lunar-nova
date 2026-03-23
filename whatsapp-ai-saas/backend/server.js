@@ -690,36 +690,7 @@ app.get('/api/wa/contacts/:id', async (req, res) => {
     }
 });
 
-app.put('/api/wa/contacts/:id', async (req, res) => {
-    const { name, phone, list_id, segment_id, email, address } = req.body;
-    try {
-        // Try with email/address columns first
-        const result = await pool.query(
-            'UPDATE wa_contacts SET name = $1, phone = $2, list_id = $3, segment_id = $4, email = $5, address = $6 WHERE id = $7 RETURNING *',
-            [name, phone, list_id || null, segment_id || null, email || null, address || null, req.params.id]
-        );
-        console.log(`[WA] Updated contact ${req.params.id}`);
-        res.json({ status: 'success', data: result.rows[0] });
-    } catch (err) {
-        // Fallback: if email/address columns don't exist yet
-        if (err.message?.includes('column') && (err.message?.includes('email') || err.message?.includes('address'))) {
-            try {
-                const result = await pool.query(
-                    'UPDATE wa_contacts SET name = $1, phone = $2, list_id = $3, segment_id = $4 WHERE id = $5 RETURNING *',
-                    [name, phone, list_id || null, segment_id || null, req.params.id]
-                );
-                console.log(`[WA] Updated contact ${req.params.id} (legacy mode)`);
-                res.json({ status: 'success', data: result.rows[0] });
-            } catch (err2) {
-                console.error(`[WA] Error updating contact:`, err2);
-                res.status(500).json({ error: err2.message });
-            }
-        } else {
-            console.error(`[WA] Error updating contact:`, err);
-            res.status(500).json({ error: err.message });
-        }
-    }
-});
+
 
 app.put('/api/wa/contacts/bulk-update', async (req, res) => {
     const { contactIds, segmentId } = req.body;
@@ -771,6 +742,37 @@ app.put('/api/wa/contacts/bulk-update-list', async (req, res) => {
     } catch (err) {
         console.error('[WA] Error bulk updating lists:', err);
         res.status(500).json({ error: err.message });
+    }
+});
+
+app.put('/api/wa/contacts/:id', async (req, res) => {
+    const { name, phone, list_id, segment_id, email, address } = req.body;
+    try {
+        // Try with email/address columns first
+        const result = await pool.query(
+            'UPDATE wa_contacts SET name = $1, phone = $2, list_id = $3, segment_id = $4, email = $5, address = $6 WHERE id = $7 RETURNING *',
+            [name, phone, list_id || null, segment_id || null, email || null, address || null, req.params.id]
+        );
+        console.log(`[WA] Updated contact ${req.params.id}`);
+        res.json({ status: 'success', data: result.rows[0] });
+    } catch (err) {
+        // Fallback: if email/address columns don't exist yet
+        if (err.message?.includes('column') && (err.message?.includes('email') || err.message?.includes('address'))) {
+            try {
+                const result = await pool.query(
+                    'UPDATE wa_contacts SET name = $1, phone = $2, list_id = $3, segment_id = $4 WHERE id = $5 RETURNING *',
+                    [name, phone, list_id || null, segment_id || null, req.params.id]
+                );
+                console.log(`[WA] Updated contact ${req.params.id} (legacy mode)`);
+                res.json({ status: 'success', data: result.rows[0] });
+            } catch (err2) {
+                console.error(`[WA] Error updating contact:`, err2);
+                res.status(500).json({ error: err2.message });
+            }
+        } else {
+            console.error(`[WA] Error updating contact:`, err);
+            res.status(500).json({ error: err.message });
+        }
     }
 });
 
