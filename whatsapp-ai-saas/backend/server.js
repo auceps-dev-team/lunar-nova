@@ -748,6 +748,32 @@ app.put('/api/wa/contacts/bulk-update', async (req, res) => {
     }
 });
 
+app.put('/api/wa/contacts/bulk-update-list', async (req, res) => {
+    const { contactIds, listId } = req.body;
+    if (!Array.isArray(contactIds) || contactIds.length === 0) {
+        return res.status(400).json({ error: 'contactIds array is required and cannot be empty' });
+    }
+
+    try {
+        const idPlaceholders = contactIds.map((_, i) => `$${i + 2}`).join(',');
+        const query = `
+            UPDATE wa_contacts 
+            SET list_id = $1 
+            WHERE id IN (${idPlaceholders}) 
+            RETURNING *
+        `;
+
+        const values = [listId || null, ...contactIds];
+        const result = await pool.query(query, values);
+
+        console.log(`[WA] Bulk updated lists for ${result.rowCount} contacts`);
+        res.json({ status: 'success', data: result.rows, updatedCount: result.rowCount });
+    } catch (err) {
+        console.error('[WA] Error bulk updating lists:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.delete('/api/wa/contacts/bulk-delete', async (req, res) => {
     const { contactIds } = req.body;
     if (!Array.isArray(contactIds) || contactIds.length === 0) {

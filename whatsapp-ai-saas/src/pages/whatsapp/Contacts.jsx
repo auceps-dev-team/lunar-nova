@@ -17,7 +17,9 @@ export default function Contacts({ activeId }) {
     // Bulk Actions State
     const [selectedContacts, setSelectedContacts] = useState([]);
     const [isBulkEditModalOpen, setIsBulkEditModalOpen] = useState(false);
+    const [isBulkListEditModalOpen, setIsBulkListEditModalOpen] = useState(false);
     const [bulkSegmentId, setBulkSegmentId] = useState('');
+    const [bulkListId, setBulkListId] = useState('');
     const [isSubmittingBulk, setIsSubmittingBulk] = useState(false);
 
     // Dynamic Template State
@@ -126,6 +128,7 @@ export default function Contacts({ activeId }) {
     const uniqueLists = [...new Set(contacts.map(c => c.list_name).filter(Boolean))];
     // Also get segments with IDs for bulk update modal
     const segments = [...new Map(contacts.filter(c => c.segment_name && c.segment_id).map(item => [item.segment_id, { id: item.segment_id, name: item.segment_name }])).values()];
+    const listsMap = [...new Map(contacts.filter(c => c.list_name && c.list_id).map(item => [item.list_id, { id: item.list_id, name: item.list_name }])).values()];
 
 
     // Apply filtering
@@ -232,6 +235,36 @@ export default function Contacts({ activeId }) {
         } catch (error) {
             console.error('Bulk update error:', error);
             showAppNotification('Failed to update contacts', 'error');
+        } finally {
+            setIsSubmittingBulk(false);
+        }
+    };
+
+    const handleBulkUpdateList = async (e) => {
+        e.preventDefault();
+        setIsSubmittingBulk(true);
+        try {
+            const res = await fetch('http://localhost:3000/api/wa/contacts/bulk-update-list', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contactIds: selectedContacts,
+                    listId: bulkListId
+                })
+            });
+            const data = await res.json();
+            if (data.status === 'success') {
+                showAppNotification(`Successfully updated ${data.updatedCount} contacts`, 'success');
+                fetchContacts();
+                setSelectedContacts([]);
+                setIsBulkListEditModalOpen(false);
+                setBulkListId('');
+            } else {
+                throw new Error(data.error);
+            }
+        } catch (error) {
+            console.error('Bulk update error:', error);
+            showAppNotification('Failed to update lists', 'error');
         } finally {
             setIsSubmittingBulk(false);
         }
@@ -368,6 +401,12 @@ export default function Contacts({ activeId }) {
                                 className="text-sm font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
                             >
                                 Edit Segment
+                            </button>
+                            <button
+                                onClick={() => setIsBulkListEditModalOpen(true)}
+                                className="text-sm font-medium text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 transition-colors ml-2"
+                            >
+                                Edit List
                             </button>
                             <button
                                 onClick={handleBulkDelete}
@@ -644,6 +683,62 @@ export default function Contacts({ activeId }) {
                                         type="submit"
                                         disabled={isSubmittingBulk}
                                         className="flex-1 text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors disabled:opacity-50"
+                                    >
+                                        {isSubmittingBulk ? 'Updating...' : 'Update'}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Bulk Edit List Modal */}
+            {isBulkListEditModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                    <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+                        <div className="p-6">
+                            <div className="flex justify-between items-start mb-4">
+                                <div>
+                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">Bulk Edit List</h3>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Update the list for {selectedContacts.length} selected contacts.</p>
+                                </div>
+                                <button
+                                    onClick={() => setIsBulkListEditModalOpen(false)}
+                                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                                >
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                </button>
+                            </div>
+
+                            <form onSubmit={handleBulkUpdateList} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Select New List</label>
+                                    <select
+                                        className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-purple-500 focus:border-purple-500 block p-2.5 dark:bg-zinc-800 dark:border-zinc-700 dark:placeholder-gray-400 dark:text-white transition-colors"
+                                        value={bulkListId}
+                                        onChange={(e) => setBulkListId(e.target.value)}
+                                        required
+                                    >
+                                        <option value="">Choose a list</option>
+                                        {listsMap.map(l => (
+                                            <option key={l.id} value={l.id}>{l.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="pt-2 flex gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsBulkListEditModalOpen(false)}
+                                        className="flex-1 text-gray-700 bg-gray-100 hover:bg-gray-200 dark:text-gray-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={isSubmittingBulk}
+                                        className="flex-1 text-white bg-purple-600 hover:bg-purple-700 focus:ring-4 focus:outline-none focus:ring-purple-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors disabled:opacity-50"
                                     >
                                         {isSubmittingBulk ? 'Updating...' : 'Update'}
                                     </button>
