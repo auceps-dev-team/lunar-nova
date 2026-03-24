@@ -83,10 +83,37 @@ function pushEvent(instanceId, orderEvent) {
 }
 
 async function processMessage(instanceId, contact, text) {
-    if (!quickKeywordCheck(text)) return;
+    if (!text) return;
+
+    // Phase 22: Log & Emit EVERY message
+    console.log(`\n------------------------------------------------------\n[IOL Flux] 📩 Nouveau message de [${contact}] : "${text}"`);
     
+    const messageEvent = {
+        type: 'message_received',
+        instanceId,
+        contactName: contact,
+        messageText: text,
+        timestamp: new Date().toISOString()
+    };
+    pushEvent(instanceId, messageEvent);
+
+    // Continue with Order Detection Pipeline
+    if (!quickKeywordCheck(text)) {
+        console.log(`[IOL Pipeline] ℹ️ Message ignoré (pas de mot-clé de commande)`);
+        return;
+    }
+    
+    console.log(`[IOL Pipeline] ✅ [${contact}] Potentielle commande détectée. Analyse IA en cours...`);
     const classif = await classifyWithGemini(text, contact);
-    if (!classif.is_order || classif.confidence < 0.5) return;
+    
+    if (!classif || !classif.is_order || classif.confidence < 0.5) {
+        console.log(`[IOL Pipeline] ❌ Rejeté par l'IA (Pas une commande ou confiance trop faible).`);
+        return;
+    }
+    
+    console.log(`[IOL Pipeline] 🎯 INTENTION CONFIRMÉE : ${classif.order_type} (Confiance: ${Math.round(classif.confidence*100)}%)`);
+    console.log(`[IOL Pipeline] 📝 Résumé : ${classif.summary}`);
+    console.log(`[IOL Pipeline] 🚀 Signature en base de données...`);
     
     const [dbLog, agentReply] = await Promise.all([
         logOrderToDb(instanceId, contact, text, classif),
@@ -113,7 +140,7 @@ async function attachObserver(instanceId) {
     const browser = await puppeteer.connect({ browserURL: cdpUrl, defaultViewport: null });
     
     const targets = await browser.targets();
-    let targetPage = null;
+    let targetPages = [];
 
     for (const target of targets) {
         if (target.type() === 'webview' && target.url().includes('whatsapp')) {
@@ -122,69 +149,158 @@ async function attachObserver(instanceId) {
                 try {
                     const id = await p.evaluate(() => window.__whatsapp_instance_id);
                     if (id === instanceId) {
-                        targetPage = p;
+                        targetPages = [p];
                         break;
                     }
                 } catch(e) {}
-                if (!targetPage) targetPage = p;
+                targetPages.push(p);
             }
         }
     }
 
-    if (!targetPage) {
+    if (targetPages.length === 0) {
+        console.log(`[IOL] ❌ Could not find WhatsApp page for instance ${instanceId}. Make sure the instance is connected.`);
         browser.disconnect();
-        throw new Error('WhatsApp instance not found');
+        return;
     }
 
     browserConnections.set(instanceId, browser);
-    
-    // Inject observer bridge
-    await targetPage.exposeFunction('onNewWaMessage', (contact, text) => {
-        processMessage(instanceId, contact, text);
-    });
 
-    await targetPage.evaluate(() => {
-        if (window.__iol_observer) return;
+    for (const targetPage of targetPages) {
+        // Wait for WhatsApp to be fully loaded
+        try {
+            await targetPage.waitForSelector('#pane-side', { timeout: 15000 });
+            console.log(`[IOL] ✅ WhatsApp UI loaded. Ready to inject observer.`);
+        } catch (e) {
+            console.log(`[IOL] ⚠️ Timeout waiting for WhatsApp UI, attempting to inject anyway...`);
+        }
+
+        // Inject observer bridge safely (catch if already exposed after server restart)
+        try {
+            await targetPage.exposeFunction('onNewWaMessage', (contact, text) => {
+                console.log(`\n======================================================\n[IOL DOM Bridge] 📥 Message Received from UI: [${contact}] "${text}"`);
+                processMessage(instanceId, contact, text);
+            });
+        } catch (e) {}
         
-        window.__iol_observer = new MutationObserver((mutations) => {
-            for (const m of mutations) {
-                for (const node of m.addedNodes) {
-                    if (node.nodeType !== 1) continue;
+        try {
+            await targetPage.exposeFunction('onIolDebug', (msg) => {
+                console.log(`[IOL Background] ${msg}`);
+            });
+        } catch (e) {}
+
+        await targetPage.evaluate(() => {
+            if (!document.body || window.__iol_observer) return;
+            
+            window.onIolDebug('🚀 Order Observer attaché (V3: Strict Structural Scraping) !');
+            if (!window.__iol_processed_texts) window.__iol_processed_texts = new Set();
+            
+            // 1. Polling for Left Panel (Global incoming messages across all chats!)
+            if (!window.__iol_poller) {
+                window.__iol_poller = setInterval(() => {
+                    // Safe search starting from contact names
+                    const contactNodes = document.querySelectorAll('#pane-side span[title][dir="auto"]');
+                    const recentChats = Array.from(contactNodes).slice(0, 15).map(node => node.closest('div[role="row"], div[role="listitem"], div[style*="transform"]'));
                     
-                    // Find any message rows inside the added node, or check if the node itself is one
-                    const messageNodes = Array.from(node.querySelectorAll ? node.querySelectorAll('div.message-in, div.message-out, [data-id*="false_"], [data-id*="true_"]') : []);
-                    if (node.classList?.contains('message-in') || node.classList?.contains('message-out') || (node.getAttribute && (node.getAttribute('data-id')?.includes('false_') || node.getAttribute('data-id')?.includes('true_')))) {
-                        messageNodes.push(node);
-                    }
-                    
-                    for (const msgNode of messageNodes) {
-                        const textEl = msgNode.querySelector('.copyable-text .selectable-text, .selectable-text.copyable-text');
-                        let text = textEl ? textEl.innerText : '';
-                        if (!text && msgNode.innerText) {
-                            text = msgNode.innerText.split('\n')[0]; // fallback
+                    for (const chatItem of recentChats) {
+                        if (!chatItem) continue;
+
+                        let contact = 'Client (Liste)';
+                        const nameNode = chatItem.querySelector('span[title][dir="auto"]');
+                        if (nameNode) contact = nameNode.getAttribute('title') || nameNode.innerText;
+                        
+                        // Try to get message preview
+                        let text = '';
+                        const spans = chatItem.querySelectorAll('span[dir="ltr"]');
+                        for (const node of spans) {
+                            const t = node.innerText || node.textContent || '';
+                            if (t && t.length > 2 && t !== contact) text = t;
                         }
-                        
-                        const contactEl = msgNode.closest('[role="row"]')?.querySelector('span[dir="auto"]');
-                        const contact = contactEl ? contactEl.innerText : 'Client (Test)';
-                        
+
                         if (text && text.trim().length > 0) {
-                            window.onNewWaMessage(contact, text.trim());
+                            const hash = contact + '|' + text.trim();
+                            if (!window.__iol_processed_texts.has(hash)) {
+                                window.__iol_processed_texts.add(hash);
+                                window.onIolDebug(`[Poller] Nv msg Liste: "${text.substring(0, 30)}..."`);
+                                window.onNewWaMessage(contact, text.trim());
+                            }
                         }
                     }
-                }
+                }, 3000);
             }
+
+            // 2. Specialized Mutation Observer for Active Chat
+            window.__iol_observer = new MutationObserver((mutations) => {
+                const processMessageNode = (msg) => {
+                    if (!msg) return;
+                    try {
+                        const preText = msg.getAttribute('data-pre-plain-text') || '';
+                        let contact = 'Client (Actif)';
+                        const match = preText.match(/\]\s([^:]+):/);
+                        if (match && match[1]) {
+                            contact = match[1].trim();
+                        }
+
+                        const textNode = msg.querySelector('span.selectable-text, span.copyable-text');
+                        const text = textNode ? (textNode.innerText || textNode.textContent || '').trim() : msg.innerText.trim();
+
+                        if (text && text.length > 5) {
+                            const hash = contact + '|' + text;
+                            if (!window.__iol_processed_texts.has(hash)) {
+                                window.__iol_processed_texts.add(hash);
+                                window.onIolDebug(`[Observer] Nv msg Actif: "${text.substring(0, 30)}..."`);
+                                window.onNewWaMessage(contact, text);
+                            }
+                        }
+                    } catch (err) {}
+                };
+
+                for (const m of mutations) {
+                    if (m.type === 'characterData' && m.target && m.target.parentElement) {
+                        const parentMsg = m.target.parentElement.closest('.copyable-text[data-pre-plain-text]');
+                        if (parentMsg) processMessageNode(parentMsg);
+                        continue;
+                    }
+
+                for (const node of m.addedNodes) {
+                    if (node.nodeType !== 1) {
+                        if (node.parentElement) {
+                            const pMsg = node.parentElement.closest('.copyable-text[data-pre-plain-text]');
+                            if (pMsg) processMessageNode(pMsg);
+                        }
+                        continue;
+                    }
+                    
+                    // Specific research-backed selector
+                    const msgDivs = Array.from(node.querySelectorAll ? node.querySelectorAll('.copyable-text[data-pre-plain-text]') : []);
+                    if (node.matches && node.matches('.copyable-text[data-pre-plain-text]')) {
+                        msgDivs.push(node);
+                    }
+                    
+                    // If the node we're adding is INSIDE an existing message container
+                    const parentMsg = node.closest && node.closest('.copyable-text[data-pre-plain-text]');
+                    if (parentMsg && !msgDivs.includes(parentMsg)) {
+                        msgDivs.push(parentMsg);
+                    }
+
+                    for (const msg of msgDivs) {
+                        processMessageNode(msg);
+                    }
+                } // Ends addedNodes loop
+            } // Ends mutations loop
         });
-        
-        const chatWindow = document.querySelector('#main') || document.body;
-        window.__iol_observer.observe(chatWindow, { childList: true, subtree: true });
+
+        // Track both structural additions and text rendering variations
+        window.__iol_observer.observe(document.body, { childList: true, subtree: true, characterData: true });
     });
-    
-    activeObservers.add(instanceId);
     
     targetPage.once('close', () => {
         activeObservers.delete(instanceId);
         browserConnections.delete(instanceId);
     });
+} // End for targetPages
+
+activeObservers.add(instanceId);
 }
 
 async function detachObserver(instanceId) {
@@ -234,6 +350,12 @@ function registerRoutes(app) {
 
     app.get('/api/orders/stream/:instance_id', (req, res) => {
         const id = req.params.instance_id;
+        
+        // CRITICAL: Prevent Node from killing the TCP Keep-Alive after 5s
+        req.socket.setTimeout(0);
+        req.socket.setNoDelay(true);
+        req.socket.setKeepAlive(true);
+
         res.setHeader('Content-Type', 'text/event-stream');
         res.setHeader('Cache-Control', 'no-cache');
         res.setHeader('Connection', 'keep-alive');
@@ -242,7 +364,7 @@ function registerRoutes(app) {
         if (!sseClients.has(id)) sseClients.set(id, []);
         sseClients.get(id).push(res);
 
-        const heartbeat = setInterval(() => res.write(': heartbeat\n\n'), 30000);
+        const heartbeat = setInterval(() => res.write(': heartbeat\n\n'), 15000);
 
         req.on('close', () => {
             clearInterval(heartbeat);

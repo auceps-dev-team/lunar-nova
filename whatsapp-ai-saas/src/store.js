@@ -24,10 +24,13 @@ const useAppStore = create(
   iolInstanceId: null,
   isIolActive: false,
   iolOrders: [],
+  iolMessages: [],
   setIolInstanceId: (id) => set({ iolInstanceId: id }),
   setIsIolActive: (active) => set({ isIolActive: active }),
   addIolOrder: (order) => set((state) => ({ iolOrders: [order, ...state.iolOrders].slice(0, 100) })),
+  addIolMessage: (msg) => set((state) => ({ iolMessages: [msg, ...state.iolMessages].slice(0, 200) })),
   setIolOrders: (orders) => set({ iolOrders: orders }),
+  setIolMessages: (msgs) => set({ iolMessages: msgs }),
 
   catalogDraft: null,
             copilotNotification: null,

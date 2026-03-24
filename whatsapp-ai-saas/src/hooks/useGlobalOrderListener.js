@@ -1,7 +1,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import useAppStore from '../store';
 
-export function useGlobalOrderListener() {
+let globalEventSource = null;
+
+export function useGlobalOrderListener(isRoot = false) {
     const instanceId = useAppStore(s => s.iolInstanceId);
     const isListening = useAppStore(s => s.isIolActive);
     
@@ -15,7 +17,7 @@ export function useGlobalOrderListener() {
 
     // Initial load of orders and status when instanceId changes
     useEffect(() => {
-        if (!instanceId) return;
+        if (!isRoot || !instanceId) return;
 
         const checkStatus = async () => {
             try {
@@ -42,32 +44,52 @@ export function useGlobalOrderListener() {
 
     // Handle Server-Sent Events (SSE) connection Globally
     useEffect(() => {
-        if (!isListening || !instanceId) return;
+        if (!isRoot) return;
+
+        if (!isListening || !instanceId) {
+            if (globalEventSource) {
+                console.log(`[IOL Global] Stopping SSE stream...`);
+                globalEventSource.close();
+                globalEventSource = null;
+            }
+            return;
+        }
+
+        // Keep existing connection alive if it matches
+        if (globalEventSource && globalEventSource.url.includes(instanceId) && globalEventSource.readyState !== 2) {
+            return;
+        }
+
+        // Teardown mismatch
+        if (globalEventSource) {
+            globalEventSource.close();
+        }
 
         console.log(`[IOL Global] Connecting to SSE stream for ${instanceId}...`);
-        const eventSource = new EventSource(`http://localhost:3000/api/orders/stream/${instanceId}`);
+        globalEventSource = new EventSource(`http://localhost:3000/api/orders/stream/${instanceId}`);
 
-        eventSource.onmessage = (event) => {
+        globalEventSource.onmessage = (event) => {
             try {
                 const data = JSON.parse(event.data);
                 if (data.type === 'order_detected') {
                     console.log('[IOL Global] Order detected via SSE:', data);
-                    addOrder(data);
+                    useAppStore.getState().addIolOrder(data);
+                } else if (data.type === 'message_received') {
+                    console.log('[IOL Global] Message received via SSE:', data);
+                    useAppStore.getState().addIolMessage(data);
                 }
             } catch (e) {
-                // Ignore parsing errors for heartbeat ":\n\n" lines
+                // Ignore parsing errors for heartbeat
             }
         };
 
-        eventSource.onerror = (err) => {
-            console.error('[IOL Global] SSE connection error:', err);
+        globalEventSource.onerror = (err) => {
+            console.error('[IOL Global] SSE connection error. Browser will auto-reconnect...', err);
         };
 
-        return () => {
-            console.log(`[IOL Global] Closing SSE stream for ${instanceId}...`);
-            eventSource.close();
-        };
-    }, [isListening, instanceId, addOrder]);
+        // We explicitly DO NOT return a cleanup function here.
+        // The singleton is only torn down when isListening becomes false.
+    }, [isListening, instanceId, isRoot]);
 
     const startListening = useCallback(async (idToListen = null) => {
         const id = idToListen || instanceId;

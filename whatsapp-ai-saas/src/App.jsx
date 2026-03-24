@@ -38,7 +38,7 @@ function AppContent() {
   const setInstances = useAppStore(state => state.setInstances);
 
   // Mount the Global Order Listener so IOL stays alive regardless of current page
-  useGlobalOrderListener();
+  useGlobalOrderListener(true);
 
   const [activeId, setActiveId] = useState(null);
   const location = useLocation();
