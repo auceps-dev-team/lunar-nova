@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAppStore from '../../store';
 import { getTranslation as t } from '../../locales';
-import { useOrderListener } from '../../hooks/useOrderListener';
+import { useGlobalOrderListener } from '../../hooks/useGlobalOrderListener';
 import '../../styles/global.css';
 
 const Orders = () => {
@@ -12,13 +12,14 @@ const Orders = () => {
     const language = appSettings.language || 'en';
     const navigate = useNavigate();
 
-    // Default to the first instance if available
-    const [selectedInstanceId, setSelectedInstanceId] = useState(
-        instances.length > 0 ? instances[0].id : null
-    );
+    // IOL Global State
+    const selectedInstanceId = useAppStore(s => s.iolInstanceId) || (instances.length > 0 ? instances[0].id : null);
+    const setIolInstanceId = useAppStore(s => s.setIolInstanceId);
+    const orders = useAppStore(s => s.iolOrders);
+    const isListening = useAppStore(s => s.isIolActive);
 
-    // IOL Hook
-    const { orders, isListening, isConnecting, startListening, stopListening, clearOrders } = useOrderListener(selectedInstanceId);
+    // IOL Hook Actions
+    const { isConnecting, startListening, stopListening } = useGlobalOrderListener();
 
     // Handle "Action" Button to generate Invoice
     const handleGenerateInvoice = (order) => {
@@ -64,7 +65,7 @@ const Orders = () => {
                         <select
                             className="input bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-sm py-1.5"
                             value={selectedInstanceId || ''}
-                            onChange={(e) => setSelectedInstanceId(e.target.value)}
+                            onChange={(e) => setIolInstanceId(e.target.value)}
                             disabled={isListening}
                         >
                             {instances.map(inst => (
@@ -74,7 +75,7 @@ const Orders = () => {
 
                         <button
                             className={`btn-primary flex items-center gap-2 py-2 px-4 ${isListening ? 'bg-red-500 hover:bg-red-600 border-red-500' : ''}`}
-                            onClick={isListening ? stopListening : startListening}
+                            onClick={() => isListening ? stopListening() : startListening(selectedInstanceId)}
                             disabled={isConnecting || !selectedInstanceId}
                         >
                             {isConnecting ? (

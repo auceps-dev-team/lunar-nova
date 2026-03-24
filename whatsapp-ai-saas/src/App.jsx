@@ -26,6 +26,7 @@ import Contacts from './pages/whatsapp/Contacts';
 import Orders from './pages/whatsapp/Orders';
 import ContactAdd from './pages/whatsapp/ContactAdd';
 import ContactImport from './pages/whatsapp/ContactImport';
+import { useGlobalOrderListener } from './hooks/useGlobalOrderListener';
 
 // Placeholder Pages for Phase 2
 
@@ -35,6 +36,9 @@ import './styles/global.css';
 function AppContent() {
   const instances = useAppStore(state => state.instances);
   const setInstances = useAppStore(state => state.setInstances);
+
+  // Mount the Global Order Listener so IOL stays alive regardless of current page
+  useGlobalOrderListener();
 
   const [activeId, setActiveId] = useState(null);
   const location = useLocation();

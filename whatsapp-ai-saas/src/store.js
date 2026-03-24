@@ -20,6 +20,15 @@ const useAppStore = create(
   setInvoiceDraft: (draft) => set({ invoiceDraft: draft }),
   clearInvoiceDraft: () => set({ invoiceDraft: null }),
 
+  // Phase 21: Global IOL State
+  iolInstanceId: null,
+  isIolActive: false,
+  iolOrders: [],
+  setIolInstanceId: (id) => set({ iolInstanceId: id }),
+  setIsIolActive: (active) => set({ isIolActive: active }),
+  addIolOrder: (order) => set((state) => ({ iolOrders: [order, ...state.iolOrders].slice(0, 100) })),
+  setIolOrders: (orders) => set({ iolOrders: orders }),
+
   catalogDraft: null,
             copilotNotification: null,
             appNotification: null,

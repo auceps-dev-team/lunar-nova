@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from 'react';
 import useAppStore from '../store';
 import { getTranslation as t } from '../locales';
 import '../styles/global.css';

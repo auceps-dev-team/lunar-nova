@@ -149,15 +149,26 @@ async function attachObserver(instanceId) {
         window.__iol_observer = new MutationObserver((mutations) => {
             for (const m of mutations) {
                 for (const node of m.addedNodes) {
-                    if (node.nodeType === 1 && node.classList.contains('message-in')) {
-                        const textEl = node.querySelector('.copyable-text .selectable-text');
-                        const text = textEl ? textEl.innerText : '';
+                    if (node.nodeType !== 1) continue;
+                    
+                    // Find any message rows inside the added node, or check if the node itself is one
+                    const messageNodes = Array.from(node.querySelectorAll ? node.querySelectorAll('div.message-in, div.message-out, [data-id*="false_"], [data-id*="true_"]') : []);
+                    if (node.classList?.contains('message-in') || node.classList?.contains('message-out') || (node.getAttribute && (node.getAttribute('data-id')?.includes('false_') || node.getAttribute('data-id')?.includes('true_')))) {
+                        messageNodes.push(node);
+                    }
+                    
+                    for (const msgNode of messageNodes) {
+                        const textEl = msgNode.querySelector('.copyable-text .selectable-text, .selectable-text.copyable-text');
+                        let text = textEl ? textEl.innerText : '';
+                        if (!text && msgNode.innerText) {
+                            text = msgNode.innerText.split('\n')[0]; // fallback
+                        }
                         
-                        const contactEl = node.closest('[role="row"]')?.querySelector('span[dir="auto"]');
-                        const contact = contactEl ? contactEl.innerText : 'Client';
+                        const contactEl = msgNode.closest('[role="row"]')?.querySelector('span[dir="auto"]');
+                        const contact = contactEl ? contactEl.innerText : 'Client (Test)';
                         
-                        if (text) {
-                            window.onNewWaMessage(contact, text);
+                        if (text && text.trim().length > 0) {
+                            window.onNewWaMessage(contact, text.trim());
                         }
                     }
                 }
