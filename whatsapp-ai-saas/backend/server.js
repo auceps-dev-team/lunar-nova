@@ -5,6 +5,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const aiController = require('./aiController');
+const orderListener = require('./orderListener');
 const { logCopilotInteraction, pool, getSetting, setSetting } = require('./db');
 const { getCachedProposals, setCachedProposals } = require('./redisClient');
 
@@ -1048,6 +1049,9 @@ app.get('/api/wa/analytics', async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
+
+// Phase 21: Intelligent Order Listener
+orderListener.registerRoutes(app);
 
 app.listen(PORT, () => {
     console.log(`[Orchestrator] Running on http://localhost:${PORT}`);

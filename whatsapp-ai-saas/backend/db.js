@@ -124,6 +124,20 @@ async function initDB() {
             );
         `);
 
+        // Phase 21: Intelligent Order Listener
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS detected_orders (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                instance_id VARCHAR(64) NOT NULL,
+                contact_name VARCHAR(255),
+                message_text TEXT,
+                order_type VARCHAR(64),
+                confidence FLOAT,
+                summary TEXT,
+                detected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        `);
+
         // Phase 15: AI Modularity
         await client.query(`
             CREATE TABLE IF NOT EXISTS app_settings (
