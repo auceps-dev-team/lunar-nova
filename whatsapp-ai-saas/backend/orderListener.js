@@ -85,10 +85,13 @@ function pushEvent(instanceId, orderEvent) {
 async function processMessage(instanceId, contact, text) {
     if (!text) return;
 
+    const msgId = `msg_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    
     // Phase 22: Log & Emit EVERY message
     console.log(`\n------------------------------------------------------\n[IOL Flux] 📩 Nouveau message de [${contact}] : "${text}"`);
     
     const messageEvent = {
+        id: msgId,
         type: 'message_received',
         instanceId,
         contactName: contact,
@@ -121,6 +124,7 @@ async function processMessage(instanceId, contact, text) {
     ]);
     
     const orderEvent = {
+        id: msgId, // Reuse same ID for linked events
         type: 'order_detected',
         instanceId,
         contactName: contact,
@@ -131,6 +135,20 @@ async function processMessage(instanceId, contact, text) {
     };
     
     pushEvent(instanceId, orderEvent);
+}
+
+// Logic to Save Order to DB
+async function logOrderToDb(instanceId, contact, text, classif) {
+    try {
+        const query = `
+            INSERT INTO detected_orders (instance_id, contact_name, message_text, order_type, confidence, summary)
+            VALUES ($1, $2, $3, $4, $5, $6)
+        `;
+        const values = [instanceId, contact, text, classif.order_type, classif.confidence, classif.summary];
+        await db.pool.query(query, values);
+    } catch (e) {
+        console.error('[IOL DB] Save Error:', e.message);
+    }
 }
 
 async function attachObserver(instanceId) {
@@ -389,6 +407,30 @@ function registerRoutes(app) {
             res.json({ status: 'success', data: result.rows });
         } catch (e) {
             res.status(500).json({ error: e.message });
+        }
+    });
+
+    // DELETE Routes for IOL (Inside registerRoutes)
+    app.delete('/api/orders/bulk-delete', async (req, res) => {
+        const { ids } = req.body;
+        if (!ids || !Array.isArray(ids)) return res.status(400).json({ status: 'error', error: 'Missing IDs array' });
+
+        try {
+            const placeholders = ids.map((_, i) => `$${i + 1}`).join(',');
+            await db.pool.query(`DELETE FROM detected_orders WHERE id IN (${placeholders})`, ids);
+            res.json({ status: 'success' });
+        } catch (err) {
+            res.status(500).json({ status: 'error', error: err.message });
+        }
+    });
+
+    app.delete('/api/orders/:id', async (req, res) => {
+        const { id } = req.params;
+        try {
+            await db.pool.query(`DELETE FROM detected_orders WHERE id = $1`, [id]);
+            res.json({ status: 'success' });
+        } catch (err) {
+            res.status(500).json({ status: 'error', error: err.message });
         }
     });
 }

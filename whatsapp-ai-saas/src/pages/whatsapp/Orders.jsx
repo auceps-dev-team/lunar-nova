@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAppStore from '../../store';
 import { getTranslation as t } from '../../locales';
@@ -9,6 +9,7 @@ const Orders = () => {
     const instances = useAppStore(state => state.instances);
     const setInvoiceDraft = useAppStore(state => state.setInvoiceDraft);
     const appSettings = useAppStore(state => state.appSettings) || {};
+    const showAppNotification = useAppStore(state => state.showAppNotification);
     const language = appSettings.language || 'en';
     const navigate = useNavigate();
 
@@ -19,12 +20,17 @@ const Orders = () => {
     const liveMessages = useAppStore(s => s.iolMessages);
     const isListening = useAppStore(s => s.isIolActive);
 
+    const removeIolMessages = useAppStore(s => s.removeIolMessages);
+
+    // Selection State
+    const [selectedIds, setSelectedIds] = useState(new Set());
+
     // IOL Hook Actions
     const { isConnecting, startListening, stopListening } = useGlobalOrderListener();
 
     // Find if a message is a detected order
-    const getOrderDetails = (msgText, contact) => {
-        return orders.find(o => o.messageText === msgText && o.contactName === contact);
+    const getOrderDetails = (msgId) => {
+        return orders.find(o => o.id === msgId);
     };
 
     // Handle "Action" Button to generate Invoice
@@ -37,6 +43,72 @@ const Orders = () => {
         };
         setInvoiceDraft(invoiceData);
         navigate('/invoice-builder');
+    };
+
+    // Deletion Logic
+    const handleDeleteMessage = async (msgId, isOrder) => {
+        if (!window.confirm("Supprimer ce message/commande ?")) return;
+
+        try {
+            if (isOrder) {
+                const res = await fetch(`http://localhost:3000/api/orders/${msgId}`, { method: 'DELETE' });
+                const data = await res.json();
+                if (data.status !== 'success') throw new Error(data.error);
+            }
+            removeIolMessages([msgId]);
+            setSelectedIds(prev => {
+                const next = new Set(prev);
+                next.delete(msgId);
+                return next;
+            });
+            showAppNotification('Message supprimé', 'success');
+        } catch (err) {
+            console.error(err);
+            showAppNotification('Erreur de suppression', 'error');
+        }
+    };
+
+    const handleBulkDelete = async () => {
+        const idsArray = Array.from(selectedIds);
+        if (!window.confirm(`Supprimer ${idsArray.length} messages ?`)) return;
+
+        try {
+            // Filter which IDs are actually orders in DB
+            const orderIds = idsArray.filter(id => orders.some(o => o.id === id));
+            if (orderIds.length > 0) {
+                const res = await fetch(`http://localhost:3000/api/orders/bulk-delete`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ids: orderIds })
+                });
+                const data = await res.json();
+                if (data.status !== 'success') throw new Error(data.error);
+            }
+
+            removeIolMessages(idsArray);
+            setSelectedIds(new Set());
+            showAppNotification(`${idsArray.length} messages supprimés`, 'success');
+        } catch (err) {
+            console.error(err);
+            showAppNotification('Erreur de suppression groupée', 'error');
+        }
+    };
+
+    const toggleSelect = (id) => {
+        setSelectedIds(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    };
+
+    const handleSelectAll = (e) => {
+        if (e.target.checked) {
+            setSelectedIds(new Set(liveMessages.map(m => m.id)));
+        } else {
+            setSelectedIds(new Set());
+        }
     };
 
     if (instances.length === 0) {
@@ -66,6 +138,18 @@ const Orders = () => {
                     </div>
 
                     <div className="flex items-center gap-4 bg-gray-50 dark:bg-gray-800 p-2 rounded-lg border border-gray-100 dark:border-gray-700">
+                        {selectedIds.size > 0 && (
+                            <div className="flex items-center gap-2 px-3 py-1 bg-blue-50 dark:bg-blue-900/40 border border-blue-200 dark:border-blue-800 rounded-md mr-2 animate-in fade-in slide-in-from-right-2">
+                                <span className="text-xs font-bold text-blue-700 dark:text-blue-300">{selectedIds.size} sélectionnés</span>
+                                <button 
+                                    onClick={handleBulkDelete}
+                                    className="bg-red-600 hover:bg-red-700 text-white text-[10px] py-1 px-3 rounded font-bold transition-colors"
+                                >
+                                    SUPPRIMER
+                                </button>
+                            </div>
+                        )}
+
                         <select
                             className="input bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-sm py-1.5"
                             value={selectedInstanceId || ''}
@@ -121,6 +205,14 @@ const Orders = () => {
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-gray-50/80 dark:bg-gray-900/80 text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider border-b border-gray-100 dark:border-gray-700">
+                                <th className="p-4 w-10">
+                                    <input 
+                                        type="checkbox" 
+                                        className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4"
+                                        checked={liveMessages.length > 0 && selectedIds.size === liveMessages.length}
+                                        onChange={handleSelectAll}
+                                    />
+                                </th>
                                 <th className="p-4 font-semibold w-1/5">Client & Temps</th>
                                 <th className="p-4 font-semibold w-1/4">Message Direct</th>
                                 <th className="p-4 font-semibold w-1/3">Analyse IA & Actions</th>
@@ -130,18 +222,27 @@ const Orders = () => {
                         <tbody className="divide-y divide-gray-100 dark:divide-gray-700 text-sm">
                             {liveMessages.length === 0 ? (
                                 <tr>
-                                    <td colSpan="4" className="p-8 text-center text-gray-500 dark:text-gray-400 italic">
+                                    <td colSpan="5" className="p-8 text-center text-gray-500 dark:text-gray-400 italic">
                                         En attente de messages réseau...
                                     </td>
                                 </tr>
                             ) : (
-                                liveMessages.map((msg, idx) => {
-                                    const order = getOrderDetails(msg.messageText, msg.contactName);
+                                liveMessages.map((msg) => {
+                                    const order = getOrderDetails(msg.id);
                                     const isOrder = !!order;
+                                    const isSelected = selectedIds.has(msg.id);
                                     const time = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
                                     return (
-                                        <tr key={idx} className={`group hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${isOrder ? 'bg-blue-50/30 dark:bg-blue-900/10' : ''}`}>
+                                        <tr key={msg.id} className={`group hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${isOrder ? 'bg-blue-50/30 dark:bg-blue-900/10' : ''} ${isSelected ? 'bg-blue-50/60 dark:bg-blue-900/30' : ''}`}>
+                                            <td className="p-4">
+                                                <input 
+                                                    type="checkbox" 
+                                                    className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4"
+                                                    checked={isSelected}
+                                                    onChange={() => toggleSelect(msg.id)}
+                                                />
+                                            </td>
                                             <td className="p-4 align-top">
                                                 <div className="flex items-center gap-3">
                                                     <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold shadow-sm ${isOrder ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-300'}`}>
@@ -190,11 +291,21 @@ const Orders = () => {
                                                 )}
                                             </td>
                                             <td className="p-4 align-top text-right">
-                                                {isOrder ? (
-                                                    <span className="badge badge-warning text-[10px] py-0.5 px-2 font-bold animate-pulse">ACTION REQ</span>
-                                                ) : (
-                                                    <span className="text-[10px] text-gray-400 bg-gray-50 dark:bg-gray-800 py-0.5 px-2 rounded-full border border-gray-100 dark:border-gray-700">STREAMING</span>
-                                                )}
+                                                <div className="flex flex-col items-end gap-2">
+                                                    {isOrder ? (
+                                                        <span className="badge badge-warning text-[10px] py-0.5 px-2 font-bold animate-pulse">ACTION REQ</span>
+                                                    ) : (
+                                                        <span className="text-[10px] text-gray-400 bg-gray-50 dark:bg-gray-800 py-0.5 px-2 rounded-full border border-gray-100 dark:border-gray-700">STREAMING</span>
+                                                    )}
+                                                    
+                                                    <button 
+                                                        onClick={() => handleDeleteMessage(msg.id, isOrder)}
+                                                        className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors group-hover:opacity-100 opacity-0"
+                                                        title="Supprimer ce message"
+                                                    >
+                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     );
