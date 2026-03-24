@@ -165,6 +165,9 @@ const Sidebar = ({ instances, activeId, onSelect, onAdd, onRemove, onUpdate, cur
                             <Link to="/wa/contacts" className={`flex items-center px-3 py-2 rounded-lg transition-colors ${currentPath === '/wa/contacts' ? 'bg-white/10 text-white font-medium' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
                                 <span className="truncate text-sm">Contacts</span>
                             </Link>
+                            <Link to="/wa/orders" className={`flex items-center px-3 py-2 rounded-lg transition-colors ${currentPath === '/wa/orders' ? 'bg-amber-500/10 text-amber-500 font-medium' : 'text-gray-400 hover:text-amber-400 hover:bg-white/5'}`}>
+                                <span className="truncate text-sm">Ordres & Commandes</span>
+                            </Link>
                         </div>
                     </div>
 

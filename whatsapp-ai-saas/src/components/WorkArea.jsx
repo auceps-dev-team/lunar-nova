@@ -1,7 +1,5 @@
-import React, { useState, useEffect } from 'react';
 import useAppStore from '../store';
 import { getTranslation as t } from '../locales';
-import { useOrderListener } from '../hooks/useOrderListener';
 import '../styles/global.css';
 
 const WorkArea = ({ instances, activeId }) => {
@@ -18,9 +16,6 @@ const WorkArea = ({ instances, activeId }) => {
     ]);
     const [copilotWidth, setCopilotWidth] = useState(320);
     const [isResizing, setIsResizing] = useState(false);
-
-    // Phase 21: Intelligent Order Listener
-    const { orders, isListening, isConnecting, startListening, stopListening, clearOrders } = useOrderListener(activeId);
 
     // Resizer Logic
     const startResizing = (mouseDownEvent) => {
@@ -339,49 +334,6 @@ const WorkArea = ({ instances, activeId }) => {
                                 </p>
                             </div>
                         )}
-                    </div>
-                </div>
-
-                {/* IOL Card - Phase 21 */}
-                <div className="card shrink-0">
-                    <div className="card-header" style={{ justifyContent: 'space-between', display: 'flex' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"></path><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path></svg>
-                            <h3>IOL Radar</h3>
-                        </div>
-                        {isListening && <span className="pulse" style={{ width: 8, height: 8, background: '#ef4444', borderRadius: '50%', display: 'inline-block' }}></span>}
-                    </div>
-                    <div className="card-body" style={{ padding: '12px' }}>
-                        <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-                            <button
-                                className={`btn-primary ${isListening ? 'bg-red-500 hover:bg-red-600 border-red-500' : ''}`}
-                                style={{ flex: 1, padding: '8px', fontSize: 12, outline: 'none' }}
-                                onClick={isListening ? stopListening : startListening}
-                                disabled={isConnecting || orchestratorStatus !== 'Connected'}
-                            >
-                                {isConnecting ? 'Connexion...' : isListening ? 'Arrêter l\'écoute' : 'Activer l\'écoute'}
-                            </button>
-                        </div>
-
-                        {/* Order Feed */}
-                        <div style={{ maxHeight: '180px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }} className="scrollbar-hide">
-                            {orders.length === 0 ? (
-                                <p style={{ fontSize: 11, color: '#94a3b8', textAlign: 'center', margin: 0 }}>En attente de commandes...</p>
-                            ) : (
-                                orders.map((o, idx) => (
-                                    <div key={idx} style={{ background: '#f8fafc', padding: 10, borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 12 }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                                            <strong style={{ color: '#0f172a' }}>{o.contactName}</strong>
-                                            <span style={{ fontSize: 10, color: '#f59e0b', fontWeight: 600 }}>{Math.round(o.classification.confidence * 100)}%</span>
-                                        </div>
-                                        <div style={{ color: '#334155', marginBottom: 6, fontStyle: 'italic' }}>"{o.messageText}"</div>
-                                        <div style={{ background: '#ecfdf5', padding: '6px 8px', borderRadius: 4, color: '#065f46', fontSize: 11 }}>
-                                            🤖 {o.agentReply || 'Génération...'}
-                                        </div>
-                                    </div>
-                                ))
-                            )}
-                        </div>
                     </div>
                 </div>
 

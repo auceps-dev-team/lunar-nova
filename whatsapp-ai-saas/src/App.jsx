@@ -23,6 +23,7 @@ import { ImageWorkspace } from './components/image-editor/ImageWorkspace';
 import ContactLists from './pages/whatsapp/ContactLists';
 import Segments from './pages/whatsapp/Segments';
 import Contacts from './pages/whatsapp/Contacts';
+import Orders from './pages/whatsapp/Orders';
 import ContactAdd from './pages/whatsapp/ContactAdd';
 import ContactImport from './pages/whatsapp/ContactImport';
 
@@ -129,6 +130,7 @@ function AppContent() {
                   <Route path="/wa/contact-lists" element={<ContactLists />} />
                   <Route path="/wa/segments" element={<Segments />} />
                   <Route path="/wa/contacts" element={<Contacts activeId={activeId} />} />
+                  <Route path="/wa/orders" element={<Orders />} />
                   <Route path="/wa/contacts/add" element={<ContactAdd />} />
                   <Route path="/wa/contacts/edit/:id" element={<ContactAdd />} />
                   <Route path="/wa/contacts/import" element={<ContactImport />} />

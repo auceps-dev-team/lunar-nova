@@ -282,6 +282,25 @@ export default function InvoiceBuilder({ activeId }) {
     const [filterStatus, setFilterStatus] = useState('all');
     const [saved, setSaved] = useState(false);
 
+    // Phase 21: Auto-fill from Intelligent Order Listener (IOL)
+    const invoiceDraftGlobal = useAppStore(s => s.invoiceDraft);
+    const clearInvoiceDraft = useAppStore(s => s.clearInvoiceDraft);
+
+    useEffect(() => {
+        if (invoiceDraftGlobal) {
+            const newInv = freshInvoice();
+            newInv.clientName = invoiceDraftGlobal.clientName || '';
+            newInv.notes = invoiceDraftGlobal.notes || '';
+            
+            setDraft(newInv);
+            setView('editor');
+            setSaved(false);
+            
+            // Clear the global state so it processes once
+            clearInvoiceDraft();
+        }
+    }, [invoiceDraftGlobal, clearInvoiceDraft]);
+
     // Contact search state
     const [showContactSearch, setShowContactSearch] = useState(false);
     const [allContacts, setAllContacts] = useState([]);

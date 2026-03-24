@@ -1,5 +1,5 @@
 const express = require('express');
-const puppeteer = require('puppeteer');
+const puppeteer = require('puppeteer-core');
 const db = require('./db');
 const aiController = require('./aiController');
 const { GoogleGenAI } = require('@google/genai');

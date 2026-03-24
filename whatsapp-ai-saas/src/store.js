@@ -15,7 +15,12 @@ const useAppStore = create(
         (set, get) => ({
             // --- Shared Data ---
             activeWhatsAppContext: null,
-            catalogDraft: null,
+            // Orders & Invoices State
+  invoiceDraft: null,
+  setInvoiceDraft: (draft) => set({ invoiceDraft: draft }),
+  clearInvoiceDraft: () => set({ invoiceDraft: null }),
+
+  catalogDraft: null,
             copilotNotification: null,
             appNotification: null,
 
