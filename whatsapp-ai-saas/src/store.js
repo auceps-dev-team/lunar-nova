@@ -41,7 +41,9 @@ const useAppStore = create(
                 email: '',
                 phone: '',
                 companyName: '',
-                address: ''
+                address: '',
+                profilePicture: '',
+                companyLogo: ''
             },
 
             // --- Global Settings ---
