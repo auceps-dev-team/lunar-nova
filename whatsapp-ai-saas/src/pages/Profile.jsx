@@ -193,39 +193,6 @@ const Profile = () => {
                         {authLoading ? 'Ouverture du navigateur...' : 'Continue with Google'}
                     </button>
 
-                    <div className="relative flex items-center justify-center mb-6">
-                        <div className="border-t border-gray-200 w-full absolute"></div>
-                        <span className="bg-white px-3 text-xs text-gray-500 relative z-10">OR</span>
-                    </div>
-
-                    <form onSubmit={handleEmailSubmit} className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-                            <input
-                                type="email"
-                                required
-                                value={loginForm.email}
-                                onChange={e => setLoginForm({ ...loginForm, email: e.target.value })}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all"
-                                placeholder="you@example.com"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                            <input
-                                type="password"
-                                required
-                                value={loginForm.password}
-                                onChange={e => setLoginForm({ ...loginForm, password: e.target.value })}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all"
-                                placeholder="••••••••"
-                            />
-                        </div>
-                        <button type="submit" disabled={authLoading} className="w-full bg-primary text-white font-medium rounded-lg px-4 py-2.5 hover:bg-primary-dark transition-colors mt-2 disabled:opacity-75 disabled:cursor-wait">
-                            {authLoading ? 'Connexion en cours...' : 'Sign in with Email'}
-                        </button>
-                    </form>
-
                     <div className="mt-6 text-center">
                         <button
                             onClick={() => navigate('/dashboard')}
@@ -264,19 +231,7 @@ const Profile = () => {
                                 <h3 className="text-lg font-medium text-gray-900">Personal Information</h3>
                             </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">First Name (Prénom)</label>
-                                <input
-                                    type="text"
-                                    name="firstName"
-                                    value={profileForm.firstName}
-                                    onChange={handleChange}
-                                    className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all"
-                                    placeholder="John"
-                                />
-                            </div>
-
-                            <div className="md:col-span-2 mt-2">
+                            <div className="md:col-span-2">
                                 <label className="block text-sm font-medium text-gray-700 mb-2">Photo de profil</label>
                                 <div className="flex items-center gap-4">
                                     <div className="size-16 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center overflow-hidden shrink-0">
@@ -294,6 +249,18 @@ const Profile = () => {
                                         id="profilePictureUpload"
                                     />
                                 </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">First Name (Prénom)</label>
+                                <input
+                                    type="text"
+                                    name="firstName"
+                                    value={profileForm.firstName}
+                                    onChange={handleChange}
+                                    className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all"
+                                    placeholder="John"
+                                />
                             </div>
 
                             <div>
