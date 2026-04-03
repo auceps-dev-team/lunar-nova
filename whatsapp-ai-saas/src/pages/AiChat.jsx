@@ -108,7 +108,7 @@ export default function AiChat() {
     useEffect(() => {
         const fetchCustomAgents = async () => {
             try {
-                const res = await fetch('http://localhost:3000/api/agents');
+                const res = await fetch('http://127.0.0.1:3000/api/agents');
                 const data = await res.json();
                 const custom = (data.data || []).map(a => ({ ...a, isSystem: false }));
                 setAllAgents([...SYSTEM_AGENTS, ...custom]);
@@ -257,7 +257,7 @@ export default function AiChat() {
                 bodyData.currentTasks = useAppStore.getState().tasks || [];
             }
 
-            const res = await fetch('http://localhost:3000/api/ai/agent', {
+            const res = await fetch('http://127.0.0.1:3000/api/ai/agent', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(bodyData)

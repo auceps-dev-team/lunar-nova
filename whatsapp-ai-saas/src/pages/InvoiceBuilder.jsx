@@ -740,7 +740,7 @@ export default function InvoiceBuilder({ activeId }) {
                 {/* Chart */}
                 <div className="bg-white dark:bg-[#1a1f25] rounded-2xl p-6 border border-gray-100 dark:border-gray-800">
                     <p className="text-[10px] font-bold uppercase tracking-[.15em] text-gray-400 mb-4">Revenus mensuels</p>
-                    <ResponsiveContainer width="100%" height={200}>
+                    <ResponsiveContainer width="100%" height={200} minWidth={0} minHeight={0}>
                         <BarChart data={chartData} margin={{ left: -20 }}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9"/>
                             <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false}/>
@@ -959,11 +959,13 @@ export default function InvoiceBuilder({ activeId }) {
                                 </div>
                                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
                                     <div className="bg-white/50">
-                                        <SortableContext items={draft.items} strategy={verticalListSortingStrategy}>
-                                            {draft.items.map(item => (
-                                                <SortableLine key={item.id} item={item} onUpdate={updateItem} onRemove={removeItem} currency={draft.currency}/>
-                                            ))}
-                                        </SortableContext>
+                                        <table className="w-full"><tbody>
+                                            <SortableContext items={draft.items} strategy={verticalListSortingStrategy}>
+                                                {draft.items.map(item => (
+                                                    <SortableLine key={item.id} item={item} onUpdate={updateItem} onRemove={removeItem} currency={draft.currency}/>
+                                                ))}
+                                            </SortableContext>
+                                        </tbody></table>
                                     </div>
                                 </DndContext>
                                 <button onClick={addItem}
@@ -1075,11 +1077,13 @@ export default function InvoiceBuilder({ activeId }) {
                                     </div>
                                     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
                                         <div className="bg-white rounded-[20px] px-8 py-5">
-                                            <SortableContext items={draft.items} strategy={verticalListSortingStrategy}>
-                                                {draft.items.map(item => (
-                                                    <SortableLine key={item.id} item={item} onUpdate={updateItem} onRemove={removeItem} currency={draft.currency}/>
-                                                ))}
-                                            </SortableContext>
+                                            <table className="w-full"><tbody>
+                                                <SortableContext items={draft.items} strategy={verticalListSortingStrategy}>
+                                                    {draft.items.map(item => (
+                                                        <SortableLine key={item.id} item={item} onUpdate={updateItem} onRemove={removeItem} currency={draft.currency}/>
+                                                    ))}
+                                                </SortableContext>
+                                            </tbody></table>
                                         </div>
                                     </DndContext>
                                     <button onClick={addItem}

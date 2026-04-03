@@ -82,7 +82,7 @@ const AgentsHub = ({ activeId }) => {
 
         setIsLoading(true);
         try {
-            const res = await fetch('http://localhost:3000/api/ai/agent', {
+            const res = await fetch('http://127.0.0.1:3000/api/ai/agent', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -197,7 +197,7 @@ const AgentsHub = ({ activeId }) => {
                 };
             }
 
-            const res = await fetch('http://localhost:3000/api/ai/generate-image', {
+            const res = await fetch('http://127.0.0.1:3000/api/ai/generate-image', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body)
@@ -295,7 +295,7 @@ const AgentsHub = ({ activeId }) => {
             // Switch to the WhatsApp view immediately so the user can watch the automation
             navigate('/whatsapp-hub');
 
-            const res = await fetch('http://localhost:3000/api/catalog/upload', {
+            const res = await fetch('http://127.0.0.1:3000/api/catalog/upload', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body)

@@ -160,7 +160,7 @@ const WorkArea = ({ instances, activeId }) => {
 
             if (ctxDataContext && !ctxDataContext.error && ctxDataContext.messages && ctxDataContext.messages.length > 0) {
                 // 2. Process via Gemini Assistive Copilot
-                const geminiRes = await fetch('http://localhost:3000/api/ai/copilot', {
+                const geminiRes = await fetch('http://127.0.0.1:3000/api/ai/copilot', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -216,7 +216,7 @@ const WorkArea = ({ instances, activeId }) => {
         // Poll the orchestrator to see if it sees the WhatsApp instances
         const interval = setInterval(async () => {
             try {
-                const res = await fetch('http://localhost:3000/api/instances');
+                const res = await fetch('http://127.0.0.1:3000/api/instances');
                 const data = await res.json();
                 if (data.status === 'success') {
                     setOrchestratorStatus('Connected');
