@@ -7,4 +7,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     removeInstance: (id) => ipcRenderer.invoke('remove-instance', id),
     // PDF Export (Phase 18)
     printToPDF: (htmlContent, defaultFileName) => ipcRenderer.invoke('print-to-pdf', htmlContent, defaultFileName),
+    // Auth (Phase 21b)
+    openExternalUrl: (url) => ipcRenderer.invoke('open-external-url', url),
 });

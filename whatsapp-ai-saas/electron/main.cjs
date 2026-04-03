@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -51,6 +51,12 @@ app.whenReady().then(() => {
     });
     ipcMain.handle('remove-instance', (event, id) => {
         console.log(`[Main] Remove instance requested: ${id}`);
+        return true;
+    });
+
+    ipcMain.handle('open-external-url', (event, url) => {
+        console.log(`[Main] Opening external URL: ${url}`);
+        shell.openExternal(url);
         return true;
     });
 

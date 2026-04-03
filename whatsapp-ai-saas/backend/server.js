@@ -15,6 +15,10 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
+// --- Google Auth Loopback ---
+const authGoogleRouter = require('./routes/authGoogle');
+app.use('/api/auth/google', authGoogleRouter);
+
 // API route to get WhatsApp instances status
 app.get('/api/instances', async (req, res) => {
     let browser = null;
