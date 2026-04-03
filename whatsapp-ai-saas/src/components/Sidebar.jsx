@@ -25,6 +25,8 @@ const Sidebar = ({ instances, activeId, onSelect, onAdd, onRemove, onUpdate, cur
     const [editForm, setEditForm] = useState({ name: '', color: '', icon: '' });
     const language = useAppStore(state => state.appSettings?.language) || 'en';
     const userProfile = useAppStore(state => state.userProfile) || {};
+    const waAnalysis = useAppStore(state => state.waAnalysis);
+    const resetWaAnalysis = useAppStore(state => state.resetWaAnalysis);
     const [sidebarWidth, setSidebarWidth] = useState(260);
     const [isResizing, setIsResizing] = useState(false);
 
@@ -148,13 +150,28 @@ const Sidebar = ({ instances, activeId, onSelect, onAdd, onRemove, onUpdate, cur
                             <div className="flex items-center gap-3">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
                                 <span className="text-sm font-medium">Whatsapp</span>
+                                {/* Global analysis badge — always visible, with Stop */}
+                                {waAnalysis.isRunning && (
+                                    <span className="flex items-center gap-1 ml-1 bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                                        <svg className="animate-spin h-2.5 w-2.5 shrink-0" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                        {waAnalysis.totalProcessed}/{waAnalysis.totalContacts}
+                                        <span
+                                            role="button"
+                                            tabIndex={0}
+                                            onClick={(e) => { e.stopPropagation(); resetWaAnalysis(); }}
+                                            onKeyDown={(e) => e.key === 'Enter' && resetWaAnalysis()}
+                                            className="ml-0.5 cursor-pointer hover:text-red-400 transition-colors"
+                                            title="Arrêter l'analyse"
+                                        >✕</span>
+                                    </span>
+                                )}
                             </div>
                             <svg className={`w-4 h-4 transition-transform ${whatsappMenuExpanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                             </svg>
                         </button>
 
-                        <div className={`overflow-hidden transition-all duration-300 pl-11 pr-3 space-y-1 ${whatsappMenuExpanded ? 'max-h-40 py-1' : 'max-h-0 py-0'}`}>
+                        <div className={`overflow-hidden transition-all duration-300 pl-11 pr-3 space-y-1 ${whatsappMenuExpanded ? 'max-h-56 py-1' : 'max-h-0 py-0'}`}>
                             <Link to="/wa/contact-lists" className={`flex items-center px-3 py-2 rounded-lg transition-colors ${currentPath === '/wa/contact-lists' ? 'bg-white/10 text-white font-medium' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
                                 <span className="truncate text-sm">Contact Lists</span>
                             </Link>

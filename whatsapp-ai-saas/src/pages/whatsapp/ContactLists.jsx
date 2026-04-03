@@ -7,11 +7,16 @@ export default function ContactLists() {
     const [lists, setLists] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    // Modal State
+    // Modal State (create)
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [newListName, setNewListName] = useState('');
-    const [newListStatus, setNewListStatus] = useState(true); // default active
+    const [newListStatus, setNewListStatus] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Edit Modal State
+    const [editingList, setEditingList] = useState(null);
+    const [editName, setEditName] = useState('');
+    const [isEditSubmitting, setIsEditSubmitting] = useState(false);
 
     useEffect(() => {
         fetchLists();
@@ -19,7 +24,7 @@ export default function ContactLists() {
 
     const fetchLists = async () => {
         try {
-            const res = await fetch('http://localhost:3000/api/wa/contact-lists');
+            const res = await fetch('http://127.0.0.1:3000/api/wa/contact-lists');
             const data = await res.json();
             if (data.status === 'success') {
                 setLists(data.data);
@@ -38,7 +43,7 @@ export default function ContactLists() {
 
         setIsSubmitting(true);
         try {
-            const res = await fetch('http://localhost:3000/api/wa/contact-lists', {
+            const res = await fetch('http://127.0.0.1:3000/api/wa/contact-lists', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name: newListName })
@@ -58,6 +63,51 @@ export default function ContactLists() {
             showAppNotification('Failed to add contact list', 'error');
         } finally {
             setIsSubmitting(false);
+        }
+    };
+
+    const handleEditList = async (e) => {
+        e.preventDefault();
+        if (!editName.trim() || !editingList) return;
+
+        setIsEditSubmitting(true);
+        try {
+            const res = await fetch(`http://127.0.0.1:3000/api/wa/contact-lists/${editingList.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: editName })
+            });
+            const data = await res.json();
+            if (data.status === 'success') {
+                showAppNotification('Contact List updated!', 'success');
+                setLists(lists.map(l => l.id === editingList.id ? data.data : l));
+                setEditingList(null);
+                setEditName('');
+            } else {
+                throw new Error(data.error);
+            }
+        } catch (error) {
+            console.error(error);
+            showAppNotification('Failed to update contact list', 'error');
+        } finally {
+            setIsEditSubmitting(false);
+        }
+    };
+
+    const handleDeleteList = async (list) => {
+        if (!window.confirm(`Delete list "${list.name}"? Contacts in this list will be unassigned.`)) return;
+        try {
+            const res = await fetch(`http://127.0.0.1:3000/api/wa/contact-lists/${list.id}`, { method: 'DELETE' });
+            const data = await res.json();
+            if (data.status === 'success') {
+                showAppNotification('Contact list deleted.', 'success');
+                setLists(lists.filter(l => l.id !== list.id));
+            } else {
+                throw new Error(data.error);
+            }
+        } catch (error) {
+            console.error(error);
+            showAppNotification('Failed to delete contact list', 'error');
         }
     };
 
@@ -92,28 +142,22 @@ export default function ContactLists() {
                         </thead>
                         <tbody className="divide-y divide-gray-100 dark:divide-zinc-800 text-gray-800 dark:text-zinc-200">
                             {isLoading ? (
-                                <tr>
-                                    <td colSpan="3" className="px-6 py-12 text-center text-gray-500 dark:text-zinc-500">
-                                        Loading contact lists...
-                                    </td>
-                                </tr>
+                                <tr><td colSpan="3" className="px-6 py-12 text-center text-gray-500 dark:text-zinc-500">Loading contact lists...</td></tr>
                             ) : lists.length === 0 ? (
-                                <tr>
-                                    <td colSpan="3" className="px-6 py-12 text-center text-gray-500 dark:text-zinc-500">
-                                        No contact lists found.
-                                    </td>
-                                </tr>
+                                <tr><td colSpan="3" className="px-6 py-12 text-center text-gray-500 dark:text-zinc-500">No contact lists found.</td></tr>
                             ) : lists.map((list) => (
                                 <tr key={list.id} className="hover:bg-gray-50/50 dark:hover:bg-zinc-800/30 transition-colors">
                                     <td className="px-6 py-4 text-gray-500 dark:text-zinc-400">#{list.id}</td>
                                     <td className="px-6 py-4 font-medium">{list.name}</td>
                                     <td className="px-6 py-4 text-right space-x-2">
-                                        <button className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium text-xs bg-blue-50 dark:bg-blue-900/20 px-3 py-1.5 rounded-md transition-colors">
-                                            Edit
-                                        </button>
-                                        <button className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 font-medium text-xs bg-red-50 dark:bg-red-900/20 px-3 py-1.5 rounded-md transition-colors">
-                                            Delete
-                                        </button>
+                                        <button
+                                            onClick={() => { setEditingList(list); setEditName(list.name); }}
+                                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium text-xs bg-blue-50 dark:bg-blue-900/20 px-3 py-1.5 rounded-md transition-colors"
+                                        >Edit</button>
+                                        <button
+                                            onClick={() => handleDeleteList(list)}
+                                            className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 font-medium text-xs bg-red-50 dark:bg-red-900/20 px-3 py-1.5 rounded-md transition-colors"
+                                        >Delete</button>
                                     </td>
                                 </tr>
                             ))}
@@ -125,55 +169,58 @@ export default function ContactLists() {
             {/* Create Contact List Modal */}
             {isModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-                    <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+                    <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
                         <div className="p-6">
                             <div className="flex justify-between items-start mb-4">
                                 <div>
                                     <h3 className="text-xl font-bold text-gray-900 dark:text-white">Create a Contact List</h3>
                                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Create a new contact list for your whatsapp.</p>
                                 </div>
-                                <button
-                                    onClick={() => setIsModalOpen(false)}
-                                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                                >
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                                 </button>
                             </div>
-
                             <form onSubmit={handleAddList} className="space-y-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Contact List Name</label>
-                                    <input
-                                        type="text"
-                                        required
-                                        autoFocus
-                                        className="w-full bg-gray-50 border border-emerald-400 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block p-2.5 dark:bg-zinc-800 dark:text-white outline-none transition-colors"
-                                        value={newListName}
-                                        onChange={(e) => setNewListName(e.target.value)}
-                                    />
+                                    <input type="text" required autoFocus className="w-full bg-gray-50 border border-emerald-400 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block p-2.5 dark:bg-zinc-800 dark:text-white outline-none transition-colors" value={newListName} onChange={(e) => setNewListName(e.target.value)} />
                                 </div>
-
                                 <div className="flex items-center gap-3 py-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => setNewListStatus(!newListStatus)}
-                                        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition-colors duration-200 ease-in-out ${newListStatus ? 'bg-emerald-500' : 'bg-gray-200 dark:bg-zinc-700'}`}
-                                    >
-                                        <span className="sr-only">Use setting</span>
+                                    <button type="button" onClick={() => setNewListStatus(!newListStatus)} className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors duration-200 ease-in-out ${newListStatus ? 'bg-emerald-500' : 'bg-gray-200 dark:bg-zinc-700'}`}>
                                         <span aria-hidden="true" className={`pointer-events-none absolute left-0 inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${newListStatus ? 'translate-x-4' : 'translate-x-0'}`}></span>
                                     </button>
                                     <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Status</span>
                                 </div>
-
                                 <div className="pt-2">
-                                    <button
-                                        type="submit"
-                                        disabled={isSubmitting}
-                                        className="w-full text-white bg-emerald-500 hover:bg-emerald-600 focus:ring-4 focus:outline-none focus:ring-emerald-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
-                                    >
+                                    <button type="submit" disabled={isSubmitting} className="w-full text-white bg-emerald-500 hover:bg-emerald-600 font-medium rounded-lg text-sm px-5 py-2.5 text-center flex items-center justify-center gap-2 transition-colors disabled:opacity-50">
                                         {isSubmitting ? 'Adding...' : 'Add'}
-                                        {!isSubmitting && <span className="bg-white/20 rounded-full p-0.5"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14m-7-7l7 7-7 7" /></svg></span>}
                                     </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Modal */}
+            {editingList && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                    <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+                        <div className="p-6">
+                            <div className="flex justify-between items-start mb-4">
+                                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Edit List</h3>
+                                <button onClick={() => setEditingList(null)} className="text-gray-400 hover:text-gray-600 transition-colors">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                </button>
+                            </div>
+                            <form onSubmit={handleEditList} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">List Name</label>
+                                    <input type="text" required autoFocus className="w-full bg-gray-50 border border-blue-400 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-zinc-800 dark:text-white outline-none transition-colors" value={editName} onChange={(e) => setEditName(e.target.value)} />
+                                </div>
+                                <div className="pt-2 flex gap-3">
+                                    <button type="button" onClick={() => setEditingList(null)} className="flex-1 text-gray-700 bg-gray-100 hover:bg-gray-200 dark:text-gray-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors">Cancel</button>
+                                    <button type="submit" disabled={isEditSubmitting} className="flex-1 text-white bg-blue-600 hover:bg-blue-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors disabled:opacity-50">{isEditSubmitting ? 'Saving...' : 'Save'}</button>
                                 </div>
                             </form>
                         </div>

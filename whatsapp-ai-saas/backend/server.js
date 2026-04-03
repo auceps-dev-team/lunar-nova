@@ -573,20 +573,32 @@ app.get('/api/wa/contact-lists', async (req, res) => {
     }
 });
 
-app.get('/api/wa/contact-lists', async (req, res) => {
-    try {
-        const result = await pool.query('SELECT * FROM wa_contact_lists ORDER BY id DESC');
-        res.json({ status: 'success', data: result.rows });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
 app.post('/api/wa/contact-lists', async (req, res) => {
     const { name } = req.body;
     try {
         const result = await pool.query('INSERT INTO wa_contact_lists (name) VALUES ($1) RETURNING *', [name]);
         res.json({ status: 'success', data: result.rows[0] });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.put('/api/wa/contact-lists/:id', async (req, res) => {
+    const { name } = req.body;
+    try {
+        const result = await pool.query('UPDATE wa_contact_lists SET name = $1 WHERE id = $2 RETURNING *', [name, req.params.id]);
+        if (result.rows.length === 0) return res.status(404).json({ error: 'List not found' });
+        res.json({ status: 'success', data: result.rows[0] });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.delete('/api/wa/contact-lists/:id', async (req, res) => {
+    try {
+        await pool.query('UPDATE wa_contacts SET list_id = NULL WHERE list_id = $1', [req.params.id]);
+        await pool.query('DELETE FROM wa_contact_lists WHERE id = $1', [req.params.id]);
+        res.json({ status: 'success', message: 'List deleted' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -606,6 +618,27 @@ app.post('/api/wa/segments', async (req, res) => {
     try {
         const result = await pool.query('INSERT INTO wa_segments (name) VALUES ($1) RETURNING *', [name]);
         res.json({ status: 'success', data: result.rows[0] });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.put('/api/wa/segments/:id', async (req, res) => {
+    const { name } = req.body;
+    try {
+        const result = await pool.query('UPDATE wa_segments SET name = $1 WHERE id = $2 RETURNING *', [name, req.params.id]);
+        if (result.rows.length === 0) return res.status(404).json({ error: 'Segment not found' });
+        res.json({ status: 'success', data: result.rows[0] });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.delete('/api/wa/segments/:id', async (req, res) => {
+    try {
+        await pool.query('UPDATE wa_contacts SET segment_id = NULL WHERE segment_id = $1', [req.params.id]);
+        await pool.query('DELETE FROM wa_segments WHERE id = $1', [req.params.id]);
+        res.json({ status: 'success', message: 'Segment deleted' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -931,61 +964,62 @@ app.post('/api/wa/verify-contact', async (req, res) => {
         }
 
         console.log(`[Verifier] Navigating to WhatsApp send URL for phone: ${phone}`);
-        // Strip out non-numeric characters for absolute safety
         const cleanPhone = phone.replace(/[^0-9]/g, '');
-        // User specified format requires a slash before the question mark
         const verifyUrl = `https://web.whatsapp.com/send/?phone=${cleanPhone}`;
-        await targetPage.goto(verifyUrl, { waitUntil: 'domcontentloaded' });
 
-        console.log(`[Verifier] Racing chatbox vs error modal using DOM check...`);
-        const result = await targetPage.evaluate(() => {
-            return new Promise((resolve) => {
-                let checkCount = 0;
-                const interval = setInterval(() => {
-                    checkCount++;
+        // First, dismiss any lingering OK modal from a previous contact check
+        try {
+            await targetPage.evaluate(() => {
+                const buttons = document.querySelectorAll('button');
+                for (const btn of buttons) {
+                    const t = (btn.innerText || btn.textContent || '').trim().toUpperCase();
+                    if (t === 'OK') { btn.click(); break; }
+                }
+            });
+            await new Promise(r => setTimeout(r, 300));
+        } catch (_) {}
 
-                    // 1. Check for valid chat
-                    // When a chat successfully opens, the #main container gets a <header> and a <footer> (message input area).
-                    // This avoids false positives from the empty #main wrapper while being far less brittle than strict data-testids.
-                    const validElement = document.querySelector('#main header, #main footer, [data-testid="conversation-panel-wrapper"], div[title="Type a message"], div[title="Tapez un message"]');
-                    if (validElement) {
-                        clearInterval(interval);
-                        resolve('VALIDE');
-                        return;
+        await targetPage.goto(verifyUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
+
+        console.log(`[Verifier] Racing chatbox vs error modal...`);
+
+        let result = 'TIMEOUT';
+        const deadline = Date.now() + 18000; // 18s max
+
+        while (Date.now() < deadline) {
+            await new Promise(r => setTimeout(r, 600));
+            try {
+                const state = await targetPage.evaluate(() => {
+                    // Valid chat: conversation panel visible
+                    if (document.querySelector('#main header, #main footer, [data-testid="conversation-panel-wrapper"], div[title="Type a message"], div[title="Tapez un message"]')) {
+                        return 'VALIDE';
                     }
-
-                    // 2. Check for the specific error modal provided by user
+                    // Error modal
                     const modalBody = document.querySelector('[data-animate-modal-body="true"]');
                     if (modalBody) {
-                        const text = modalBody.innerText || modalBody.textContent || '';
-                        if (text.toLowerCase().includes("n'est pas sur whatsapp") ||
-                            text.toLowerCase().includes("is not on whatsapp") ||
-                            text.toLowerCase().includes("invalide")) {
-
-                            // Try to click OK to dismiss the modal for the NEXT iteration
+                        const text = (modalBody.innerText || modalBody.textContent || '').toLowerCase();
+                        if (text.includes("n'est pas sur whatsapp") || text.includes("is not on whatsapp") || text.includes("invalide") || text.includes("phone number")) {
+                            // Dismiss modal
                             const buttons = document.querySelectorAll('button');
                             for (const btn of buttons) {
-                                const btnText = btn.innerText || btn.textContent || '';
-                                if (btnText.trim().toUpperCase() === 'OK') {
-                                    btn.click();
-                                    break;
-                                }
+                                const t = (btn.innerText || btn.textContent || '').trim().toUpperCase();
+                                if (t === 'OK') { btn.click(); break; }
                             }
-
-                            clearInterval(interval);
-                            resolve('INVALIDE');
-                            return;
+                            return 'INVALIDE';
                         }
                     }
-
-                    // 15 seconds timeout checking every 500ms
-                    if (checkCount > 30) {
-                        clearInterval(interval);
-                        resolve('TIMEOUT');
-                    }
-                }, 500);
-            });
-        });
+                    return 'PENDING';
+                });
+                if (state === 'VALIDE' || state === 'INVALIDE') {
+                    result = state;
+                    break;
+                }
+            } catch (evalErr) {
+                // Execution context destroyed (page navigating) — wait and retry
+                console.warn('[Verifier] Context destroyed, waiting...');
+                await new Promise(r => setTimeout(r, 800));
+            }
+        }
 
         if (result === 'VALIDE') {
             console.log(`✅ [Verifier] Le numéro ${cleanPhone} est valide.`);

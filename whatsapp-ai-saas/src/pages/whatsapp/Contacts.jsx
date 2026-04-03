@@ -5,8 +5,15 @@ import useAppStore from '../../store';
 export default function Contacts({ activeId }) {
     const [contacts, setContacts] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [isAnalyzing, setIsAnalyzing] = useState(false);
-    const [contactStatus, setContactStatus] = useState({});
+
+    // --- Global WA Analysis State (persists across navigations) ---
+    const waAnalysis = useAppStore(state => state.waAnalysis);
+    const startWaAnalysis = useAppStore(state => state.startWaAnalysis);
+    const updateWaContactAnalysis = useAppStore(state => state.updateWaContactAnalysis);
+    const finishWaAnalysis = useAppStore(state => state.finishWaAnalysis);
+    const isAnalyzing = waAnalysis.isRunning;
+    const contactStatus = waAnalysis.contactStatuses;
+
     const [currentPage, setCurrentPage] = useState(() => {
         const saved = sessionStorage.getItem('wa_contacts_page');
         return saved ? parseInt(saved, 10) : 1;
@@ -46,7 +53,7 @@ export default function Contacts({ activeId }) {
             const textAfter = dynamicTemplate.substring(end);
             const newValue = textBefore + variable + textAfter;
             setDynamicTemplate(newValue);
-            
+
             // Re-focus and set cursor position (setTimeout to allow React state update)
             setTimeout(() => {
                 textarea.focus();
@@ -65,7 +72,7 @@ export default function Contacts({ activeId }) {
 
     const fetchContacts = async () => {
         try {
-            const res = await fetch('http://localhost:3000/api/wa/contacts');
+            const res = await fetch('http://127.0.0.1:3000/api/wa/contacts');
             const data = await res.json();
             if (data.status === 'success') {
                 setContacts(data.data);
@@ -80,7 +87,7 @@ export default function Contacts({ activeId }) {
 
     const fetchSettings = async () => {
         try {
-            const res = await fetch('http://localhost:3000/api/settings');
+            const res = await fetch('http://127.0.0.1:3000/api/settings');
             const data = await res.json();
             if (data.status === 'success' && data.settings && data.settings.dynamic_message_template) {
                 setDynamicTemplate(data.settings.dynamic_message_template);
@@ -94,7 +101,7 @@ export default function Contacts({ activeId }) {
         e.preventDefault();
         setIsSavingTemplate(true);
         try {
-            const res = await fetch('http://localhost:3000/api/settings', {
+            const res = await fetch('http://127.0.0.1:3000/api/settings', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ dynamic_message_template: dynamicTemplate })
@@ -123,8 +130,8 @@ export default function Contacts({ activeId }) {
     const fetchMetadata = async () => {
         try {
             const [listsRes, segmentsRes] = await Promise.all([
-                fetch('http://localhost:3000/api/wa/contact-lists'),
-                fetch('http://localhost:3000/api/wa/segments')
+                fetch('http://127.0.0.1:3000/api/wa/contact-lists'),
+                fetch('http://127.0.0.1:3000/api/wa/segments')
             ]);
             const listsData = await listsRes.json();
             const segmentsData = await segmentsRes.json();
@@ -215,7 +222,7 @@ export default function Contacts({ activeId }) {
         if (!window.confirm(`Are you sure you want to delete ${selectedContacts.length} contacts?`)) return;
 
         try {
-            const res = await fetch('http://localhost:3000/api/wa/contacts/bulk-delete', {
+            const res = await fetch('http://127.0.0.1:3000/api/wa/contacts/bulk-delete', {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ contactIds: selectedContacts })
@@ -238,7 +245,7 @@ export default function Contacts({ activeId }) {
         e.preventDefault();
         setIsSubmittingBulk(true);
         try {
-            const res = await fetch('http://localhost:3000/api/wa/contacts/bulk-update', {
+            const res = await fetch('http://127.0.0.1:3000/api/wa/contacts/bulk-update', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -269,7 +276,7 @@ export default function Contacts({ activeId }) {
         e.preventDefault();
         setIsSubmittingBulk(true);
         try {
-            const res = await fetch('http://localhost:3000/api/wa/contacts/bulk-update-list', {
+            const res = await fetch('http://127.0.0.1:3000/api/wa/contacts/bulk-update-list', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -313,52 +320,59 @@ export default function Contacts({ activeId }) {
             showAppNotification('Please start a WhatsApp session first.', 'error');
             return;
         }
+        if (isAnalyzing) return;
 
-        setIsAnalyzing(true);
-        let validCount = 0;
-        let invalidCount = 0;
+        // Launch global analysis (survives page navigation)
+        const contactsToAnalyze = [...contactsOnPage];
+        startWaAnalysis(contactsToAnalyze.length);
 
-        for (const contact of contactsOnPage) {
-            setContactStatus(prev => ({ ...prev, [contact.id]: 'loading' }));
-            try {
-                const rawPhone = contact.phone ? contact.phone.toString().replace(/[^0-9]/g, '') : '';
+        // Run in the background — no local state, uses global store
+        (async () => {
+            for (const contact of contactsToAnalyze) {
+                updateWaContactAnalysis(contact.id, 'loading');
+                try {
+                    const rawPhone = contact.phone ? contact.phone.toString().replace(/[^0-9]/g, '') : '';
 
-                // If it's empty or totally invalid, immediately flag it and skip
-                if (!rawPhone || rawPhone.length < 5) {
-                    invalidCount++;
-                    setContactStatus(prev => ({ ...prev, [contact.id]: 'invalid' }));
-                    continue;
-                }
-
-                const res = await fetch('http://localhost:3000/api/wa/verify-contact', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        instance_id: activeId,
-                        phone: rawPhone
-                    })
-                });
-
-                const data = await res.json();
-                if (data.status === 'success') {
-                    if (data.is_valid) {
-                        validCount++;
-                        setContactStatus(prev => ({ ...prev, [contact.id]: 'valid' }));
-                    } else {
-                        invalidCount++;
-                        setContactStatus(prev => ({ ...prev, [contact.id]: 'invalid' }));
+                    if (!rawPhone || rawPhone.length < 5) {
+                        updateWaContactAnalysis(contact.id, 'invalid');
+                        continue;
                     }
-                } else {
-                    setContactStatus(prev => ({ ...prev, [contact.id]: 'error' }));
-                }
-            } catch (err) {
-                console.error("Error analyzing contact", contact.name, err);
-                setContactStatus(prev => ({ ...prev, [contact.id]: 'error' }));
-            }
-        }
 
-        setIsAnalyzing(false);
-        showAppNotification(`Page Analysis: ${validCount} valid WhatsApp numbers found, ${invalidCount} invalid/missing.`, 'success');
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 25000); // 25s max per contact
+
+                    const res = await fetch('http://127.0.0.1:3000/api/wa/verify-contact', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ instance_id: activeId, phone: rawPhone }),
+                        signal: controller.signal
+                    });
+                    clearTimeout(timeoutId);
+
+                    const data = await res.json();
+                    if (data.status === 'success') {
+                        updateWaContactAnalysis(contact.id, data.is_valid ? 'valid' : 'invalid');
+                    } else {
+                        updateWaContactAnalysis(contact.id, 'error');
+                    }
+                } catch (err) {
+                    if (err.name === 'AbortError') {
+                        console.warn(`[Analyse] Timeout pour ${contact.name} — passage au suivant`);
+                    } else {
+                        console.error('Error analyzing contact', contact.name, err);
+                    }
+                    updateWaContactAnalysis(contact.id, 'error');
+                }
+            }
+
+            // Done — always fires even if user navigated away
+            finishWaAnalysis();
+            const { waAnalysis: finalState } = useAppStore.getState();
+            showAppNotification(
+                `Analyse terminée : ${finalState.totalValid} numéros WhatsApp valides trouvés, ${finalState.totalInvalid} invalides.`,
+                'success'
+            );
+        })();
     };
 
     const [openingChatFor, setOpeningChatFor] = useState(null);
@@ -372,7 +386,7 @@ export default function Contacts({ activeId }) {
         setOpeningChatFor(contactId);
         try {
             const rawPhone = phone.replace(/[^0-9]/g, '');
-            const res = await fetch('http://localhost:3000/api/wa/open-chat', {
+            const res = await fetch('http://127.0.0.1:3000/api/wa/open-chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ instance_id: activeId, phone: rawPhone, contact_id: contactId })
@@ -587,9 +601,10 @@ export default function Contacts({ activeId }) {
                                     <td className="px-6 py-4 text-right">
                                         <button
                                             onClick={() => handleOpenChat(contact.phone, contact.id)}
-                                            disabled={openingChatFor === contact.id}
-                                            className="text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300 font-medium text-xs bg-emerald-50 dark:bg-emerald-900/20 px-3 py-1.5 rounded-md transition-all flex items-center justify-center gap-1 ml-auto disabled:opacity-50"
-                                            title="Contacter sur WhatsApp"
+                                            disabled={openingChatFor === contact.id || isAnalyzing}
+                                            className={`text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300 font-medium text-xs bg-emerald-50 dark:bg-emerald-900/20 px-3 py-1.5 rounded-md transition-all flex items-center justify-center gap-1 ml-auto ${isAnalyzing ? 'opacity-40 cursor-not-allowed' : 'disabled:opacity-50'
+                                                }`}
+                                            title={isAnalyzing ? 'Analyse en cours...' : 'Contacter sur WhatsApp'}
                                         >
                                             {openingChatFor === contact.id ? (
                                                 <svg className="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
@@ -601,13 +616,15 @@ export default function Contacts({ activeId }) {
                                         <div className="flex justify-end gap-2 mt-2">
                                             <button
                                                 onClick={() => navigate('/wa/contacts/edit/' + contact.id)}
-                                                className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium text-xs bg-blue-50 dark:bg-blue-900/20 px-3 py-1.5 rounded-md transition-colors"
+                                                disabled={isAnalyzing}
+                                                className={`text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium text-xs bg-blue-50 dark:bg-blue-900/20 px-3 py-1.5 rounded-md transition-colors ${isAnalyzing ? 'opacity-40 cursor-not-allowed' : ''}`}
                                             >
                                                 Edit
                                             </button>
                                             <button
                                                 onClick={() => handleDelete(contact.id)}
-                                                className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 font-medium text-xs bg-red-50 dark:bg-red-900/20 px-3 py-1.5 rounded-md transition-colors"
+                                                disabled={isAnalyzing}
+                                                className={`text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 font-medium text-xs bg-red-50 dark:bg-red-900/20 px-3 py-1.5 rounded-md transition-colors ${isAnalyzing ? 'opacity-40 cursor-not-allowed' : ''}`}
                                             >
                                                 Delete
                                             </button>
