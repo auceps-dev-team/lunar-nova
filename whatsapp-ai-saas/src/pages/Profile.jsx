@@ -306,18 +306,6 @@ const Profile = () => {
                                 <p className="text-sm text-gray-500">This information will be used to auto-fill the Invoice Builder.</p>
                             </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
-                                <input
-                                    type="text"
-                                    name="companyName"
-                                    value={profileForm.companyName}
-                                    onChange={handleChange}
-                                    className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all"
-                                    placeholder="Acme Corp"
-                                />
-                            </div>
-                            
                             <div className="md:col-span-2 mt-2">
                                 <label className="block text-sm font-medium text-gray-700 mb-2">Logo de l'entreprise</label>
                                 <div className="flex items-center gap-4">
@@ -336,6 +324,18 @@ const Profile = () => {
                                         id="companyLogoUpload"
                                     />
                                 </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
+                                <input
+                                    type="text"
+                                    name="companyName"
+                                    value={profileForm.companyName}
+                                    onChange={handleChange}
+                                    className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all"
+                                    placeholder="Acme Corp"
+                                />
                             </div>
 
                             <div className="md:col-span-2">

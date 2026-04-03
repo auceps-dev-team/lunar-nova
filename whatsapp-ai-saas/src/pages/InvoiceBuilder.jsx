@@ -66,7 +66,7 @@ function freshInvoice(userProfile = {}) {
         companyName: userProfile.companyName || '', 
         companyTagline: '', 
         senderInfo: senderParts,
-        companyLogo: null, clientLogo: null,
+        companyLogo: userProfile.companyLogo || null, clientLogo: null,
         clientName: '', clientEmail: '', clientAddress: '',
         issueDate: today.toISOString().split('T')[0],
         dueDate: due.toISOString().split('T')[0],
@@ -149,6 +149,234 @@ function SortableLine({ item, onUpdate, onRemove, currency }) {
    ═══════════════════════════════════════════════════════ */
 function buildInvoiceHTML(draft) {
     const { sub, tax, total } = calc(draft.items, draft.taxRate);
+    if (draft.template === 'stripe') {
+        const rows = (draft.items || []).map(it => `
+            <div class="table-row">
+                <div>${it.description || '—'}</div>
+                <div class="col-center">${it.qty}</div>
+                <div class="col-center">${fmt(it.price, draft.currency)}</div>
+                <div class="col-right">${fmt(it.qty * it.price, draft.currency)}</div>
+            </div>
+        `).join('');
+
+        const defaultLogo = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><path d="M50 85 C30 85, 15 65, 15 45 C15 30, 30 15, 50 10 C70 15, 85 30, 85 45 C85 65, 70 85, 50 85 Z" /><path d="M50 85 C40 65, 35 45, 50 25 C65 45, 60 65, 50 85 Z" /><path d="M15 45 C25 60, 40 70, 50 85" /><path d="M85 45 C75 60, 60 70, 50 85" /></svg>`;
+        const logoHTML = draft.companyLogo ? `<img src="${draft.companyLogo}" style="height:80px;object-fit:contain" alt="logo"/>` : defaultLogo;
+
+        return `<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modèle de Facture - Violet</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg-color: #f7f7f9; --purple-main: #3b1485; --text-dark: #333333; --text-light: #5a5a75; --white: #ffffff; --gold: #c2a370; --border-color: #d1d1e0; }
+        body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; color: var(--text-dark); display: flex; justify-content: center; background-color: white; }
+        .invoice-container { width: 100%; max-width: 800px; background-color: var(--bg-color); padding: 60px; box-sizing: border-box; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .invoice-title { font-size: 3.5em; font-weight: 800; color: var(--purple-main); letter-spacing: 2px; margin: 0; text-transform: uppercase; }
+        .logo svg { width: 80px; height: 80px; fill: none; stroke: var(--gold); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        .divider { border: none; border-top: 1px solid var(--border-color); margin: 20px 0 40px 0; }
+        .divider-short { border: none; border-top: 1px solid var(--border-color); margin: 30px 0; width: 250px; }
+        .billing-info { display: flex; justify-content: space-between; margin-bottom: 40px; }
+        .invoice-to h2 { font-size: 1.2em; color: var(--text-dark); margin-top: 0; margin-bottom: 15px; }
+        .invoice-to p, .invoice-meta p { margin: 5px 0; font-size: 0.9em; color: var(--text-light); line-height: 1.5; white-space: pre-line; }
+        .invoice-meta { text-align: right; margin-top: 40px; }
+        .table-container { margin-bottom: 40px; }
+        .table-header { background-color: var(--purple-main); color: var(--white); display: grid; grid-template-columns: 4fr 1fr 2fr 2fr; padding: 15px 20px; font-weight: 700; font-size: 0.9em; letter-spacing: 0.5px; }
+        .table-row { display: grid; grid-template-columns: 4fr 1fr 2fr 2fr; padding: 20px; font-size: 0.9em; color: var(--text-dark); align-items: center; }
+        .table-row:nth-child(odd) { background-color: var(--white); }
+        .table-row:nth-child(even) { background-color: transparent; }
+        .col-center { text-align: center; }
+        .col-right { text-align: right; }
+        .bottom-section { display: flex; justify-content: space-between; }
+        .bottom-left, .bottom-right { width: 45%; }
+        .section-title { font-size: 1.1em; font-weight: 700; color: var(--purple-main); margin-bottom: 15px; margin-top: 0; }
+        .detail-text { font-size: 0.9em; color: var(--text-light); line-height: 1.6; margin: 0; white-space: pre-line; }
+        .totals-row { display: flex; justify-content: space-between; padding: 10px 20px; font-size: 0.95em; color: var(--text-dark); }
+        .totals-divider { border: none; border-top: 1px solid #9ba4b5; margin: 5px 20px; }
+        .total-box { background-color: var(--purple-main); color: var(--white); display: flex; justify-content: space-between; padding: 15px 20px; font-size: 1.1em; font-weight: 700; margin-top: 10px; }
+        .signature-box { margin-top: 40px; border: 1px solid #d1d1d1; height: 120px; display: flex; justify-content: center; align-items: flex-end; padding-bottom: 20px; background-color: var(--white); }
+        .signature-text { color: #a0a0a0; font-style: italic; font-size: 0.9em; }
+        @media print { body { padding: 0; } .invoice-container { box-shadow: none; padding: 20px; } }
+    </style>
+</head>
+<body>
+    <div class="invoice-container">
+        <div class="header">
+            <h1 class="invoice-title">Facture</h1>
+            <div class="logo">
+                ${logoHTML}
+            </div>
+        </div>
+
+        <hr class="divider">
+
+        <div class="billing-info">
+            <div class="invoice-to">
+                <h2>Facturé à :</h2>
+                <p><strong>${draft.clientName || 'Client / Société'}</strong></p>
+                <p>${draft.clientAddress}</p>
+            </div>
+            <div class="invoice-meta">
+                <p>No : ${draft.invoiceNumber}<br>
+                Émission : ${draft.issueDate}<br>
+                Échéance : ${draft.dueDate}</p>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <div class="table-header">
+                <div>DESCRIPTION</div>
+                <div class="col-center">QTÉ</div>
+                <div class="col-center">PRIX</div>
+                <div class="col-right">TOTAL</div>
+            </div>
+            ${rows}
+        </div>
+
+        <div class="bottom-section">
+            <div class="bottom-left">
+                ${draft.notes ? `<h3 class="section-title">Notes :</h3><p class="detail-text">${draft.notes}</p><hr class="divider-short">` : ''}
+                <h3 class="section-title">Coordonnées :</h3>
+                <p class="detail-text">${draft.companyName || 'Votre Entreprise'}<br>${draft.companyTagline || ''}<br>${draft.senderInfo || '—'}</p>
+            </div>
+
+            <div class="bottom-right">
+                <div class="totals-row">
+                    <span>Sous-Total :</span>
+                    <span>${fmt(sub, draft.currency)}</span>
+                </div>
+                
+                <hr class="totals-divider">
+                
+                <div class="totals-row">
+                    <span>TVA (${draft.taxRate}%) :</span>
+                    <span>${fmt(tax, draft.currency)}</span>
+                </div>
+
+                <div class="total-box">
+                    <span>Total :</span>
+                    <span>${fmt(total, draft.currency)}</span>
+                </div>
+
+                <div class="signature-box">
+                    <span class="signature-text">WaCopilote Automation</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>`;
+    }
+
+    if (draft.template === 'bold') {
+        const rows = (draft.items || []).map(it => `
+            <div class="table-row">
+                <div>${it.description || '—'}</div>
+                <div class="col-center">${it.qty}</div>
+                <div class="col-center">${fmt(it.price, draft.currency)}</div>
+                <div class="col-right">${fmt(it.qty * it.price, draft.currency)}</div>
+            </div>
+        `).join('');
+
+        const logoHTML = draft.companyLogo ? `<img src="${draft.companyLogo}" style="width:40px;height:40px;object-fit:contain" alt="logo"/>` : `<div class="logo-icon">${(draft.companyName || '?')[0]}</div>`;
+
+        return `<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modèle de Facture</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg-color: #ede8dc; --text-dark: #0a2533; --teal-gradient: linear-gradient(90deg, #256a7c, #48a69e); --white: #ffffff; --footer-bg: #072535; }
+        body { margin: 0; padding: 0; font-family: 'Montserrat', sans-serif; color: var(--text-dark); display: flex; justify-content: center; }
+        .invoice-container { width: 100%; max-width: 800px; background-color: var(--bg-color); background-image: radial-gradient(circle at top right, #f6f4ee 0%, var(--bg-color) 40%); padding: 50px; position: relative; overflow: hidden; }
+        .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 50px; }
+        .logo-section { display: flex; align-items: center; gap: 15px; }
+        .logo-icon { width: 40px; height: 40px; background: var(--teal-gradient); clip-path: polygon(20% 0%, 80% 0%, 100% 20%, 100% 80%, 80% 100%, 20% 100%, 0% 80%, 0% 20%); display: flex; justify-content: center; align-items: center; color: white; font-weight: bold; font-size: 24px; }
+        .company-name { font-weight: 700; font-size: 1.1em; text-transform: uppercase; letter-spacing: 1px; }
+        .company-sub { font-size: 0.8em; font-weight: 400; }
+        .invoice-title { font-size: 2.5em; font-weight: 700; color: var(--text-dark); letter-spacing: 2px; }
+        .info-section { display: flex; justify-content: space-between; margin-bottom: 40px; }
+        .info-left h3 { font-size: 0.9em; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; margin-top: 20px; }
+        .info-left p { margin: 4px 0; font-size: 0.9em; }
+        .info-right { text-align: right; margin-top: 20px; }
+        .info-right p { margin: 6px 0; font-size: 0.95em; }
+        .table-header { background: var(--teal-gradient); color: var(--white); border-radius: 20px; padding: 15px 30px; display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; font-weight: 700; font-size: 0.9em; letter-spacing: 1px; margin-bottom: 15px; }
+        .table-body { background: var(--white); border-radius: 20px; padding: 20px 30px; margin-bottom: 20px; }
+        .table-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; padding: 12px 0; font-size: 0.95em; }
+        .col-center { text-align: center; }
+        .col-right { text-align: right; }
+        .summary-section { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; }
+        .notes { width: 45%; }
+        .notes h4 { font-size: 0.9em; margin-bottom: 10px; text-transform: uppercase; }
+        .notes p { font-size: 0.8em; line-height: 1.5; color: #444; }
+        .totals { width: 45%; background: var(--white); border-radius: 20px; padding: 20px 30px; box-sizing: border-box; }
+        .total-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-weight: 600; font-size: 0.95em; }
+        .total-row.grand-total { margin-top: 15px; padding-top: 15px; font-size: 1.1em; font-weight: 700; border-top: 2px solid #eee; }
+        .footer-banner { background: var(--footer-bg); color: var(--white); border-radius: 30px; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; font-size: 0.85em; }
+        .footer-item { display: flex; align-items: center; gap: 8px; }
+        .footer-item span.icon { color: #48a69e; font-size: 1.2em; }
+        @media print { body { padding: 0; } .invoice-container { box-shadow: none; padding: 20px; } }
+    </style>
+</head>
+<body>
+    <div class="invoice-container">
+        <div class="header">
+            <div class="logo-section">
+                ${logoHTML}
+                <div>
+                    <div class="company-name">${draft.companyName || 'Vos Informations'}</div>
+                    <div class="company-sub">${draft.companyTagline || ''}</div>
+                </div>
+            </div>
+            <div class="invoice-title">${draft.invoiceNumber}</div>
+        </div>
+
+        <div class="info-section">
+            <div class="info-left">
+                <h3>DE</h3>
+                <p style="white-space:pre-line">${draft.senderInfo || '—'}</p>
+                
+                <h3>FACTURÉ À</h3>
+                <p><strong>${draft.clientName || 'Client / Société'}</strong></p>
+                <p style="white-space:pre-line">${draft.clientAddress}</p>
+            </div>
+            <div class="info-right">
+                <p>Numéro: ${draft.invoiceNumber}</p>
+                <p>Date: ${draft.issueDate}</p>
+                <p>Échéance: ${draft.dueDate}</p>
+            </div>
+        </div>
+
+        <div class="table-header">
+            <div>DESCRIPTION</div>
+            <div class="col-center">QTÉ</div>
+            <div class="col-center">PRIX</div>
+            <div class="col-right">TOTAL</div>
+        </div>
+
+        <div class="table-body">
+            ${rows}
+        </div>
+
+        <div class="summary-section">
+            <div class="notes">
+                ${draft.notes ? `<h4>NOTES</h4><p style="white-space: pre-line">${draft.notes}</p>` : ''}
+            </div>
+            <div class="totals">
+                <div class="total-row"><span>SOUS-TOTAL</span><span>${fmt(sub, draft.currency)}</span></div>
+                <div class="total-row"><span>TVA (${draft.taxRate}%)</span><span>${fmt(tax, draft.currency)}</span></div>
+                <div class="total-row grand-total"><span>TOTAL</span><span>${fmt(total, draft.currency)}</span></div>
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>`;
+    }
     const rows = (draft.items || []).map(it => `
         <tr>
             <td style="padding:10px 8px;border-bottom:1px solid #f1f5f9;font-size:13px;color:#334155">${it.description || '—'}</td>
@@ -254,7 +482,7 @@ function KPI({ label, value, sub, icon, accent }) {
 const TPL_PREVIEWS = [
     { id: 'clean', label: 'Modern Clean', colors: ['#059669','#ecfdf5','#fff'] },
     { id: 'bold', label: 'Bold Header', colors: ['#1e293b','#f8fafc','#fff'] },
-    { id: 'stripe', label: 'Stripe Accent', colors: ['#6366f1','#eef2ff','#fff'] },
+    { id: 'stripe', label: 'Violet Gold', colors: ['#3b1485','#f7f7f9','#c2a370'] },
 ];
 
 function TplThumb({ tpl, active, onClick }) {
@@ -295,6 +523,7 @@ export default function InvoiceBuilder({ activeId }) {
     const [draft, setDraft] = useState(null);
     const [filterStatus, setFilterStatus] = useState('all');
     const [saved, setSaved] = useState(false);
+    const [showSaveToast, setShowSaveToast] = useState(false);
 
     // Consume cross-app invoiceDraft coming from Orders.jsx
     useEffect(() => {
@@ -388,6 +617,8 @@ export default function InvoiceBuilder({ activeId }) {
         if (!draft) return;
         invoices.find(i => i.id === draft.id) ? updateInvoice(draft.id, draft) : addInvoice(draft);
         setSaved(true);
+        setShowSaveToast(true);
+        setTimeout(() => setShowSaveToast(false), 3000);
     };
 
     const handleExportPDF = async () => {
@@ -577,7 +808,15 @@ export default function InvoiceBuilder({ activeId }) {
     const { sub, tax, total } = calc(draft.items, draft.taxRate);
 
     return (
-        <div style={{ margin: '-24px' }} className="min-h-full flex flex-col">
+        <div style={{ margin: '-24px' }} className="min-h-full flex flex-col relative">
+            {/* Toast Notification */}
+            {showSaveToast && (
+                <div className="absolute top-16 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-top-4 bg-emerald-600 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 font-medium text-sm">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    Facture sauvegardée avec succès !
+                </div>
+            )}
+
             {/* Editor toolbar */}
             <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 sticky top-0 z-30">
                 <div className="flex items-center gap-3">
@@ -682,118 +921,309 @@ export default function InvoiceBuilder({ activeId }) {
             <div className="flex flex-1 min-h-0">
                 {/* Canvas */}
                 <div className="flex-1 overflow-y-auto p-8 bg-[#f5f6f8] dark:bg-[#0f1115]">
-                    <div className="max-w-3xl mx-auto bg-white dark:bg-[#1a1f25] rounded-2xl shadow-xl border border-gray-100 dark:border-gray-800 overflow-hidden">
-
-                        {/* Accent bar */}
-                        <div className="h-1.5 bg-gradient-to-r from-emerald-600 to-emerald-400"></div>
-
-                        <div className="p-10 space-y-10">
-                            {/* Header: Logo + Invoice # */}
-                            <div className="flex justify-between items-start">
-                                <div className="flex items-center gap-4">
-                                    <LogoPicker value={draft.companyLogo} onChange={v => setDraft(d => ({...d, companyLogo: v}))} label="Logo" size={56}/>
-                                    <div>
-                                        <input className="text-xl font-extrabold text-gray-900 dark:text-white bg-transparent outline-none w-full placeholder:text-gray-300 tracking-tight"
-                                            value={draft.companyName} onChange={e => setDraft(d => ({...d, companyName: e.target.value}))} placeholder="Votre entreprise"/>
-                                        <input className="text-sm text-gray-400 bg-transparent outline-none w-full placeholder:text-gray-300 mt-0.5"
-                                            value={draft.companyTagline} onChange={e => setDraft(d => ({...d, companyTagline: e.target.value}))} placeholder="Sous-titre"/>
-                                    </div>
+                    {draft.template === 'stripe' ? (
+                        <div className="max-w-3xl mx-auto rounded-none shadow-2xl p-14 bg-[#f7f7f9] text-[#333] font-['Inter',sans-serif]">
+                            {/* Header */}
+                            <div className="flex justify-between items-center mb-5">
+                                <h1 className="text-5xl font-extrabold text-[#3b1485] tracking-widest uppercase m-0">Facture</h1>
+                                <LogoPicker value={draft.companyLogo} onChange={v => setDraft(d => ({...d, companyLogo: v}))} label="Logo" size={80}/>
+                            </div>
+                            
+                            <hr className="border-t border-[#d1d1e0] my-8" />
+                            
+                            {/* Billing Info */}
+                            <div className="flex justify-between mb-10">
+                                <div className="flex-1 max-w-xs">
+                                    <h2 className="text-lg font-bold text-[#333] mt-0 mb-4">Facturé à :</h2>
+                                    <input className="w-full text-base font-bold text-[#333] bg-transparent outline-none pb-1 placeholder:text-gray-400 focus:border-[#3b1485] transition-colors"
+                                        value={draft.clientName} onChange={e => setDraft(d => ({...d, clientName: e.target.value}))} placeholder="Client / Société"/>
+                                    <textarea className="w-full bg-transparent text-sm text-[#5a5a75] outline-none resize-none mt-2 leading-relaxed" rows={2}
+                                        value={draft.clientAddress} onChange={e => setDraft(d => ({...d, clientAddress: e.target.value}))} placeholder="Adresse du client"/>
                                 </div>
-                                <div className="text-right">
-                                    <p className="text-[9px] font-bold uppercase tracking-[.2em] text-gray-400 mb-1">Facture</p>
-                                    <input className="text-xl font-extrabold text-gray-900 dark:text-white bg-transparent outline-none text-right w-48 tracking-tight"
-                                        value={draft.invoiceNumber} onChange={e => setDraft(d => ({...d, invoiceNumber: e.target.value}))}/>
-                                    <div className="flex gap-6 justify-end mt-3">
-                                        <div>
-                                            <p className="text-[9px] font-bold uppercase text-gray-400">Date</p>
-                                            <input type="date" className="text-sm text-gray-700 dark:text-gray-300 bg-transparent outline-none" value={draft.issueDate} onChange={e => setDraft(d => ({...d, issueDate: e.target.value}))}/>
-                                        </div>
-                                        <div>
-                                            <p className="text-[9px] font-bold uppercase text-gray-400">Échéance</p>
-                                            <input type="date" className="text-sm text-gray-700 dark:text-gray-300 bg-transparent outline-none" value={draft.dueDate} onChange={e => setDraft(d => ({...d, dueDate: e.target.value}))}/>
-                                        </div>
-                                    </div>
+                                <div className="text-right mt-10 text-sm text-[#5a5a75] leading-relaxed">
+                                    <div className="flex gap-2 justify-end mb-1"><span className="font-semibold">No :</span><input className="w-32 text-right bg-transparent outline-none text-[#333] font-bold" value={draft.invoiceNumber} onChange={e => setDraft(d => ({...d, invoiceNumber: e.target.value}))} /></div>
+                                    <div className="flex gap-2 justify-end mb-1"><span className="font-semibold">Émission :</span><input type="date" className="bg-transparent outline-none" value={draft.issueDate} onChange={e => setDraft(d => ({...d, issueDate: e.target.value}))}/></div>
+                                    <div className="flex gap-2 justify-end"><span className="font-semibold">Échéance :</span><input type="date" className="bg-transparent outline-none" value={draft.dueDate} onChange={e => setDraft(d => ({...d, dueDate: e.target.value}))}/></div>
                                 </div>
                             </div>
-
-                            {/* Addresses */}
-                            <div className="grid grid-cols-2 gap-10">
-                                <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-5">
-                                    <p className="text-[9px] font-bold uppercase tracking-[.2em] text-gray-400 mb-3">De</p>
-                                    <textarea className="w-full bg-transparent text-sm text-gray-700 dark:text-gray-300 outline-none resize-none leading-relaxed" rows={4}
-                                        value={draft.senderInfo} onChange={e => setDraft(d => ({...d, senderInfo: e.target.value}))}
-                                        placeholder={"Nom de l'entreprise\nAdresse\nEmail"}/>
+                            
+                            {/* Table */}
+                            <div className="mb-10">
+                                <div className="bg-[#3b1485] text-white px-5 py-3 grid grid-cols-[1fr_4fr_1fr_2fr_2fr_1fr] md:grid-cols-[24px_4fr_1fr_2fr_2fr_24px] gap-2 items-center text-[13px] font-bold tracking-wide">
+                                    <div></div>
+                                    <div>DESCRIPTION</div>
+                                    <div className="text-center">QTÉ</div>
+                                    <div className="text-center">PRIX</div>
+                                    <div className="text-right">TOTAL</div>
+                                    <div></div>
                                 </div>
-                                <div className="p-5">
-                                    <p className="text-[9px] font-bold uppercase tracking-[.2em] text-gray-400 mb-3">Facturé à</p>
-                                    <div className="flex items-start gap-3">
-                                        <LogoPicker value={draft.clientLogo} onChange={v => setDraft(d => ({...d, clientLogo: v}))} label="Client" size={40}/>
-                                        <div className="flex-1">
-                                            <input className="w-full text-base font-bold text-gray-900 dark:text-white bg-transparent outline-none border-b border-gray-200 dark:border-gray-700 pb-1 placeholder:text-gray-300 focus:border-emerald-500 transition-colors"
-                                                value={draft.clientName} onChange={e => setDraft(d => ({...d, clientName: e.target.value}))} placeholder="Client / Société"/>
-                                            <textarea className="w-full bg-transparent text-sm text-gray-500 outline-none resize-none mt-2 leading-relaxed" rows={2}
-                                                value={draft.clientAddress} onChange={e => setDraft(d => ({...d, clientAddress: e.target.value}))} placeholder="Adresse du client"/>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Line items */}
-                            <div>
                                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-                                <table className="w-full">
-                                    <thead>
-                                        <tr className="border-b-2 border-gray-100 dark:border-gray-700">
-                                            <th className="w-6"></th>
-                                            <th className="text-left text-[9px] font-bold uppercase tracking-[.15em] text-gray-400 pb-3">Description</th>
-                                            <th className="text-center text-[9px] font-bold uppercase tracking-[.15em] text-gray-400 pb-3 w-20">Qté</th>
-                                            <th className="text-right text-[9px] font-bold uppercase tracking-[.15em] text-gray-400 pb-3 w-28">Prix</th>
-                                            <th className="text-right text-[9px] font-bold uppercase tracking-[.15em] text-gray-400 pb-3 w-28">Total</th>
-                                            <th className="w-8"></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
+                                    <div className="bg-white/50">
                                         <SortableContext items={draft.items} strategy={verticalListSortingStrategy}>
                                             {draft.items.map(item => (
                                                 <SortableLine key={item.id} item={item} onUpdate={updateItem} onRemove={removeItem} currency={draft.currency}/>
                                             ))}
                                         </SortableContext>
-                                    </tbody>
-                                </table>
+                                    </div>
                                 </DndContext>
                                 <button onClick={addItem}
-                                    className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-emerald-600 hover:text-emerald-700 transition-colors no-print">
-                                    <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                                    className="mt-3 flex items-center gap-1.5 text-xs font-bold text-[#3b1485] hover:text-[#2a0e63] transition-colors no-print">
+                                    <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
                                     Ajouter une ligne
                                 </button>
                             </div>
 
-                            {/* Totals + Notes */}
-                            <div className="flex justify-between gap-8 pt-8 border-t border-gray-100 dark:border-gray-700">
-                                <div className="flex-1 max-w-xs">
-                                    <p className="text-[9px] font-bold uppercase tracking-[.2em] text-gray-400 mb-2">Notes</p>
-                                    <textarea className="w-full text-sm bg-gray-50 dark:bg-gray-800/50 rounded-xl p-3.5 outline-none resize-none text-gray-600 dark:text-gray-400 border border-gray-100 dark:border-gray-700 focus:border-emerald-400 transition-colors" rows={4}
-                                        value={draft.notes} onChange={e => setDraft(d => ({...d, notes: e.target.value}))} placeholder="Note au client..."/>
+                            {/* Bottom Section */}
+                            <div className="flex justify-between items-start mt-8">
+                                <div className="w-[45%]">
+                                    <h3 className="text-[1.1em] font-bold text-[#3b1485] mb-3 mt-0">Notes :</h3>
+                                    <textarea className="w-full text-sm bg-transparent outline-none resize-none text-[#5a5a75] leading-relaxed border-b border-[#d1d1e0] focus:border-[#3b1485] transition-colors" rows={3}
+                                        value={draft.notes} onChange={e => setDraft(d => ({...d, notes: e.target.value}))} placeholder="Notes et instructions de paiement..."/>
+                                    
+                                    <hr className="border-t border-[#d1d1e0] my-6 w-64" />
+                                    
+                                    <h3 className="text-[1.1em] font-bold text-[#3b1485] mb-3 mt-0">Coordonnées :</h3>
+                                    <input className="w-full text-sm font-bold text-[#5a5a75] bg-transparent outline-none border-b border-[#d1d1e0] pb-1 mb-1 focus:border-[#3b1485]"
+                                        value={draft.companyName} onChange={e => setDraft(d => ({...d, companyName: e.target.value}))} placeholder="Votre entreprise"/>
+                                    <input className="w-full text-sm text-[#5a5a75] bg-transparent outline-none border-b border-[#d1d1e0] pb-1 mb-2 focus:border-[#3b1485]"
+                                        value={draft.companyTagline} onChange={e => setDraft(d => ({...d, companyTagline: e.target.value}))} placeholder="Sous-titre / Slogan"/>
+                                    <textarea className="w-full text-sm text-[#5a5a75] bg-transparent outline-none resize-none leading-relaxed border-b border-[#d1d1e0] pb-1 focus:border-[#3b1485]" rows={3}
+                                        value={draft.senderInfo} onChange={e => setDraft(d => ({...d, senderInfo: e.target.value}))} placeholder="Adresse et Contact"/>
                                 </div>
-                                <div className="w-64 space-y-2.5">
-                                    <div className="flex justify-between text-sm text-gray-500"><span>Sous-total</span><span className="tabular-nums">{fmt(sub, draft.currency)}</span></div>
-                                    <div className="flex justify-between text-sm text-gray-500 items-center">
+                                <div className="w-[45%]">
+                                    <div className="flex justify-between py-2 text-[0.95em] text-[#333] font-medium"><span>Sous-Total :</span><span>{fmt(sub, draft.currency)}</span></div>
+                                    <hr className="border-t border-[#9ba4b5] mx-5 my-1" />
+                                    <div className="flex justify-between items-center py-2 text-[0.95em] text-[#333] font-medium">
                                         <span className="flex items-center gap-1.5">TVA
                                             <input type="number" min="0" max="100" step="0.5"
-                                                className="w-10 text-center text-xs bg-gray-50 dark:bg-gray-800 rounded-md py-0.5 outline-none border border-gray-200 dark:border-gray-700 no-print"
-                                                value={draft.taxRate} onChange={e => setDraft(d => ({...d, taxRate: parseFloat(e.target.value) || 0}))}/>%
+                                                className="w-12 text-center text-xs bg-gray-50 rounded-md py-0.5 outline-none border border-gray-200 no-print"
+                                                value={draft.taxRate} onChange={e => setDraft(d => ({...d, taxRate: parseFloat(e.target.value) || 0}))}/>% :
                                         </span>
-                                        <span className="tabular-nums">{fmt(tax, draft.currency)}</span>
+                                        <span>{fmt(tax, draft.currency)}</span>
                                     </div>
-                                    <div className="flex justify-between items-center pt-3 border-t border-gray-100 dark:border-gray-700">
-                                        <span className="text-sm font-bold text-gray-800 dark:text-white">Total</span>
-                                        <span className="text-2xl font-extrabold text-emerald-600 tabular-nums">{fmt(total, draft.currency)}</span>
+                                    <div className="bg-[#3b1485] text-white flex justify-between p-4 px-5 text-[1.1em] font-bold mt-2.5">
+                                        <span>Total :</span>
+                                        <span>{fmt(total, draft.currency)}</span>
+                                    </div>
+                                    
+                                    <div className="mt-10 border border-[#d1d1d1] h-[120px] bg-white flex justify-center items-end pb-5">
+                                        <span className="text-[#a0a0a0] italic text-[0.9em]">WaCopilote Automation</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    ) : draft.template === 'bold' ? (
+                        <div className="max-w-3xl mx-auto rounded-2xl shadow-xl overflow-hidden relative" style={{ backgroundColor: '#ede8dc', backgroundImage: 'radial-gradient(circle at top right, #f6f4ee 0%, #ede8dc 40%)' }}>
+                            <div className="p-12 space-y-10 text-[#0a2533] font-['Montserrat',sans-serif]">
+                                {/* Header */}
+                                <div className="flex justify-between items-start">
+                                    <div className="flex items-center gap-4">
+                                        <LogoPicker value={draft.companyLogo} onChange={v => setDraft(d => ({...d, companyLogo: v}))} label="Logo" size={48}/>
+                                        <div>
+                                            <input className="text-lg font-bold text-[#0a2533] uppercase tracking-wider bg-transparent outline-none w-full placeholder:text-gray-400"
+                                                value={draft.companyName} onChange={e => setDraft(d => ({...d, companyName: e.target.value}))} placeholder="VOTRE ENTREPRISE"/>
+                                            <input className="text-sm text-[#0a2533] bg-transparent outline-none w-full placeholder:text-gray-400 mt-0.5"
+                                                value={draft.companyTagline} onChange={e => setDraft(d => ({...d, companyTagline: e.target.value}))} placeholder="Sous-titre / Slogan"/>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <input className="text-4xl font-bold text-[#0a2533] bg-transparent outline-none text-right w-48 tracking-widest uppercase"
+                                            value={draft.invoiceNumber} onChange={e => setDraft(d => ({...d, invoiceNumber: e.target.value}))}/>
+                                    </div>
+                                </div>
+
+                                {/* Info Section */}
+                                <div className="flex justify-between items-start mt-4">
+                                    <div className="flex-1 max-w-sm">
+                                        <p className="text-xs font-bold uppercase tracking-wider mb-2">DE</p>
+                                        <textarea className="w-full bg-transparent text-sm text-[#0a2533] font-medium outline-none resize-none leading-relaxed" rows={3}
+                                            value={draft.senderInfo} onChange={e => setDraft(d => ({...d, senderInfo: e.target.value}))}
+                                            placeholder={"Nom de l'entreprise\nAdresse\nEmail"}/>
+                                        
+                                        <p className="text-xs font-bold uppercase tracking-wider mt-4 mb-2">FACTURÉ À</p>
+                                        <div className="flex items-start gap-3">
+                                            <LogoPicker value={draft.clientLogo} onChange={v => setDraft(d => ({...d, clientLogo: v}))} label="Client" size={40}/>
+                                            <div className="flex-1">
+                                                <input className="w-full text-base font-bold text-[#0a2533] bg-transparent outline-none border-b border-[#0a2533]/20 pb-1 placeholder:text-gray-400 focus:border-[#48a69e] transition-colors"
+                                                    value={draft.clientName} onChange={e => setDraft(d => ({...d, clientName: e.target.value}))} placeholder="Client / Société"/>
+                                                <textarea className="w-full bg-transparent text-sm text-[#0a2533] font-medium outline-none resize-none mt-2 leading-relaxed" rows={2}
+                                                    value={draft.clientAddress} onChange={e => setDraft(d => ({...d, clientAddress: e.target.value}))} placeholder="Adresse du client"/>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="text-right space-y-3 mt-8">
+                                        <div>
+                                            <p className="text-xs font-bold uppercase mb-1">Date</p>
+                                            <input type="date" className="text-sm font-medium text-[#0a2533] bg-transparent outline-none" value={draft.issueDate} onChange={e => setDraft(d => ({...d, issueDate: e.target.value}))}/>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-bold uppercase mb-1">Échéance</p>
+                                            <input type="date" className="text-sm font-medium text-[#0a2533] bg-transparent outline-none" value={draft.dueDate} onChange={e => setDraft(d => ({...d, dueDate: e.target.value}))}/>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Table */}
+                                <div>
+                                    <div className="text-white rounded-[20px] px-8 py-3.5 mb-4 grid grid-cols-[1fr_4fr_2fr_2fr_3fr_1fr] md:grid-cols-[24px_4fr_2fr_2fr_3fr_24px] gap-2 items-center text-[13px] font-bold tracking-wider" style={{ background: 'linear-gradient(90deg, #256a7c, #48a69e)' }}>
+                                        <div></div>
+                                        <div className="col-span-1">DESCRIPTION</div>
+                                        <div className="text-center">QTÉ</div>
+                                        <div className="text-center">PRIX</div>
+                                        <div className="text-right">TOTAL</div>
+                                        <div></div>
+                                    </div>
+                                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+                                        <div className="bg-white rounded-[20px] px-8 py-5">
+                                            <SortableContext items={draft.items} strategy={verticalListSortingStrategy}>
+                                                {draft.items.map(item => (
+                                                    <SortableLine key={item.id} item={item} onUpdate={updateItem} onRemove={removeItem} currency={draft.currency}/>
+                                                ))}
+                                            </SortableContext>
+                                        </div>
+                                    </DndContext>
+                                    <button onClick={addItem}
+                                        className="mt-3 ml-2 flex items-center gap-1.5 text-xs font-bold text-[#256a7c] hover:text-[#48a69e] transition-colors no-print">
+                                        <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                                        Ajouter une ligne
+                                    </button>
+                                </div>
+
+                                {/* Summary */}
+                                <div className="flex gap-8 items-start mt-8">
+                                    <div className="flex-1">
+                                        <p className="text-[11px] font-bold uppercase tracking-wider mb-2">NOTES</p>
+                                        <textarea className="w-full text-sm bg-transparent outline-none resize-none text-[#0a2533] leading-relaxed border-b border-[#0a2533]/10 focus:border-[#48a69e] transition-colors" rows={4}
+                                            value={draft.notes} onChange={e => setDraft(d => ({...d, notes: e.target.value}))} placeholder="Conditions de paiement et notes..."/>
+                                    </div>
+                                    <div className="w-[300px] bg-white rounded-[20px] p-6 text-sm font-semibold text-[#0a2533]">
+                                        <div className="flex justify-between mb-3"><span>SOUS-TOTAL</span><span>{fmt(sub, draft.currency)}</span></div>
+                                        <div className="flex justify-between items-center mb-3">
+                                            <span className="flex items-center gap-1.5">TVA
+                                                <input type="number" min="0" max="100" step="0.5"
+                                                    className="w-10 text-center text-xs bg-gray-50 rounded-md py-0.5 outline-none border border-gray-200 no-print"
+                                                    value={draft.taxRate} onChange={e => setDraft(d => ({...d, taxRate: parseFloat(e.target.value) || 0}))}/>%
+                                            </span>
+                                            <span>{fmt(tax, draft.currency)}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center mt-5 pt-5 border-t-2 border-[#ede8dc] text-lg font-bold">
+                                            <span>TOTAL</span>
+                                            <span>{fmt(total, draft.currency)}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                {/* Footer Banner */}
+                                <div className="rounded-full px-8 py-3.5 flex justify-between items-center text-white text-xs font-medium" style={{ background: '#072535' }}>
+                                    <span>Généré par WaCopilote</span>
+                                    <span>MERCI POUR VOTRE CONFIANCE</span>
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="max-w-3xl mx-auto bg-white dark:bg-[#1a1f25] rounded-2xl shadow-xl border border-gray-100 dark:border-gray-800 overflow-hidden">
+                            <div className="h-1.5 bg-gradient-to-r from-emerald-600 to-emerald-400"></div>
+                            <div className="p-10 space-y-10">
+                                <div className="flex justify-between items-start">
+                                    <div className="flex items-center gap-4">
+                                        <LogoPicker value={draft.companyLogo} onChange={v => setDraft(d => ({...d, companyLogo: v}))} label="Logo" size={56}/>
+                                        <div>
+                                            <input className="text-xl font-extrabold text-gray-900 dark:text-white bg-transparent outline-none w-full placeholder:text-gray-300 tracking-tight"
+                                                value={draft.companyName} onChange={e => setDraft(d => ({...d, companyName: e.target.value}))} placeholder="Votre entreprise"/>
+                                            <input className="text-sm text-gray-400 bg-transparent outline-none w-full placeholder:text-gray-300 mt-0.5"
+                                                value={draft.companyTagline} onChange={e => setDraft(d => ({...d, companyTagline: e.target.value}))} placeholder="Sous-titre"/>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-[9px] font-bold uppercase tracking-[.2em] text-gray-400 mb-1">Facture</p>
+                                        <input className="text-xl font-extrabold text-gray-900 dark:text-white bg-transparent outline-none text-right w-48 tracking-tight"
+                                            value={draft.invoiceNumber} onChange={e => setDraft(d => ({...d, invoiceNumber: e.target.value}))}/>
+                                        <div className="flex gap-6 justify-end mt-3">
+                                            <div>
+                                                <p className="text-[9px] font-bold uppercase text-gray-400">Date</p>
+                                                <input type="date" className="text-sm text-gray-700 dark:text-gray-300 bg-transparent outline-none" value={draft.issueDate} onChange={e => setDraft(d => ({...d, issueDate: e.target.value}))}/>
+                                            </div>
+                                            <div>
+                                                <p className="text-[9px] font-bold uppercase text-gray-400">Échéance</p>
+                                                <input type="date" className="text-sm text-gray-700 dark:text-gray-300 bg-transparent outline-none" value={draft.dueDate} onChange={e => setDraft(d => ({...d, dueDate: e.target.value}))}/>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-10">
+                                    <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-5">
+                                        <p className="text-[9px] font-bold uppercase tracking-[.2em] text-gray-400 mb-3">De</p>
+                                        <textarea className="w-full bg-transparent text-sm text-gray-700 dark:text-gray-300 outline-none resize-none leading-relaxed" rows={4}
+                                            value={draft.senderInfo} onChange={e => setDraft(d => ({...d, senderInfo: e.target.value}))}
+                                            placeholder={"Nom de l'entreprise\nAdresse\nEmail"}/>
+                                    </div>
+                                    <div className="p-5">
+                                        <p className="text-[9px] font-bold uppercase tracking-[.2em] text-gray-400 mb-3">Facturé à</p>
+                                        <div className="flex items-start gap-3">
+                                            <LogoPicker value={draft.clientLogo} onChange={v => setDraft(d => ({...d, clientLogo: v}))} label="Client" size={40}/>
+                                            <div className="flex-1">
+                                                <input className="w-full text-base font-bold text-gray-900 dark:text-white bg-transparent outline-none border-b border-gray-200 dark:border-gray-700 pb-1 placeholder:text-gray-300 focus:border-emerald-500 transition-colors"
+                                                    value={draft.clientName} onChange={e => setDraft(d => ({...d, clientName: e.target.value}))} placeholder="Client / Société"/>
+                                                <textarea className="w-full bg-transparent text-sm text-gray-500 outline-none resize-none mt-2 leading-relaxed" rows={2}
+                                                    value={draft.clientAddress} onChange={e => setDraft(d => ({...d, clientAddress: e.target.value}))} placeholder="Adresse du client"/>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+                                    <table className="w-full">
+                                        <thead>
+                                            <tr className="border-b-2 border-gray-100 dark:border-gray-700">
+                                                <th className="w-6"></th>
+                                                <th className="text-left text-[9px] font-bold uppercase tracking-[.15em] text-gray-400 pb-3">Description</th>
+                                                <th className="text-center text-[9px] font-bold uppercase tracking-[.15em] text-gray-400 pb-3 w-20">Qté</th>
+                                                <th className="text-right text-[9px] font-bold uppercase tracking-[.15em] text-gray-400 pb-3 w-28">Prix</th>
+                                                <th className="text-right text-[9px] font-bold uppercase tracking-[.15em] text-gray-400 pb-3 w-28">Total</th>
+                                                <th className="w-8"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <SortableContext items={draft.items} strategy={verticalListSortingStrategy}>
+                                                {draft.items.map(item => (
+                                                    <SortableLine key={item.id} item={item} onUpdate={updateItem} onRemove={removeItem} currency={draft.currency}/>
+                                                ))}
+                                            </SortableContext>
+                                        </tbody>
+                                    </table>
+                                    </DndContext>
+                                    <button onClick={addItem}
+                                        className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-emerald-600 hover:text-emerald-700 transition-colors no-print">
+                                        <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                                        Ajouter une ligne
+                                    </button>
+                                </div>
+                                <div className="flex justify-between gap-8 pt-8 border-t border-gray-100 dark:border-gray-700">
+                                    <div className="flex-1 max-w-xs">
+                                        <p className="text-[9px] font-bold uppercase tracking-[.2em] text-gray-400 mb-2">Notes</p>
+                                        <textarea className="w-full text-sm bg-gray-50 dark:bg-gray-800/50 rounded-xl p-3.5 outline-none resize-none text-gray-600 dark:text-gray-400 border border-gray-100 dark:border-gray-700 focus:border-emerald-400 transition-colors" rows={4}
+                                            value={draft.notes} onChange={e => setDraft(d => ({...d, notes: e.target.value}))} placeholder="Note au client..."/>
+                                    </div>
+                                    <div className="w-64 space-y-2.5">
+                                        <div className="flex justify-between text-sm text-gray-500"><span>Sous-total</span><span className="tabular-nums">{fmt(sub, draft.currency)}</span></div>
+                                        <div className="flex justify-between text-sm text-gray-500 items-center">
+                                            <span className="flex items-center gap-1.5">TVA
+                                                <input type="number" min="0" max="100" step="0.5"
+                                                    className="w-10 text-center text-xs bg-gray-50 dark:bg-gray-800 rounded-md py-0.5 outline-none border border-gray-200 dark:border-gray-700 no-print"
+                                                    value={draft.taxRate} onChange={e => setDraft(d => ({...d, taxRate: parseFloat(e.target.value) || 0}))}/>%
+                                            </span>
+                                            <span className="tabular-nums">{fmt(tax, draft.currency)}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center pt-3 border-t border-gray-100 dark:border-gray-700">
+                                            <span className="text-sm font-bold text-gray-800 dark:text-white">Total</span>
+                                            <span className="text-2xl font-extrabold text-emerald-600 tabular-nums">{fmt(total, draft.currency)}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
+
 
                 {/* Sidebar: Templates */}
                 <aside className="w-64 bg-white dark:bg-gray-900 border-l border-gray-100 dark:border-gray-800 p-5 flex flex-col gap-6 overflow-y-auto no-print">
