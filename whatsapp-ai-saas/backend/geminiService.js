@@ -87,7 +87,7 @@ async function generateProposals(chatContext, modelParam) {
             model: targetModel,
             contents: formattedChat,
             config: {
-                systemInstruction: copilotPersona ? copilotPersona.systemInstruction : '',
+                systemInstruction: (copilotPersona ? copilotPersona.systemInstruction : '') + `\n\nCRITICAL INSTRUCTION: You MUST strictly return a JSON object matching this schema: { "proposed_replies": [ "Option 1 text", "Option 2 text", "Option 3 text" ] } Do not output markdown code blocks.`,
                 responseMimeType: "application/json",
             }
         });

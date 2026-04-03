@@ -99,6 +99,52 @@ const WorkArea = ({ instances, activeId }) => {
         setTimeout(() => setCopiedIndex(null), 2000);
     };
 
+    const getWhatsAppContext = async () => {
+        const activeWebview = document.querySelector(`.webview-container.active webview`);
+        if (!activeWebview) return null;
+
+        const contextExtractionScript = `
+            (function() {
+                try {
+                    const result = { contactName: 'Unknown', messages: [] };
+                    
+                    const headerTitle = document.querySelector('header span[dir="auto"]') || document.querySelector('[data-testid="conversation-info-header"] span');
+                    if (headerTitle) result.contactName = headerTitle.textContent || 'Unknown';
+
+                    let messageNodes = Array.from(document.querySelectorAll('div.message-in, div.message-out'));
+                    if (messageNodes.length === 0) {
+                        messageNodes = Array.from(document.querySelectorAll('[data-id]')).filter(el => {
+                            const id = el.getAttribute('data-id');
+                            return id && (id.includes('true_') || id.includes('false_'));
+                        });
+                    }
+                    
+                    messageNodes = messageNodes.slice(-15);
+
+                    messageNodes.forEach(node => {
+                        const textNode = node.querySelector('.selectable-text, .copyable-text');
+                        const timeNode = node.querySelector('[data-icon="msg-time"], .copyable-text[data-pre-plain-text]');
+                        
+                        let text = textNode ? textNode.textContent : (node.innerText || '').trim();
+
+                        if (text && text.length > 0) {
+                            const isOut = node.classList?.contains('message-out') || (node.getAttribute('data-id') && node.getAttribute('data-id').includes('true_'));
+                            result.messages.push({
+                                sender: isOut ? 'You' : result.contactName,
+                                text: text,
+                                time: timeNode ? (timeNode.parentElement?.textContent || timeNode.textContent || 'Unknown') : 'Unknown'
+                            });
+                        }
+                    });
+                    return result;
+                } catch (e) {
+                    return { error: e.toString() };
+                }
+            })();
+        `;
+        return await activeWebview.executeJavaScript(contextExtractionScript);
+    };
+
     const generateProposals = async () => {
         if (!activeId || orchestratorStatus !== 'Connected') return;
 
@@ -110,53 +156,7 @@ const WorkArea = ({ instances, activeId }) => {
         setIsCopilotLoading(true);
         setCopilotProposals([]);
         try {
-            // 1. Get readable Context safely using Electron's native Webview API rather than CDP
-            const activeWebview = document.querySelector(`.webview-container.active webview`);
-            if (!activeWebview) throw new Error('Webview element not found in DOM.');
-
-            const contextExtractionScript = `
-                (function() {
-                    try {
-                        const result = { contactName: 'Unknown', messages: [] };
-                        
-                        // Extract Contact Name safely
-                        const headerTitle = document.querySelector('header span[dir="auto"]') || document.querySelector('[data-testid="conversation-info-header"] span');
-                        if (headerTitle) result.contactName = headerTitle.textContent || 'Unknown';
-
-                        // Extract Messages (Fallback for newer WhatsApp Layouts)
-                        let messageNodes = Array.from(document.querySelectorAll('div.message-in, div.message-out'));
-                        if (messageNodes.length === 0) {
-                            messageNodes = Array.from(document.querySelectorAll('[data-id]')).filter(el => {
-                                const id = el.getAttribute('data-id');
-                                return id && (id.includes('true_') || id.includes('false_'));
-                            });
-                        }
-                        
-                        messageNodes = messageNodes.slice(-15);
-
-                        messageNodes.forEach(node => {
-                            const textNode = node.querySelector('.selectable-text, .copyable-text');
-                            const timeNode = node.querySelector('[data-icon="msg-time"], .copyable-text[data-pre-plain-text]');
-                            
-                            let text = textNode ? textNode.textContent : (node.innerText || '').trim();
-
-                            if (text && text.length > 0) {
-                                const isOut = node.classList?.contains('message-out') || (node.getAttribute('data-id') && node.getAttribute('data-id').includes('true_'));
-                                result.messages.push({
-                                    sender: isOut ? 'You' : result.contactName,
-                                    text: text,
-                                    time: timeNode ? (timeNode.parentElement?.textContent || timeNode.textContent || 'Unknown') : 'Unknown'
-                                });
-                            }
-                        });
-                        return result;
-                    } catch (e) {
-                        return { error: e.toString() };
-                    }
-                })();
-            `;
-
-            const ctxDataContext = await activeWebview.executeJavaScript(contextExtractionScript);
+            const ctxDataContext = await getWhatsAppContext();
 
             if (ctxDataContext && !ctxDataContext.error && ctxDataContext.messages && ctxDataContext.messages.length > 0) {
                 // 2. Process via Gemini Assistive Copilot
@@ -197,19 +197,62 @@ const WorkArea = ({ instances, activeId }) => {
         setIsCopilotLoading(false);
     };
 
-    const handleSendMessage = (e) => {
+    const handleSendMessage = async (e) => {
         e.preventDefault();
-        if (!chatInput.trim()) return;
+        if (!chatInput.trim() || isCopilotLoading) return;
 
-        setChatHistory(prev => [...prev, { role: 'user', text: chatInput }]);
-        const userMsg = chatInput;
+        const userMsg = chatInput.trim();
         setChatInput('');
+        
+        // Add user message to history
+        setChatHistory(prev => [...prev, { role: 'user', text: userMsg }]);
         setIsCopilotLoading(true);
 
-        setTimeout(() => {
-            setChatHistory(prev => [...prev, { role: 'agent', text: `You asked: "${userMsg}". Since I'm essentially reading the DOM, I can provide conversational help based on context soon.` }]);
+        try {
+            let ctxDataContext = null;
+            if (appSettings.allowAiRead !== false) {
+                ctxDataContext = await getWhatsAppContext();
+            }
+
+            // Build conversation history for the agent, plus inject WhatsApp context into the final prompt
+            let historyForAgent = chatHistory.filter(msg => !msg.proposals).map(msg => ({
+                role: msg.role === 'agent' ? 'model' : 'user',
+                text: msg.text
+            }));
+
+            let finalMessage = userMsg;
+            if (ctxDataContext && ctxDataContext.messages && ctxDataContext.messages.length > 0) {
+                let formattedChat = `[Contexte Whatsapp Actuel: Chat with ${ctxDataContext.contactName}]\n`;
+                ctxDataContext.messages.slice(-8).forEach(msg => {
+                    formattedChat += `[${msg.time}] ${msg.sender}: ${msg.text}\n`;
+                });
+                finalMessage = `${formattedChat}\n\n[USER]: ${userMsg}`;
+            }
+
+            const res = await fetch('http://127.0.0.1:3000/api/ai/agent', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    persona: 'copilot',
+                    message: finalMessage,
+                    messages: historyForAgent,
+                    promptFormat: 'text'
+                })
+            });
+
+            const data = await res.json();
+            if (data.status === 'success') {
+                setChatHistory(prev => [...prev, { role: 'agent', text: data.response }]);
+            } else {
+                setChatHistory(prev => [...prev, { role: 'agent', text: "Erreur lors de la communication avec l'agent." }]);
+            }
+
+        } catch (err) {
+            console.error('Chat error:', err);
+            setChatHistory(prev => [...prev, { role: 'agent', text: "Erreur réseau. Impossible de contacter l'agent." }]);
+        } finally {
             setIsCopilotLoading(false);
-        }, 1000);
+        }
     };
 
     useEffect(() => {
@@ -377,7 +420,8 @@ const WorkArea = ({ instances, activeId }) => {
                                         color: msg.role === 'user' ? '#fff' : '#1e293b',
                                         borderBottomRightRadius: msg.role === 'user' ? '2px' : '12px',
                                         borderBottomLeftRadius: msg.role === 'agent' ? '2px' : '12px',
-                                        lineHeight: 1.5
+                                        lineHeight: 1.5,
+                                        whiteSpace: 'pre-wrap'
                                     }}>
                                         {msg.text}
                                     </div>
@@ -421,6 +465,24 @@ const WorkArea = ({ instances, activeId }) => {
                                     )}
                                 </div>
                             ))}
+                            {isCopilotLoading && (
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                                    <div style={{
+                                        maxWidth: '85%',
+                                        padding: '14px 18px',
+                                        borderRadius: '12px',
+                                        background: '#f1f5f9',
+                                        borderBottomLeftRadius: '2px',
+                                        display: 'flex',
+                                        gap: '6px',
+                                        alignItems: 'center'
+                                    }}>
+                                        <div className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+                                        <div className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+                                        <div className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         <form onSubmit={handleSendMessage} className="shrink-0" style={{ marginTop: 'auto', paddingTop: '12px', borderTop: '1px solid #e2e8f0', position: 'relative' }}>
