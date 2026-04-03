@@ -1,5 +1,5 @@
 {
-  "name": "whatsapp-ai-saas",
+  "name": "wacopilote",
   "private": true,
   "version": "0.0.0",
   "main": "electron/main.cjs",

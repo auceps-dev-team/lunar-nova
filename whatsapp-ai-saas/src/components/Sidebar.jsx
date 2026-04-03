@@ -73,12 +73,10 @@ const Sidebar = ({ instances, activeId, onSelect, onAdd, onRemove, onUpdate, cur
         <div className="flex relative h-full shrink-0 group/sidebar" style={{ width: `${sidebarWidth}px`, transition: 'width 0.1s' }}>
             <aside className="w-full flex-col bg-sidebar-dark rounded-lg shadow-soft overflow-hidden shrink-0 text-white flex h-full">
                 <div className="p-5 flex items-center gap-3 border-b border-white/10">
-                    <div className="size-8 bg-primary rounded-lg flex items-center justify-center text-white shadow-lg shadow-green-900/20">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
-                        </svg>
+                    <div className="size-10 flex items-center justify-center shrink-0">
+                        <img src="/assets/WaCopilot Logo.svg" alt="WaCopilote" className="w-full h-full object-contain" />
                     </div>
-                    <h1 className="font-display font-bold text-lg tracking-tight text-white">WhatsAI</h1>
+                    <h1 className="font-display font-bold text-xl tracking-tight text-white">WaCopilote</h1>
                 </div>
 
                 <nav className="flex-1 overflow-y-auto scrollbar-hide py-4 px-3 space-y-1">
