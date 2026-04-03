@@ -48,13 +48,24 @@ function monthlyRevenue(invoices) {
     return d;
 }
 
-function freshInvoice() {
+function freshInvoice(userProfile = {}) {
     const today = new Date();
     const due = new Date(today); due.setDate(due.getDate() + 30);
+    
+    // Assemble the sender information from the profile details
+    const senderParts = [
+        `${userProfile.firstName || ''} ${userProfile.lastName || ''}`.trim(),
+        userProfile.email,
+        userProfile.phone,
+        userProfile.address
+    ].filter(Boolean).join('\n');
+
     return {
         id: `inv-${Date.now()}`,
         invoiceNumber: `INV-${today.getFullYear()}-${String(Math.floor(Math.random()*900)+100)}`,
-        companyName: '', companyTagline: '', senderInfo: '',
+        companyName: userProfile.companyName || '', 
+        companyTagline: '', 
+        senderInfo: senderParts,
         companyLogo: null, clientLogo: null,
         clientName: '', clientEmail: '', clientAddress: '',
         issueDate: today.toISOString().split('T')[0],
@@ -275,12 +286,33 @@ export default function InvoiceBuilder({ activeId }) {
     const addInvoice = useAppStore(s => s.addInvoice);
     const updateInvoice = useAppStore(s => s.updateInvoice);
     const deleteInvoice = useAppStore(s => s.deleteInvoice);
+    const userProfile = useAppStore(s => s.userProfile) || {};
+    const invoiceDraft = useAppStore(s => s.invoiceDraft);
+    const setInvoiceDraft = useAppStore(s => s.setInvoiceDraft);
 
     const navigate = useNavigate();
     const [view, setView] = useState('dashboard');
     const [draft, setDraft] = useState(null);
     const [filterStatus, setFilterStatus] = useState('all');
     const [saved, setSaved] = useState(false);
+
+    // Consume cross-app invoiceDraft coming from Orders.jsx
+    useEffect(() => {
+        if (invoiceDraft) {
+            setDraft({
+                ...freshInvoice(userProfile),
+                clientName: invoiceDraft.clientName || '',
+                notes: invoiceDraft.notes || '',
+                // Add the WhatsApp message text as a line item optionally (defaulting to 0)
+                items: [
+                    { id: `li-${Date.now()}`, description: `WhatsApp Request: ${invoiceDraft.rawMessage?.substring(0, 100)}...`, qty: 1, price: 0 }
+                ]
+            });
+            setView('editor');
+            setSaved(false);
+            setInvoiceDraft(null); // Clear draft once consumed
+        }
+    }, [invoiceDraft, userProfile, setInvoiceDraft]);
 
     // Contact search state
     const [showContactSearch, setShowContactSearch] = useState(false);
@@ -349,7 +381,7 @@ export default function InvoiceBuilder({ activeId }) {
     const chartData = useMemo(() => monthlyRevenue(invoices), [invoices]);
     const filtered = filterStatus === 'all' ? invoices : invoices.filter(i => i.status === filterStatus);
 
-    const handleNew = () => { setDraft(freshInvoice()); setSaved(false); setView('editor'); };
+    const handleNew = () => { setDraft(freshInvoice(userProfile)); setSaved(false); setView('editor'); };
     const handleEdit = (inv) => { setDraft({ ...inv }); setSaved(true); setView('editor'); };
 
     const handleSave = () => {

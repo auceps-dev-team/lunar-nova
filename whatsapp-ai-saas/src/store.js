@@ -16,12 +16,17 @@ const useAppStore = create(
             // --- Shared Data ---
             activeWhatsAppContext: null,
             catalogDraft: null,
+            invoiceDraft: null,
             copilotNotification: null,
             appNotification: null,
 
             // --- Persistent Data ---
             instances: [],
             copilotRepliesGenerated: 0,
+            
+            // --- Transient Context Actions ---
+            setInvoiceDraft: (draft) => set({ invoiceDraft: draft }),
+            
             tasks: [
                 { id: '1', title: 'Implement @dnd-kit/core for this exact board format', description: '', attachments: [], annotations: '', tag: 'Development', status: 'todo', date: new Date().toISOString().split('T')[0] },
                 { id: '2', title: 'Review contract drafted by AI Agent', description: '', attachments: [], annotations: '', tag: 'Legal', status: 'todo', date: new Date().toISOString().split('T')[0] },
