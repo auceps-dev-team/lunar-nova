@@ -16,7 +16,7 @@ async function syncOpenRouterModels() {
             headers: {
                 'Authorization': `Bearer ${OPENROUTER_FALLBACK_API_KEY}`,
                 'HTTP-Referer': 'http://localhost:3000',
-                'X-Title': 'Lunar Nova'
+                'X-Title': 'WaCopilote'
             }
         });
 
@@ -77,7 +77,7 @@ async function generateProposals(chatContext, modelParam, apiKey) {
             headers: {
                 'Authorization': `Bearer ${apiKey}`,
                 'HTTP-Referer': 'http://localhost:3000',
-                'X-Title': 'Lunar Nova',
+                'X-Title': 'WaCopilote',
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
@@ -168,7 +168,7 @@ async function chatWithAgent(persona, message, imageParams, promptFormat, apiKey
             headers: {
                 'Authorization': `Bearer ${apiKey}`,
                 'HTTP-Referer': 'http://localhost:3000',
-                'X-Title': 'Lunar Nova',
+                'X-Title': 'WaCopilote',
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({

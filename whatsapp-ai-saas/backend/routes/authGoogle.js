@@ -55,7 +55,7 @@ router.get('/callback', async (req, res) => {
                 <div class="card">
                     <div class="spinner"></div>
                     <h2>Connexion Réussie !</h2>
-                    <p>Vos informations ont bien été transmises à Lunar Nova.</p>
+                    <p>Vos informations ont bien été transmises à WaCopilote.</p>
                     <p>Vous pouvez fermer cette page et retourner à l'application.</p>
                 </div>
                 <script>
