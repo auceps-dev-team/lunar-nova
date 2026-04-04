@@ -96,7 +96,7 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
         // Always extract basic metadata
         const basicMetadata = [
             { key: 'File Name', value: image.name },
-            { key: 'File Size', value: `${(image.file.size / 1024).toFixed(2)} kB` },
+            { key: 'File Size', value: image.file ? `${(image.file.size / 1024).toFixed(2)} kB` : '—' },
             { key: 'File Type', value: image.mimeType.split('/')[1].toUpperCase() },
             { key: 'MIME Type', value: image.mimeType },
         ];
@@ -457,7 +457,7 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                         <div className="flex items-center text-xs text-gray-500 dark:text-zinc-500 mt-0.5 space-x-2">
                             <span className="uppercase tracking-wider font-semibold text-gray-600 dark:text-zinc-400">{image.mimeType.split('/')[1]}</span>
                             <span>•</span>
-                            <span>{(image.file.size / 1024 / 1024).toFixed(2)} MB</span>
+                            <span>{image.file ? (image.file.size / 1024 / 1024).toFixed(2) + ' MB' : '—'}</span>
                         </div>
                     </div>
                 </div>
