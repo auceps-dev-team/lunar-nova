@@ -83,7 +83,7 @@ export const translations = {
         results: "results",
         generateDone: "Generation Complete",
         improveQuality: "Improve Quality",
-        description: "Generate product description",
+        description: "Generate image description",
         editPlaceholder: "Describe the image you want to generate...",
         apply: "Apply AI Transformation",
         poweredBy: "Powered by Gemini 2.5 Flash. The AI will generate a new image based on your prompt and the original image.",
@@ -95,7 +95,6 @@ export const translations = {
         processingDesc: "This might take a few seconds...",
         actions: "Quick Actions",
         removeBg: "Remove Background",
-        removeText: "Remove Text/Watermarks",
         publish: "Publish product",
         deploying: "Deploying...",
         instanceNotFound: "Instance not found"
@@ -184,7 +183,7 @@ export const translations = {
         results: "résultats",
         generateDone: "Génération Terminée",
         improveQuality: "Améliorer la Qualité",
-        description: "Générer la description du produit",
+        description: "Générer la description de l'image",
         editPlaceholder: "Décrivez l'image que vous souhaitez générer...",
         apply: "Appliquer la transformation IA",
         poweredBy: "Propulsé par Gemini 2.5 Flash. L'IA générera une nouvelle image basée sur votre description et l'image originale.",
@@ -196,7 +195,6 @@ export const translations = {
         processingDesc: "Cela peut prendre quelques secondes...",
         actions: "Actions Rapides",
         removeBg: "Supprimer le fond",
-        removeText: "Supprimer Texte/Filigrane",
         publish: "Publier le produit",
         deploying: "Déploiement...",
         instanceNotFound: "Instance non trouvée"

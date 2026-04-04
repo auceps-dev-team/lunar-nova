@@ -31,6 +31,7 @@ const AgentsHub = ({ activeId }) => {
     const setCatalogDraft = useAppStore(state => state.setCatalogDraft);
     const setCopilotNotification = useAppStore(state => state.setCopilotNotification);
     const showAppNotification = useAppStore(state => state.showAppNotification);
+    const setPendingEditImage = useAppStore(state => state.setPendingEditImage);
     const promptFormat = useAppStore(state => state.appSettings?.promptFormat) || 'json';
     const language = useAppStore(state => state.appSettings?.language) || 'en';
     const clearAllHistory = () => {
@@ -702,7 +703,21 @@ const AgentsHub = ({ activeId }) => {
                             <div className="w-full md:w-[360px] flex flex-col bg-white dark:bg-[#1a1c23] border border-gray-200 dark:border-gray-800 rounded-2xl p-5 shadow-sm shrink-0 h-fit md:h-full">
                                 <div className="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-lg mb-6">
                                     <button className="flex-1 py-1.5 bg-white dark:bg-[#2d3039] text-[#0b9f84] dark:text-[#10b981] text-sm font-semibold rounded-md shadow-sm transition">Create</button>
-                                    <button className="flex-1 py-1.5 text-gray-600 dark:text-gray-400 text-sm font-medium hover:text-gray-900 transition">Edit image</button>
+                                    <button
+                                        className={`flex-1 py-1.5 text-sm font-medium rounded-md transition ${generatedImageResults.length > 0 ? 'text-gray-700 dark:text-gray-200 hover:bg-white dark:hover:bg-[#2d3039] hover:text-[#0b9f84] hover:shadow-sm cursor-pointer' : 'text-gray-400 dark:text-gray-600 cursor-not-allowed'}`}
+                                        disabled={generatedImageResults.length === 0}
+                                        onClick={() => {
+                                            if (generatedImageResults.length > 0) {
+                                                const currentImage = generatedImageResults[selectedImageIndex];
+                                                setPendingEditImage({
+                                                    data: currentImage,
+                                                    name: `product_${Date.now()}.jpg`,
+                                                    mimeType: 'image/jpeg'
+                                                });
+                                                navigate('/fashion/edit');
+                                            }
+                                        }}
+                                    >Edit image</button>
                                 </div>
 
                                 <div className="relative mb-6">

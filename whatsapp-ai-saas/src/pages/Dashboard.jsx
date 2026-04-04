@@ -200,8 +200,8 @@ const Dashboard = () => {
                     </p>
                 </div>
                 
-                <div style={{ height: 280, width: '100%' }}>
-                    <ResponsiveContainer width="100%" height="100%">
+                <div style={{ width: '100%' }}>
+                    <ResponsiveContainer width="100%" height={280} minWidth={0}>
                         <AreaChart data={mockChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                             <defs>
                                 <linearGradient id="colorReplies" x1="0" y1="0" x2="0" y2="1">

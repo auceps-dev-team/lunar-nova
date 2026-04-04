@@ -110,7 +110,7 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                 }
                 exifObj = piexif.load(jpegData);
             } catch (e) {
-                console.warn('Failed to load EXIF, initializing empty EXIF', e);
+                console.debug('Non-JPEG file — EXIF not applicable, initializing empty EXIF');
                 exifObj = { '0th': {}, 'Exif': {}, 'GPS': {}, '1st': {}, 'Interop': {} };
             }
 
@@ -601,16 +601,7 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                                             </div>
                                             {t_helper(language, 'removeBg')}
                                         </button>
-                                        <button
-                                            onClick={() => handleAIEdit('Remove any watermarks, text, or logos from this image. Keep the background intact.')}
-                                            disabled={isProcessing}
-                                            className="w-full py-3 px-4 bg-gray-50 dark:bg-zinc-800/80 hover:bg-gray-100 dark:hover:bg-zinc-700 text-sm font-medium text-gray-800 dark:text-zinc-200 rounded-xl transition-all duration-200 text-left disabled:opacity-50 border border-gray-200 dark:border-zinc-700/50 flex items-center group"
-                                        >
-                                            <div className="w-8 h-8 rounded-lg bg-white dark:bg-zinc-900 flex items-center justify-center mr-3 group-hover:bg-gray-50 dark:group-hover:bg-zinc-800 transition-colors border border-gray-100 dark:border-transparent">
-                                                <Trash2 className="w-4 h-4 text-gray-400 dark:text-zinc-400 group-hover:text-[#0b9f84]" />
-                                            </div>
-                                            {t_helper(language, 'removeText')}
-                                        </button>
+
                                         <button
                                             onClick={() => handleAIEdit('Improve the image quality, enhance colors, sharpen details, and reduce noise.')}
                                             disabled={isProcessing}

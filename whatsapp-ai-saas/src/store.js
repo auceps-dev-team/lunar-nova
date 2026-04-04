@@ -170,6 +170,9 @@ const useAppStore = create(
             setCatalogDraft: (draft) => set({ catalogDraft: draft }),
             clearCatalogDraft: () => set({ catalogDraft: null }),
 
+            setPendingEditImage: (img) => set({ pendingEditImage: img }),
+            clearPendingEditImage: () => set({ pendingEditImage: null }),
+
             setCopilotNotification: (msg) => set({ copilotNotification: msg }),
             clearCopilotNotification: () => set({ copilotNotification: null }),
 

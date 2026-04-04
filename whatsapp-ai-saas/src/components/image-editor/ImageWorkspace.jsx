@@ -1,12 +1,33 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { ImageEditor } from './ImageEditor';
 import { UploadCloud, Image as ImageIcon, Wand2 } from 'lucide-react';
+import useAppStore from '../../store';
 
 export function ImageWorkspace() {
     const [images, setImages] = useState([]);
     const [selectedImageId, setSelectedImageId] = useState(null);
 
+    const pendingEditImage = useAppStore(state => state.pendingEditImage);
+    const clearPendingEditImage = useAppStore(state => state.clearPendingEditImage);
+
+    // Auto-load image passed from Product Photo / Photo Shoot
+    useEffect(() => {
+        if (pendingEditImage && pendingEditImage.data) {
+            const id = Math.random().toString(36).substring(7);
+            const newImage = {
+                id,
+                file: null,
+                previewUrl: pendingEditImage.data,
+                base64: pendingEditImage.data,
+                mimeType: pendingEditImage.mimeType || 'image/jpeg',
+                name: pendingEditImage.name || 'imported_image.jpg',
+            };
+            setImages(prev => [newImage, ...prev]);
+            setSelectedImageId(id);
+            clearPendingEditImage();
+        }
+    }, [pendingEditImage]);
     const onDrop = useCallback((acceptedFiles) => {
         // Limit to 20 images total
         const newFiles = acceptedFiles.slice(0, 20 - images.length);

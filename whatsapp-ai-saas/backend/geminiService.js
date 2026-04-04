@@ -280,6 +280,9 @@ async function generateImage(prompt, configAspectRatio = '1:1', imageParams = nu
                 ],
                 config: {
                     responseModalities: ['IMAGE', 'TEXT'],
+                    imageConfig: {
+                        aspectRatio: geminiAspectRatio,
+                    },
                 }
             });
 
