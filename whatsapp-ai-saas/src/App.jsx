@@ -16,6 +16,7 @@ import ToolsBox from './pages/ToolsBox';
 import Settings from './pages/Settings';
 import PhotoShoot from './pages/PhotoShoot';
 import AgentManager from './pages/AgentManager';
+import Support from './pages/Support';
 import AiChat from './pages/AiChat';
 import { ImageWorkspace } from './components/image-editor/ImageWorkspace';
 
@@ -132,6 +133,7 @@ function AppContent() {
                   <Route path="/wa/contacts/add" element={<ContactAdd />} />
                   <Route path="/wa/contacts/edit/:id" element={<ContactAdd />} />
                   <Route path="/wa/contacts/import" element={<ContactImport />} />
+                  <Route path="/support" element={<Support />} />
                 </Routes>
               </div>
             )}
