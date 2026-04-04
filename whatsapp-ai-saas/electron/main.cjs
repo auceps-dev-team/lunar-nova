@@ -16,7 +16,7 @@ function createWindow() {
         height: 800,
         autoHideMenuBar: true,
         title: 'WaCopilote',
-        icon: path.join(__dirname, '../public/assets/WaCopilot Logo.svg'),
+        icon: path.join(__dirname, '../public/assets/WaCopilot Logo.png'),
         webPreferences: {
             preload: path.join(__dirname, 'preload.cjs'),
             nodeIntegration: false,

@@ -60,13 +60,13 @@
       "output": "dist-electron"
     },
     "win": {
-      "icon": "public/assets/WaCopilot Logo.svg"
+      "icon": "public/assets/WaCopilot Logo.ico"
     },
     "mac": {
-      "icon": "public/assets/WaCopilot Logo.svg"
+      "icon": "public/assets/WaCopilot Logo.png"
     },
     "linux": {
-      "icon": "public/assets/WaCopilot Logo.svg"
+      "icon": "public/assets/WaCopilot Logo.png"
     }
   }
 }
