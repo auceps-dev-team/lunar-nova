@@ -1,9 +1,14 @@
 require('dotenv').config({ path: require('path').join(__dirname, '.env') });
 const { GoogleGenAI } = require('@google/genai');
 
-// Initialize the Gemini client
-// Note: Requires GEMINI_API_KEY in the .env file
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+// Helper function to get Gemini Client dynamically to support runtime API key updates
+function getGeminiClient() {
+    const key = process.env.GEMINI_API_KEY;
+    if (!key) {
+        console.warn("[Gemini] GEMINI_API_KEY is missing. Please set it in Settings.");
+    }
+    return new GoogleGenAI({ apiKey: key || 'MISSING_KEY' });
+}
 
 const orchestrator = require('./agents/orchestrator');
 const db = require('./db');
@@ -15,7 +20,12 @@ async function syncGeminiModels() {
         const cached = await db.getSetting('gemini_models_cache', null);
 
         const _fetch = typeof fetch !== 'undefined' ? fetch : (await import('node-fetch')).default;
-        const res = await _fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${process.env.GEMINI_API_KEY}`);
+        const key = process.env.GEMINI_API_KEY;
+        if (!key) {
+            console.log('[Gemini] Aucune clé API, synchronisation ignorée.');
+            return;
+        }
+        const res = await _fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
         const data = await res.json();
 
         if (data.error) {
@@ -83,7 +93,7 @@ async function generateProposals(chatContext, modelParam) {
 
         const copilotPersona = orchestrator.getPersona('copilot');
 
-        const response = await ai.models.generateContent({
+        const response = await getGeminiClient().models.generateContent({
             model: targetModel,
             contents: formattedChat,
             config: {
@@ -181,7 +191,7 @@ async function chatWithAgent(personaId, message, imageParams, promptFormat = 'te
             config.responseMimeType = "application/json";
         }
 
-        const response = await ai.models.generateContent({
+        const response = await getGeminiClient().models.generateContent({
             model: 'gemini-2.5-flash',
             contents: contents,
             config: config
@@ -262,7 +272,7 @@ async function generateImage(prompt, configAspectRatio = '1:1', imageParams = nu
                 return { error: "Erreur : Vous avez sélectionné un modèle Text-to-Image (Imagen) pour une tâche de retouche d'image (Image-to-Image). Veuillez sélectionner un modèle multimodal (ex: Gemini Flash) dans les paramètres." };
             }
 
-            const response = await ai.models.generateContent({
+            const response = await getGeminiClient().models.generateContent({
                 model: editModel,
                 contents: [
                     {
@@ -315,7 +325,7 @@ async function generateImage(prompt, configAspectRatio = '1:1', imageParams = nu
     try {
         if (isNanoBanana) {
             // --- Nano Banana path (generateContent) ---
-            const response = await ai.models.generateContent({
+            const response = await getGeminiClient().models.generateContent({
                 model: imageModel,
                 contents: [{ role: 'user', parts: [{ text: prompt }] }],
                 config: {
@@ -338,7 +348,7 @@ async function generateImage(prompt, configAspectRatio = '1:1', imageParams = nu
         } else {
             // --- Imagen path (generateImages) ---
             const genModel = isImagen ? imageModel : 'imagen-4.0-generate-001';
-            const response = await ai.models.generateImages({
+            const response = await getGeminiClient().models.generateImages({
                 model: genModel,
                 prompt: prompt,
                 config: {

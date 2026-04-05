@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const rateLimit = require('express-rate-limit');
 const puppeteer = require('puppeteer-core');
 const crypto = require('crypto');
 const fs = require('fs');
@@ -11,7 +12,28 @@ const { getCachedProposals, setCachedProposals } = require('./redisClient');
 const app = express();
 const PORT = 3000;
 
-app.use(cors());
+// Update process.env if main process sends new secrets (electron-store)
+process.on('message', (msg) => {
+    if (msg && msg.type === 'UPDATE_ENV' && msg.key) {
+        process.env[msg.key] = msg.value;
+        console.log(`[Backend] Updated environment variable: ${msg.key}`);
+    }
+});
+
+// Security: Restrict CORS to specific origins
+const isDev = process.env.NODE_ENV === 'development';
+const allowedOrigins = ['http://localhost:5173', 'file://'];
+
+app.use(cors({
+    origin: function (origin, callback) {
+        if (!origin || allowedOrigins.includes(origin) || isDev) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    }
+}));
+
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
@@ -167,6 +189,61 @@ app.get('/api/context/:instance_id', async (req, res) => {
     }
 });
 
+// --- Phase 26: AI Writer Document APIs ---
+app.get('/api/documents', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM ai_documents ORDER BY updated_at DESC, id DESC');
+        res.json({ status: 'success', data: result.rows });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/documents/:id', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM ai_documents WHERE id = $1', [req.params.id]);
+        if (result.rows.length === 0) return res.status(404).json({ error: 'Not found' });
+        res.json({ status: 'success', data: result.rows[0] });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.delete('/api/documents/:id', async (req, res) => {
+    try {
+        await pool.query('DELETE FROM ai_documents WHERE id = $1', [req.params.id]);
+        res.json({ status: 'success' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/documents', async (req, res) => {
+    const { title, content } = req.body;
+    try {
+        const result = await pool.query(
+            'INSERT INTO ai_documents (title, content) VALUES ($1, $2) RETURNING *',
+            [title || 'Untitled Document', content || '']
+        );
+        res.json({ status: 'success', data: result.rows[0] });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.put('/api/documents/:id', async (req, res) => {
+    const { title, content } = req.body;
+    try {
+        const result = await pool.query(
+            'UPDATE ai_documents SET title = $1, content = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3 RETURNING *',
+            [title, content, req.params.id]
+        );
+        res.json({ status: 'success', data: result.rows[0] });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // --- Phase 15: Modularity APIs ---
 app.get('/api/settings', async (req, res) => {
     try {
@@ -224,7 +301,14 @@ app.delete('/api/agents/:id', async (req, res) => {
     }
 });
 
-app.get('/api/ai/models', async (req, res) => {
+// Rate Limiter for AI endpoints
+const aiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // limit each IP to 100 requests per windowMs
+    message: { error: 'Too many requests from this IP, please try again after 15 minutes' }
+});
+
+app.get('/api/ai/models', aiLimiter, async (req, res) => {
     try {
         const provider = req.query.provider;
         const apiKey = req.query.apiKey;
@@ -236,7 +320,7 @@ app.get('/api/ai/models', async (req, res) => {
 });
 
 // Endpoint to fetch Copilot Generative Replies
-app.post('/api/ai/copilot', async (req, res) => {
+app.post('/api/ai/copilot', aiLimiter, async (req, res) => {
     // Requires instance_id for DB logging in a multi-tenant environment.
     // Usually passed as part of the request. Let's assume frontend passes it.
     const { instance_id, chatContext, model } = req.body;
@@ -293,7 +377,7 @@ app.post('/api/ai/copilot', async (req, res) => {
 });
 
 // Endpoint for specialized Persona AI Agents (Legal, Creative)
-app.post('/api/ai/agent', async (req, res) => {
+app.post('/api/ai/agent', aiLimiter, async (req, res) => {
     const { persona, message, messages, imageParams, promptFormat, currentTasks, isRealTime } = req.body;
 
     if (!message && (!messages || messages.length === 0)) {
@@ -313,7 +397,7 @@ app.post('/api/ai/agent', async (req, res) => {
 });
 
 // Endpoint to generate an image via Gemini Imagen 4
-app.post('/api/ai/generate-image', async (req, res) => {
+app.post('/api/ai/generate-image', aiLimiter, async (req, res) => {
     const { prompt, aspectRatio, imageParams, editMode, mode } = req.body;
 
     if (!prompt) {
@@ -355,7 +439,8 @@ app.post('/api/catalog/upload', async (req, res) => {
 
     try {
         // 1. Prepare the temporary image file
-        const tempDir = path.join(__dirname, '.temp');
+        const os = require('os');
+        const tempDir = process.env.USER_DATA_PATH ? path.join(process.env.USER_DATA_PATH, '.temp') : path.join(os.tmpdir(), 'wacopilote_temp');
         if (!fs.existsSync(tempDir)) {
             fs.mkdirSync(tempDir, { recursive: true });
         }
@@ -376,7 +461,7 @@ app.post('/api/catalog/upload', async (req, res) => {
             fs.unlinkSync(tempImagePath); // Cleanup on fail
         }
         console.error('Image Error:', error);
-        res.status(500).json({ error: 'Failed writing file.' });
+        return res.status(500).json({ error: 'Failed writing file.' });
     }
 
     try {
@@ -847,7 +932,7 @@ app.post('/api/wa/open-chat', async (req, res) => {
     if (!instance_id || !phone) return res.status(400).json({ error: 'Missing instance_id or phone' });
 
     let formattedMessage = '';
-    
+
     try {
         if (contact_id) {
             const contactRes = await pool.query('SELECT * FROM wa_contacts WHERE id = $1', [contact_id]);
@@ -862,7 +947,7 @@ app.post('/api/wa/open-chat', async (req, res) => {
                         .replace(/\[Adresse\]/gi, contact.address || '');
                 }
             }
-            
+
             // Phase 19.5: Message Tracking
             try {
                 await pool.query(
@@ -977,7 +1062,7 @@ app.post('/api/wa/verify-contact', async (req, res) => {
                 }
             });
             await new Promise(r => setTimeout(r, 300));
-        } catch (_) {}
+        } catch (_) { }
 
         await targetPage.goto(verifyUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
 

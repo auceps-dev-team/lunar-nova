@@ -18,6 +18,9 @@ import PhotoShoot from './pages/PhotoShoot';
 import AgentManager from './pages/AgentManager';
 import Support from './pages/Support';
 import AiChat from './pages/AiChat';
+
+import AiWriter from './pages/AiWriter';
+import MyDocuments from './pages/MyDocuments';
 import { ImageWorkspace } from './components/image-editor/ImageWorkspace';
 
 // WhatsApp Plugin Pages (Phase 13)
@@ -119,6 +122,8 @@ function AppContent() {
                   <Route path="/agents" element={<AgentsHub activeId={activeId} />} />
                   <Route path="/agents-manager" element={<AgentManager />} />
                   <Route path="/ai-chat" element={<AiChat />} />
+                  <Route path="/ai-writer" element={<AiWriter />} />
+                  <Route path="/my-documents" element={<MyDocuments />} />
                   <Route path="/tasks" element={<TasksMap />} />
                   <Route path="/invoice-builder" element={<InvoiceBuilder activeId={activeId} />} />
                   <Route path="/tools" element={<ToolsBox />} />

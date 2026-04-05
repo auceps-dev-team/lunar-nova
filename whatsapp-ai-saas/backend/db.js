@@ -4,9 +4,16 @@ const path = require('path');
 
 let isDbConnected = false;
 
+// Determiner le chemin de la base de données
+const dbFileName = 'database.sqlite';
+// En production (forked depuis main.cjs), process.env.USER_DATA_PATH sera défini.
+// En dev, on garde le dossier backend local.
+const userDataPath = process.env.USER_DATA_PATH;
+const dbFilePath = userDataPath ? path.join(userDataPath, dbFileName) : path.join(__dirname, dbFileName);
+
 // Open SQLite database
 const dbPromise = open({
-    filename: path.join(__dirname, 'database.sqlite'),
+    filename: dbFilePath,
     driver: sqlite3.Database
 });
 
@@ -130,6 +137,17 @@ async function initDB() {
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 setting_key VARCHAR(255) UNIQUE NOT NULL,
                 setting_value TEXT
+            );
+        `);
+
+        // Phase 26: AI Writer Documents
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS ai_documents (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title VARCHAR(255) NOT NULL,
+                content TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         `);
 

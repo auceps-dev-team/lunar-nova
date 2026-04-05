@@ -1,7 +1,7 @@
 {
   "name": "wacopilote",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.28.1",
   "main": "electron/main.cjs",
   "type": "module",
   "scripts": {
@@ -12,6 +12,7 @@
     "electron:start": "cross-env NODE_ENV=development electron .",
     "electron:dev": "concurrently -k \"npm run dev\" \"wait-on tcp:5173 && npm run electron:start\"",
     "electron:build": "vite build && electron-builder",
+    "electron:publish": "vite build && electron-builder -p always",
     "start:all": "concurrently -k \"npm run start:backend\" \"npm run electron:dev\"",
     "start:backend": "cd backend && npm run dev"
   },
@@ -21,6 +22,9 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@react-oauth/google": "^0.13.4",
     "clsx": "^2.1.1",
+    "electron-store": "^11.0.2",
+    "electron-updater": "^6.8.3",
+    "html2pdf.js": "^0.14.0",
     "idb-keyval": "^6.2.2",
     "jwt-decode": "^4.0.0",
     "lucide-react": "^0.577.0",
@@ -59,6 +63,28 @@
     "directories": {
       "output": "dist-electron"
     },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "backend/**/*",
+      "!backend/__tests__/**/*",
+      "!**/*.test.js",
+      "package.json"
+    ],
+    "publish": {
+      "provider": "github",
+      "owner": "auceps-dev-team",
+      "repo": "lunar-nova"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "${productName}_Setup.${ext}",
+      "include": "build/installer.nsh",
+      "license": "build/license.txt"
+    },
+    "compression": "maximum",
     "win": {
       "icon": "public/assets/WaCopilot Logo.ico"
     },

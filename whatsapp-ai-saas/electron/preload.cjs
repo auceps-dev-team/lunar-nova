@@ -9,4 +9,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     printToPDF: (htmlContent, defaultFileName) => ipcRenderer.invoke('print-to-pdf', htmlContent, defaultFileName),
     // Auth (Phase 21b)
     openExternalUrl: (url) => ipcRenderer.invoke('open-external-url', url),
+    // Config Store
+    storeGet: (key) => ipcRenderer.invoke('store-get', key),
+    storeSet: (key, value) => ipcRenderer.invoke('store-set', key, value),
 });

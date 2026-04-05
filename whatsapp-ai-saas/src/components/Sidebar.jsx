@@ -76,7 +76,7 @@ const Sidebar = ({ instances, activeId, onSelect, onAdd, onRemove, onUpdate, cur
             <aside className="w-full flex-col bg-sidebar-dark rounded-lg shadow-soft overflow-hidden shrink-0 text-white flex h-full">
                 <div className="p-5 flex items-center gap-3 border-b border-white/10">
                     <div className="size-10 flex items-center justify-center shrink-0">
-                        <img src="/assets/WaCopilot Logo.svg" alt="WaCopilote" className="w-full h-full object-contain" />
+                        <img src="./assets/WaCopilot Logo.svg" alt="WaCopilote" className="w-full h-full object-contain" />
                     </div>
                     <h1 className="font-display font-bold text-xl tracking-tight text-white">WaCopilote</h1>
                 </div>

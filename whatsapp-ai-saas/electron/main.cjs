@@ -1,9 +1,17 @@
 const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const { fork } = require('child_process');
+const { autoUpdater } = require('electron-updater');
 
-// Mute CSP warning in development
-process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true';
+let store;
+
+const isDev = process.env.NODE_ENV === 'development';
+
+// Mute CSP warning in development only
+if (isDev) {
+    process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true';
+}
 
 // Enable Remote Debugging for Playwright Orchestrator (CDP)
 app.commandLine.appendSwitch('remote-debugging-port', '8315');
@@ -32,12 +40,16 @@ function createWindow() {
     app.userAgentFallback = USER_AGENT;
     mainWindow.webContents.userAgent = USER_AGENT;
 
+    mainWindow.webContents.on('console-message', (event, level, message, line, sourceId) => {
+        fs.appendFileSync(path.join(app.getPath('userData'), 'app_error.log'), `[Renderer] ${message} (${sourceId}:${line})\n`);
+        console.log(`[Renderer] ${message} (${sourceId}:${line})`);
+    });
+
     // Optional: Intercept webview creation to enforce User-Agent
     mainWindow.webContents.on('will-attach-webview', (event, webPreferences, params) => {
         webPreferences.userAgent = USER_AGENT;
     });
 
-    const isDev = process.env.NODE_ENV === 'development';
     if (isDev) {
         mainWindow.loadURL('http://localhost:5173');
         mainWindow.webContents.openDevTools();
@@ -46,7 +58,76 @@ function createWindow() {
     }
 }
 
-app.whenReady().then(() => {
+let backendProcess = null;
+
+app.whenReady().then(async () => {
+    // Initialisation de electron-store (ESM require)
+    try {
+        const Store = (await import('electron-store')).default;
+        store = new Store();
+    } catch (err) {
+        console.error('[Main] Failed to load electron-store:', err);
+    }
+
+    // Lancement du backend en production
+    if (!isDev) {
+        const backendPath = path.join(__dirname, '../backend/server.js');
+        const userDataPath = app.getPath('userData');
+
+        try {
+            const backendLogStream = fs.createWriteStream(path.join(userDataPath, 'backend_out.log'), { flags: 'a' });
+
+            backendProcess = fork(backendPath, [], {
+                env: {
+                    ...process.env,
+                    NODE_ENV: 'production',
+                    USER_DATA_PATH: userDataPath
+                },
+                stdio: ['ignore', 'pipe', 'pipe', 'ipc']
+            });
+
+            backendProcess.stdout.pipe(backendLogStream);
+            backendProcess.stderr.pipe(backendLogStream);
+
+            backendProcess.on('error', (err) => {
+                console.error('[Main] Failed to start backend process:', err);
+                fs.appendFileSync(path.join(userDataPath, 'backend_error.log'), `[Backend Error] ${err}\n`);
+            });
+
+            backendProcess.on('exit', (code, signal) => {
+                fs.appendFileSync(path.join(userDataPath, 'backend_error.log'), `[Backend Exit] Code: ${code}, Signal: ${signal}\n`);
+            });
+        } catch (err) {
+            console.error('[Main] Fork error:', err);
+        }
+
+        // Auto Updater
+        autoUpdater.checkForUpdatesAndNotify();
+
+        autoUpdater.on('update-downloaded', () => {
+            dialog.showMessageBox(mainWindow, {
+                type: 'info',
+                title: 'Mise à jour WaCopilote',
+                message: 'Une nouvelle version a été téléchargée. Redémarrez pour l\'installer.',
+                buttons: ['Redémarrer maintenant', 'Plus tard']
+            }).then(result => {
+                if (result.response === 0) autoUpdater.quitAndInstall();
+            });
+        });
+    }
+
+    // IPC pour electron-store
+    ipcMain.handle('store-get', (event, key) => {
+        return store ? store.get(key) : null;
+    });
+    ipcMain.handle('store-set', (event, key, value) => {
+        if (store) store.set(key, value);
+        if (backendProcess) {
+            backendProcess.send({ type: 'UPDATE_ENV', key, value });
+        }
+        return true;
+    });
+
     ipcMain.handle('create-instance', (event, id) => {
         console.log(`[Main] Create instance requested: ${id}`);
         return true;
@@ -114,6 +195,12 @@ app.whenReady().then(() => {
     app.on('activate', function () {
         if (BrowserWindow.getAllWindows().length === 0) createWindow();
     });
+});
+
+app.on('before-quit', () => {
+    if (backendProcess) {
+        backendProcess.kill();
+    }
 });
 
 app.on('window-all-closed', function () {
