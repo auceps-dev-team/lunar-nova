@@ -77,17 +77,25 @@ app.whenReady().then(async () => {
         try {
             const backendLogStream = fs.createWriteStream(path.join(userDataPath, 'backend_out.log'), { flags: 'a' });
 
-            backendProcess = fork(backendPath, [], {
+            backendProcess = utilityProcess.fork(backendPath, [], {
                 env: {
                     ...process.env,
                     NODE_ENV: 'production',
                     USER_DATA_PATH: userDataPath
                 },
-                stdio: ['ignore', 'pipe', 'pipe', 'ipc']
+                stdio: 'pipe'
             });
 
-            backendProcess.stdout.pipe(backendLogStream);
-            backendProcess.stderr.pipe(backendLogStream);
+            if (backendProcess.stdout) {
+                backendProcess.stdout.on('data', (data) => backendLogStream.write(data));
+            }
+            if (backendProcess.stderr) {
+                backendProcess.stderr.on('data', (data) => backendLogStream.write(data));
+            }
+
+            backendProcess.on('spawn', () => {
+                fs.appendFileSync(path.join(userDataPath, 'backend_error.log'), `[Backend Spawned] Process spawned successfully.\n`);
+            });
 
             backendProcess.on('error', (err) => {
                 console.error('[Main] Failed to start backend process:', err);
@@ -99,6 +107,7 @@ app.whenReady().then(async () => {
             });
         } catch (err) {
             console.error('[Main] Fork error:', err);
+            fs.appendFileSync(path.join(userDataPath, 'backend_error.log'), `[Main Exception] ${err.stack || err}\n`);
         }
 
         // Auto Updater
@@ -123,7 +132,7 @@ app.whenReady().then(async () => {
     ipcMain.handle('store-set', (event, key, value) => {
         if (store) store.set(key, value);
         if (backendProcess) {
-            backendProcess.send({ type: 'UPDATE_ENV', key, value });
+            backendProcess.postMessage({ type: 'UPDATE_ENV', key, value });
         }
         return true;
     });
