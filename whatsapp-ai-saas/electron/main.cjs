@@ -1,7 +1,7 @@
 const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const { fork } = require('child_process');
+const { utilityProcess } = require('electron');
 const { autoUpdater } = require('electron-updater');
 
 let store;

@@ -13,12 +13,16 @@ const app = express();
 const PORT = 3000;
 
 // Update process.env if main process sends new secrets (electron-store)
-process.on('message', (msg) => {
+function handleMessage(msg) {
     if (msg && msg.type === 'UPDATE_ENV' && msg.key) {
         process.env[msg.key] = msg.value;
         console.log(`[Backend] Updated environment variable: ${msg.key}`);
     }
-});
+}
+process.on('message', handleMessage);
+if (process.parentPort) {
+    process.parentPort.on('message', (e) => handleMessage(e.data));
+}
 
 // Security: Restrict CORS to specific origins
 const isDev = process.env.NODE_ENV === 'development';
