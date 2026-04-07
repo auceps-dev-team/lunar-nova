@@ -531,7 +531,12 @@ app.post('/api/catalog/upload', async (req, res) => {
             if (!isAlreadyOnAddItemPage) {
                 // Click Catalog Icon (could be 'catalog', 'smb-store', or 'storefront')
                 const storefrontSelectors = 'span[data-icon="catalog"], span[data-icon="smb-store"], span[data-icon="storefront"]';
-                await targetPage.waitForSelector(storefrontSelectors, { timeout: 8000 });
+                try {
+                    await targetPage.waitForSelector(storefrontSelectors, { timeout: 6000 });
+                } catch (e) {
+                    throw new Error("Veuillez ouvrir la page d'accueil de WhatsApp ou le menu de votre Catalogue avant de publier.");
+                }
+
                 await targetPage.evaluate((sel) => {
                     const icon = document.querySelector(sel);
                     if (icon) {
@@ -605,7 +610,7 @@ app.post('/api/catalog/upload', async (req, res) => {
                     // Log all buttons to figure out what Meta changed it to
                     const allButtons = await targetPage.evaluate(() => Array.from(document.querySelectorAll('button, div[role="button"]')).map(b => b.innerText || b.getAttribute('aria-label')).filter(Boolean));
                     console.error(`[Catalog] Available buttons:`, allButtons);
-                    throw new Error("Could not find the 'Add item' button (Plus icon or text match failed).");
+                    throw new Error("Impossible de trouver le bouton 'Ajouter un article'. Essayez d'ouvrir la page du catalogue manuellement.");
                 }
                 console.log(`[Catalog] Clicked Add Item Button via ${clicked}`);
 

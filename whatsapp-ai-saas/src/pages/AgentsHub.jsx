@@ -285,16 +285,7 @@ const AgentsHub = ({ activeId }) => {
                 imageBase64: currentGeneratedImage
             };
 
-            // Set the draft in the global store so WhatCopilot can display it explicitly structured
-            setCatalogDraft({
-                name: productName,
-                description: productDescription,
-                price: productPrice,
-                code: productCode
-            });
-
-            // Switch to the WhatsApp view immediately so the user can watch the automation
-            navigate('/whatsapp-hub');
+            showAppNotification("⏳ Préparation de l'envoi vers WhatsApp... Veuillez patienter", "info");
 
             const res = await fetch('http://127.0.0.1:3000/api/catalog/upload', {
                 method: 'POST',
@@ -304,10 +295,22 @@ const AgentsHub = ({ activeId }) => {
             const data = await res.json();
 
             if (data.status === 'success') {
+                // Set the draft in the global store so WhatCopilot can display it explicitly structured
+                setCatalogDraft({
+                    name: productName,
+                    description: productDescription,
+                    price: productPrice,
+                    code: productCode
+                });
+
+                // Switch to the WhatsApp view immediately so the user can watch the automation
+                navigate('/whatsapp-hub');
+
                 showAppNotification("Le produit a été ajouté au catalogue WhatsApp Business", "success");
                 setCopilotNotification("✨ Succès ! L'image a été injectée dans WhatsApp. Vous pouvez maintenant copier-coller les informations dans votre catalogue en toute sécurité.");
             } else {
-                showAppNotification(`Erreur : ${data.error || "Impossible d'ajouter au catalogue."}`, "error");
+                showAppNotification(`Veuillez vous rendre dans le menu Catalogue (ou Outils Professionnels > Catalogue) sur WhatsApp avant de publier.`, "error");
+                setCopilotNotification("❌ Échec de l'injection. Assurez-vous d'être sur la page d'accueil de WhatsApp ou dans le menu de votre Catalogue, puis réessayez.");
             }
         } catch (error) {
             console.error('Catalog Upload error', error);
