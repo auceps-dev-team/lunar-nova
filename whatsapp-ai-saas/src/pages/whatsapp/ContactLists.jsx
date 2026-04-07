@@ -2,8 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import useAppStore from '../../store';
 
+import { getTranslation as t } from '../../locales';
+
 export default function ContactLists() {
     const showAppNotification = useAppStore(state => state.showAppNotification);
+    const language = useAppStore(state => state.appSettings?.language) || 'en';
     const [lists, setLists] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -50,7 +53,7 @@ export default function ContactLists() {
             });
             const data = await res.json();
             if (data.status === 'success') {
-                showAppNotification('Contact List added successfully!', 'success');
+                showAppNotification('Success', 'success');
                 setLists([data.data, ...lists]);
                 setIsModalOpen(false);
                 setNewListName('');
@@ -79,7 +82,7 @@ export default function ContactLists() {
             });
             const data = await res.json();
             if (data.status === 'success') {
-                showAppNotification('Contact List updated!', 'success');
+                showAppNotification('Success', 'success');
                 setLists(lists.map(l => l.id === editingList.id ? data.data : l));
                 setEditingList(null);
                 setEditName('');
@@ -100,7 +103,7 @@ export default function ContactLists() {
             const res = await fetch(`http://127.0.0.1:3000/api/wa/contact-lists/${list.id}`, { method: 'DELETE' });
             const data = await res.json();
             if (data.status === 'success') {
-                showAppNotification('Contact list deleted.', 'success');
+                showAppNotification('Success', 'success');
                 setLists(lists.filter(l => l.id !== list.id));
             } else {
                 throw new Error(data.error);
@@ -117,16 +120,16 @@ export default function ContactLists() {
                 <div>
                     <Link to="/dashboard" className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-sm flex items-center gap-1 mb-2 transition-colors">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6" /></svg>
-                        Back to dashboard
+                        {t(language, 'backToDashboard')}
                     </Link>
-                    <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">Contact Lists</h1>
+                    <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">{t(language, 'contactLists')}</h1>
                 </div>
                 <button
                     onClick={() => setIsModalOpen(true)}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-colors shadow-sm"
+                    className="bg-[#0b9f84] hover:bg-[#088b73] text-white px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-colors shadow-sm"
                 >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14" /></svg>
-                    Add Contact List
+                    {t(language, 'addContactList')}
                 </button>
             </div>
 
@@ -135,16 +138,16 @@ export default function ContactLists() {
                     <table className="w-full text-left text-sm">
                         <thead className="bg-gray-50 dark:bg-zinc-800/50 text-gray-500 dark:text-gray-400 font-semibold text-xs tracking-wider uppercase">
                             <tr>
-                                <th className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800">ID</th>
-                                <th className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800">Name</th>
-                                <th className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800 text-right">Action</th>
+                                <th className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800">{t(language, 'id')}</th>
+                                <th className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800">{t(language, 'name')}</th>
+                                <th className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800 text-right">{t(language, 'action')}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100 dark:divide-zinc-800 text-gray-800 dark:text-zinc-200">
                             {isLoading ? (
-                                <tr><td colSpan="3" className="px-6 py-12 text-center text-gray-500 dark:text-zinc-500">Loading contact lists...</td></tr>
+                                <tr><td colSpan="3" className="px-6 py-12 text-center text-gray-500 dark:text-zinc-500">{t(language, 'loadingContactLists')}</td></tr>
                             ) : lists.length === 0 ? (
-                                <tr><td colSpan="3" className="px-6 py-12 text-center text-gray-500 dark:text-zinc-500">No contact lists found.</td></tr>
+                                <tr><td colSpan="3" className="px-6 py-12 text-center text-gray-500 dark:text-zinc-500">{t(language, 'noContactListsFound')}</td></tr>
                             ) : lists.map((list) => (
                                 <tr key={list.id} className="hover:bg-gray-50/50 dark:hover:bg-zinc-800/30 transition-colors">
                                     <td className="px-6 py-4 text-gray-500 dark:text-zinc-400">#{list.id}</td>
@@ -152,12 +155,12 @@ export default function ContactLists() {
                                     <td className="px-6 py-4 text-right space-x-2">
                                         <button
                                             onClick={() => { setEditingList(list); setEditName(list.name); }}
-                                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium text-xs bg-blue-50 dark:bg-blue-900/20 px-3 py-1.5 rounded-md transition-colors"
-                                        >Edit</button>
+                                            className="text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300 font-medium text-xs bg-emerald-50 dark:bg-emerald-900/20 px-3 py-1.5 rounded-md transition-colors"
+                                        >{t(language, 'edit')}</button>
                                         <button
                                             onClick={() => handleDeleteList(list)}
                                             className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 font-medium text-xs bg-red-50 dark:bg-red-900/20 px-3 py-1.5 rounded-md transition-colors"
-                                        >Delete</button>
+                                        >{t(language, 'delete')}</button>
                                     </td>
                                 </tr>
                             ))}
@@ -173,8 +176,8 @@ export default function ContactLists() {
                         <div className="p-6">
                             <div className="flex justify-between items-start mb-4">
                                 <div>
-                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">Create a Contact List</h3>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Create a new contact list for your whatsapp.</p>
+                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">{t(language, 'createContactList')}</h3>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t(language, 'createContactListDesc')}</p>
                                 </div>
                                 <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
                                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
@@ -182,18 +185,18 @@ export default function ContactLists() {
                             </div>
                             <form onSubmit={handleAddList} className="space-y-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Contact List Name</label>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t(language, 'contactListName')}</label>
                                     <input type="text" required autoFocus className="w-full bg-gray-50 border border-emerald-400 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block p-2.5 dark:bg-zinc-800 dark:text-white outline-none transition-colors" value={newListName} onChange={(e) => setNewListName(e.target.value)} />
                                 </div>
                                 <div className="flex items-center gap-3 py-2">
                                     <button type="button" onClick={() => setNewListStatus(!newListStatus)} className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors duration-200 ease-in-out ${newListStatus ? 'bg-emerald-500' : 'bg-gray-200 dark:bg-zinc-700'}`}>
                                         <span aria-hidden="true" className={`pointer-events-none absolute left-0 inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${newListStatus ? 'translate-x-4' : 'translate-x-0'}`}></span>
                                     </button>
-                                    <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Status</span>
+                                    <span className="text-sm font-medium text-gray-600 dark:text-gray-400">{t(language, 'status')}</span>
                                 </div>
                                 <div className="pt-2">
                                     <button type="submit" disabled={isSubmitting} className="w-full text-white bg-emerald-500 hover:bg-emerald-600 font-medium rounded-lg text-sm px-5 py-2.5 text-center flex items-center justify-center gap-2 transition-colors disabled:opacity-50">
-                                        {isSubmitting ? 'Adding...' : 'Add'}
+                                        {isSubmitting ? t(language, 'adding') : t(language, 'add')}
                                     </button>
                                 </div>
                             </form>
@@ -208,19 +211,19 @@ export default function ContactLists() {
                     <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
                         <div className="p-6">
                             <div className="flex justify-between items-start mb-4">
-                                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Edit List</h3>
+                                <h3 className="text-xl font-bold text-gray-900 dark:text-white">{t(language, 'editList')}</h3>
                                 <button onClick={() => setEditingList(null)} className="text-gray-400 hover:text-gray-600 transition-colors">
                                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                                 </button>
                             </div>
                             <form onSubmit={handleEditList} className="space-y-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">List Name</label>
-                                    <input type="text" required autoFocus className="w-full bg-gray-50 border border-blue-400 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-zinc-800 dark:text-white outline-none transition-colors" value={editName} onChange={(e) => setEditName(e.target.value)} />
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t(language, 'listName')}</label>
+                                    <input type="text" required autoFocus className="w-full bg-gray-50 border border-emerald-400 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block p-2.5 dark:bg-zinc-800 dark:text-white outline-none transition-colors" value={editName} onChange={(e) => setEditName(e.target.value)} />
                                 </div>
                                 <div className="pt-2 flex gap-3">
-                                    <button type="button" onClick={() => setEditingList(null)} className="flex-1 text-gray-700 bg-gray-100 hover:bg-gray-200 dark:text-gray-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors">Cancel</button>
-                                    <button type="submit" disabled={isEditSubmitting} className="flex-1 text-white bg-blue-600 hover:bg-blue-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors disabled:opacity-50">{isEditSubmitting ? 'Saving...' : 'Save'}</button>
+                                    <button type="button" onClick={() => setEditingList(null)} className="flex-1 text-gray-700 bg-gray-100 hover:bg-gray-200 dark:text-gray-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors">{t(language, 'cancel')}</button>
+                                    <button type="submit" disabled={isEditSubmitting} className="flex-1 text-white bg-[#0b9f84] hover:bg-[#088b73] font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors disabled:opacity-50">{isEditSubmitting ? t(language, 'saving') : t(language, 'save')}</button>
                                 </div>
                             </form>
                         </div>

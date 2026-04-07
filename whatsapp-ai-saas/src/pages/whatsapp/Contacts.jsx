@@ -2,7 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import useAppStore from '../../store';
 
+import { getTranslation as t } from '../../locales';
+
 export default function Contacts({ activeId }) {
+    const language = useAppStore(state => state.appSettings?.language) || 'en';
     const [contacts, setContacts] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -424,34 +427,34 @@ export default function Contacts({ activeId }) {
                 <div>
                     <Link to="/dashboard" className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-sm flex items-center gap-1 mb-2 transition-colors">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6" /></svg>
-                        Back to dashboard
+                        {t(language, 'backToDashboard')}
                     </Link>
-                    <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">Contacts</h1>
+                    <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">{t(language, 'contacts')}</h1>
                 </div>
                 <div className="flex items-center gap-3">
                     {selectedContacts.length > 0 && (
                         <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 px-3 py-1.5 rounded-lg border border-blue-100 dark:border-blue-800/50">
                             <span className="text-sm font-medium text-blue-700 dark:text-blue-400">
-                                {selectedContacts.length} selected
+                                {selectedContacts.length} {t(language, 'selected')}
                             </span>
                             <div className="h-4 w-px bg-blue-200 dark:bg-blue-800 mx-1"></div>
                             <button
                                 onClick={() => setIsBulkEditModalOpen(true)}
                                 className="text-sm font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
                             >
-                                Edit Segment
+                                {t(language, 'editSegment')}
                             </button>
                             <button
                                 onClick={() => setIsBulkListEditModalOpen(true)}
                                 className="text-sm font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors ml-2"
                             >
-                                Edit List
+                                {t(language, 'editList')}
                             </button>
                             <button
                                 onClick={handleBulkDelete}
                                 className="text-sm font-medium text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition-colors ml-2"
                             >
-                                Delete All
+                                {t(language, 'deleteAll')}
                             </button>
                         </div>
                     )}
@@ -460,20 +463,20 @@ export default function Contacts({ activeId }) {
                         className="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:hover:bg-emerald-900/40 border border-emerald-200 dark:border-emerald-800/50 px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-colors shadow-sm"
                     >
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                        Message Modèle
+                        {t(language, 'messageTemplate')}
                     </button>
                     <button
                         onClick={() => navigate('/wa/contacts/import')}
                         className="bg-white hover:bg-gray-50 text-gray-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-gray-200 border border-gray-200 dark:border-zinc-700 px-4 py-2 rounded-lg font-medium text-sm transition-colors shadow-sm"
                     >
-                        Import Contact
+                        {t(language, 'importContact')}
                     </button>
                     <button
                         onClick={() => navigate('/wa/contacts/add')}
                         className="bg-gray-900 hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-200 dark:text-gray-900 text-white px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-colors shadow-sm"
                     >
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14" /></svg>
-                        Add New Contact
+                        {t(language, 'addNewContact')}
                     </button>
                 </div>
             </div>
@@ -481,27 +484,27 @@ export default function Contacts({ activeId }) {
             {/* Filters Bar */}
             <div className="flex flex-wrap gap-4 items-center bg-white dark:bg-zinc-900 p-4 border border-gray-100 dark:border-zinc-800 rounded-xl shadow-sm">
                 <div className="flex items-center gap-2">
-                    <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Status:</label>
+                    <label className="text-sm font-medium text-gray-600 dark:text-gray-400">{t(language, 'status')}:</label>
                     <select
                         value={filterStatus}
                         onChange={(e) => { setFilterStatus(e.target.value); setCurrentPage(1); }}
                         className="bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-gray-800 dark:text-gray-200 text-sm rounded-lg py-1.5 px-3 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
                     >
-                        <option value="all">All</option>
-                        <option value="valid">✅ Valid</option>
-                        <option value="invalid">❌ Invalid (N/A)</option>
-                        <option value="unverified">⏱️ Unverified</option>
+                        <option value="all">{t(language, 'all')}</option>
+                        <option value="valid">✅ {t(language, 'valid')}</option>
+                        <option value="invalid">❌ {t(language, 'invalid')}</option>
+                        <option value="unverified">⏱️ {t(language, 'unverified')}</option>
                     </select>
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Segment:</label>
+                    <label className="text-sm font-medium text-gray-600 dark:text-gray-400">{t(language, 'segment')}:</label>
                     <select
                         value={filterSegment}
                         onChange={(e) => { setFilterSegment(e.target.value); setCurrentPage(1); }}
                         className="bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-gray-800 dark:text-gray-200 text-sm rounded-lg py-1.5 px-3 focus:ring-emerald-500 focus:border-emerald-500 outline-none max-w-[200px]"
                     >
-                        <option value="all">All Segments</option>
+                        <option value="all">{t(language, 'allSegments')}</option>
                         {uniqueSegments.map(seg => (
                             <option key={seg} value={seg}>{seg}</option>
                         ))}
@@ -509,13 +512,13 @@ export default function Contacts({ activeId }) {
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Liste:</label>
+                    <label className="text-sm font-medium text-gray-600 dark:text-gray-400">{t(language, 'list')}:</label>
                     <select
                         value={filterList}
                         onChange={(e) => { setFilterList(e.target.value); setCurrentPage(1); }}
                         className="bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-gray-800 dark:text-gray-200 text-sm rounded-lg py-1.5 px-3 focus:ring-emerald-500 focus:border-emerald-500 outline-none max-w-[200px]"
                     >
-                        <option value="all">All Lists</option>
+                        <option value="all">{t(language, 'allLists')}</option>
                         {uniqueLists.map(lst => (
                             <option key={lst} value={lst}>{lst}</option>
                         ))}
@@ -523,7 +526,7 @@ export default function Contacts({ activeId }) {
                 </div>
 
                 <div className="ml-auto text-sm text-gray-500 dark:text-gray-400 font-medium">
-                    {totalFiltered} Contacts Found
+                    {totalFiltered} {t(language, 'contactsFound')}
                 </div>
             </div>
 
@@ -544,33 +547,33 @@ export default function Contacts({ activeId }) {
                                     className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800 cursor-pointer hover:bg-gray-100 dark:hover:bg-zinc-700/50 transition-colors"
                                     onClick={() => handleSort('id')}
                                 >
-                                    <div className="flex items-center gap-1">ID {sortField === 'id' && (sortDirection === 'asc' ? '↑' : '↓')}</div>
+                                    <div className="flex items-center gap-1">{t(language, 'id')} {sortField === 'id' && (sortDirection === 'asc' ? '↑' : '↓')}</div>
                                 </th>
                                 <th
                                     className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800 cursor-pointer hover:bg-gray-100 dark:hover:bg-zinc-700/50 transition-colors"
                                     onClick={() => handleSort('name')}
                                 >
-                                    <div className="flex items-center gap-1">Name {sortField === 'name' && (sortDirection === 'asc' ? '↑' : '↓')}</div>
+                                    <div className="flex items-center gap-1">{t(language, 'name')} {sortField === 'name' && (sortDirection === 'asc' ? '↑' : '↓')}</div>
                                 </th>
-                                <th className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800">Phone</th>
-                                <th className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800">Email</th>
-                                <th className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800">Adresse</th>
-                                <th className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800">Liste</th>
-                                <th className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800">Segment</th>
-                                <th className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800 text-right min-w-[150px]">Action</th>
+                                <th className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800">{t(language, 'phone')}</th>
+                                <th className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800">{t(language, 'email')}</th>
+                                <th className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800">{t(language, 'address')}</th>
+                                <th className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800">{t(language, 'list')}</th>
+                                <th className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800">{t(language, 'segment')}</th>
+                                <th className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800 text-right min-w-[150px]">{t(language, 'action')}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100 dark:divide-zinc-800 text-gray-800 dark:text-zinc-200">
                             {isLoading ? (
                                 <tr>
                                     <td colSpan="9" className="px-6 py-12 text-center text-gray-500 dark:text-zinc-500">
-                                        Loading contacts...
+                                        {t(language, 'loadingContacts')}
                                     </td>
                                 </tr>
                             ) : contactsOnPage.length === 0 ? (
                                 <tr>
                                     <td colSpan="9" className="px-6 py-12 text-center text-gray-500 dark:text-zinc-500">
-                                        No contacts found.
+                                        {t(language, 'noContactsFound')}
                                     </td>
                                 </tr>
                             ) : contactsOnPage.map((contact) => (
@@ -617,16 +620,16 @@ export default function Contacts({ activeId }) {
                                             <button
                                                 onClick={() => navigate('/wa/contacts/edit/' + contact.id)}
                                                 disabled={isAnalyzing}
-                                                className={`text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium text-xs bg-blue-50 dark:bg-blue-900/20 px-3 py-1.5 rounded-md transition-colors ${isAnalyzing ? 'opacity-40 cursor-not-allowed' : ''}`}
+                                                className={`text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300 font-medium text-xs bg-emerald-50 dark:bg-emerald-900/20 px-3 py-1.5 rounded-md transition-colors ${isAnalyzing ? 'opacity-40 cursor-not-allowed' : ''}`}
                                             >
-                                                Edit
+                                                {t(language, 'edit')}
                                             </button>
                                             <button
                                                 onClick={() => handleDelete(contact.id)}
                                                 disabled={isAnalyzing}
                                                 className={`text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 font-medium text-xs bg-red-50 dark:bg-red-900/20 px-3 py-1.5 rounded-md transition-colors ${isAnalyzing ? 'opacity-40 cursor-not-allowed' : ''}`}
                                             >
-                                                Delete
+                                                {t(language, 'delete')}
                                             </button>
                                         </div>
                                     </td>
@@ -638,21 +641,21 @@ export default function Contacts({ activeId }) {
 
                 {totalPages > 1 && (
                     <div className="flex justify-between items-center p-4 border-t border-gray-100 dark:border-zinc-800 text-sm text-gray-500 dark:text-gray-400">
-                        <span>Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, totalFiltered)} of {totalFiltered} entries</span>
+                        <span>{t(language, 'showing')} {(currentPage - 1) * itemsPerPage + 1} {t(language, 'to')} {Math.min(currentPage * itemsPerPage, totalFiltered)} {t(language, 'of')} {totalFiltered} {t(language, 'entries')}</span>
                         <div className="flex gap-2">
                             <button
                                 onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                                 disabled={currentPage === 1}
                                 className="px-3 py-1 border border-gray-200 dark:border-zinc-700 rounded hover:bg-gray-50 dark:hover:bg-zinc-800 disabled:opacity-50 transition-colors"
                             >
-                                Précédent
+                                {t(language, 'previous')}
                             </button>
                             <button
                                 onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                                 disabled={currentPage === totalPages}
                                 className="px-3 py-1 border border-gray-200 dark:border-zinc-700 rounded hover:bg-gray-50 dark:hover:bg-zinc-800 disabled:opacity-50 transition-colors"
                             >
-                                Suivant
+                                {t(language, 'next')}
                             </button>
                         </div>
                     </div>
@@ -673,7 +676,7 @@ export default function Contacts({ activeId }) {
                             ) : (
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
                             )}
-                            Analyse Contact
+                            {t(language, 'analyzeContact')}
                         </button>
                     </div>
                 )}
@@ -686,8 +689,8 @@ export default function Contacts({ activeId }) {
                         <div className="p-6">
                             <div className="flex justify-between items-start mb-4">
                                 <div>
-                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">Bulk Edit Segment</h3>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Update the segment for {selectedContacts.length} selected contacts.</p>
+                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">{t(language, 'bulkEditSegment')}</h3>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t(language, 'bulkEditSegmentDesc')}</p>
                                 </div>
                                 <button
                                     onClick={() => setIsBulkEditModalOpen(false)}
@@ -699,14 +702,14 @@ export default function Contacts({ activeId }) {
 
                             <form onSubmit={handleBulkUpdate} className="space-y-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Select New Segment</label>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t(language, 'selectNewSegment')}</label>
                                     <select
                                         className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-zinc-800 dark:border-zinc-700 dark:placeholder-gray-400 dark:text-white transition-colors"
                                         value={bulkSegmentId}
                                         onChange={(e) => setBulkSegmentId(e.target.value)}
                                         required
                                     >
-                                        <option value="">Choose a segment</option>
+                                        <option value="">{t(language, 'chooseSegment')}</option>
                                         {allSegments.map(s => (
                                             <option key={s.id} value={s.id}>{s.name}</option>
                                         ))}
@@ -719,14 +722,14 @@ export default function Contacts({ activeId }) {
                                         onClick={() => setIsBulkEditModalOpen(false)}
                                         className="flex-1 text-gray-700 bg-gray-100 hover:bg-gray-200 dark:text-gray-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors"
                                     >
-                                        Cancel
+                                        {t(language, 'cancel')}
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={isSubmittingBulk}
-                                        className="flex-1 text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors disabled:opacity-50"
+                                        className="flex-1 text-white bg-[#0b9f84] hover:bg-[#088b73] focus:ring-4 focus:outline-none focus:ring-[#0b9f84]/50 font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors disabled:opacity-50"
                                     >
-                                        {isSubmittingBulk ? 'Updating...' : 'Update'}
+                                        {isSubmittingBulk ? t(language, 'updating') : t(language, 'update')}
                                     </button>
                                 </div>
                             </form>
@@ -742,8 +745,8 @@ export default function Contacts({ activeId }) {
                         <div className="p-6">
                             <div className="flex justify-between items-start mb-4">
                                 <div>
-                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">Bulk Edit List</h3>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Update the list for {selectedContacts.length} selected contacts.</p>
+                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">{t(language, 'bulkEditList')}</h3>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t(language, 'bulkEditListDesc')}</p>
                                 </div>
                                 <button
                                     onClick={() => setIsBulkListEditModalOpen(false)}
@@ -755,14 +758,14 @@ export default function Contacts({ activeId }) {
 
                             <form onSubmit={handleBulkUpdateList} className="space-y-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Select New List</label>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t(language, 'selectNewList')}</label>
                                     <select
                                         className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-zinc-800 dark:border-zinc-700 dark:placeholder-gray-400 dark:text-white transition-colors"
                                         value={bulkListId}
                                         onChange={(e) => setBulkListId(e.target.value)}
                                         required
                                     >
-                                        <option value="">Choose a list</option>
+                                        <option value="">{t(language, 'chooseList')}</option>
                                         {allLists.map(l => (
                                             <option key={l.id} value={l.id}>{l.name}</option>
                                         ))}
@@ -775,14 +778,14 @@ export default function Contacts({ activeId }) {
                                         onClick={() => setIsBulkListEditModalOpen(false)}
                                         className="flex-1 text-gray-700 bg-gray-100 hover:bg-gray-200 dark:text-gray-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors"
                                     >
-                                        Cancel
+                                        {t(language, 'cancel')}
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={isSubmittingBulk}
-                                        className="flex-1 text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors disabled:opacity-50"
+                                        className="flex-1 text-white bg-[#0b9f84] hover:bg-[#088b73] focus:ring-4 focus:outline-none focus:ring-[#0b9f84]/50 font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors disabled:opacity-50"
                                     >
-                                        {isSubmittingBulk ? 'Updating...' : 'Update'}
+                                        {isSubmittingBulk ? t(language, 'updating') : t(language, 'update')}
                                     </button>
                                 </div>
                             </form>
@@ -798,8 +801,8 @@ export default function Contacts({ activeId }) {
                         <div className="p-6">
                             <div className="flex justify-between items-start mb-4">
                                 <div>
-                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">Modèle de Message</h3>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Configurez le message automatique pour la copie intelligente.</p>
+                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">{t(language, 'messageTemplate')}</h3>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t(language, 'configAutoMessage')}</p>
                                 </div>
                                 <button
                                     onClick={() => setIsTemplateModalOpen(false)}
@@ -833,14 +836,14 @@ export default function Contacts({ activeId }) {
                                         onClick={() => setIsTemplateModalOpen(false)}
                                         className="flex-1 text-gray-700 bg-gray-100 hover:bg-gray-200 dark:text-gray-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors"
                                     >
-                                        Annuler
+                                        {t(language, 'cancel')}
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={isSavingTemplate}
                                         className="flex-1 text-white bg-emerald-600 hover:bg-emerald-700 focus:ring-4 focus:outline-none focus:ring-emerald-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors disabled:opacity-50"
                                     >
-                                        {isSavingTemplate ? 'Enregistrement...' : 'Enregistrer le modèle'}
+                                        {isSavingTemplate ? t(language, 'saving') : t(language, 'saveTemplate')}
                                     </button>
                                 </div>
                             </form>

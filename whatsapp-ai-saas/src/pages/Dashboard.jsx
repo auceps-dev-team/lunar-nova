@@ -4,21 +4,21 @@ import { getTranslation as t } from '../locales';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const C = {
-    primary:   '#0b9f84',
-    primary2:  '#10b981',
-    accent:    '#6366f1',
-    amber:     '#f59e0b',
-    red:       '#ef4444',
-    blue:      '#3b82f6',
-    purple:    '#8b5cf6',
-    gray100:   '#f1f5f9',
-    gray200:   '#e2e8f0',
-    gray400:   '#94a3b8',
-    gray500:   '#64748b',
-    gray700:   '#334155',
+    primary: '#0b9f84',
+    primary2: '#10b981',
+    accent: '#6366f1',
+    amber: '#f59e0b',
+    red: '#ef4444',
+    blue: '#3b82f6',
+    purple: '#8b5cf6',
+    gray100: '#f1f5f9',
+    gray200: '#e2e8f0',
+    gray400: '#94a3b8',
+    gray500: '#64748b',
+    gray700: '#334155',
     textPrimary: 'var(--text-primary, #0f172a)',
     textSecondary: 'var(--text-secondary, #64748b)',
-    panelBg:   'var(--panel-bg, #fff)',
+    panelBg: 'var(--panel-bg, #fff)',
     borderColor: 'var(--border-color, #e2e8f0)',
 };
 
@@ -43,7 +43,7 @@ function KPICard({ icon, label, value, sub, color }) {
             overflow: 'hidden',
         }}>
             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: color, borderRadius: '16px 16px 0 0' }} />
-            
+
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{
                     width: 40, height: 40, borderRadius: 10,
@@ -132,56 +132,58 @@ const Dashboard = () => {
             <div style={{ marginBottom: 32, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
                 <div>
                     <h1 style={{ fontSize: 26, fontWeight: 800, color: C.textPrimary, margin: 0, letterSpacing: '-0.5px' }}>
-                        {t(language, 'welcomeBack')} {userProfile?.firstName || 'Ecrabet'} 👋
+                        {userProfile?.isAuthenticated && userProfile?.firstName
+                            ? `${t(language, 'welcomeBack')} ${userProfile.firstName} 👋`
+                            : `${t(language, 'welcomeTitle')} 👋`}
                     </h1>
                     <p style={{ color: C.textSecondary, fontSize: 13, margin: '5px 0 0' }}>
-                        Voici un rapide aperçu de votre espace de travail.
+                        {t(language, 'workspaceSummary')}
                     </p>
                 </div>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 28 }}>
-                <KPICard 
-                    icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>} 
-                    label="Contacts Total" 
-                    value={(contactAnalytics?.totalContacts || 0).toLocaleString()} 
-                    sub="Dans la base de données" 
-                    color={C.primary2} 
+                <KPICard
+                    icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>}
+                    label={t(language, 'contactsTotal')}
+                    value={(contactAnalytics?.totalContacts || 0).toLocaleString()}
+                    sub={t(language, 'inDatabase')}
+                    color={C.primary2}
                 />
-                <KPICard 
-                    icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path><circle cx="12" cy="10" r="3"></circle></svg>} 
-                    label="Messages Envoyés" 
-                    value={(contactAnalytics?.totalMessagesSent || 0).toLocaleString()} 
-                    sub="Initiés via la plateforme" 
-                    color={C.accent} 
+                <KPICard
+                    icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path><circle cx="12" cy="10" r="3"></circle></svg>}
+                    label={t(language, 'messagesSent')}
+                    value={(contactAnalytics?.totalMessagesSent || 0).toLocaleString()}
+                    sub={t(language, 'initiatedViaPlatform')}
+                    color={C.accent}
                 />
-                <KPICard 
-                    icon={Icons.phone} 
-                    label={t(language, 'activeInstances') || 'Instances WhatsApp'} 
-                    value={activeInstancesCount} 
-                    sub="Instances connectées" 
-                    color={C.primary} 
+                <KPICard
+                    icon={Icons.phone}
+                    label={t(language, 'activeInstances')}
+                    value={activeInstancesCount}
+                    sub={t(language, 'connectedInstances')}
+                    color={C.primary}
                 />
-                <KPICard 
-                    icon={Icons.bot} 
-                    label={t(language, 'copilotReplies') || 'Réponses Copilot'} 
-                    value={copilotCount.toLocaleString()} 
-                    sub="Interactions suggérées" 
-                    color={C.accent} 
+                <KPICard
+                    icon={Icons.bot}
+                    label={t(language, 'copilotReplies')}
+                    value={copilotCount.toLocaleString()}
+                    sub={t(language, 'suggestedInteractions')}
+                    color={C.accent}
                 />
-                <KPICard 
-                    icon={Icons.fileText} 
-                    label={t(language, 'automatedInvoices') || 'Factures Générées'} 
-                    value={invoices.length.toString()} 
-                    sub="Factures créées" 
-                    color={C.blue} 
+                <KPICard
+                    icon={Icons.fileText}
+                    label={t(language, 'automatedInvoices')}
+                    value={invoices.length.toString()}
+                    sub={t(language, 'invoicesCreated')}
+                    color={C.blue}
                 />
-                <KPICard 
-                    icon={Icons.checkCircle} 
-                    label={t(language, 'tasksCompleted') || 'Tâches Complétées'} 
-                    value={completedTasksCount.toString()} 
-                    sub={`${completedPercentage}% progression (${totalTasksCount} au total)`} 
-                    color={C.amber} 
+                <KPICard
+                    icon={Icons.checkCircle}
+                    label={t(language, 'tasksCompleted')}
+                    value={completedTasksCount.toString()}
+                    sub={`${completedPercentage}${t(language, 'completionRate')} (${totalTasksCount} ${t(language, 'all')})`}
+                    color={C.amber}
                 />
             </div>
 
@@ -193,13 +195,13 @@ const Dashboard = () => {
             }}>
                 <div style={{ marginBottom: 24 }}>
                     <h2 style={{ fontSize: 16, fontWeight: 700, color: C.textPrimary, margin: 0 }}>
-                        {t(language, 'recentActivity') || 'Activité Récente du Copilot'}
+                        {t(language, 'recentActivity')}
                     </h2>
                     <p style={{ fontSize: 12, color: C.textSecondary, margin: '3px 0 0' }}>
-                        Évolution des réponses générées sur les 7 derniers jours
+                        {t(language, 'evolutionReplies')}
                     </p>
                 </div>
-                
+
                 <div style={{ width: '100%' }}>
                     <ResponsiveContainer width="100%" height={280} minWidth={0}>
                         <AreaChart data={mockChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>

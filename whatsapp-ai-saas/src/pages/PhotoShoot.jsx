@@ -402,7 +402,7 @@ const PhotoShoot = ({ activeId }) => {
                     <div className="p-5 border-b border-gray-100 dark:border-gray-800">
                         <h2 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
-                            Set Up Photoshoot
+                            {t(language, 'readyShootTitle')}
                         </h2>
                     </div>
 
@@ -525,7 +525,7 @@ const PhotoShoot = ({ activeId }) => {
 
                     {/* ── Aspect Ratio ── */}
                     <div className="px-4 pb-3">
-                        <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-2">Aspect Ratio</p>
+                        <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-2">{t(language, 'aspectRatio')}</p>
                         <div className="flex gap-2">
                             {['1:1', '3:4', '4:3', '9:16'].map(ratio => (
                                 <button
@@ -568,7 +568,7 @@ const PhotoShoot = ({ activeId }) => {
                                         <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                                     </svg>
                                     {/*{t(language, 'analyzing')} & */}
-                                    Generate Strategy
+                                    {t(language, 'analysisConcept')}
                                 </>
                             )}
                         </button>

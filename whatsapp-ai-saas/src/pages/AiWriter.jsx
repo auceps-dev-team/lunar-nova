@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import useAppStore from '../store';
 import { Sparkles, Download, Undo, Redo, Copy, Edit3, AlignLeft, AlignCenter, AlignRight, Bold, Italic, Underline, List } from 'lucide-react';
 import html2pdf from 'html2pdf.js';
+import { getTranslation as t } from '../locales';
 
 const SYSTEM_AGENTS = [
     { id: 'copywriter', name: 'Jarvis - SDR Senior', isSystem: true },
@@ -31,6 +32,8 @@ const SYSTEM_AGENTS = [
 
 export default function AiWriter() {
     const showAppNotification = useAppStore(state => state.showAppNotification);
+    const appSettings = useAppStore(state => state.appSettings) || {};
+    const uiLanguage = appSettings.language || 'en';
     const [allAgents, setAllAgents] = useState([]);
 
     // Form state
@@ -276,9 +279,9 @@ export default function AiWriter() {
             {/* Left Column - Configuration */}
             <div className="w-[380px] shrink-0 flex flex-col gap-5 overflow-y-auto pr-2 scrollbar-hide">
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
-                    <h3 className="font-semibold text-gray-800 dark:text-gray-100 mb-4">Configuration Agent</h3>
+                    <h3 className="font-semibold text-gray-800 dark:text-gray-100 mb-4">{t(uiLanguage, 'agentConfig')}</h3>
                     <div className="mb-4">
-                        <label className="text-xs font-medium text-gray-500 mb-1.5 block">Sélection de l'Agent</label>
+                        <label className="text-xs font-medium text-gray-500 mb-1.5 block">{t(uiLanguage, 'selectAgent')}</label>
                         <select
                             value={selectedAgent}
                             onChange={e => setSelectedAgent(e.target.value)}
@@ -293,21 +296,21 @@ export default function AiWriter() {
                 </div>
 
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5 flex-1 flex flex-col">
-                    <h3 className="font-semibold text-gray-800 dark:text-gray-100 mb-4">Description du Besoin</h3>
+                    <h3 className="font-semibold text-gray-800 dark:text-gray-100 mb-4">{t(uiLanguage, 'needDesc')}</h3>
 
                     <div className="mb-5 flex-1 flex flex-col">
-                        <label className="text-xs font-medium text-gray-500 mb-1.5 block">Décrivez ce que vous souhaitez créer</label>
+                        <label className="text-xs font-medium text-gray-500 mb-1.5 block">{t(uiLanguage, 'describeCreation')}</label>
                         <textarea
                             value={shortDescription}
                             onChange={e => setShortDescription(e.target.value)}
-                            placeholder="Ex: Rédige un post LinkedIn sur le lancement de notre nouvelle application..."
+                            placeholder={t(uiLanguage, 'exLinkedin')}
                             className="w-full flex-1 min-h-[180px] bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-[#0b9f84] focus:ring-1 focus:ring-[#0b9f84] resize-none dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 transition-shadow"
                         ></textarea>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4 mb-5">
                         <div>
-                            <label className="text-xs font-medium text-gray-500 mb-1.5 block">Language</label>
+                            <label className="text-xs font-medium text-gray-500 mb-1.5 block">{t(uiLanguage, 'interfaceLang')}</label>
                             <select value={language} onChange={e => setLanguage(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
                                 <option>English (USA)</option>
                                 <option>Français (France)</option>
@@ -315,7 +318,7 @@ export default function AiWriter() {
                             </select>
                         </div>
                         <div>
-                            <label className="text-xs font-medium text-gray-500 mb-1.5 block">Maximum Length</label>
+                            <label className="text-xs font-medium text-gray-500 mb-1.5 block">{t(uiLanguage, 'maxLen')}</label>
                             <input
                                 type="number"
                                 value={maxLength}
@@ -324,7 +327,7 @@ export default function AiWriter() {
                             />
                         </div>
                         <div>
-                            <label className="text-xs font-medium text-gray-500 mb-1.5 block">Creativity</label>
+                            <label className="text-xs font-medium text-gray-500 mb-1.5 block">{t(uiLanguage, 'creativity')}</label>
                             <select value={creativity} onChange={e => setCreativity(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
                                 <option>Optimal</option>
                                 <option>Good</option>
@@ -333,7 +336,7 @@ export default function AiWriter() {
                             </select>
                         </div>
                         <div>
-                            <label className="text-xs font-medium text-gray-500 mb-1.5 block">Tone of Voice</label>
+                            <label className="text-xs font-medium text-gray-500 mb-1.5 block">{t(uiLanguage, 'toneOfVoice')}</label>
                             <select value={toneOfVoice} onChange={e => setToneOfVoice(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
                                 <option>Professional</option>
                                 <option>Engaging</option>
@@ -351,9 +354,9 @@ export default function AiWriter() {
                         {isGenerating ? (
                             <>
                                 <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                                Generation...
+                                {t(uiLanguage, 'generating')}
                             </>
-                        ) : 'Generate'}
+                        ) : t(uiLanguage, 'generateBtn').replace(' (Imagen 4)', '')}
                     </button>
                 </div>
             </div>
@@ -368,7 +371,7 @@ export default function AiWriter() {
                     <div className="flex justify-between items-center w-full">
                         <Link to="/my-documents" className="text-sm font-medium text-gray-500 hover:text-[#0b9f84] transition-colors flex items-center gap-1.5">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-                            My Documents
+                            {t(uiLanguage, 'myDocuments')}
                         </Link>
                     </div>
 
@@ -435,7 +438,7 @@ export default function AiWriter() {
                                     <path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"></path>
                                     <path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"></path>
                                 </svg>
-                                Save
+                                {t(uiLanguage, 'save')}
                             </button>
                         </div>
                     </div>
@@ -446,7 +449,7 @@ export default function AiWriter() {
                             type="text"
                             value={documentTitle}
                             onChange={e => setDocumentTitle(e.target.value)}
-                            placeholder="Untitled Document..."
+                            placeholder={t(uiLanguage, 'untitledDoc')}
                             className="block w-full py-2 bg-transparent text-gray-900 dark:text-gray-100 transition-colors focus:border-[#0b9f84] focus:outline-none focus:ring focus:ring-[#0b9f84]/20 h-12 border-transparent px-2 font-serif text-2xl placeholder-gray-400 dark:placeholder-gray-500 rounded-md"
                         />
                     </div>
@@ -455,14 +458,14 @@ export default function AiWriter() {
                 {/* Main Toolbar (Text Formatting) */}
                 <div className="flex items-center gap-1 p-2 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 flex-wrap">
                     <select onChange={(e) => handleFormat('formatBlock', e.target.value)} className="bg-transparent border border-gray-200 rounded px-2 py-1.5 text-sm outline-none ml-2 mr-3 focus:border-[#0b9f84] focus:ring-1 focus:ring-[#0b9f84] transition-shadow">
-                        <option value="p">Normal (p)</option>
+                        <option value="p">{t(uiLanguage, 'normalP')}</option>
                         <option value="h1">Heading 1</option>
                         <option value="h2">Heading 2</option>
                         <option value="h3">Heading 3</option>
                     </select>
 
                     <button onClick={handleRewrite} disabled={isGenerating} className="px-3 py-1.5 flex items-center gap-1.5 text-sm font-medium text-[#0b9f84] hover:bg-[#0b9f84]/10 rounded-md border border-transparent transition mr-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                        <Sparkles size={16} /> {isGenerating ? 'Rewriting...' : 'Rewrite'}
+                        <Sparkles size={16} /> {isGenerating ? '...' : t(uiLanguage, 'rewriteBtn')}
                     </button>
 
                     <div className="w-px h-5 bg-gray-200 mx-1"></div>

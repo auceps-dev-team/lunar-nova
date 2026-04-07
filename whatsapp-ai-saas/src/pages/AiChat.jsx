@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Sparkles, Copy, Trash2, Search, Plus, Menu, ArrowLeft, Send, Paperclip, Type, Mic, X } from 'lucide-react';
 import useAppStore from '../store';
+import { getTranslation as t } from '../locales';
 
 // ─── Couleurs pastel générées déterministement par nom ────────────────────
 const PASTEL_PALETTE = [
@@ -352,7 +353,7 @@ export default function AiChat() {
             {/* Header */}
             <Link to="/dashboard" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#64748b', fontSize: 14, marginBottom: 20, textDecoration: 'none' }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6" /></svg>
-                Back to dashboard
+                {t(language, 'backToDashboard')}
             </Link>
             <h1 style={{ fontSize: 32, fontWeight: 800, color: '#0f172a', marginBottom: 8 }}>AI Chat</h1>
 
@@ -363,13 +364,13 @@ export default function AiChat() {
                     <input
                         value={searchQuery}
                         onChange={e => setSearchQuery(e.target.value)}
-                        placeholder="Search"
+                        placeholder={t(language, 'searchChat')}
                         style={{ width: '100%', padding: '9px 12px 9px 38px', border: '1px solid #e2e8f0', borderRadius: 10, fontSize: 14, outline: 'none', background: '#fff', boxSizing: 'border-box' }}
                     />
                 </div>
-                <button onClick={() => setFilterFavorites(false)} style={{ padding: '8px 18px', borderRadius: 10, border: 'none', background: !filterFavorites ? '#0f172a' : 'transparent', color: !filterFavorites ? '#fff' : '#64748b', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>All</button>
+                <button onClick={() => setFilterFavorites(false)} style={{ padding: '8px 18px', borderRadius: 10, border: 'none', background: !filterFavorites ? '#0f172a' : 'transparent', color: !filterFavorites ? '#fff' : '#64748b', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>{t(language, 'allChat')}</button>
                 <button onClick={() => setFilterFavorites(true)} style={{ padding: '8px 18px', borderRadius: 10, border: 'none', background: filterFavorites ? '#0f172a' : 'transparent', color: filterFavorites ? '#fff' : '#64748b', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>
-                    ★ Favorite
+                    ★ {t(language, 'favorite')}
                 </button>
             </div>
 
@@ -403,7 +404,7 @@ export default function AiChat() {
 
                             {/* Badge */}
                             <span style={{ marginTop: 14, padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600, background: agent.isSystem ? '#f0fdf4' : '#faf5ff', color: agent.isSystem ? '#16a34a' : '#7c3aed' }}>
-                                {agent.isSystem ? 'Système' : 'Custom'}
+                                {agent.isSystem ? t(language, 'system') : 'Custom'}
                             </span>
                         </div>
                     );
@@ -433,7 +434,7 @@ export default function AiChat() {
                     <div style={{ padding: '20px 16px 12px' }}>
                         <button onClick={() => setView('grid')} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: '#64748b', fontSize: 13, background: 'none', border: 'none', cursor: 'pointer', marginBottom: 16, padding: 0 }}>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6" /></svg>
-                            Back to dashboard
+                            {t(language, 'backToDashboard')}
                         </button>
                         <h2 style={{ fontSize: 22, fontWeight: 800, color: '#0f172a' }}>AI Chat</h2>
                     </div>
@@ -443,7 +444,7 @@ export default function AiChat() {
                         <div style={{ position: 'relative', flex: 1 }}>
                             <svg style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" /></svg>
                             <input
-                                placeholder="Search"
+                                placeholder={t(language, 'searchChat')}
                                 value={sessionSearchQuery}
                                 onChange={e => setSessionSearchQuery(e.target.value)}
                                 style={{ width: '100%', padding: '8px 10px 8px 32px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13, outline: 'none', boxSizing: 'border-box' }}

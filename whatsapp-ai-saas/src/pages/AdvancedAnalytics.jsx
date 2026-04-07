@@ -7,20 +7,20 @@ import {
 
 // ── Palette cohérente avec le projet ──────────────────────────────
 const C = {
-    primary:   '#0b9f84',
-    primary2:  '#10b981',
-    accent:    '#6366f1',
-    amber:     '#f59e0b',
-    red:       '#ef4444',
-    blue:      '#3b82f6',
-    purple:    '#8b5cf6',
-    gray100:   '#f1f5f9',
-    gray200:   '#e2e8f0',
-    gray400:   '#94a3b8',
-    gray500:   '#64748b',
-    gray700:   '#334155',
-    gray900:   '#0f172a',
-    panelBg:   'var(--panel-bg, #fff)',
+    primary: '#0b9f84',
+    primary2: '#10b981',
+    accent: '#6366f1',
+    amber: '#f59e0b',
+    red: '#ef4444',
+    blue: '#3b82f6',
+    purple: '#8b5cf6',
+    gray100: '#f1f5f9',
+    gray200: '#e2e8f0',
+    gray400: '#94a3b8',
+    gray500: '#64748b',
+    gray700: '#334155',
+    gray900: '#0f172a',
+    panelBg: 'var(--panel-bg, #fff)',
     borderColor: 'var(--border-color, #e2e8f0)',
     textPrimary: 'var(--text-primary, #0f172a)',
     textSecondary: 'var(--text-secondary, #64748b)',
@@ -51,7 +51,7 @@ const fmt = (n, cur = 'XOF') =>
 
 const pct = (a, b) => (b === 0 ? 0 : Math.round((a / b) * 100));
 
-const MONTHS = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+const MONTHS = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
 
 function buildMonthlyRevenue(invoices) {
     const d = MONTHS.map(name => ({ name, rev: 0, count: 0 }));
@@ -251,17 +251,20 @@ function ZustandInspector({ storeData }) {
 }
 
 // ── MAIN COMPONENT ────────────────────────────────────────────────
+import { getTranslation as t } from '../locales';
+
 export default function AdvancedAnalytics() {
     // Pull everything from Zustand
-    const tasks        = useAppStore(s => s.tasks) || [];
-    const invoices     = useAppStore(s => s.invoices) || [];
-    const instances    = useAppStore(s => s.instances) || [];
+    const tasks = useAppStore(s => s.tasks) || [];
+    const invoices = useAppStore(s => s.invoices) || [];
+    const instances = useAppStore(s => s.instances) || [];
     const agentHistory = useAppStore(s => s.agentHistory) || [];
     const conversations = useAppStore(s => s.aiChatConversations) || {};
-    const sessions     = useAppStore(s => s.aiChatSessions) || {};
+    const sessions = useAppStore(s => s.aiChatSessions) || {};
     const copilotCount = useAppStore(s => s.copilotRepliesGenerated) || 0;
-    const appSettings  = useAppStore(s => s.appSettings) || {};
-    const userProfile  = useAppStore(s => s.userProfile) || {};
+    const appSettings = useAppStore(s => s.appSettings) || {};
+    const userProfile = useAppStore(s => s.userProfile) || {};
+    const language = appSettings.language || 'en';
 
     const [activeTab, setActiveTab] = useState('overview');
     const [contactAnalytics, setContactAnalytics] = useState(null);
@@ -293,16 +296,16 @@ export default function AdvancedAnalytics() {
             return sum + sub * (1 + (inv.taxRate || 0) / 100);
         }, 0), [invoices]);
 
-    const paidInvoices  = invoices.filter(i => i.status === 'paid').length;
+    const paidInvoices = invoices.filter(i => i.status === 'paid').length;
     const pendingInvoices = invoices.filter(i => i.status === 'pending' || i.status === 'overdue').length;
 
     const totalMessages = useMemo(() =>
         Object.values(conversations).reduce((s, msgs) => s + (Array.isArray(msgs) ? msgs.length : 0), 0),
-    [conversations]);
+        [conversations]);
 
     const totalSessions = useMemo(() =>
         Object.values(sessions).reduce((s, arr) => s + (Array.isArray(arr) ? arr.length : 0), 0),
-    [sessions]);
+        [sessions]);
 
     // Segments WhatsApp (from agentHistory product types)
     const productTypes = useMemo(() => {
@@ -315,16 +318,16 @@ export default function AdvancedAnalytics() {
 
     // Task distribution for pie
     const taskPieData = [
-        { name: 'À faire',     value: taskStats.todo,       color: C.amber },
-        { name: 'En cours',    value: taskStats.inProgress,  color: C.primary },
-        { name: 'Terminées',   value: taskStats.completed,   color: C.primary2 },
+        { name: t(language, 'toDo'), value: taskStats.todo, color: C.amber },
+        { name: t(language, 'inProgress'), value: taskStats.inProgress, color: C.primary },
+        { name: t(language, 'completed'), value: taskStats.completed, color: C.primary2 },
     ].filter(d => d.value > 0);
 
     // Invoice status pie
     const invoicePie = [
-        { name: 'Payées',     value: paidInvoices,   color: C.primary2 },
-        { name: 'En attente', value: pendingInvoices, color: C.amber },
-        { name: 'Brouillon',  value: invoices.filter(i => i.status === 'draft').length, color: C.gray400 },
+        { name: t(language, 'paidInvoices'), value: paidInvoices, color: C.primary2 },
+        { name: t(language, 'pending'), value: pendingInvoices, color: C.amber },
+        { name: t(language, 'drafts'), value: invoices.filter(i => i.status === 'draft').length, color: C.gray400 },
     ].filter(d => d.value > 0);
 
     // Full Zustand state snapshot for inspector
@@ -332,12 +335,12 @@ export default function AdvancedAnalytics() {
 
     // ── Tabs ──────────────────────────────────────────────────────
     const TABS = [
-        { id: 'overview',  label: 'Vue d\'ensemble' },
-        { id: 'audience',  label: 'Audience WA' },
-        { id: 'agents',    label: 'Agents IA' },
-        { id: 'revenue',   label: 'Revenus' },
-        { id: 'tasks',     label: 'Tâches' },
-        { id: 'cache',     label: '🗄 Store Cache' },
+        { id: 'overview', label: t(language, 'overview') },
+        { id: 'audience', label: t(language, 'waAudience') },
+        { id: 'agents', label: t(language, 'aiAgents') },
+        { id: 'revenue', label: t(language, 'revenue') },
+        { id: 'tasks', label: t(language, 'tasks') },
+        { id: 'cache', label: `🗄 ${t(language, 'storeCache')}` },
     ];
 
     const tabStyle = (id) => ({
@@ -359,10 +362,10 @@ export default function AdvancedAnalytics() {
             <div style={{ marginBottom: 28, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
                 <div>
                     <h1 style={{ fontSize: 26, fontWeight: 800, color: C.textPrimary, margin: 0, letterSpacing: '-0.5px' }}>
-                        Analytics Avancé
+                        {t(language, 'advancedAnalytics')}
                     </h1>
                     <p style={{ color: C.textSecondary, fontSize: 13, margin: '5px 0 0' }}>
-                        Vue complète de votre workspace — {new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                        {t(language, 'workspaceOverview')} — {new Date().toLocaleDateString(language === 'en' ? 'en-US' : language, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                     </p>
                 </div>
                 {userProfile?.firstName && (
@@ -391,37 +394,37 @@ export default function AdvancedAnalytics() {
 
                     {/* KPI Grid */}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
-                        <KPICard icon={Icons.message} label="Messages IA totaux"   value={totalMessages}      color={C.primary}  sub={`${totalSessions} sessions archivées`} />
-                        <KPICard icon={Icons.bot} label="Copilot réponses"      value={copilotCount}       color={C.accent}   sub="Toutes instances" />
-                        <KPICard icon={Icons.money} label="CA total"              value={fmt(totalRevenue)}  color={C.primary2} sub={`${invoices.length} factures`} />
-                        <KPICard icon={Icons.checkCircle} label="Tâches complétées"     value={`${taskStats.completed}/${taskStats.total}`} color={C.amber} sub={`${pct(taskStats.completed, taskStats.total)}% completion`} />
-                        <KPICard icon={Icons.phone} label="Instances WhatsApp"    value={instances.length}   color={C.blue}     sub="Actives dans le workspace" />
-                        <KPICard icon={Icons.image} label="Générations d'images"  value={agentHistory.length} color={C.purple}  sub="Agents visuels" />
+                        <KPICard icon={Icons.message} label={t(language, 'totalAiMessages')} value={totalMessages} color={C.primary} sub={`${totalSessions} ${t(language, 'archivedSessions')}`} />
+                        <KPICard icon={Icons.bot} label={t(language, 'copilotReplies')} value={copilotCount} color={C.accent} sub={t(language, 'allInstances')} />
+                        <KPICard icon={Icons.money} label={t(language, 'totalRevenue')} value={fmt(totalRevenue)} color={C.primary2} sub={`${invoices.length} ${t(language, 'invoicesCount')}`} />
+                        <KPICard icon={Icons.checkCircle} label={t(language, 'tasksCompleted')} value={`${taskStats.completed}/${taskStats.total}`} color={C.amber} sub={`${pct(taskStats.completed, taskStats.total)}${t(language, 'completionRate')}`} />
+                        <KPICard icon={Icons.phone} label={t(language, 'instances')} value={instances.length} color={C.blue} sub={t(language, 'activeInWorkspace')} />
+                        <KPICard icon={Icons.image} label={t(language, 'imageGenerations')} value={agentHistory.length} color={C.purple} sub={t(language, 'visualAgents')} />
                     </div>
 
                     {/* Revenue mini chart + Task donut */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 20 }}>
                         <Panel>
-                            <SectionTitle sub="Évolution mensuelle du chiffre d'affaires">Revenus mensuels</SectionTitle>
+                            <SectionTitle sub={t(language, 'monthlyRevenueEvo')}>{t(language, 'monthlyRevenue')}</SectionTitle>
                             <ResponsiveContainer width="100%" height={200}>
                                 <AreaChart data={monthlyRev} margin={{ left: -10, right: 10 }}>
                                     <defs>
                                         <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%"  stopColor={C.primary}  stopOpacity={0.35} />
-                                            <stop offset="95%" stopColor={C.primary}  stopOpacity={0} />
+                                            <stop offset="5%" stopColor={C.primary} stopOpacity={0.35} />
+                                            <stop offset="95%" stopColor={C.primary} stopOpacity={0} />
                                         </linearGradient>
                                     </defs>
                                     <CartesianGrid strokeDasharray="3 3" stroke={C.gray200} vertical={false} />
                                     <XAxis dataKey="name" tick={{ fontSize: 11, fill: C.gray400 }} axisLine={false} tickLine={false} />
                                     <YAxis tick={{ fontSize: 11, fill: C.gray400 }} axisLine={false} tickLine={false} />
                                     <Tooltip content={<CustomTooltip format="currency" />} />
-                                    <Area type="monotone" dataKey="rev" name="Revenus" stroke={C.primary} strokeWidth={2.5} fill="url(#revGrad)" />
+                                    <Area type="monotone" dataKey="rev" name={t(language, 'revenue')} stroke={C.primary} strokeWidth={2.5} fill="url(#revGrad)" />
                                 </AreaChart>
                             </ResponsiveContainer>
                         </Panel>
 
                         <Panel>
-                            <SectionTitle sub="Répartition par statut">Tâches</SectionTitle>
+                            <SectionTitle sub={t(language, 'taskStatusDist')}>{t(language, 'tasks')}</SectionTitle>
                             {taskPieData.length > 0 ? (
                                 <>
                                     <ResponsiveContainer width="100%" height={160}>
@@ -445,7 +448,7 @@ export default function AdvancedAnalytics() {
                                     </div>
                                 </>
                             ) : (
-                                <div style={{ textAlign: 'center', padding: '40px 0', color: C.gray400, fontSize: 13 }}>Aucune tâche</div>
+                                <div style={{ textAlign: 'center', padding: '40px 0', color: C.gray400, fontSize: 13 }}>{t(language, 'noTasks')}</div>
                             )}
                         </Panel>
                     </div>
@@ -460,7 +463,7 @@ export default function AdvancedAnalytics() {
                         <KPICard icon={Icons.message} label="Messages Envoyés" value={(contactAnalytics?.totalMessagesSent || 0).toLocaleString()} color={C.accent} />
                         <KPICard icon={Icons.checkCircle} label="Contacts Valides" value={(contactAnalytics?.byStatus?.find(s => s.name === 'valid')?.count || 0).toLocaleString()} color={C.blue} />
                     </div>
-                    
+
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
                         <Panel>
                             <SectionTitle sub="Répartition de l'audience globale">Contacts par Segment</SectionTitle>
@@ -494,7 +497,7 @@ export default function AdvancedAnalytics() {
                                 <div style={{ textAlign: 'center', padding: '40px 0', color: C.gray400, fontSize: 13 }}>Aucune donnée</div>
                             )}
                         </Panel>
-                        
+
                         <Panel>
                             <SectionTitle sub="Santé de la base de données">Vérification des numéros</SectionTitle>
                             {contactAnalytics?.byStatus?.length > 0 ? (
@@ -518,9 +521,9 @@ export default function AdvancedAnalytics() {
             {activeTab === 'agents' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
-                        <KPICard icon={Icons.message} label="Messages échangés"    value={totalMessages}  color={C.primary} />
-                        <KPICard icon={Icons.archive} label="Sessions archivées"   value={totalSessions}  color={C.accent}  />
-                        <KPICard icon={Icons.users} label="Agents utilisés"      value={Object.keys(conversations).filter(k => (conversations[k]?.length || 0) > 0).length} color={C.blue} />
+                        <KPICard icon={Icons.message} label="Messages échangés" value={totalMessages} color={C.primary} />
+                        <KPICard icon={Icons.archive} label="Sessions archivées" value={totalSessions} color={C.accent} />
+                        <KPICard icon={Icons.users} label="Agents utilisés" value={Object.keys(conversations).filter(k => (conversations[k]?.length || 0) > 0).length} color={C.blue} />
                         <KPICard icon={Icons.image} label="Générations visuelles" value={agentHistory.length} color={C.purple} />
                     </div>
 
@@ -534,7 +537,7 @@ export default function AdvancedAnalytics() {
                                     <YAxis type="category" dataKey="name" width={140} tick={{ fontSize: 11, fill: C.gray700 }} axisLine={false} tickLine={false} />
                                     <Tooltip content={<CustomTooltip />} />
                                     <Bar dataKey="messages" name="Total messages" fill={C.primary} radius={[0, 6, 6, 0]} />
-                                    <Bar dataKey="userMsgs" name="Messages user"  fill={C.accent}  radius={[0, 6, 6, 0]} />
+                                    <Bar dataKey="userMsgs" name="Messages user" fill={C.accent} radius={[0, 6, 6, 0]} />
                                 </BarChart>
                             </ResponsiveContainer>
                         ) : (
@@ -595,10 +598,10 @@ export default function AdvancedAnalytics() {
             {activeTab === 'revenue' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
-                        <KPICard icon={Icons.euro} label="CA total"         value={fmt(totalRevenue)}    color={C.primary2} />
-                        <KPICard icon={Icons.checkCircle} label="Factures payées"  value={paidInvoices}          color={C.primary}  sub={`sur ${invoices.length} total`} />
-                        <KPICard icon={Icons.clock} label="En attente"       value={pendingInvoices}       color={C.amber}    />
-                        <KPICard icon={Icons.edit} label="Brouillons"       value={invoices.filter(i => i.status === 'draft').length} color={C.gray400} />
+                        <KPICard icon={Icons.euro} label="CA total" value={fmt(totalRevenue)} color={C.primary2} />
+                        <KPICard icon={Icons.checkCircle} label="Factures payées" value={paidInvoices} color={C.primary} sub={`sur ${invoices.length} total`} />
+                        <KPICard icon={Icons.clock} label="En attente" value={pendingInvoices} color={C.amber} />
+                        <KPICard icon={Icons.edit} label="Brouillons" value={invoices.filter(i => i.status === 'draft').length} color={C.gray400} />
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 20 }}>
@@ -701,10 +704,10 @@ export default function AdvancedAnalytics() {
             {activeTab === 'tasks' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
-                        <KPICard icon={Icons.list} label="Total tâches"      value={taskStats.total}      color={C.primary}  />
-                        <KPICard icon={Icons.fileText} label="À faire"           value={taskStats.todo}        color={C.amber}    />
-                        <KPICard icon={Icons.play} label="En cours"          value={taskStats.inProgress}  color={C.blue}     />
-                        <KPICard icon={Icons.checkCircle} label="Terminées"          value={taskStats.completed}   color={C.primary2} sub={`Taux: ${pct(taskStats.completed, taskStats.total)}%`} />
+                        <KPICard icon={Icons.list} label="Total tâches" value={taskStats.total} color={C.primary} />
+                        <KPICard icon={Icons.fileText} label="À faire" value={taskStats.todo} color={C.amber} />
+                        <KPICard icon={Icons.play} label="En cours" value={taskStats.inProgress} color={C.blue} />
+                        <KPICard icon={Icons.checkCircle} label="Terminées" value={taskStats.completed} color={C.primary2} sub={`Taux: ${pct(taskStats.completed, taskStats.total)}%`} />
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 20 }}>
@@ -820,10 +823,10 @@ export default function AdvancedAnalytics() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
-                        <KPICard icon={Icons.key} label="Clés dans le store" value={Object.keys(fullStore).length}   color={C.accent} />
-                        <KPICard icon={Icons.database} label="Tâches stockées"    value={tasks.length}                    color={C.primary} />
-                        <KPICard icon={Icons.message} label="Conversations IA"   value={Object.keys(conversations).length} color={C.blue} />
-                        <KPICard icon={Icons.archive} label="Sessions archivées" value={totalSessions}                   color={C.purple} />
+                        <KPICard icon={Icons.key} label="Clés dans le store" value={Object.keys(fullStore).length} color={C.accent} />
+                        <KPICard icon={Icons.database} label="Tâches stockées" value={tasks.length} color={C.primary} />
+                        <KPICard icon={Icons.message} label="Conversations IA" value={Object.keys(conversations).length} color={C.blue} />
+                        <KPICard icon={Icons.archive} label="Sessions archivées" value={totalSessions} color={C.purple} />
                     </div>
 
                     <Panel>

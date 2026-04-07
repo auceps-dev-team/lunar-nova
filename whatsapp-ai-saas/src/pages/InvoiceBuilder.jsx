@@ -12,6 +12,7 @@ import { CSS } from '@dnd-kit/utilities';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
+import { getTranslation as t } from '../locales';
 
 /* ═══════════════════════════════════════════════════════
    CONSTANTS
@@ -19,10 +20,10 @@ import {
 const CURRENCIES = ['XOF', 'EUR', 'USD', 'GBP', 'CHF'];
 
 const STATUS_MAP = {
-    paid:    { label: 'Payée',     dot: '#10b981', bg: '#ecfdf5', text: '#047857' },
+    paid: { label: 'Payée', dot: '#10b981', bg: '#ecfdf5', text: '#047857' },
     pending: { label: 'En attente', dot: '#f59e0b', bg: '#fffbeb', text: '#92400e' },
     overdue: { label: 'En retard', dot: '#ef4444', bg: '#fef2f2', text: '#991b1b' },
-    draft:   { label: 'Brouillon', dot: '#94a3b8', bg: '#f8fafc', text: '#475569' },
+    draft: { label: 'Brouillon', dot: '#94a3b8', bg: '#f8fafc', text: '#475569' },
 };
 
 /* ═══════════════════════════════════════════════════════
@@ -39,7 +40,7 @@ function fmt(n, cur = 'XOF') {
 }
 
 function monthlyRevenue(invoices) {
-    const m = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+    const m = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
     const d = m.map(name => ({ name, rev: 0 }));
     invoices.forEach(inv => {
         if (!inv.createdAt) return;
@@ -51,7 +52,7 @@ function monthlyRevenue(invoices) {
 function freshInvoice(userProfile = {}) {
     const today = new Date();
     const due = new Date(today); due.setDate(due.getDate() + 30);
-    
+
     // Assemble the sender information from the profile details
     const senderParts = [
         `${userProfile.firstName || ''} ${userProfile.lastName || ''}`.trim(),
@@ -62,9 +63,9 @@ function freshInvoice(userProfile = {}) {
 
     return {
         id: `inv-${Date.now()}`,
-        invoiceNumber: `INV-${today.getFullYear()}-${String(Math.floor(Math.random()*900)+100)}`,
-        companyName: userProfile.companyName || '', 
-        companyTagline: '', 
+        invoiceNumber: `INV-${today.getFullYear()}-${String(Math.floor(Math.random() * 900) + 100)}`,
+        companyName: userProfile.companyName || '',
+        companyTagline: '',
         senderInfo: senderParts,
         companyLogo: userProfile.companyLogo || null, clientLogo: null,
         clientName: '', clientEmail: '', clientAddress: '',
@@ -90,14 +91,14 @@ function LogoPicker({ value, onChange, label, size = 56 }) {
     };
     return (
         <div className="flex flex-col items-center gap-1 group cursor-pointer" onClick={() => ref.current?.click()}>
-            <input ref={ref} type="file" accept="image/*" className="hidden" onChange={handleFile}/>
+            <input ref={ref} type="file" accept="image/*" className="hidden" onChange={handleFile} />
             <div className="rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700 hover:border-emerald-400 transition-all flex items-center justify-center overflow-hidden"
-                 style={{ width: size, height: size, background: value ? 'transparent' : '#f9fafb' }}>
+                style={{ width: size, height: size, background: value ? 'transparent' : '#f9fafb' }}>
                 {value ? (
-                    <img src={value} alt="logo" className="w-full h-full object-contain"/>
+                    <img src={value} alt="logo" className="w-full h-full object-contain" />
                 ) : (
                     <svg width="20" height="20" fill="none" stroke="#9ca3af" strokeWidth="1.5" viewBox="0 0 24 24">
-                        <rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>
+                        <rect x="3" y="3" width="18" height="18" rx="4" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="M21 15l-5-5L5 21" />
                     </svg>
                 )}
             </div>
@@ -118,26 +119,26 @@ function SortableLine({ item, onUpdate, onRemove, currency }) {
         <tr ref={setNodeRef} style={rowStyle} className={`group ${isDragging ? 'bg-emerald-50/50 dark:bg-emerald-900/10' : ''}`}>
             <td className="py-3 pr-2 w-6 no-print">
                 <span {...attributes} {...listeners} className="cursor-grab text-gray-300 hover:text-gray-500 transition-colors">
-                    <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/></svg>
+                    <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="4" y1="9" x2="20" y2="9" /><line x1="4" y1="15" x2="20" y2="15" /></svg>
                 </span>
             </td>
             <td className="py-3">
                 <input className="w-full bg-transparent text-sm font-medium text-gray-800 dark:text-gray-200 outline-none placeholder:text-gray-300"
                     value={item.description} placeholder="Description du service ou produit..."
-                    onChange={e => onUpdate(item.id, 'description', e.target.value)}/>
+                    onChange={e => onUpdate(item.id, 'description', e.target.value)} />
             </td>
             <td className="py-3 w-20">
                 <input type="number" min="1" className="w-full text-center text-sm bg-gray-50 dark:bg-gray-800 rounded-lg py-1 outline-none focus:ring-1 ring-emerald-400 text-gray-800 dark:text-gray-200"
-                    value={item.qty} onChange={e => onUpdate(item.id, 'qty', parseFloat(e.target.value) || 1)}/>
+                    value={item.qty} onChange={e => onUpdate(item.id, 'qty', parseFloat(e.target.value) || 1)} />
             </td>
             <td className="py-3 w-28">
                 <input type="number" min="0" step="0.01" className="w-full text-right text-sm bg-gray-50 dark:bg-gray-800 rounded-lg py-1 px-2 outline-none focus:ring-1 ring-emerald-400 text-gray-800 dark:text-gray-200"
-                    value={item.price} onChange={e => onUpdate(item.id, 'price', parseFloat(e.target.value) || 0)}/>
+                    value={item.price} onChange={e => onUpdate(item.id, 'price', parseFloat(e.target.value) || 0)} />
             </td>
             <td className="py-3 w-28 text-right text-sm font-semibold text-gray-800 dark:text-gray-200">{fmt(total, currency)}</td>
             <td className="py-3 w-8 text-right no-print">
                 <button onClick={() => onRemove(item.id)} className="p-1 rounded-lg opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 transition-all">
-                    <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
                 </button>
             </td>
         </tr>
@@ -480,9 +481,9 @@ function KPI({ label, value, sub, icon, accent }) {
    TEMPLATE THUMBNAILS
    ═══════════════════════════════════════════════════════ */
 const TPL_PREVIEWS = [
-    { id: 'clean', label: 'Modern Clean', colors: ['#059669','#ecfdf5','#fff'] },
-    { id: 'bold', label: 'Bold Header', colors: ['#1e293b','#f8fafc','#fff'] },
-    { id: 'stripe', label: 'Violet Gold', colors: ['#3b1485','#f7f7f9','#c2a370'] },
+    { id: 'clean', label: 'Modern Clean', colors: ['#059669', '#ecfdf5', '#fff'] },
+    { id: 'bold', label: 'Bold Header', colors: ['#1e293b', '#f8fafc', '#fff'] },
+    { id: 'stripe', label: 'Violet Gold', colors: ['#3b1485', '#f7f7f9', '#c2a370'] },
 ];
 
 function TplThumb({ tpl, active, onClick }) {
@@ -500,7 +501,7 @@ function TplThumb({ tpl, active, onClick }) {
             </div>
             <div className="flex items-center justify-between mt-2">
                 <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{tpl.label}</span>
-                {active && <div className="w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center"><svg width="10" height="10" fill="none" stroke="#fff" strokeWidth="3" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div>}
+                {active && <div className="w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center"><svg width="10" height="10" fill="none" stroke="#fff" strokeWidth="3" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5" /></svg></div>}
             </div>
         </button>
     );
@@ -510,6 +511,8 @@ function TplThumb({ tpl, active, onClick }) {
    MAIN COMPONENT
    ═══════════════════════════════════════════════════════ */
 export default function InvoiceBuilder({ activeId }) {
+    const appSettings = useAppStore(s => s.appSettings) || {};
+    const language = appSettings.language || 'en';
     const invoices = useAppStore(s => s.invoices) || [];
     const addInvoice = useAppStore(s => s.addInvoice);
     const updateInvoice = useAppStore(s => s.updateInvoice);
@@ -555,7 +558,7 @@ export default function InvoiceBuilder({ activeId }) {
         fetch('http://localhost:3000/api/wa/contacts')
             .then(r => r.json())
             .then(d => { if (d.status === 'success') setAllContacts(d.data || []); })
-            .catch(() => {});
+            .catch(() => { });
     }, []);
 
     const contactSegments = useMemo(() => {
@@ -601,8 +604,8 @@ export default function InvoiceBuilder({ activeId }) {
     }, [invoices]);
 
     const primaryCurrency = Object.keys(revByCurrency)[0] || 'EUR';
-    const totalRevStr = Object.keys(revByCurrency).length === 0 
-        ? fmt(0) 
+    const totalRevStr = Object.keys(revByCurrency).length === 0
+        ? fmt(0)
         : Object.entries(revByCurrency).map(([cur, amt]) => fmt(amt, cur)).join(' + ');
 
     const paidN = invoices.filter(i => i.status === 'paid').length;
@@ -718,36 +721,36 @@ export default function InvoiceBuilder({ activeId }) {
                 {/* Header */}
                 <div className="flex items-end justify-between">
                     <div>
-                        <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight">Facturation</h1>
-                        <p className="text-sm text-gray-400 mt-0.5">Tableau de bord et gestion des factures</p>
+                        <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight">{t(language, 'invoiceDashTitle')}</h1>
+                        <p className="text-sm text-gray-400 mt-0.5">{t(language, 'invoiceDashDesc')}</p>
                     </div>
                     <button onClick={handleNew}
                         className="h-10 px-5 rounded-xl text-white text-sm font-bold flex items-center gap-2 active:scale-[.97] transition-transform shadow-lg shadow-emerald-600/20"
                         style={{ background: 'linear-gradient(135deg,#059669,#047857)' }}>
-                        <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                        Nouvelle facture
+                        <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                        {t(language, 'newInvoiceBtn')}
                     </button>
                 </div>
 
                 {/* KPIs */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    <KPI label="Total factures" value={invoices.length} icon="📄" accent="#059669"/>
-                    <KPI label="Chiffre d'affaires" value={totalRevStr} icon="💰" accent="#0891b2"/>
-                    <KPI label="Payées" value={paidN} sub={`sur ${invoices.length}`} icon="✅" accent="#16a34a"/>
-                    <KPI label="En attente" value={pendN} icon="⏳" accent="#d97706"/>
+                    <KPI label={t(language, 'totalInvoicesLabel')} value={invoices.length} icon="📄" accent="#059669" />
+                    <KPI label={t(language, 'revenueLabel')} value={totalRevStr} icon="💰" accent="#0891b2" />
+                    <KPI label={t(language, 'paidLabel')} value={paidN} sub={`${t(language, 'outOfTotal')} ${invoices.length}`} icon="✅" accent="#16a34a" />
+                    <KPI label={t(language, 'pendingLabel')} value={pendN} icon="⏳" accent="#d97706" />
                 </div>
 
                 {/* Chart */}
                 <div className="bg-white dark:bg-[#1a1f25] rounded-2xl p-6 border border-gray-100 dark:border-gray-800">
-                    <p className="text-[10px] font-bold uppercase tracking-[.15em] text-gray-400 mb-4">Revenus mensuels</p>
+                    <p className="text-[10px] font-bold uppercase tracking-[.15em] text-gray-400 mb-4">{t(language, 'monthlyRevLabel')}</p>
                     <ResponsiveContainer width="100%" height={200} minWidth={0} minHeight={0}>
                         <BarChart data={chartData} margin={{ left: -20 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9"/>
-                            <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false}/>
-                            <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false}/>
-                            <Tooltip formatter={v => fmt(v, primaryCurrency)} contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 8px 30px rgba(0,0,0,.08)', fontSize: 12 }}/>
-                            <Bar dataKey="rev" fill="url(#barGrad)" radius={[6,6,0,0]}/>
-                            <defs><linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#059669"/><stop offset="100%" stopColor="#34d399"/></linearGradient></defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                            <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                            <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                            <Tooltip formatter={v => fmt(v, primaryCurrency)} contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 8px 30px rgba(0,0,0,.08)', fontSize: 12 }} />
+                            <Bar dataKey="rev" fill="url(#barGrad)" radius={[6, 6, 0, 0]} />
+                            <defs><linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#059669" /><stop offset="100%" stopColor="#34d399" /></linearGradient></defs>
                         </BarChart>
                     </ResponsiveContainer>
                 </div>
@@ -755,12 +758,12 @@ export default function InvoiceBuilder({ activeId }) {
                 {/* Invoice list */}
                 <div className="bg-white dark:bg-[#1a1f25] rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden">
                     <div className="flex items-center justify-between px-5 py-4 border-b border-gray-50 dark:border-gray-800">
-                        <p className="text-[10px] font-bold uppercase tracking-[.15em] text-gray-400">Factures</p>
+                        <p className="text-[10px] font-bold uppercase tracking-[.15em] text-gray-400">{t(language, 'invoicesListTitle')}</p>
                         <div className="flex gap-1.5">
-                            {['all','paid','pending','overdue','draft'].map(s => (
+                            {['all', 'paid', 'pending', 'overdue', 'draft'].map(s => (
                                 <button key={s} onClick={() => setFilterStatus(s)}
                                     className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all ${filterStatus === s ? 'bg-emerald-600 text-white' : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}>
-                                    {s === 'all' ? 'Toutes' : STATUS_MAP[s]?.label || s}
+                                    {s === 'all' ? t(language, 'allInvoices') : t(language, s + 'State') || s}
                                 </button>
                             ))}
                         </div>
@@ -769,7 +772,7 @@ export default function InvoiceBuilder({ activeId }) {
                     {filtered.length === 0 ? (
                         <div className="text-center py-20 text-gray-300">
                             <div className="text-4xl mb-3">📋</div>
-                            <p className="text-sm">Aucune facture.</p>
+                            <p className="text-sm">{t(language, 'noInvoicesCreated')}</p>
                             <button onClick={handleNew} className="mt-3 text-sm text-emerald-600 font-semibold hover:underline">Créer →</button>
                         </div>
                     ) : filtered.map(inv => {
@@ -780,7 +783,7 @@ export default function InvoiceBuilder({ activeId }) {
                                 className="flex items-center justify-between px-5 py-3.5 hover:bg-gray-50/60 dark:hover:bg-gray-800/40 cursor-pointer transition-colors border-b border-gray-50 dark:border-gray-800/50 last:border-0 group">
                                 <div className="flex items-center gap-3.5">
                                     <div className="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold" style={{ background: '#05966915', color: '#059669' }}>
-                                        {inv.clientName?.slice(0,2).toUpperCase() || '??'}
+                                        {inv.clientName?.slice(0, 2).toUpperCase() || '??'}
                                     </div>
                                     <div>
                                         <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">{inv.clientName || '—'}</p>
@@ -788,11 +791,11 @@ export default function InvoiceBuilder({ activeId }) {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3">
-                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold" style={{ background: st.bg, color: st.text }}>{st.label}</span>
+                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold" style={{ background: st.bg, color: st.text }}>{t(language, inv.status + 'State') || st.label}</span>
                                     <span className="text-sm font-bold text-gray-800 dark:text-gray-100 w-28 text-right tabular-nums">{fmt(total, inv.currency)}</span>
                                     <button onClick={e => { e.stopPropagation(); window.confirm('Supprimer ?') && deleteInvoice(inv.id); }}
                                         className="p-1 rounded-lg opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 transition-all">
-                                        <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /></svg>
                                     </button>
                                 </div>
                             </div>
@@ -821,7 +824,7 @@ export default function InvoiceBuilder({ activeId }) {
             <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 sticky top-0 z-30">
                 <div className="flex items-center gap-3">
                     <button onClick={() => setView('dashboard')} className="text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors">
-                        <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 5 5 12 12 19"/></svg>
+                        <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 5 5 12 12 19" /></svg>
                     </button>
                     <div>
                         <p className="text-sm font-bold text-gray-800 dark:text-white">{draft.invoiceNumber}</p>
@@ -829,11 +832,11 @@ export default function InvoiceBuilder({ activeId }) {
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
-                    <select value={draft.status} onChange={e => setDraft(d => ({...d, status: e.target.value}))}
+                    <select value={draft.status} onChange={e => setDraft(d => ({ ...d, status: e.target.value }))}
                         className="text-[10px] font-bold uppercase border border-gray-200 dark:border-gray-700 rounded-lg px-2.5 py-1.5 bg-transparent text-gray-600 dark:text-gray-300 outline-none cursor-pointer">
-                        {Object.entries(STATUS_MAP).map(([k,v]) => <option key={k} value={k}>{v.label}</option>)}
+                        {Object.entries(STATUS_MAP).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
                     </select>
-                    <select value={draft.currency} onChange={e => setDraft(d => ({...d, currency: e.target.value}))}
+                    <select value={draft.currency} onChange={e => setDraft(d => ({ ...d, currency: e.target.value }))}
                         className="text-[10px] font-bold border border-gray-200 dark:border-gray-700 rounded-lg px-2.5 py-1.5 bg-transparent text-gray-600 dark:text-gray-300 outline-none cursor-pointer">
                         {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
@@ -841,7 +844,7 @@ export default function InvoiceBuilder({ activeId }) {
                     <button onClick={() => setShowContactSearch(true)}
                         className="h-8 px-3 rounded-lg border border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all flex items-center gap-1.5"
                         title="Rechercher un contact">
-                        <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
                         Contact
                     </button>
                     {/* WhatsApp send button */}
@@ -852,19 +855,19 @@ export default function InvoiceBuilder({ activeId }) {
                         {sendingWhatsApp ? (
                             <svg className="animate-spin h-3.5 w-3.5" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                         ) : (
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492l4.624-1.467A11.95 11.95 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818c-2.168 0-4.19-.585-5.931-1.605l-.425-.253-2.742.87.883-2.659-.277-.44A9.778 9.778 0 012.182 12c0-5.414 4.404-9.818 9.818-9.818S21.818 6.586 21.818 12 17.414 21.818 12 21.818z"/></svg>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" /><path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492l4.624-1.467A11.95 11.95 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818c-2.168 0-4.19-.585-5.931-1.605l-.425-.253-2.742.87.883-2.659-.277-.44A9.778 9.778 0 012.182 12c0-5.414 4.404-9.818 9.818-9.818S21.818 6.586 21.818 12 17.414 21.818 12 21.818z" /></svg>
                         )}
                         WhatsApp
                     </button>
                     <button onClick={handleExportPDF}
                         className="h-8 px-4 rounded-lg border border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all flex items-center gap-1.5">
-                        <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                        <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" /></svg>
                         Export PDF
                     </button>
                     <button onClick={handleSave}
                         className="h-8 px-5 rounded-lg text-xs font-bold text-white flex items-center gap-1.5 active:scale-[.97] transition-transform"
                         style={{ background: 'linear-gradient(135deg,#059669,#047857)' }}>
-                        <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
+                        <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" /><polyline points="17 21 17 13 7 13 7 21" /></svg>
                         Sauvegarder
                     </button>
                 </div>
@@ -899,7 +902,7 @@ export default function InvoiceBuilder({ activeId }) {
                                     className="w-full text-left px-5 py-3 hover:bg-emerald-50 dark:hover:bg-emerald-900/10 transition-colors flex items-center justify-between group">
                                     <div className="flex items-center gap-3">
                                         <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold" style={{ background: '#05966915', color: '#059669' }}>
-                                            {(c.name || '?').slice(0,2).toUpperCase()}
+                                            {(c.name || '?').slice(0, 2).toUpperCase()}
                                         </div>
                                         <div>
                                             <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">{c.name}</p>
@@ -908,7 +911,7 @@ export default function InvoiceBuilder({ activeId }) {
                                     </div>
                                     <div className="flex items-center gap-2">
                                         {c.segment_name && <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500">{c.segment_name}</span>}
-                                        <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" className="text-gray-300 group-hover:text-emerald-500 transition-colors"><polyline points="9 18 15 12 9 6"/></svg>
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" className="text-gray-300 group-hover:text-emerald-500 transition-colors"><polyline points="9 18 15 12 9 6" /></svg>
                                     </div>
                                 </button>
                             ))}
@@ -926,27 +929,27 @@ export default function InvoiceBuilder({ activeId }) {
                             {/* Header */}
                             <div className="flex justify-between items-center mb-5">
                                 <h1 className="text-5xl font-extrabold text-[#3b1485] tracking-widest uppercase m-0">Facture</h1>
-                                <LogoPicker value={draft.companyLogo} onChange={v => setDraft(d => ({...d, companyLogo: v}))} label="Logo" size={80}/>
+                                <LogoPicker value={draft.companyLogo} onChange={v => setDraft(d => ({ ...d, companyLogo: v }))} label="Logo" size={80} />
                             </div>
-                            
+
                             <hr className="border-t border-[#d1d1e0] my-8" />
-                            
+
                             {/* Billing Info */}
                             <div className="flex justify-between mb-10">
                                 <div className="flex-1 max-w-xs">
                                     <h2 className="text-lg font-bold text-[#333] mt-0 mb-4">Facturé à :</h2>
                                     <input className="w-full text-base font-bold text-[#333] bg-transparent outline-none pb-1 placeholder:text-gray-400 focus:border-[#3b1485] transition-colors"
-                                        value={draft.clientName} onChange={e => setDraft(d => ({...d, clientName: e.target.value}))} placeholder="Client / Société"/>
+                                        value={draft.clientName} onChange={e => setDraft(d => ({ ...d, clientName: e.target.value }))} placeholder="Client / Société" />
                                     <textarea className="w-full bg-transparent text-sm text-[#5a5a75] outline-none resize-none mt-2 leading-relaxed" rows={2}
-                                        value={draft.clientAddress} onChange={e => setDraft(d => ({...d, clientAddress: e.target.value}))} placeholder="Adresse du client"/>
+                                        value={draft.clientAddress} onChange={e => setDraft(d => ({ ...d, clientAddress: e.target.value }))} placeholder="Adresse du client" />
                                 </div>
                                 <div className="text-right mt-10 text-sm text-[#5a5a75] leading-relaxed">
-                                    <div className="flex gap-2 justify-end mb-1"><span className="font-semibold">No :</span><input className="w-32 text-right bg-transparent outline-none text-[#333] font-bold" value={draft.invoiceNumber} onChange={e => setDraft(d => ({...d, invoiceNumber: e.target.value}))} /></div>
-                                    <div className="flex gap-2 justify-end mb-1"><span className="font-semibold">Émission :</span><input type="date" className="bg-transparent outline-none" value={draft.issueDate} onChange={e => setDraft(d => ({...d, issueDate: e.target.value}))}/></div>
-                                    <div className="flex gap-2 justify-end"><span className="font-semibold">Échéance :</span><input type="date" className="bg-transparent outline-none" value={draft.dueDate} onChange={e => setDraft(d => ({...d, dueDate: e.target.value}))}/></div>
+                                    <div className="flex gap-2 justify-end mb-1"><span className="font-semibold">No :</span><input className="w-32 text-right bg-transparent outline-none text-[#333] font-bold" value={draft.invoiceNumber} onChange={e => setDraft(d => ({ ...d, invoiceNumber: e.target.value }))} /></div>
+                                    <div className="flex gap-2 justify-end mb-1"><span className="font-semibold">Émission :</span><input type="date" className="bg-transparent outline-none" value={draft.issueDate} onChange={e => setDraft(d => ({ ...d, issueDate: e.target.value }))} /></div>
+                                    <div className="flex gap-2 justify-end"><span className="font-semibold">Échéance :</span><input type="date" className="bg-transparent outline-none" value={draft.dueDate} onChange={e => setDraft(d => ({ ...d, dueDate: e.target.value }))} /></div>
                                 </div>
                             </div>
-                            
+
                             {/* Table */}
                             <div className="mb-10">
                                 <div className="bg-[#3b1485] text-white px-5 py-3 grid grid-cols-[1fr_4fr_1fr_2fr_2fr_1fr] md:grid-cols-[24px_4fr_1fr_2fr_2fr_24px] gap-2 items-center text-[13px] font-bold tracking-wide">
@@ -962,7 +965,7 @@ export default function InvoiceBuilder({ activeId }) {
                                         <table className="w-full"><tbody>
                                             <SortableContext items={draft.items} strategy={verticalListSortingStrategy}>
                                                 {draft.items.map(item => (
-                                                    <SortableLine key={item.id} item={item} onUpdate={updateItem} onRemove={removeItem} currency={draft.currency}/>
+                                                    <SortableLine key={item.id} item={item} onUpdate={updateItem} onRemove={removeItem} currency={draft.currency} />
                                                 ))}
                                             </SortableContext>
                                         </tbody></table>
@@ -970,7 +973,7 @@ export default function InvoiceBuilder({ activeId }) {
                                 </DndContext>
                                 <button onClick={addItem}
                                     className="mt-3 flex items-center gap-1.5 text-xs font-bold text-[#3b1485] hover:text-[#2a0e63] transition-colors no-print">
-                                    <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                                    <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="16" /><line x1="8" y1="12" x2="16" y2="12" /></svg>
                                     Ajouter une ligne
                                 </button>
                             </div>
@@ -980,17 +983,17 @@ export default function InvoiceBuilder({ activeId }) {
                                 <div className="w-[45%]">
                                     <h3 className="text-[1.1em] font-bold text-[#3b1485] mb-3 mt-0">Notes :</h3>
                                     <textarea className="w-full text-sm bg-transparent outline-none resize-none text-[#5a5a75] leading-relaxed border-b border-[#d1d1e0] focus:border-[#3b1485] transition-colors" rows={3}
-                                        value={draft.notes} onChange={e => setDraft(d => ({...d, notes: e.target.value}))} placeholder="Notes et instructions de paiement..."/>
-                                    
+                                        value={draft.notes} onChange={e => setDraft(d => ({ ...d, notes: e.target.value }))} placeholder="Notes et instructions de paiement..." />
+
                                     <hr className="border-t border-[#d1d1e0] my-6 w-64" />
-                                    
+
                                     <h3 className="text-[1.1em] font-bold text-[#3b1485] mb-3 mt-0">Coordonnées :</h3>
                                     <input className="w-full text-sm font-bold text-[#5a5a75] bg-transparent outline-none border-b border-[#d1d1e0] pb-1 mb-1 focus:border-[#3b1485]"
-                                        value={draft.companyName} onChange={e => setDraft(d => ({...d, companyName: e.target.value}))} placeholder="Votre entreprise"/>
+                                        value={draft.companyName} onChange={e => setDraft(d => ({ ...d, companyName: e.target.value }))} placeholder="Votre entreprise" />
                                     <input className="w-full text-sm text-[#5a5a75] bg-transparent outline-none border-b border-[#d1d1e0] pb-1 mb-2 focus:border-[#3b1485]"
-                                        value={draft.companyTagline} onChange={e => setDraft(d => ({...d, companyTagline: e.target.value}))} placeholder="Sous-titre / Slogan"/>
+                                        value={draft.companyTagline} onChange={e => setDraft(d => ({ ...d, companyTagline: e.target.value }))} placeholder="Sous-titre / Slogan" />
                                     <textarea className="w-full text-sm text-[#5a5a75] bg-transparent outline-none resize-none leading-relaxed border-b border-[#d1d1e0] pb-1 focus:border-[#3b1485]" rows={3}
-                                        value={draft.senderInfo} onChange={e => setDraft(d => ({...d, senderInfo: e.target.value}))} placeholder="Adresse et Contact"/>
+                                        value={draft.senderInfo} onChange={e => setDraft(d => ({ ...d, senderInfo: e.target.value }))} placeholder="Adresse et Contact" />
                                 </div>
                                 <div className="w-[45%]">
                                     <div className="flex justify-between py-2 text-[0.95em] text-[#333] font-medium"><span>Sous-Total :</span><span>{fmt(sub, draft.currency)}</span></div>
@@ -999,7 +1002,7 @@ export default function InvoiceBuilder({ activeId }) {
                                         <span className="flex items-center gap-1.5">TVA
                                             <input type="number" min="0" max="100" step="0.5"
                                                 className="w-12 text-center text-xs bg-gray-50 rounded-md py-0.5 outline-none border border-gray-200 no-print"
-                                                value={draft.taxRate} onChange={e => setDraft(d => ({...d, taxRate: parseFloat(e.target.value) || 0}))}/>% :
+                                                value={draft.taxRate} onChange={e => setDraft(d => ({ ...d, taxRate: parseFloat(e.target.value) || 0 }))} />% :
                                         </span>
                                         <span>{fmt(tax, draft.currency)}</span>
                                     </div>
@@ -1007,7 +1010,7 @@ export default function InvoiceBuilder({ activeId }) {
                                         <span>Total :</span>
                                         <span>{fmt(total, draft.currency)}</span>
                                     </div>
-                                    
+
                                     <div className="mt-10 border border-[#d1d1d1] h-[120px] bg-white flex justify-center items-end pb-5">
                                         <span className="text-[#a0a0a0] italic text-[0.9em]">WaCopilote Automation</span>
                                     </div>
@@ -1020,17 +1023,17 @@ export default function InvoiceBuilder({ activeId }) {
                                 {/* Header */}
                                 <div className="flex justify-between items-start">
                                     <div className="flex items-center gap-4">
-                                        <LogoPicker value={draft.companyLogo} onChange={v => setDraft(d => ({...d, companyLogo: v}))} label="Logo" size={48}/>
+                                        <LogoPicker value={draft.companyLogo} onChange={v => setDraft(d => ({ ...d, companyLogo: v }))} label="Logo" size={48} />
                                         <div>
                                             <input className="text-lg font-bold text-[#0a2533] uppercase tracking-wider bg-transparent outline-none w-full placeholder:text-gray-400"
-                                                value={draft.companyName} onChange={e => setDraft(d => ({...d, companyName: e.target.value}))} placeholder="VOTRE ENTREPRISE"/>
+                                                value={draft.companyName} onChange={e => setDraft(d => ({ ...d, companyName: e.target.value }))} placeholder="VOTRE ENTREPRISE" />
                                             <input className="text-sm text-[#0a2533] bg-transparent outline-none w-full placeholder:text-gray-400 mt-0.5"
-                                                value={draft.companyTagline} onChange={e => setDraft(d => ({...d, companyTagline: e.target.value}))} placeholder="Sous-titre / Slogan"/>
+                                                value={draft.companyTagline} onChange={e => setDraft(d => ({ ...d, companyTagline: e.target.value }))} placeholder="Sous-titre / Slogan" />
                                         </div>
                                     </div>
                                     <div className="text-right">
                                         <input className="text-4xl font-bold text-[#0a2533] bg-transparent outline-none text-right w-48 tracking-widest uppercase"
-                                            value={draft.invoiceNumber} onChange={e => setDraft(d => ({...d, invoiceNumber: e.target.value}))}/>
+                                            value={draft.invoiceNumber} onChange={e => setDraft(d => ({ ...d, invoiceNumber: e.target.value }))} />
                                     </div>
                                 </div>
 
@@ -1039,28 +1042,28 @@ export default function InvoiceBuilder({ activeId }) {
                                     <div className="flex-1 max-w-sm">
                                         <p className="text-xs font-bold uppercase tracking-wider mb-2">DE</p>
                                         <textarea className="w-full bg-transparent text-sm text-[#0a2533] font-medium outline-none resize-none leading-relaxed" rows={3}
-                                            value={draft.senderInfo} onChange={e => setDraft(d => ({...d, senderInfo: e.target.value}))}
-                                            placeholder={"Nom de l'entreprise\nAdresse\nEmail"}/>
-                                        
+                                            value={draft.senderInfo} onChange={e => setDraft(d => ({ ...d, senderInfo: e.target.value }))}
+                                            placeholder={"Nom de l'entreprise\nAdresse\nEmail"} />
+
                                         <p className="text-xs font-bold uppercase tracking-wider mt-4 mb-2">FACTURÉ À</p>
                                         <div className="flex items-start gap-3">
-                                            <LogoPicker value={draft.clientLogo} onChange={v => setDraft(d => ({...d, clientLogo: v}))} label="Client" size={40}/>
+                                            <LogoPicker value={draft.clientLogo} onChange={v => setDraft(d => ({ ...d, clientLogo: v }))} label="Client" size={40} />
                                             <div className="flex-1">
                                                 <input className="w-full text-base font-bold text-[#0a2533] bg-transparent outline-none border-b border-[#0a2533]/20 pb-1 placeholder:text-gray-400 focus:border-[#48a69e] transition-colors"
-                                                    value={draft.clientName} onChange={e => setDraft(d => ({...d, clientName: e.target.value}))} placeholder="Client / Société"/>
+                                                    value={draft.clientName} onChange={e => setDraft(d => ({ ...d, clientName: e.target.value }))} placeholder="Client / Société" />
                                                 <textarea className="w-full bg-transparent text-sm text-[#0a2533] font-medium outline-none resize-none mt-2 leading-relaxed" rows={2}
-                                                    value={draft.clientAddress} onChange={e => setDraft(d => ({...d, clientAddress: e.target.value}))} placeholder="Adresse du client"/>
+                                                    value={draft.clientAddress} onChange={e => setDraft(d => ({ ...d, clientAddress: e.target.value }))} placeholder="Adresse du client" />
                                             </div>
                                         </div>
                                     </div>
                                     <div className="text-right space-y-3 mt-8">
                                         <div>
                                             <p className="text-xs font-bold uppercase mb-1">Date</p>
-                                            <input type="date" className="text-sm font-medium text-[#0a2533] bg-transparent outline-none" value={draft.issueDate} onChange={e => setDraft(d => ({...d, issueDate: e.target.value}))}/>
+                                            <input type="date" className="text-sm font-medium text-[#0a2533] bg-transparent outline-none" value={draft.issueDate} onChange={e => setDraft(d => ({ ...d, issueDate: e.target.value }))} />
                                         </div>
                                         <div>
                                             <p className="text-xs font-bold uppercase mb-1">Échéance</p>
-                                            <input type="date" className="text-sm font-medium text-[#0a2533] bg-transparent outline-none" value={draft.dueDate} onChange={e => setDraft(d => ({...d, dueDate: e.target.value}))}/>
+                                            <input type="date" className="text-sm font-medium text-[#0a2533] bg-transparent outline-none" value={draft.dueDate} onChange={e => setDraft(d => ({ ...d, dueDate: e.target.value }))} />
                                         </div>
                                     </div>
                                 </div>
@@ -1080,7 +1083,7 @@ export default function InvoiceBuilder({ activeId }) {
                                             <table className="w-full"><tbody>
                                                 <SortableContext items={draft.items} strategy={verticalListSortingStrategy}>
                                                     {draft.items.map(item => (
-                                                        <SortableLine key={item.id} item={item} onUpdate={updateItem} onRemove={removeItem} currency={draft.currency}/>
+                                                        <SortableLine key={item.id} item={item} onUpdate={updateItem} onRemove={removeItem} currency={draft.currency} />
                                                     ))}
                                                 </SortableContext>
                                             </tbody></table>
@@ -1088,7 +1091,7 @@ export default function InvoiceBuilder({ activeId }) {
                                     </DndContext>
                                     <button onClick={addItem}
                                         className="mt-3 ml-2 flex items-center gap-1.5 text-xs font-bold text-[#256a7c] hover:text-[#48a69e] transition-colors no-print">
-                                        <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                                        <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="16" /><line x1="8" y1="12" x2="16" y2="12" /></svg>
                                         Ajouter une ligne
                                     </button>
                                 </div>
@@ -1098,7 +1101,7 @@ export default function InvoiceBuilder({ activeId }) {
                                     <div className="flex-1">
                                         <p className="text-[11px] font-bold uppercase tracking-wider mb-2">NOTES</p>
                                         <textarea className="w-full text-sm bg-transparent outline-none resize-none text-[#0a2533] leading-relaxed border-b border-[#0a2533]/10 focus:border-[#48a69e] transition-colors" rows={4}
-                                            value={draft.notes} onChange={e => setDraft(d => ({...d, notes: e.target.value}))} placeholder="Conditions de paiement et notes..."/>
+                                            value={draft.notes} onChange={e => setDraft(d => ({ ...d, notes: e.target.value }))} placeholder="Conditions de paiement et notes..." />
                                     </div>
                                     <div className="w-[300px] bg-white rounded-[20px] p-6 text-sm font-semibold text-[#0a2533]">
                                         <div className="flex justify-between mb-3"><span>SOUS-TOTAL</span><span>{fmt(sub, draft.currency)}</span></div>
@@ -1106,7 +1109,7 @@ export default function InvoiceBuilder({ activeId }) {
                                             <span className="flex items-center gap-1.5">TVA
                                                 <input type="number" min="0" max="100" step="0.5"
                                                     className="w-10 text-center text-xs bg-gray-50 rounded-md py-0.5 outline-none border border-gray-200 no-print"
-                                                    value={draft.taxRate} onChange={e => setDraft(d => ({...d, taxRate: parseFloat(e.target.value) || 0}))}/>%
+                                                    value={draft.taxRate} onChange={e => setDraft(d => ({ ...d, taxRate: parseFloat(e.target.value) || 0 }))} />%
                                             </span>
                                             <span>{fmt(tax, draft.currency)}</span>
                                         </div>
@@ -1129,26 +1132,26 @@ export default function InvoiceBuilder({ activeId }) {
                             <div className="p-10 space-y-10">
                                 <div className="flex justify-between items-start">
                                     <div className="flex items-center gap-4">
-                                        <LogoPicker value={draft.companyLogo} onChange={v => setDraft(d => ({...d, companyLogo: v}))} label="Logo" size={56}/>
+                                        <LogoPicker value={draft.companyLogo} onChange={v => setDraft(d => ({ ...d, companyLogo: v }))} label="Logo" size={56} />
                                         <div>
                                             <input className="text-xl font-extrabold text-gray-900 dark:text-white bg-transparent outline-none w-full placeholder:text-gray-300 tracking-tight"
-                                                value={draft.companyName} onChange={e => setDraft(d => ({...d, companyName: e.target.value}))} placeholder="Votre entreprise"/>
+                                                value={draft.companyName} onChange={e => setDraft(d => ({ ...d, companyName: e.target.value }))} placeholder="Votre entreprise" />
                                             <input className="text-sm text-gray-400 bg-transparent outline-none w-full placeholder:text-gray-300 mt-0.5"
-                                                value={draft.companyTagline} onChange={e => setDraft(d => ({...d, companyTagline: e.target.value}))} placeholder="Sous-titre"/>
+                                                value={draft.companyTagline} onChange={e => setDraft(d => ({ ...d, companyTagline: e.target.value }))} placeholder="Sous-titre" />
                                         </div>
                                     </div>
                                     <div className="text-right">
                                         <p className="text-[9px] font-bold uppercase tracking-[.2em] text-gray-400 mb-1">Facture</p>
                                         <input className="text-xl font-extrabold text-gray-900 dark:text-white bg-transparent outline-none text-right w-48 tracking-tight"
-                                            value={draft.invoiceNumber} onChange={e => setDraft(d => ({...d, invoiceNumber: e.target.value}))}/>
+                                            value={draft.invoiceNumber} onChange={e => setDraft(d => ({ ...d, invoiceNumber: e.target.value }))} />
                                         <div className="flex gap-6 justify-end mt-3">
                                             <div>
                                                 <p className="text-[9px] font-bold uppercase text-gray-400">Date</p>
-                                                <input type="date" className="text-sm text-gray-700 dark:text-gray-300 bg-transparent outline-none" value={draft.issueDate} onChange={e => setDraft(d => ({...d, issueDate: e.target.value}))}/>
+                                                <input type="date" className="text-sm text-gray-700 dark:text-gray-300 bg-transparent outline-none" value={draft.issueDate} onChange={e => setDraft(d => ({ ...d, issueDate: e.target.value }))} />
                                             </div>
                                             <div>
                                                 <p className="text-[9px] font-bold uppercase text-gray-400">Échéance</p>
-                                                <input type="date" className="text-sm text-gray-700 dark:text-gray-300 bg-transparent outline-none" value={draft.dueDate} onChange={e => setDraft(d => ({...d, dueDate: e.target.value}))}/>
+                                                <input type="date" className="text-sm text-gray-700 dark:text-gray-300 bg-transparent outline-none" value={draft.dueDate} onChange={e => setDraft(d => ({ ...d, dueDate: e.target.value }))} />
                                             </div>
                                         </div>
                                     </div>
@@ -1157,47 +1160,47 @@ export default function InvoiceBuilder({ activeId }) {
                                     <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-5">
                                         <p className="text-[9px] font-bold uppercase tracking-[.2em] text-gray-400 mb-3">De</p>
                                         <textarea className="w-full bg-transparent text-sm text-gray-700 dark:text-gray-300 outline-none resize-none leading-relaxed" rows={4}
-                                            value={draft.senderInfo} onChange={e => setDraft(d => ({...d, senderInfo: e.target.value}))}
-                                            placeholder={"Nom de l'entreprise\nAdresse\nEmail"}/>
+                                            value={draft.senderInfo} onChange={e => setDraft(d => ({ ...d, senderInfo: e.target.value }))}
+                                            placeholder={"Nom de l'entreprise\nAdresse\nEmail"} />
                                     </div>
                                     <div className="p-5">
                                         <p className="text-[9px] font-bold uppercase tracking-[.2em] text-gray-400 mb-3">Facturé à</p>
                                         <div className="flex items-start gap-3">
-                                            <LogoPicker value={draft.clientLogo} onChange={v => setDraft(d => ({...d, clientLogo: v}))} label="Client" size={40}/>
+                                            <LogoPicker value={draft.clientLogo} onChange={v => setDraft(d => ({ ...d, clientLogo: v }))} label="Client" size={40} />
                                             <div className="flex-1">
                                                 <input className="w-full text-base font-bold text-gray-900 dark:text-white bg-transparent outline-none border-b border-gray-200 dark:border-gray-700 pb-1 placeholder:text-gray-300 focus:border-emerald-500 transition-colors"
-                                                    value={draft.clientName} onChange={e => setDraft(d => ({...d, clientName: e.target.value}))} placeholder="Client / Société"/>
+                                                    value={draft.clientName} onChange={e => setDraft(d => ({ ...d, clientName: e.target.value }))} placeholder="Client / Société" />
                                                 <textarea className="w-full bg-transparent text-sm text-gray-500 outline-none resize-none mt-2 leading-relaxed" rows={2}
-                                                    value={draft.clientAddress} onChange={e => setDraft(d => ({...d, clientAddress: e.target.value}))} placeholder="Adresse du client"/>
+                                                    value={draft.clientAddress} onChange={e => setDraft(d => ({ ...d, clientAddress: e.target.value }))} placeholder="Adresse du client" />
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                                 <div>
                                     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-                                    <table className="w-full">
-                                        <thead>
-                                            <tr className="border-b-2 border-gray-100 dark:border-gray-700">
-                                                <th className="w-6"></th>
-                                                <th className="text-left text-[9px] font-bold uppercase tracking-[.15em] text-gray-400 pb-3">Description</th>
-                                                <th className="text-center text-[9px] font-bold uppercase tracking-[.15em] text-gray-400 pb-3 w-20">Qté</th>
-                                                <th className="text-right text-[9px] font-bold uppercase tracking-[.15em] text-gray-400 pb-3 w-28">Prix</th>
-                                                <th className="text-right text-[9px] font-bold uppercase tracking-[.15em] text-gray-400 pb-3 w-28">Total</th>
-                                                <th className="w-8"></th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <SortableContext items={draft.items} strategy={verticalListSortingStrategy}>
-                                                {draft.items.map(item => (
-                                                    <SortableLine key={item.id} item={item} onUpdate={updateItem} onRemove={removeItem} currency={draft.currency}/>
-                                                ))}
-                                            </SortableContext>
-                                        </tbody>
-                                    </table>
+                                        <table className="w-full">
+                                            <thead>
+                                                <tr className="border-b-2 border-gray-100 dark:border-gray-700">
+                                                    <th className="w-6"></th>
+                                                    <th className="text-left text-[9px] font-bold uppercase tracking-[.15em] text-gray-400 pb-3">Description</th>
+                                                    <th className="text-center text-[9px] font-bold uppercase tracking-[.15em] text-gray-400 pb-3 w-20">Qté</th>
+                                                    <th className="text-right text-[9px] font-bold uppercase tracking-[.15em] text-gray-400 pb-3 w-28">Prix</th>
+                                                    <th className="text-right text-[9px] font-bold uppercase tracking-[.15em] text-gray-400 pb-3 w-28">Total</th>
+                                                    <th className="w-8"></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <SortableContext items={draft.items} strategy={verticalListSortingStrategy}>
+                                                    {draft.items.map(item => (
+                                                        <SortableLine key={item.id} item={item} onUpdate={updateItem} onRemove={removeItem} currency={draft.currency} />
+                                                    ))}
+                                                </SortableContext>
+                                            </tbody>
+                                        </table>
                                     </DndContext>
                                     <button onClick={addItem}
                                         className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-emerald-600 hover:text-emerald-700 transition-colors no-print">
-                                        <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                                        <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="16" /><line x1="8" y1="12" x2="16" y2="12" /></svg>
                                         Ajouter une ligne
                                     </button>
                                 </div>
@@ -1205,7 +1208,7 @@ export default function InvoiceBuilder({ activeId }) {
                                     <div className="flex-1 max-w-xs">
                                         <p className="text-[9px] font-bold uppercase tracking-[.2em] text-gray-400 mb-2">Notes</p>
                                         <textarea className="w-full text-sm bg-gray-50 dark:bg-gray-800/50 rounded-xl p-3.5 outline-none resize-none text-gray-600 dark:text-gray-400 border border-gray-100 dark:border-gray-700 focus:border-emerald-400 transition-colors" rows={4}
-                                            value={draft.notes} onChange={e => setDraft(d => ({...d, notes: e.target.value}))} placeholder="Note au client..."/>
+                                            value={draft.notes} onChange={e => setDraft(d => ({ ...d, notes: e.target.value }))} placeholder="Note au client..." />
                                     </div>
                                     <div className="w-64 space-y-2.5">
                                         <div className="flex justify-between text-sm text-gray-500"><span>Sous-total</span><span className="tabular-nums">{fmt(sub, draft.currency)}</span></div>
@@ -1213,7 +1216,7 @@ export default function InvoiceBuilder({ activeId }) {
                                             <span className="flex items-center gap-1.5">TVA
                                                 <input type="number" min="0" max="100" step="0.5"
                                                     className="w-10 text-center text-xs bg-gray-50 dark:bg-gray-800 rounded-md py-0.5 outline-none border border-gray-200 dark:border-gray-700 no-print"
-                                                    value={draft.taxRate} onChange={e => setDraft(d => ({...d, taxRate: parseFloat(e.target.value) || 0}))}/>%
+                                                    value={draft.taxRate} onChange={e => setDraft(d => ({ ...d, taxRate: parseFloat(e.target.value) || 0 }))} />%
                                             </span>
                                             <span className="tabular-nums">{fmt(tax, draft.currency)}</span>
                                         </div>
@@ -1235,7 +1238,7 @@ export default function InvoiceBuilder({ activeId }) {
                         <p className="text-[9px] font-bold uppercase tracking-[.2em] text-gray-400 mb-4">Modèle</p>
                         <div className="space-y-4">
                             {TPL_PREVIEWS.map(t => (
-                                <TplThumb key={t.id} tpl={t} active={draft.template === t.id} onClick={() => setDraft(d => ({...d, template: t.id}))}/>
+                                <TplThumb key={t.id} tpl={t} active={draft.template === t.id} onClick={() => setDraft(d => ({ ...d, template: t.id }))} />
                             ))}
                         </div>
                     </div>
