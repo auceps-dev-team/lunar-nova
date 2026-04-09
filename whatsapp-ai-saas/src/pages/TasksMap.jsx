@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import useAppStore from '../store';
-import { getTranslation as t } from '../locales';
+import { useTranslation } from 'react-i18next';
 import {
     DndContext,
     closestCorners,
@@ -25,7 +25,7 @@ const TAG_COLORS = {
 const getTagColor = (tag) => TAG_COLORS[tag] || '#64748b';
 
 // --- Sortable Task Card ---
-const SortableTask = ({ task, onEdit, onDelete }) => {
+const SortableTask = ({ task, onEdit, onDelete, t }) => {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id });
 
     const style = {
@@ -49,7 +49,7 @@ const SortableTask = ({ task, onEdit, onDelete }) => {
                     onClick={(e) => { e.stopPropagation(); onEdit(task); }}
                     onPointerDown={(e) => e.stopPropagation()}
                     className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors"
-                    title="Edit Task"
+                    title={t('editTask')}
                 >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                 </button>
@@ -57,7 +57,7 @@ const SortableTask = ({ task, onEdit, onDelete }) => {
                     onClick={(e) => { e.stopPropagation(); onDelete(task.id); }}
                     onPointerDown={(e) => e.stopPropagation()}
                     className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
-                    title="Delete Task"
+                    title={t('deleteTask')}
                 >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                 </button>
@@ -78,7 +78,7 @@ const SortableTask = ({ task, onEdit, onDelete }) => {
                 <div className="flex flex-wrap gap-2 mb-3">
                     <span className="inline-flex items-center gap-1 bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 text-[10px] font-medium px-2 py-0.5 rounded-md">
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                        Note
+                        {t('note')}
                     </span>
                 </div>
             )}
@@ -106,7 +106,7 @@ const TaskGhost = ({ task }) => (
 );
 
 // --- Droppable Column ---
-const TaskColumn = ({ id, title, color, tasks, onEdit, onDelete }) => {
+const TaskColumn = ({ id, title, color, tasks, onEdit, onDelete, t }) => {
     const { setNodeRef, isOver } = useDroppable({ id });
 
     return (
@@ -133,11 +133,11 @@ const TaskColumn = ({ id, title, color, tasks, onEdit, onDelete }) => {
             >
                 <SortableContext items={tasks.map(task => task.id)} strategy={verticalListSortingStrategy} id={id}>
                     {tasks.map(task => (
-                        <SortableTask key={task.id} task={task} onEdit={onEdit} onDelete={onDelete} />
+                        <SortableTask key={task.id} task={task} onEdit={onEdit} onDelete={onDelete} t={t} />
                     ))}
                     {tasks.length === 0 && (
                         <div style={{ width: '100%', flex: 1, minHeight: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>No tasks here</span>
+                            <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{t('noTasksHere')}</span>
                         </div>
                     )}
                 </SortableContext>
@@ -148,12 +148,14 @@ const TaskColumn = ({ id, title, color, tasks, onEdit, onDelete }) => {
 
 // --- Main Page ---
 const TasksMap = () => {
+    const { t } = useTranslation();
     const language = useAppStore(state => state.appSettings?.language) || 'en';
     const tasks = useAppStore(state => state.tasks) || [];
     const addTask = useAppStore(state => state.addTask);
     const updateTaskStatus = useAppStore(state => state.updateTaskStatus);
     const editTask = useAppStore(state => state.editTask);
     const deleteTask = useAppStore(state => state.deleteTask);
+    const showAppNotification = useAppStore(state => state.showAppNotification);
 
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingTaskId, setEditingTaskId] = useState(null);
@@ -164,7 +166,7 @@ const TasksMap = () => {
     const [ellaInput, setEllaInput] = useState('');
     const ellaBottomRef = useRef(null);
     const [ellaHistory, setEllaHistory] = useState([
-        { sender: 'agent', text: 'Bonjour ! Je suis Ella, votre Life Architect. Dites-moi ce que vous avez en tête, je m\'occupe de structurer tout ça dans votre planning.' }
+        { sender: 'agent', text: t('ellaGreeting') }
     ]);
 
     const defaultFormState = {
@@ -253,7 +255,7 @@ const TasksMap = () => {
 
     const handleAIAssist = async () => {
         if (!taskForm.description.trim()) {
-            alert('Veuillez écrire une description brouillon avant de lancer l\'IA.');
+            showAppNotification(t('errorEmptyTaskDesc'), 'error');
             return;
         }
         setIsAiLoading(true);
@@ -309,7 +311,7 @@ Description brouillon : "${taskForm.description}"`;
             });
             const data = await res.json();
 
-            let replyText = data.response || 'Désolé, je ne comprends pas.';
+            let replyText = data.response || t('errorEllaUnderstand');
             const parsed = extractJSON(replyText);
 
             if (parsed) {
@@ -331,7 +333,7 @@ Description brouillon : "${taskForm.description}"`;
             setEllaHistory(prev => [...prev, { sender: 'agent', text: replyText }]);
         } catch (error) {
             console.error('Ella error:', error);
-            setEllaHistory(prev => [...prev, { sender: 'agent', text: 'Désolé, je rencontre un problème de connexion. Vérifiez que le backend est actif.' }]);
+            setEllaHistory(prev => [...prev, { sender: 'agent', text: t('errorEllaConnection') }]);
         } finally {
             setIsAiLoading(false);
         }
@@ -346,23 +348,23 @@ Description brouillon : "${taskForm.description}"`;
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
                 <div>
-                    <h1 style={{ fontSize: '24px', marginBottom: '8px' }}>{t(language, 'taskManagement')}</h1>
-                    <p style={{ color: 'var(--text-secondary)' }}>{t(language, 'taskDesc')}</p>
+                    <h1 style={{ fontSize: '24px', marginBottom: '8px' }}>{t('taskManagement')}</h1>
+                    <p style={{ color: 'var(--text-secondary)' }}>{t('taskDesc')}</p>
                 </div>
                 <div style={{ display: 'flex', gap: '12px' }}>
                     <div className="bg-gray-100 dark:bg-gray-800 p-1 rounded-lg flex items-center">
                         <button
                             onClick={() => setViewMode('board')}
                             className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === 'board' ? 'bg-white dark:bg-gray-700 shadow-sm text-primary' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}
-                        >Board</button>
+                        >{t('board')}</button>
                         <button
                             onClick={() => setViewMode('calendar')}
                             className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === 'calendar' ? 'bg-white dark:bg-gray-700 shadow-sm text-primary' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}
-                        >Calendar</button>
+                        >{t('calendar')}</button>
                     </div>
                     <button className="btn-primary" onClick={handleOpenAddForm} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                        {t(language, 'newTask')}
+                        {t('newTask')}
                     </button>
                 </div>
             </div>
@@ -373,7 +375,7 @@ Description brouillon : "${taskForm.description}"`;
                     <div className="bg-white dark:bg-gray-800 rounded-xl max-w-xl w-full p-6 shadow-2xl overflow-y-auto max-h-[90vh]">
                         <div className="flex justify-between items-center mb-6">
                             <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                                {editingTaskId ? 'Edit Task' : 'Add New Task'}
+                                {editingTaskId ? t('editTask') : t('newTask')}
                             </h3>
                             <button onClick={() => { setIsFormOpen(false); setEditingTaskId(null); }} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
@@ -382,13 +384,13 @@ Description brouillon : "${taskForm.description}"`;
                         <form onSubmit={handleSaveTask} className="space-y-5">
                             {/* Title */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Task Title *</label>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('taskTitleRequired')}</label>
                                 <input
                                     type="text"
                                     value={taskForm.title}
                                     onChange={e => setTaskForm({ ...taskForm, title: e.target.value })}
                                     className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2.5 text-sm focus:ring-1 focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
-                                    placeholder="Task title..."
+                                    placeholder={t('taskTitlePlaceholder')}
                                     autoFocus
                                     required
                                 />
@@ -397,7 +399,7 @@ Description brouillon : "${taskForm.description}"`;
                             {/* Category / Status / Date */}
                             <div className="flex gap-4">
                                 <div className="flex-1">
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('category')}</label>
                                     <select
                                         value={taskForm.tag}
                                         onChange={e => setTaskForm({ ...taskForm, tag: e.target.value })}
@@ -411,19 +413,19 @@ Description brouillon : "${taskForm.description}"`;
                                     </select>
                                 </div>
                                 <div className="flex-1">
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('status')}</label>
                                     <select
                                         value={taskForm.status}
                                         onChange={e => setTaskForm({ ...taskForm, status: e.target.value })}
                                         className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2.5 text-sm focus:ring-1 focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
                                     >
-                                        <option value="todo">To Do</option>
-                                        <option value="in-progress">In Progress</option>
-                                        <option value="completed">Completed</option>
+                                        <option value="todo">{t('toDo')}</option>
+                                        <option value="in-progress">{t('inProgress')}</option>
+                                        <option value="completed">{t('completed')}</option>
                                     </select>
                                 </div>
                                 <div className="flex-1">
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Due Date</label>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('dueDate')}</label>
                                     <input
                                         type="date"
                                         value={taskForm.date}
@@ -436,7 +438,7 @@ Description brouillon : "${taskForm.description}"`;
                             {/* Description + AI Assist */}
                             <div>
                                 <div className="flex justify-between items-center mb-1">
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('description')}</label>
                                     <button
                                         type="button"
                                         onClick={handleAIAssist}
@@ -445,8 +447,8 @@ Description brouillon : "${taskForm.description}"`;
                                     >
                                         {isAiLoading ? (
                                             <>
-                                                <svg className="animate-spin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
-                                                Generating...
+                                                <svg className="animate-spin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>
+                                                {t('generating')}
                                             </>
                                         ) : (
                                             <>
@@ -460,19 +462,19 @@ Description brouillon : "${taskForm.description}"`;
                                     value={taskForm.description}
                                     onChange={e => setTaskForm({ ...taskForm, description: e.target.value })}
                                     className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2.5 h-28 text-sm focus:ring-1 focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white resize-none"
-                                    placeholder="Write a brief description, then click ✨ AI Refine to enhance it..."
+                                    placeholder={t('writeBriefDescriptionEnhance')}
                                 />
                             </div>
 
                             {/* Notes / Annotations */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes</label>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('notes')}</label>
                                 <input
                                     type="text"
                                     value={taskForm.annotations}
                                     onChange={e => setTaskForm({ ...taskForm, annotations: e.target.value })}
                                     className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2.5 text-sm focus:ring-1 focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
-                                    placeholder="Add a quick note or annotation..."
+                                    placeholder={t('addQuickNoteOrAnnotation')}
                                 />
                             </div>
 
@@ -481,9 +483,9 @@ Description brouillon : "${taskForm.description}"`;
                                     type="button"
                                     onClick={() => { setIsFormOpen(false); setEditingTaskId(null); }}
                                     className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 rounded-lg transition-colors"
-                                >Cancel</button>
+                                >{t('cancel')}</button>
                                 <button type="submit" className="btn-primary" disabled={!taskForm.title.trim()}>
-                                    {editingTaskId ? 'Save Changes' : 'Create Task'}
+                                    {editingTaskId ? t('saveChanges') : t('createTask')}
                                 </button>
                             </div>
                         </form>
@@ -500,9 +502,9 @@ Description brouillon : "${taskForm.description}"`;
                     onDragEnd={handleDragEnd}
                 >
                     <div style={{ display: 'flex', gap: '24px', overflowX: 'auto', paddingBottom: '20px', alignItems: 'flex-start' }}>
-                        <TaskColumn id="todo" title={t(language, 'toDo')} color="#f59e0b" tasks={todoTasks} onEdit={handleOpenEditForm} onDelete={deleteTask} />
-                        <TaskColumn id="in-progress" title={t(language, 'inProgress')} color="#0b9f84" tasks={inProgressTasks} onEdit={handleOpenEditForm} onDelete={deleteTask} />
-                        <TaskColumn id="completed" title={t(language, 'completed')} color="#10b981" tasks={completedTasks} onEdit={handleOpenEditForm} onDelete={deleteTask} />
+                        <TaskColumn id="todo" title={t('toDo')} color="#f59e0b" tasks={todoTasks} onEdit={handleOpenEditForm} onDelete={deleteTask} t={t} />
+                        <TaskColumn id="in-progress" title={t('inProgress')} color="#0b9f84" tasks={inProgressTasks} onEdit={handleOpenEditForm} onDelete={deleteTask} t={t} />
+                        <TaskColumn id="completed" title={t('completed')} color="#10b981" tasks={completedTasks} onEdit={handleOpenEditForm} onDelete={deleteTask} t={t} />
                     </div>
 
                     <DragOverlay dropAnimation={{ duration: 200, easing: 'ease' }}>
@@ -513,20 +515,20 @@ Description brouillon : "${taskForm.description}"`;
                 <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
                     <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
                         <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-                            {currentDate.toLocaleString('default', { month: 'long' })} {currentDate.getFullYear()}
+                            {currentDate.toLocaleString(language === 'en' ? 'en-US' : language, { month: 'long' })} {currentDate.getFullYear()}
                         </h2>
                         <div className="flex gap-2">
                             <button onClick={() => setCurrentDate(d => new Date(d.getFullYear(), d.getMonth() - 1, 1))} className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
                             </button>
-                            <button onClick={() => setCurrentDate(new Date())} className="px-3 py-1 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md text-sm font-medium shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">Today</button>
+                            <button onClick={() => setCurrentDate(new Date())} className="px-3 py-1 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md text-sm font-medium shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">{t('today')}</button>
                             <button onClick={() => setCurrentDate(d => new Date(d.getFullYear(), d.getMonth() + 1, 1))} className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
                             </button>
                         </div>
                     </div>
                     <div className="grid grid-cols-7 border-b border-gray-200 dark:border-gray-700 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 py-2">
-                        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => <div key={d}>{d}</div>)}
+                        {[t('daySun'), t('dayMon'), t('dayTue'), t('dayWed'), t('dayThu'), t('dayFri'), t('daySat')].map(d => <div key={d}>{d}</div>)}
                     </div>
                     <div className="grid grid-cols-7 auto-rows-[120px]">
                         {(() => {
@@ -551,7 +553,7 @@ Description brouillon : "${taskForm.description}"`;
                                         </div>
                                         <div className="flex-1 overflow-y-auto space-y-1 mt-1 pr-1 custom-scrollbar">
                                             {dayTasks.map(task => (
-                                                <div key={task.id} className="text-[10px] truncate px-1.5 py-1 rounded bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 shadow-sm" title={task.title}>
+                                                <div key={task.id} onClick={() => handleOpenEditForm(task)} className="cursor-pointer text-[10px] truncate px-1.5 py-1 rounded bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 shadow-sm" title={task.title}>
                                                     <span style={{ color: task.status === 'completed' ? '#10b981' : task.status === 'in-progress' ? '#0b9f84' : '#f59e0b', marginRight: '4px' }}>•</span>
                                                     {task.title}
                                                 </div>
@@ -570,7 +572,7 @@ Description brouillon : "${taskForm.description}"`;
             <button
                 onClick={() => setIsEllaOpen(true)}
                 className="fixed bottom-6 right-6 w-14 h-14 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-105 z-40"
-                title="Talk to Ella"
+                title={t('talkToElla')}
             >
                 <div className="text-2xl">🧠</div>
             </button>
@@ -616,7 +618,7 @@ Description brouillon : "${taskForm.description}"`;
                             type="text"
                             value={ellaInput}
                             onChange={(e) => setEllaInput(e.target.value)}
-                            placeholder="Delegate a task to Ella..."
+                            placeholder={t('delegateTaskToElla')}
                             disabled={isAiLoading}
                             className="w-full pl-4 pr-12 py-3 bg-gray-100 dark:bg-gray-800 border-none rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 dark:text-white disabled:opacity-60"
                         />

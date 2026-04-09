@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import useAppStore from '../store';
-import { getTranslation as t } from '../locales';
+import { useTranslation } from 'react-i18next';
+
 import '../styles/global.css';
 
 const INSTANCE_ICONS = {
@@ -23,6 +24,7 @@ const INSTANCE_COLORS = [
 const Sidebar = ({ instances, activeId, onSelect, onAdd, onRemove, onUpdate, currentPath }) => {
     const [editingId, setEditingId] = useState(null);
     const [editForm, setEditForm] = useState({ name: '', color: '', icon: '' });
+    const { t } = useTranslation();
     const language = useAppStore(state => state.appSettings?.language) || 'en';
     const userProfile = useAppStore(state => state.userProfile) || {};
     const waAnalysis = useAppStore(state => state.waAnalysis);
@@ -82,22 +84,21 @@ const Sidebar = ({ instances, activeId, onSelect, onAdd, onRemove, onUpdate, cur
                 </div>
 
                 <nav className="flex-1 overflow-y-auto scrollbar-hide py-4 px-3 space-y-1">
-                    <div className="text-xs font-semibold text-gray-400 px-3 mb-2 uppercase tracking-wider">Main</div>
-
+                    <div className="text-xs font-semibold text-gray-400 px-3 mb-2 uppercase tracking-wider">{t('main')}</div>
 
                     <Link to="/dashboard" className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors group ${currentPath === '/dashboard' ? 'bg-primary/20 text-primary border border-primary/20' : 'text-gray-300 hover:bg-white/5 hover:text-white'}`}>
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
-                        <span className="text-sm font-medium">{t(language, 'dashboard') || 'Tableau de bord'}</span>
+                        <span className="text-sm font-medium">{t('dashboard')}</span>
                     </Link>
 
                     <Link to="/whatsapp-hub" className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors group ${currentPath === '/whatsapp-hub' || currentPath === '/' ? 'bg-primary/20 text-primary border border-primary/20' : 'text-gray-300 hover:bg-white/5 hover:text-white'}`}>
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
-                        <span className="text-sm font-medium">{t(language, 'whatsappHub')}</span>
+                        <span className="text-sm font-medium">{t('whatsappHub')}</span>
                     </Link>
 
                     <Link to="/analytics" className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors group ${currentPath === '/analytics' ? 'bg-primary/20 text-primary border border-primary/20' : 'text-gray-300 hover:bg-white/5 hover:text-white'}`}>
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"></path><path d="m19 9-5 5-4-4-3 3"></path></svg>
-                        <span className="text-sm font-medium">Analytics</span>
+                        <span className="text-sm font-medium">{t('analytics')}</span>
                     </Link>
 
                     {/* AI Fashion Studio Dropdown */}
@@ -108,7 +109,7 @@ const Sidebar = ({ instances, activeId, onSelect, onAdd, onRemove, onUpdate, cur
                         >
                             <div className="flex items-center gap-3">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.38 3.46 16 2a8.86 8.86 0 0 1-5 0 8.86 8.86 0 0 1-5 0L1.62 3.46A2 2 0 0 0 0 5.34v.53a3 3 0 0 0 2 2.82v10.3A3 3 0 0 0 5 22h14a3 3 0 0 0 3-3V8.69a3 3 0 0 0 2-2.82v-.53a2 2 0 0 0-1.62-1.88z"></path><path d="M12 2v6"></path><path d="M9 12h6"></path><path d="M9 16h6"></path></svg>
-                                <span className="text-sm font-medium">AI Fashion Studio</span>
+                                <span className="text-sm font-medium">{t('aiFashionStudio')}</span>
                             </div>
                             <svg className={`w-4 h-4 transition-transform ${fashionStudioExpanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -118,27 +119,27 @@ const Sidebar = ({ instances, activeId, onSelect, onAdd, onRemove, onUpdate, cur
                         <div className={`overflow-hidden transition-all duration-300 pl-11 pr-3 space-y-1 ${fashionStudioExpanded ? 'max-h-96 py-1' : 'max-h-0 py-0'}`}>
                             <Link to="/agents" className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${currentPath === '/agents' ? 'bg-white/10 text-white font-medium' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="10" rx="2" ry="2"></rect><circle cx="12" cy="5" r="2"></circle><path d="M12 7v4"></path></svg>
-                                <span className="truncate text-sm">Product Photo</span>
+                                <span className="truncate text-sm">{t('productPhoto')}</span>
                             </Link>
                             <Link to="/fashion/photoshoot" className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${currentPath === '/fashion/photoshoot' ? 'bg-white/10 text-white font-medium' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
-                                <span className="truncate text-sm">Photo Shoot</span>
+                                <span className="truncate text-sm">{t('photoShoot')}</span>
                             </Link>
                             <Link to="/fashion/edit" className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${currentPath === '/fashion/edit' ? 'bg-white/10 text-white font-medium' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
-                                <span className="truncate text-sm">Edit Image</span>
+                                <span className="truncate text-sm">{t('editImage')}</span>
                             </Link>
                         </div>
                     </div>
 
                     <Link to="/ai-chat" className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors group ${currentPath === '/ai-chat' ? 'bg-primary/20 text-primary border border-primary/20' : 'text-gray-300 hover:bg-white/5 hover:text-white'}`}>
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-                        <span className="text-sm font-medium">AI Chat</span>
+                        <span className="text-sm font-medium">{t('aiChat')}</span>
                     </Link>
 
                     <Link to="/ai-writer" className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors group ${currentPath === '/ai-writer' ? 'bg-primary/20 text-primary border border-primary/20' : 'text-gray-300 hover:bg-white/5 hover:text-white'}`}>
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
-                        <span className="text-sm font-medium">AI Writer</span>
+                        <span className="text-sm font-medium">{t('aiWriter')}</span>
                     </Link>
 
                     {/* WhatsApp Specialized Dropdown */}
@@ -149,7 +150,7 @@ const Sidebar = ({ instances, activeId, onSelect, onAdd, onRemove, onUpdate, cur
                         >
                             <div className="flex items-center gap-3">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
-                                <span className="text-sm font-medium">Whatsapp</span>
+                                <span className="text-sm font-medium">{t('whatsapp')}</span>
                                 {/* Global analysis badge — always visible, with Stop */}
                                 {waAnalysis.isRunning && (
                                     <span className="flex items-center gap-1 ml-1 bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
@@ -173,40 +174,40 @@ const Sidebar = ({ instances, activeId, onSelect, onAdd, onRemove, onUpdate, cur
 
                         <div className={`overflow-hidden transition-all duration-300 pl-11 pr-3 space-y-1 ${whatsappMenuExpanded ? 'max-h-56 py-1' : 'max-h-0 py-0'}`}>
                             <Link to="/wa/contact-lists" className={`flex items-center px-3 py-2 rounded-lg transition-colors ${currentPath === '/wa/contact-lists' ? 'bg-white/10 text-white font-medium' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
-                                <span className="truncate text-sm">Contact Lists</span>
+                                <span className="truncate text-sm">{t('contactLists')}</span>
                             </Link>
                             <Link to="/wa/segments" className={`flex items-center px-3 py-2 rounded-lg transition-colors ${currentPath === '/wa/segments' ? 'bg-white/10 text-white font-medium' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
-                                <span className="truncate text-sm">Segments</span>
+                                <span className="truncate text-sm">{t('segments')}</span>
                             </Link>
                             <Link to="/wa/contacts" className={`flex items-center px-3 py-2 rounded-lg transition-colors ${currentPath === '/wa/contacts' ? 'bg-white/10 text-white font-medium' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
-                                <span className="truncate text-sm">Contacts</span>
+                                <span className="truncate text-sm">{t('contacts')}</span>
                             </Link>
                         </div>
                     </div>
 
                     <Link to="/support" className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors group ${currentPath === '/support' ? 'bg-primary/20 text-primary border border-primary/20' : 'text-gray-300 hover:bg-white/5 hover:text-white'}`}>
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-                        <span className="text-sm font-medium">{t(language, 'support') || 'Support'}</span>
+                        <span className="text-sm font-medium">{t('support')}</span>
                     </Link>
 
                     <Link to="/tasks" className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors group ${currentPath === '/tasks' ? 'bg-primary/20 text-primary border border-primary/20' : 'text-gray-300 hover:bg-white/5 hover:text-white'}`}>
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
-                        <span className="text-sm font-medium">{t(language, 'tasks')}</span>
+                        <span className="text-sm font-medium">{t('tasks')}</span>
                     </Link>
 
                     <Link to="/invoice-builder" className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors group ${currentPath === '/invoice-builder' ? 'bg-primary/20 text-primary border border-primary/20' : 'text-gray-300 hover:bg-white/5 hover:text-white'}`}>
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
-                        <span className="text-sm font-medium">{t(language, 'invoiceBuilder')}</span>
+                        <span className="text-sm font-medium">{t('invoiceBuilder')}</span>
                     </Link>
 
                     <Link to="/tools" className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors group ${currentPath === '/tools' ? 'bg-primary/20 text-primary border border-primary/20' : 'text-gray-300 hover:bg-white/5 hover:text-white'}`}>
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
-                        <span className="text-sm font-medium">{t(language, 'tools')}</span>
+                        <span className="text-sm font-medium">{t('tools')}</span>
                     </Link>
 
                     <div className="text-xs font-semibold text-gray-400 px-3 mt-6 mb-2 uppercase tracking-wider flex items-center justify-between">
-                        <span>{t(language, 'instances')}</span>
-                        <button className="text-gray-400 hover:text-white transition-colors" onClick={onAdd} title="New Instance">
+                        <span>{t('instances')}</span>
+                        <button className="text-gray-400 hover:text-white transition-colors" onClick={onAdd} title={t('newInstance')}>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                         </button>
                     </div>
@@ -224,7 +225,7 @@ const Sidebar = ({ instances, activeId, onSelect, onAdd, onRemove, onUpdate, cur
                                         value={editForm.name}
                                         onChange={e => setEditForm({ ...editForm, name: e.target.value })}
                                         className="bg-sidebar-dark border border-white/20 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-primary w-full"
-                                        placeholder="Instance Name"
+                                        placeholder={t('instanceName')}
                                     />
                                     <div className="flex flex-col gap-2 border-t border-white/10 pt-2">
                                         <div className="flex flex-wrap gap-2">
@@ -252,8 +253,8 @@ const Sidebar = ({ instances, activeId, onSelect, onAdd, onRemove, onUpdate, cur
                                         </div>
                                     </div>
                                     <div className="flex gap-2">
-                                        <button onClick={(e) => { e.stopPropagation(); setEditingId(null); }} className="flex-1 py-1 text-xs text-gray-300 hover:bg-white/10 rounded">Cancel</button>
-                                        <button onClick={(e) => handleSaveEdit(e, instance.id)} className="flex-1 py-1 text-xs bg-primary text-white rounded hover:bg-primary/90">Save</button>
+                                        <button onClick={(e) => { e.stopPropagation(); setEditingId(null); }} className="flex-1 py-1 text-xs text-gray-300 hover:bg-white/10 rounded">{t('cancel')}</button>
+                                        <button onClick={(e) => handleSaveEdit(e, instance.id)} className="flex-1 py-1 text-xs bg-primary text-white rounded hover:bg-primary/90">{t('save')}</button>
                                     </div>
                                 </div>
                             );
@@ -323,13 +324,13 @@ const Sidebar = ({ instances, activeId, onSelect, onAdd, onRemove, onUpdate, cur
                         <div className="flex-1 min-w-0">
                             {userProfile.isAuthenticated ? (
                                 <>
-                                    <p className="text-sm font-medium text-white truncate">{userProfile.firstName ? `${userProfile.firstName} ${userProfile.lastName}` : (userProfile.companyName || 'Utilisateur')}</p>
+                                    <p className="text-sm font-medium text-white truncate">{userProfile.firstName ? `${userProfile.firstName} ${userProfile.lastName}` : (userProfile.companyName || 'User')}</p>
                                     <p className="text-xs text-gray-400 truncate">{userProfile.email || 'SaaS License'}</p>
                                 </>
                             ) : (
                                 <>
-                                    <p className="text-sm font-medium text-white truncate">Non connecté</p>
-                                    <p className="text-xs text-gray-400 truncate">Cliquez pour lier</p>
+                                    <p className="text-sm font-medium text-white truncate">{t('notSignedIn')}</p>
+                                    <p className="text-xs text-gray-400 truncate">{t('signInToAccount')}</p>
                                 </>
                             )}
                         </div>
@@ -342,7 +343,7 @@ const Sidebar = ({ instances, activeId, onSelect, onAdd, onRemove, onUpdate, cur
             <div
                 className={`w-2 cursor-col-resize shrink-0 transition-colors flex items-center justify-center z-20 group -ml-1 absolute right-[-4px] top-0 bottom-0 ${isResizing ? 'bg-white/20' : 'hover:bg-white/10'}`}
                 onMouseDown={startResizing}
-                title="Drag to resize sidebar"
+                title={t('dragToResizeSidebar')}
             >
                 <div className={`w-1 h-8 rounded-full transition-colors ${isResizing ? 'bg-white' : 'bg-gray-500 group-hover:bg-white'}`} />
             </div>

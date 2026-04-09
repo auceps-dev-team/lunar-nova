@@ -1,5 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import useAppStore from '../store';
+import { useTranslation } from 'react-i18next';
 import {
     AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
     XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
@@ -42,7 +43,8 @@ const Icons = {
     list: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>,
     play: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>,
     database: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>,
-    key: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg>
+    key: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg>,
+    euro: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 10h12"></path><path d="M4 14h9"></path><path d="M19 6a7.7 7.7 0 0 0-5.2-2A7.9 7.9 0 0 0 6 12c0 4.4 3.5 8 7.8 8 2 0 3.8-.8 5.2-2"></path></svg>
 };
 
 // ── Helpers ───────────────────────────────────────────────────────
@@ -251,9 +253,10 @@ function ZustandInspector({ storeData }) {
 }
 
 // ── MAIN COMPONENT ────────────────────────────────────────────────
-import { getTranslation as t } from '../locales';
 
 export default function AdvancedAnalytics() {
+    const { t } = useTranslation();
+
     // Pull everything from Zustand
     const tasks = useAppStore(s => s.tasks) || [];
     const invoices = useAppStore(s => s.invoices) || [];
@@ -269,7 +272,7 @@ export default function AdvancedAnalytics() {
     const [activeTab, setActiveTab] = useState('overview');
     const [contactAnalytics, setContactAnalytics] = useState(null);
 
-    React.useEffect(() => {
+    useEffect(() => {
         const fetchAnalytics = async () => {
             try {
                 const res = await fetch('http://localhost:3000/api/wa/analytics');
@@ -318,16 +321,16 @@ export default function AdvancedAnalytics() {
 
     // Task distribution for pie
     const taskPieData = [
-        { name: t(language, 'toDo'), value: taskStats.todo, color: C.amber },
-        { name: t(language, 'inProgress'), value: taskStats.inProgress, color: C.primary },
-        { name: t(language, 'completed'), value: taskStats.completed, color: C.primary2 },
+        { name: t('toDo'), value: taskStats.todo, color: C.amber },
+        { name: t('inProgress'), value: taskStats.inProgress, color: C.primary },
+        { name: t('completed'), value: taskStats.completed, color: C.primary2 },
     ].filter(d => d.value > 0);
 
     // Invoice status pie
     const invoicePie = [
-        { name: t(language, 'paidInvoices'), value: paidInvoices, color: C.primary2 },
-        { name: t(language, 'pending'), value: pendingInvoices, color: C.amber },
-        { name: t(language, 'drafts'), value: invoices.filter(i => i.status === 'draft').length, color: C.gray400 },
+        { name: t('paidInvoices'), value: paidInvoices, color: C.primary2 },
+        { name: t('pending'), value: pendingInvoices, color: C.amber },
+        { name: t('drafts'), value: invoices.filter(i => i.status === 'draft').length, color: C.gray400 },
     ].filter(d => d.value > 0);
 
     // Full Zustand state snapshot for inspector
@@ -335,12 +338,12 @@ export default function AdvancedAnalytics() {
 
     // ── Tabs ──────────────────────────────────────────────────────
     const TABS = [
-        { id: 'overview', label: t(language, 'overview') },
-        { id: 'audience', label: t(language, 'waAudience') },
-        { id: 'agents', label: t(language, 'aiAgents') },
-        { id: 'revenue', label: t(language, 'revenue') },
-        { id: 'tasks', label: t(language, 'tasks') },
-        { id: 'cache', label: `🗄 ${t(language, 'storeCache')}` },
+        { id: 'overview', label: t('overview') },
+        { id: 'audience', label: t('waAudience') },
+        { id: 'agents', label: t('aiAgents') },
+        { id: 'revenue', label: t('revenue') },
+        { id: 'tasks', label: t('tasks') },
+        { id: 'cache', label: `🗄 ${t('storeCache')}` },
     ];
 
     const tabStyle = (id) => ({
@@ -362,15 +365,15 @@ export default function AdvancedAnalytics() {
             <div style={{ marginBottom: 28, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
                 <div>
                     <h1 style={{ fontSize: 26, fontWeight: 800, color: C.textPrimary, margin: 0, letterSpacing: '-0.5px' }}>
-                        {t(language, 'advancedAnalytics')}
+                        {t('advancedAnalytics')}
                     </h1>
                     <p style={{ color: C.textSecondary, fontSize: 13, margin: '5px 0 0' }}>
-                        {t(language, 'workspaceOverview')} — {new Date().toLocaleDateString(language === 'en' ? 'en-US' : language, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                        {t('workspaceOverview')} — {new Date().toLocaleDateString(language === 'en' ? 'en-US' : language, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                     </p>
                 </div>
                 {userProfile?.firstName && (
                     <div style={{ fontSize: 13, color: C.textSecondary }}>
-                        👋 Bonjour, <strong style={{ color: C.textPrimary }}>{userProfile.firstName}</strong>
+                        {t('greetingHello')} <strong style={{ color: C.textPrimary }}>{userProfile.firstName}</strong>
                     </div>
                 )}
             </div>
@@ -381,9 +384,9 @@ export default function AdvancedAnalytics() {
                 background: C.gray100, padding: 5, borderRadius: 12,
                 width: 'fit-content',
             }}>
-                {TABS.map(t => (
-                    <button key={t.id} style={tabStyle(t.id)} onClick={() => setActiveTab(t.id)}>
-                        {t.label}
+                {TABS.map(tItem => (
+                    <button key={tItem.id} style={tabStyle(tItem.id)} onClick={() => setActiveTab(tItem.id)}>
+                        {tItem.label}
                     </button>
                 ))}
             </div>
@@ -394,18 +397,18 @@ export default function AdvancedAnalytics() {
 
                     {/* KPI Grid */}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
-                        <KPICard icon={Icons.message} label={t(language, 'totalAiMessages')} value={totalMessages} color={C.primary} sub={`${totalSessions} ${t(language, 'archivedSessions')}`} />
-                        <KPICard icon={Icons.bot} label={t(language, 'copilotReplies')} value={copilotCount} color={C.accent} sub={t(language, 'allInstances')} />
-                        <KPICard icon={Icons.money} label={t(language, 'totalRevenue')} value={fmt(totalRevenue)} color={C.primary2} sub={`${invoices.length} ${t(language, 'invoicesCount')}`} />
-                        <KPICard icon={Icons.checkCircle} label={t(language, 'tasksCompleted')} value={`${taskStats.completed}/${taskStats.total}`} color={C.amber} sub={`${pct(taskStats.completed, taskStats.total)}${t(language, 'completionRate')}`} />
-                        <KPICard icon={Icons.phone} label={t(language, 'instances')} value={instances.length} color={C.blue} sub={t(language, 'activeInWorkspace')} />
-                        <KPICard icon={Icons.image} label={t(language, 'imageGenerations')} value={agentHistory.length} color={C.purple} sub={t(language, 'visualAgents')} />
+                        <KPICard icon={Icons.message} label={t('totalAiMessages')} value={totalMessages} color={C.primary} sub={`${totalSessions} ${t('archivedSessions')}`} />
+                        <KPICard icon={Icons.bot} label={t('copilotReplies')} value={copilotCount} color={C.accent} sub={t('allInstances')} />
+                        <KPICard icon={Icons.money} label={t('totalRevenue')} value={fmt(totalRevenue)} color={C.primary2} sub={`${invoices.length} ${t('invoicesCount')}`} />
+                        <KPICard icon={Icons.checkCircle} label={t('tasksCompleted')} value={`${taskStats.completed}/${taskStats.total}`} color={C.amber} sub={`${pct(taskStats.completed, taskStats.total)}% ${t('completionRate').toLowerCase()}`} />
+                        <KPICard icon={Icons.phone} label={t('instances')} value={instances.length} color={C.blue} sub={t('activeInWorkspace')} />
+                        <KPICard icon={Icons.image} label={t('imageGenerations')} value={agentHistory.length} color={C.purple} sub={t('visualAgents')} />
                     </div>
 
                     {/* Revenue mini chart + Task donut */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 20 }}>
                         <Panel>
-                            <SectionTitle sub={t(language, 'monthlyRevenueEvo')}>{t(language, 'monthlyRevenue')}</SectionTitle>
+                            <SectionTitle sub={t('monthlyRevenueEvo')}>{t('monthlyRevenue')}</SectionTitle>
                             <ResponsiveContainer width="100%" height={200}>
                                 <AreaChart data={monthlyRev} margin={{ left: -10, right: 10 }}>
                                     <defs>
@@ -418,13 +421,13 @@ export default function AdvancedAnalytics() {
                                     <XAxis dataKey="name" tick={{ fontSize: 11, fill: C.gray400 }} axisLine={false} tickLine={false} />
                                     <YAxis tick={{ fontSize: 11, fill: C.gray400 }} axisLine={false} tickLine={false} />
                                     <Tooltip content={<CustomTooltip format="currency" />} />
-                                    <Area type="monotone" dataKey="rev" name={t(language, 'revenue')} stroke={C.primary} strokeWidth={2.5} fill="url(#revGrad)" />
+                                    <Area type="monotone" dataKey="rev" name={t('revenue')} stroke={C.primary} strokeWidth={2.5} fill="url(#revGrad)" />
                                 </AreaChart>
                             </ResponsiveContainer>
                         </Panel>
 
                         <Panel>
-                            <SectionTitle sub={t(language, 'taskStatusDist')}>{t(language, 'tasks')}</SectionTitle>
+                            <SectionTitle sub={t('taskStatusDist')}>{t('tasks')}</SectionTitle>
                             {taskPieData.length > 0 ? (
                                 <>
                                     <ResponsiveContainer width="100%" height={160}>
@@ -448,7 +451,7 @@ export default function AdvancedAnalytics() {
                                     </div>
                                 </>
                             ) : (
-                                <div style={{ textAlign: 'center', padding: '40px 0', color: C.gray400, fontSize: 13 }}>{t(language, 'noTasks')}</div>
+                                <div style={{ textAlign: 'center', padding: '40px 0', color: C.gray400, fontSize: 13 }}>{t('noTasks')}</div>
                             )}
                         </Panel>
                     </div>
@@ -459,14 +462,14 @@ export default function AdvancedAnalytics() {
             {activeTab === 'audience' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
-                        <KPICard icon={Icons.users} label="Contacts Total" value={(contactAnalytics?.totalContacts || 0).toLocaleString()} color={C.primary2} />
-                        <KPICard icon={Icons.message} label="Messages Envoyés" value={(contactAnalytics?.totalMessagesSent || 0).toLocaleString()} color={C.accent} />
-                        <KPICard icon={Icons.checkCircle} label="Contacts Valides" value={(contactAnalytics?.byStatus?.find(s => s.name === 'valid')?.count || 0).toLocaleString()} color={C.blue} />
+                        <KPICard icon={Icons.users} label={t('totalContacts')} value={(contactAnalytics?.totalContacts || 0).toLocaleString()} color={C.primary2} />
+                        <KPICard icon={Icons.message} label={t('messagesSent')} value={(contactAnalytics?.totalMessagesSent || 0).toLocaleString()} color={C.accent} />
+                        <KPICard icon={Icons.checkCircle} label={t('validContacts')} value={(contactAnalytics?.byStatus?.find(s => s.name === 'valid')?.count || 0).toLocaleString()} color={C.blue} />
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
                         <Panel>
-                            <SectionTitle sub="Répartition de l'audience globale">Contacts par Segment</SectionTitle>
+                            <SectionTitle sub={t('globalAudienceDistribution')}>{t('contactsBySegment')}</SectionTitle>
                             {contactAnalytics?.bySegment?.length > 0 ? (
                                 <ResponsiveContainer width="100%" height={220}>
                                     <PieChart>
@@ -477,12 +480,12 @@ export default function AdvancedAnalytics() {
                                     </PieChart>
                                 </ResponsiveContainer>
                             ) : (
-                                <div style={{ textAlign: 'center', padding: '40px 0', color: C.gray400, fontSize: 13 }}>Aucune donnée</div>
+                                <div style={{ textAlign: 'center', padding: '40px 0', color: C.gray400, fontSize: 13 }}>{t('noData')}</div>
                             )}
                         </Panel>
 
                         <Panel>
-                            <SectionTitle sub="Volume par liste de diffusion">Contacts par Liste</SectionTitle>
+                            <SectionTitle sub={t('volumeByMailingList')}>{t('contactsByList')}</SectionTitle>
                             {contactAnalytics?.byList?.length > 0 ? (
                                 <ResponsiveContainer width="100%" height={220}>
                                     <BarChart data={contactAnalytics.byList} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
@@ -490,16 +493,16 @@ export default function AdvancedAnalytics() {
                                         <XAxis dataKey="name" tick={{ fontSize: 11, fill: C.gray400 }} axisLine={false} tickLine={false} />
                                         <YAxis tick={{ fontSize: 11, fill: C.gray400 }} axisLine={false} tickLine={false} />
                                         <Tooltip content={<CustomTooltip />} />
-                                        <Bar dataKey="count" name="Contacts" fill={C.blue} radius={[4, 4, 0, 0]} />
+                                        <Bar dataKey="count" name={t('contacts')} fill={C.blue} radius={[4, 4, 0, 0]} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             ) : (
-                                <div style={{ textAlign: 'center', padding: '40px 0', color: C.gray400, fontSize: 13 }}>Aucune donnée</div>
+                                <div style={{ textAlign: 'center', padding: '40px 0', color: C.gray400, fontSize: 13 }}>{t('noData')}</div>
                             )}
                         </Panel>
 
                         <Panel>
-                            <SectionTitle sub="Santé de la base de données">Vérification des numéros</SectionTitle>
+                            <SectionTitle sub={t('databaseHealth')}>{t('numberVerification')}</SectionTitle>
                             {contactAnalytics?.byStatus?.length > 0 ? (
                                 <ResponsiveContainer width="100%" height={220}>
                                     <PieChart>
@@ -510,7 +513,7 @@ export default function AdvancedAnalytics() {
                                     </PieChart>
                                 </ResponsiveContainer>
                             ) : (
-                                <div style={{ textAlign: 'center', padding: '40px 0', color: C.gray400, fontSize: 13 }}>Aucune donnée</div>
+                                <div style={{ textAlign: 'center', padding: '40px 0', color: C.gray400, fontSize: 13 }}>{t('noData')}</div>
                             )}
                         </Panel>
                     </div>
@@ -521,14 +524,14 @@ export default function AdvancedAnalytics() {
             {activeTab === 'agents' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
-                        <KPICard icon={Icons.message} label="Messages échangés" value={totalMessages} color={C.primary} />
-                        <KPICard icon={Icons.archive} label="Sessions archivées" value={totalSessions} color={C.accent} />
-                        <KPICard icon={Icons.users} label="Agents utilisés" value={Object.keys(conversations).filter(k => (conversations[k]?.length || 0) > 0).length} color={C.blue} />
-                        <KPICard icon={Icons.image} label="Générations visuelles" value={agentHistory.length} color={C.purple} />
+                        <KPICard icon={Icons.message} label={t('exchangedMessages')} value={totalMessages} color={C.primary} />
+                        <KPICard icon={Icons.archive} label={t('archivedSessions')} value={totalSessions} color={C.accent} />
+                        <KPICard icon={Icons.users} label={t('usedAgents')} value={Object.keys(conversations).filter(k => (conversations[k]?.length || 0) > 0).length} color={C.blue} />
+                        <KPICard icon={Icons.image} label={t('visualGenerations')} value={agentHistory.length} color={C.purple} />
                     </div>
 
                     <Panel>
-                        <SectionTitle sub="Nombre de messages par agent">Activité des agents</SectionTitle>
+                        <SectionTitle sub={t('messagesPerAgent')}>{t('agentActivity')}</SectionTitle>
                         {agentActivity.length > 0 ? (
                             <ResponsiveContainer width="100%" height={260}>
                                 <BarChart data={agentActivity} layout="vertical" margin={{ left: 10, right: 20 }}>
@@ -536,26 +539,26 @@ export default function AdvancedAnalytics() {
                                     <XAxis type="number" tick={{ fontSize: 11, fill: C.gray400 }} axisLine={false} tickLine={false} />
                                     <YAxis type="category" dataKey="name" width={140} tick={{ fontSize: 11, fill: C.gray700 }} axisLine={false} tickLine={false} />
                                     <Tooltip content={<CustomTooltip />} />
-                                    <Bar dataKey="messages" name="Total messages" fill={C.primary} radius={[0, 6, 6, 0]} />
-                                    <Bar dataKey="userMsgs" name="Messages user" fill={C.accent} radius={[0, 6, 6, 0]} />
+                                    <Bar dataKey="messages" name={t('totalMessages')} fill={C.primary} radius={[0, 6, 6, 0]} />
+                                    <Bar dataKey="userMsgs" name={t('userMessages')} fill={C.accent} radius={[0, 6, 6, 0]} />
                                 </BarChart>
                             </ResponsiveContainer>
                         ) : (
                             <div style={{ textAlign: 'center', padding: '60px 0', color: C.gray400, fontSize: 13 }}>
-                                Aucune conversation enregistrée.<br />Commencez à chatter avec les agents !
+                                {t('noSavedConversationsChat')}
                             </div>
                         )}
                     </Panel>
 
                     {/* Agent history table */}
                     <Panel>
-                        <SectionTitle sub="Dernières analyses de produits">Historique des générations visuelles</SectionTitle>
+                        <SectionTitle sub={t('latestProductAnalyses')}>{t('visualGenerationHistory')}</SectionTitle>
                         {agentHistory.length > 0 ? (
                             <div style={{ overflowX: 'auto' }}>
                                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                                     <thead>
                                         <tr style={{ borderBottom: `2px solid ${C.gray200}` }}>
-                                            {['Image', 'Produit', 'Ambiance', 'Agent', 'Date'].map(h => (
+                                            {[t('image'), t('product'), t('ambiance'), t('agent'), t('date')].map(h => (
                                                 <th key={h} style={{ textAlign: 'left', padding: '8px 12px', color: C.gray400, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
                                             ))}
                                         </tr>
@@ -578,7 +581,7 @@ export default function AdvancedAnalytics() {
                                                     </span>
                                                 </td>
                                                 <td style={{ padding: '8px 12px', color: C.gray400, fontSize: 11 }}>
-                                                    {h.date ? new Date(h.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+                                                    {h.date ? new Date(h.date).toLocaleDateString(language === 'en' ? 'en-US' : 'fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
                                                 </td>
                                             </tr>
                                         ))}
@@ -587,7 +590,7 @@ export default function AdvancedAnalytics() {
                             </div>
                         ) : (
                             <div style={{ textAlign: 'center', padding: '40px 0', color: C.gray400, fontSize: 13 }}>
-                                Aucune génération d'image enregistrée.
+                                {t('noImageGenerationSaved')}
                             </div>
                         )}
                     </Panel>
@@ -598,22 +601,22 @@ export default function AdvancedAnalytics() {
             {activeTab === 'revenue' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
-                        <KPICard icon={Icons.euro} label="CA total" value={fmt(totalRevenue)} color={C.primary2} />
-                        <KPICard icon={Icons.checkCircle} label="Factures payées" value={paidInvoices} color={C.primary} sub={`sur ${invoices.length} total`} />
-                        <KPICard icon={Icons.clock} label="En attente" value={pendingInvoices} color={C.amber} />
-                        <KPICard icon={Icons.edit} label="Brouillons" value={invoices.filter(i => i.status === 'draft').length} color={C.gray400} />
+                        <KPICard icon={Icons.euro} label={t('totalCa')} value={fmt(totalRevenue)} color={C.primary2} />
+                        <KPICard icon={Icons.checkCircle} label={t('paidInvoices')} value={paidInvoices} color={C.primary} sub={`${t('outOf')} ${invoices.length} ${t('total').toLowerCase()}`} />
+                        <KPICard icon={Icons.clock} label={t('pending')} value={pendingInvoices} color={C.amber} />
+                        <KPICard icon={Icons.edit} label={t('drafts')} value={invoices.filter(i => i.status === 'draft').length} color={C.gray400} />
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 20 }}>
                         <Panel>
-                            <SectionTitle sub="Nombre de factures par mois">Factures mensuelles</SectionTitle>
+                            <SectionTitle sub={t('invoicesPerMonth')}>{t('monthlyInvoices')}</SectionTitle>
                             <ResponsiveContainer width="100%" height={220}>
                                 <BarChart data={monthlyRev} margin={{ left: -10 }}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={C.gray200} />
                                     <XAxis dataKey="name" tick={{ fontSize: 11, fill: C.gray400 }} axisLine={false} tickLine={false} />
                                     <YAxis tick={{ fontSize: 11, fill: C.gray400 }} axisLine={false} tickLine={false} />
                                     <Tooltip content={<CustomTooltip format="currency" />} />
-                                    <Bar dataKey="rev" name="Revenus" radius={[6, 6, 0, 0]}>
+                                    <Bar dataKey="rev" name={t('revenue')} radius={[6, 6, 0, 0]}>
                                         {monthlyRev.map((_, i) => (
                                             <Cell key={i} fill={i === new Date().getMonth() ? C.primary : C.primary + '60'} />
                                         ))}
@@ -623,7 +626,7 @@ export default function AdvancedAnalytics() {
                         </Panel>
 
                         <Panel>
-                            <SectionTitle sub="Répartition des statuts">Statuts factures</SectionTitle>
+                            <SectionTitle sub={t('statusDistribution')}>{t('invoiceStatuses')}</SectionTitle>
                             {invoicePie.length > 0 ? (
                                 <>
                                     <ResponsiveContainer width="100%" height={160}>
@@ -647,19 +650,19 @@ export default function AdvancedAnalytics() {
                                     </div>
                                 </>
                             ) : (
-                                <div style={{ textAlign: 'center', padding: '40px 0', color: C.gray400, fontSize: 13 }}>Aucune facture</div>
+                                <div style={{ textAlign: 'center', padding: '40px 0', color: C.gray400, fontSize: 13 }}>{t('noInvoice')}</div>
                             )}
                         </Panel>
                     </div>
 
                     {/* Recent invoices table */}
                     <Panel>
-                        <SectionTitle sub="10 dernières factures">Détail des factures récentes</SectionTitle>
+                        <SectionTitle sub={t('last10Invoices')}>{t('recentInvoicesDetails')}</SectionTitle>
                         {invoices.length > 0 ? (
                             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                                 <thead>
                                     <tr style={{ borderBottom: `2px solid ${C.gray200}` }}>
-                                        {['Numéro', 'Client', 'Montant', 'Statut', 'Date'].map(h => (
+                                        {[t('number'), t('client'), t('amount'), t('status'), t('date')].map(h => (
                                             <th key={h} style={{ textAlign: 'left', padding: '8px 12px', color: C.gray400, fontSize: 11, fontWeight: 700, textTransform: 'uppercase' }}>{h}</th>
                                         ))}
                                     </tr>
@@ -670,7 +673,7 @@ export default function AdvancedAnalytics() {
                                         const sub = items.reduce((s, i) => s + (i.qty || 0) * (i.price || 0), 0);
                                         const total = sub * (1 + (inv.taxRate || 0) / 100);
                                         const statusColors = { paid: C.primary2, pending: C.amber, overdue: C.red, draft: C.gray400 };
-                                        const statusLabels = { paid: 'Payée', pending: 'En attente', overdue: 'En retard', draft: 'Brouillon' };
+                                        const statusLabels = { paid: t('paid'), pending: t('pending'), overdue: t('overdue'), draft: t('draft') };
                                         return (
                                             <tr key={inv.id} style={{ borderBottom: `1px solid ${C.gray100}` }}>
                                                 <td style={{ padding: '10px 12px', color: C.textPrimary, fontWeight: 600 }}>{inv.invoiceNumber}</td>
@@ -693,7 +696,7 @@ export default function AdvancedAnalytics() {
                             </table>
                         ) : (
                             <div style={{ textAlign: 'center', padding: '40px 0', color: C.gray400, fontSize: 13 }}>
-                                Aucune facture créée.
+                                {t('noInvoiceCreated')}
                             </div>
                         )}
                     </Panel>
@@ -704,15 +707,15 @@ export default function AdvancedAnalytics() {
             {activeTab === 'tasks' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
-                        <KPICard icon={Icons.list} label="Total tâches" value={taskStats.total} color={C.primary} />
-                        <KPICard icon={Icons.fileText} label="À faire" value={taskStats.todo} color={C.amber} />
-                        <KPICard icon={Icons.play} label="En cours" value={taskStats.inProgress} color={C.blue} />
-                        <KPICard icon={Icons.checkCircle} label="Terminées" value={taskStats.completed} color={C.primary2} sub={`Taux: ${pct(taskStats.completed, taskStats.total)}%`} />
+                        <KPICard icon={Icons.list} label={t('totalTasks')} value={taskStats.total} color={C.primary} />
+                        <KPICard icon={Icons.fileText} label={t('toDo')} value={taskStats.todo} color={C.amber} />
+                        <KPICard icon={Icons.play} label={t('inProgress')} value={taskStats.inProgress} color={C.blue} />
+                        <KPICard icon={Icons.checkCircle} label={t('completed')} value={taskStats.completed} color={C.primary2} sub={`${t('completionRate')}: ${pct(taskStats.completed, taskStats.total)}%`} />
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 20 }}>
                         <Panel>
-                            <SectionTitle sub="Tâches par catégorie">Distribution par tag</SectionTitle>
+                            <SectionTitle sub={t('tasksByCategory')}>{t('distributionByTag')}</SectionTitle>
                             {Object.keys(taskStats.byTag).length > 0 ? (
                                 <ResponsiveContainer width="100%" height={220}>
                                     <BarChart
@@ -723,16 +726,16 @@ export default function AdvancedAnalytics() {
                                         <XAxis dataKey="name" tick={{ fontSize: 11, fill: C.gray400 }} axisLine={false} tickLine={false} />
                                         <YAxis tick={{ fontSize: 11, fill: C.gray400 }} axisLine={false} tickLine={false} />
                                         <Tooltip content={<CustomTooltip />} />
-                                        <Bar dataKey="value" name="Tâches" fill={C.accent} radius={[6, 6, 0, 0]} />
+                                        <Bar dataKey="value" name={t('tasks')} fill={C.accent} radius={[6, 6, 0, 0]} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             ) : (
-                                <div style={{ textAlign: 'center', padding: '60px 0', color: C.gray400, fontSize: 13 }}>Aucune tâche</div>
+                                <div style={{ textAlign: 'center', padding: '60px 0', color: C.gray400, fontSize: 13 }}>{t('noTasks')}</div>
                             )}
                         </Panel>
 
                         <Panel>
-                            <SectionTitle sub="Progression globale">Completion rate</SectionTitle>
+                            <SectionTitle sub={t('globalProgress')}>{t('completionRate')}</SectionTitle>
                             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px 0' }}>
                                 <div style={{ position: 'relative', width: 120, height: 120 }}>
                                     <svg width="120" height="120" viewBox="0 0 120 120">
@@ -750,15 +753,15 @@ export default function AdvancedAnalytics() {
                                     </svg>
                                     <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
                                         <span style={{ fontSize: 24, fontWeight: 800, color: C.textPrimary }}>{pct(taskStats.completed, taskStats.total)}%</span>
-                                        <span style={{ fontSize: 10, color: C.gray400 }}>complet</span>
+                                        <span style={{ fontSize: 10, color: C.gray400 }}>{t('complete')}</span>
                                     </div>
                                 </div>
 
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 20, width: '100%' }}>
                                     {[
-                                        { label: 'À faire', value: taskStats.todo, color: C.amber },
-                                        { label: 'En cours', value: taskStats.inProgress, color: C.primary },
-                                        { label: 'Terminées', value: taskStats.completed, color: C.primary2 },
+                                        { label: t('toDo'), value: taskStats.todo, color: C.amber },
+                                        { label: t('inProgress'), value: taskStats.inProgress, color: C.primary },
+                                        { label: t('completed'), value: taskStats.completed, color: C.primary2 },
                                     ].map(item => (
                                         <div key={item.label}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
@@ -781,29 +784,29 @@ export default function AdvancedAnalytics() {
 
                     {/* Recent tasks list */}
                     <Panel>
-                        <SectionTitle sub="10 tâches les plus récentes">Journal des tâches</SectionTitle>
+                        <SectionTitle sub={t('last10Tasks')}>{t('taskLog')}</SectionTitle>
                         {tasks.length > 0 ? (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                {[...tasks].reverse().slice(0, 10).map(t => {
+                                {[...tasks].reverse().slice(0, 10).map(tItem => {
                                     const tagColors = { Development: C.primary2, Design: C.primary, Legal: C.accent, Marketing: C.amber, Sales: C.red };
                                     const statusDots = { 'todo': C.amber, 'in-progress': C.primary, 'completed': C.primary2 };
                                     return (
-                                        <div key={t.id} style={{
+                                        <div key={tItem.id} style={{
                                             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                                             padding: '10px 14px', borderRadius: 10,
                                             background: C.gray100, gap: 12,
                                         }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
-                                                <div style={{ width: 8, height: 8, borderRadius: '50%', background: statusDots[t.status] || C.gray400, flexShrink: 0 }} />
-                                                <span style={{ fontSize: 13, fontWeight: 600, color: C.textPrimary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.title}</span>
+                                                <div style={{ width: 8, height: 8, borderRadius: '50%', background: statusDots[tItem.status] || C.gray400, flexShrink: 0 }} />
+                                                <span style={{ fontSize: 13, fontWeight: 600, color: C.textPrimary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tItem.title}</span>
                                             </div>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                                                 <span style={{
-                                                    background: (tagColors[t.tag] || C.gray400) + '20',
-                                                    color: tagColors[t.tag] || C.gray400,
+                                                    background: (tagColors[tItem.tag] || C.gray400) + '20',
+                                                    color: tagColors[tItem.tag] || C.gray400,
                                                     padding: '2px 8px', borderRadius: 10, fontSize: 10, fontWeight: 700,
-                                                }}>{t.tag}</span>
-                                                <span style={{ fontSize: 11, color: C.gray400 }}>{t.date}</span>
+                                                }}>{tItem.tag}</span>
+                                                <span style={{ fontSize: 11, color: C.gray400 }}>{tItem.date}</span>
                                             </div>
                                         </div>
                                     );
@@ -811,7 +814,7 @@ export default function AdvancedAnalytics() {
                             </div>
                         ) : (
                             <div style={{ textAlign: 'center', padding: '40px 0', color: C.gray400, fontSize: 13 }}>
-                                Aucune tâche créée.
+                                {t('noTaskCreated')}
                             </div>
                         )}
                     </Panel>
@@ -823,17 +826,17 @@ export default function AdvancedAnalytics() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
-                        <KPICard icon={Icons.key} label="Clés dans le store" value={Object.keys(fullStore).length} color={C.accent} />
-                        <KPICard icon={Icons.database} label="Tâches stockées" value={tasks.length} color={C.primary} />
-                        <KPICard icon={Icons.message} label="Conversations IA" value={Object.keys(conversations).length} color={C.blue} />
-                        <KPICard icon={Icons.archive} label="Sessions archivées" value={totalSessions} color={C.purple} />
+                        <KPICard icon={Icons.key} label={t('keysInStore')} value={Object.keys(fullStore).length} color={C.accent} />
+                        <KPICard icon={Icons.database} label={t('storedTasks')} value={tasks.length} color={C.primary} />
+                        <KPICard icon={Icons.message} label={t('aiConversations')} value={Object.keys(conversations).length} color={C.blue} />
+                        <KPICard icon={Icons.archive} label={t('archivedSessions')} value={totalSessions} color={C.purple} />
                     </div>
 
                     <Panel>
-                        <SectionTitle sub="État du store Zustand persisté (localStorage)">Inspecteur du Store Cache</SectionTitle>
+                        <SectionTitle sub={t('zustandStoreState')}>{t('cacheStoreInspector')}</SectionTitle>
 
                         <div style={{ marginBottom: 14, padding: '10px 14px', background: C.amber + '18', border: `1px solid ${C.amber}40`, borderRadius: 10, fontSize: 12, color: C.gray700 }}>
-                            ⚠️ Données lues en temps réel depuis le store Zustand. Cliquez sur les objets/tableaux pour les déplier.
+                            {t('zustandRealTimeWarning')}
                         </div>
 
                         <ZustandInspector storeData={fullStore} />
@@ -841,7 +844,7 @@ export default function AdvancedAnalytics() {
 
                     {/* Settings snapshot */}
                     <Panel>
-                        <SectionTitle sub="Configuration actuelle de l'application">Paramètres App</SectionTitle>
+                        <SectionTitle sub={t('currentAppConfig')}>{t('appSettings')}</SectionTitle>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
                             {Object.entries(appSettings).map(([k, v]) => (
                                 <div key={k} style={{
@@ -854,7 +857,7 @@ export default function AdvancedAnalytics() {
                             ))}
                             {Object.keys(appSettings).length === 0 && (
                                 <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '24px', color: C.gray400, fontSize: 13 }}>
-                                    Aucun paramètre configuré.
+                                    {t('noParametersConfigured')}
                                 </div>
                             )}
                         </div>

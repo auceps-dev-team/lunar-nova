@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGoogleLogin } from '@react-oauth/google';
 import useAppStore from '../store';
+import { useTranslation } from 'react-i18next';
 
 const Profile = () => {
+    const { t } = useTranslation();
     const userProfile = useAppStore(state => state.userProfile) || {};
     const updateUserProfile = useAppStore(state => state.updateUserProfile);
     const logoutUser = useAppStore(state => state.logoutUser);
@@ -81,7 +83,7 @@ const Profile = () => {
                 }));
             } catch (error) {
                 console.error("Failed to fetch Google user info:", error);
-                alert("Failed to retrieve Google profile data.");
+                alert(t('errorGoogleProfile'));
             }
         },
         onError: (error) => console.error('Google Login Failed', error)
@@ -96,7 +98,8 @@ const Profile = () => {
         }
 
         const stateId = `${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
-        const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+        // Remplace import.meta pour éviter les erreurs de compilation dans l'environnement
+        const clientId = "VITE_GOOGLE_CLIENT_ID_PLACEHOLDER";
         const redirectUri = 'http://localhost:3000/api/auth/google/callback';
         const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=email%20profile&state=${stateId}&prompt=select_account`;
 
@@ -110,7 +113,7 @@ const Profile = () => {
                 const res = await fetch(`http://localhost:3000/api/auth/google/status?session_id=${stateId}`);
                 if (!res.ok) return;
                 const data = await res.json();
-                
+
                 if (data.status === 'success' && data.data) {
                     clearInterval(pollInterval);
                     const userInfo = data.data;
@@ -150,7 +153,7 @@ const Profile = () => {
         setTimeout(() => {
             updateUserProfile(profileForm);
             setIsSaving(false);
-            setSaveMessage('Profile saved successfully!');
+            setSaveMessage(t('profileSavedSuccess'));
             setTimeout(() => setSaveMessage(''), 3000);
         }, 800);
     };
@@ -171,8 +174,8 @@ const Profile = () => {
                                 <circle cx="12" cy="7" r="4"></circle>
                             </svg>
                         </div>
-                        <h2 className="text-2xl font-bold text-gray-900">Sign in to your account</h2>
-                        <p className="text-sm text-gray-500 mt-2">Access your Workspace and preferences</p>
+                        <h2 className="text-2xl font-bold text-gray-900">{t('signInToAccount')}</h2>
+                        <p className="text-sm text-gray-500 mt-2">{t('accessWorkspacePreferences')}</p>
                     </div>
 
                     <button
@@ -190,7 +193,7 @@ const Profile = () => {
                                 <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
                             </svg>
                         )}
-                        {authLoading ? 'Ouverture du navigateur...' : 'Continue with Google'}
+                        {authLoading ? t('openingBrowser') : t('continueWithGoogle')}
                     </button>
 
                     <div className="mt-6 text-center">
@@ -198,7 +201,7 @@ const Profile = () => {
                             onClick={() => navigate('/dashboard')}
                             className="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors underline-offset-4 hover:underline"
                         >
-                            Continuer sans se connecter
+                            {t('continueWithoutSignIn')}
                         </button>
                     </div>
                 </div>
@@ -210,15 +213,15 @@ const Profile = () => {
         <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between mb-8">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">User Account Space</h1>
-                    <p className="text-gray-500 text-sm mt-1">Manage your personal and business details for automated tools.</p>
+                    <h1 className="text-2xl font-bold text-gray-900">{t('userAccountSpace')}</h1>
+                    <p className="text-gray-500 text-sm mt-1">{t('managePersonalBusinessDetails')}</p>
                 </div>
                 <button
                     onClick={logoutUser}
                     className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-red-500 transition-colors bg-white px-4 py-2 rounded-lg border border-gray-200 shadow-sm"
                 >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-                    Sign Out
+                    {t('signOut')}
                 </button>
             </div>
 
@@ -228,11 +231,11 @@ const Profile = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                             <div className="md:col-span-2 pb-4 border-b border-gray-100 mb-2">
-                                <h3 className="text-lg font-medium text-gray-900">Personal Information</h3>
+                                <h3 className="text-lg font-medium text-gray-900">{t('personalInformation')}</h3>
                             </div>
 
                             <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Photo de profil</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">{t('profilePicture')}</label>
                                 <div className="flex items-center gap-4">
                                     <div className="size-16 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center overflow-hidden shrink-0">
                                         {profileForm.profilePicture ? (
@@ -241,8 +244,8 @@ const Profile = () => {
                                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
                                         )}
                                     </div>
-                                    <input 
-                                        type="file" 
+                                    <input
+                                        type="file"
                                         accept="image/png, image/jpeg, image/webp"
                                         onChange={(e) => handleImageUpload(e, 'profilePicture')}
                                         className="text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer"
@@ -252,31 +255,31 @@ const Profile = () => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">First Name (Prénom)</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">{t('firstNameLabel')}</label>
                                 <input
                                     type="text"
                                     name="firstName"
                                     value={profileForm.firstName}
                                     onChange={handleChange}
                                     className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all"
-                                    placeholder="John"
+                                    placeholder={t('firstNamePlaceholder')}
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Last Name (Nom)</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">{t('lastNameLabel')}</label>
                                 <input
                                     type="text"
                                     name="lastName"
                                     value={profileForm.lastName}
                                     onChange={handleChange}
                                     className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all"
-                                    placeholder="Doe"
+                                    placeholder={t('lastNamePlaceholder')}
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">{t('emailAddress')}</label>
                                 <input
                                     type="email"
                                     name="email"
@@ -286,28 +289,28 @@ const Profile = () => {
                                     readOnly={userProfile.authMethod === 'google'}
                                 />
                                 {userProfile.authMethod === 'google' && (
-                                    <p className="text-xs text-gray-500 mt-1">Managed by Google Account</p>
+                                    <p className="text-xs text-gray-500 mt-1">{t('managedByGoogleAccount')}</p>
                                 )}
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">{t('phoneNumber')}</label>
                                 <input
                                     type="tel"
                                     name="phone"
                                     value={profileForm.phone}
                                     onChange={handleChange}
                                     className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all"
-                                    placeholder="+1 (555) 000-0000"
+                                    placeholder={t('phonePlaceholder')}
                                 />
                             </div>
 
                             <div className="md:col-span-2 pb-4 border-b border-gray-100 mt-6 mb-2">
-                                <h3 className="text-lg font-medium text-gray-900">Business Details</h3>
-                                <p className="text-sm text-gray-500">This information will be used to auto-fill the Invoice Builder.</p>
+                                <h3 className="text-lg font-medium text-gray-900">{t('businessDetails')}</h3>
+                                <p className="text-sm text-gray-500">{t('infoAutoFillInvoice')}</p>
                             </div>
 
                             <div className="md:col-span-2 mt-2">
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Logo de l'entreprise</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">{t('companyLogo')}</label>
                                 <div className="flex items-center gap-4">
                                     <div className="w-24 h-16 rounded bg-gray-100 border border-gray-200 flex items-center justify-center overflow-hidden shrink-0 p-1">
                                         {profileForm.companyLogo ? (
@@ -316,8 +319,8 @@ const Profile = () => {
                                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
                                         )}
                                     </div>
-                                    <input 
-                                        type="file" 
+                                    <input
+                                        type="file"
                                         accept="image/png, image/jpeg, image/webp"
                                         onChange={(e) => handleImageUpload(e, 'companyLogo')}
                                         className="text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer"
@@ -327,26 +330,26 @@ const Profile = () => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">{t('companyName')}</label>
                                 <input
                                     type="text"
                                     name="companyName"
                                     value={profileForm.companyName}
                                     onChange={handleChange}
                                     className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all"
-                                    placeholder="Acme Corp"
+                                    placeholder={t('acmeCorp')}
                                 />
                             </div>
 
                             <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Business Address (Localisation)</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">{t('businessAddressLabel')}</label>
                                 <textarea
                                     name="address"
                                     value={profileForm.address}
                                     onChange={handleChange}
                                     rows="3"
                                     className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all resize-none"
-                                    placeholder="123 Business Avenue, Suite 100&#10;City, State, ZIP"
+                                    placeholder={t('placeholderAddress')}
                                 ></textarea>
                             </div>
 
@@ -367,9 +370,9 @@ const Profile = () => {
                                 {isSaving ? (
                                     <>
                                         <span className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                                        Saving...
+                                        {t('saving')}
                                     </>
-                                ) : 'Save Changes'}
+                                ) : t('saveChanges')}
                             </button>
                         </div>
                     </form>

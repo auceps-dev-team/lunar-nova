@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import useAppStore from '../store';
-import { getTranslation as t } from '../locales';
+import { useTranslation } from 'react-i18next';
+
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const C = {
@@ -101,6 +102,7 @@ const Dashboard = () => {
         fetchAnalytics();
     }, []);
 
+    const { t } = useTranslation();
     const instances = useAppStore(state => state.instances) || [];
     const copilotCount = useAppStore(state => state.copilotRepliesGenerated) || 0;
     const tasks = useAppStore(state => state.tasks) || [];
@@ -115,7 +117,7 @@ const Dashboard = () => {
     const completedPercentage = totalTasksCount > 0 ? Math.round((completedTasksCount / totalTasksCount) * 100) : 0;
 
     const mockChartData = useMemo(() => {
-        const days = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+        const days = [t('daySun'), t('dayMon'), t('dayTue'), t('dayWed'), t('dayThu'), t('dayFri'), t('daySat')];
         const data = [];
         for (let i = 6; i >= 0; i--) {
             const d = new Date();
@@ -125,7 +127,7 @@ const Dashboard = () => {
             data.push({ name: dayName, replies: val });
         }
         return data;
-    }, [copilotCount]);
+    }, [copilotCount, t]);
 
     return (
         <div style={{ maxWidth: 1000, margin: '0 auto', animation: 'fadeIn 0.3s ease-in-out' }}>
@@ -133,11 +135,11 @@ const Dashboard = () => {
                 <div>
                     <h1 style={{ fontSize: 26, fontWeight: 800, color: C.textPrimary, margin: 0, letterSpacing: '-0.5px' }}>
                         {userProfile?.isAuthenticated && userProfile?.firstName
-                            ? `${t(language, 'welcomeBack')} ${userProfile.firstName} 👋`
-                            : `${t(language, 'welcomeTitle')} 👋`}
+                            ? `${t('welcomeBack')} ${userProfile.firstName} 👋`
+                            : `${t('welcomeTitle')} 👋`}
                     </h1>
                     <p style={{ color: C.textSecondary, fontSize: 13, margin: '5px 0 0' }}>
-                        {t(language, 'workspaceSummary')}
+                        {t('workspaceSummary')}
                     </p>
                 </div>
             </div>
@@ -145,44 +147,44 @@ const Dashboard = () => {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 28 }}>
                 <KPICard
                     icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>}
-                    label={t(language, 'contactsTotal')}
+                    label={t('totalContacts')}
                     value={(contactAnalytics?.totalContacts || 0).toLocaleString()}
-                    sub={t(language, 'inDatabase')}
+                    sub={t('inDatabase')}
                     color={C.primary2}
                 />
                 <KPICard
                     icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path><circle cx="12" cy="10" r="3"></circle></svg>}
-                    label={t(language, 'messagesSent')}
+                    label={t('messagesSent')}
                     value={(contactAnalytics?.totalMessagesSent || 0).toLocaleString()}
-                    sub={t(language, 'initiatedViaPlatform')}
+                    sub={t('initiatedViaPlatform')}
                     color={C.accent}
                 />
                 <KPICard
                     icon={Icons.phone}
-                    label={t(language, 'activeInstances')}
+                    label={t('instances')}
                     value={activeInstancesCount}
-                    sub={t(language, 'connectedInstances')}
+                    sub={t('connectedInstances')}
                     color={C.primary}
                 />
                 <KPICard
                     icon={Icons.bot}
-                    label={t(language, 'copilotReplies')}
+                    label={t('copilotReplies')}
                     value={copilotCount.toLocaleString()}
-                    sub={t(language, 'suggestedInteractions')}
+                    sub={t('suggestedInteractions')}
                     color={C.accent}
                 />
                 <KPICard
                     icon={Icons.fileText}
-                    label={t(language, 'automatedInvoices')}
+                    label={t('invoicesCount')}
                     value={invoices.length.toString()}
-                    sub={t(language, 'invoicesCreated')}
+                    sub={t('invoicesCreated')}
                     color={C.blue}
                 />
                 <KPICard
                     icon={Icons.checkCircle}
-                    label={t(language, 'tasksCompleted')}
+                    label={t('tasksCompleted')}
                     value={completedTasksCount.toString()}
-                    sub={`${completedPercentage}${t(language, 'completionRate')} (${totalTasksCount} ${t(language, 'all')})`}
+                    sub={`${completedPercentage}% ${t('completionRate')} (${totalTasksCount} ${t('all')})`}
                     color={C.amber}
                 />
             </div>
@@ -195,10 +197,10 @@ const Dashboard = () => {
             }}>
                 <div style={{ marginBottom: 24 }}>
                     <h2 style={{ fontSize: 16, fontWeight: 700, color: C.textPrimary, margin: 0 }}>
-                        {t(language, 'recentActivity')}
+                        {t('recentActivity')}
                     </h2>
                     <p style={{ fontSize: 12, color: C.textSecondary, margin: '3px 0 0' }}>
-                        {t(language, 'evolutionReplies')}
+                        {t('evolutionReplies')}
                     </p>
                 </div>
 
@@ -215,7 +217,7 @@ const Dashboard = () => {
                             <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: C.gray400 }} dy={10} />
                             <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: C.gray400 }} />
                             <Tooltip content={<CustomTooltip />} />
-                            <Area type="monotone" dataKey="replies" name="Réponses" stroke={C.primary} strokeWidth={3} fillOpacity={1} fill="url(#colorReplies)" />
+                            <Area type="monotone" dataKey="replies" name={t('chartReplies')} stroke={C.primary} strokeWidth={3} fillOpacity={1} fill="url(#colorReplies)" />
                         </AreaChart>
                     </ResponsiveContainer>
                 </div>

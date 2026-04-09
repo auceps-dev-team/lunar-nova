@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Trash2, Download, Wand2, RefreshCw, Info, FileImage, Camera, Sparkles, AlertCircle, Undo2, Redo2, FileText, Eraser } from 'lucide-react';
-import { getTranslation as t_helper } from '../../locales';
+import { useTranslation } from 'react-i18next';
+
 import piexif from 'piexifjs';
 import useAppStore from '../../store';
 
@@ -36,11 +37,12 @@ const toSafeExifString = (str) => {
 export function ImageEditor({ image, onUpdateImage, onRemove }) {
     const [error, setError] = useState(null);
 
-    // ADD THESE TWO MISSING STATES:
+    // Tab states
     const [activeTab, setActiveTab] = useState('ai');       // 'ai' | 'exif' | 'metadata'
     const [isProcessing, setIsProcessing] = useState(false);
     const [customPrompt, setCustomPrompt] = useState('');
 
+    const { t } = useTranslation();
     const language = useAppStore(state => state.appSettings?.language) || 'en';
 
     // Undo/Redo State
@@ -95,10 +97,10 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
 
         // Always extract basic metadata
         const basicMetadata = [
-            { key: 'File Name', value: image.name },
-            { key: 'File Size', value: image.file ? `${(image.file.size / 1024).toFixed(2)} kB` : '—' },
-            { key: 'File Type', value: image.mimeType.split('/')[1].toUpperCase() },
-            { key: 'MIME Type', value: image.mimeType },
+            { key: t('fileName'), value: image.name },
+            { key: t('fileSize'), value: image.file ? `${(image.file.size / 1024).toFixed(2)} kB` : '—' },
+            { key: t('fileType'), value: image.mimeType.split('/')[1].toUpperCase() },
+            { key: t('mimeType'), value: image.mimeType },
         ];
 
         if (image.mimeType === 'image/jpeg' || image.mimeType === 'image/jpg') {
@@ -160,7 +162,7 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
             setExifData(null);
             setAllMetadata(basicMetadata);
         }
-    }, [image]);
+    }, [image, t]);
 
     const handleAIEdit = async (prompt) => {
         setIsProcessing(true);
@@ -345,7 +347,7 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
 
     const handleQuickDescription = async () => {
         if (image.mimeType !== 'image/jpeg' && image.mimeType !== 'image/jpg') {
-            setError('EXIF metadata is only supported for JPEG images.');
+            setError(t('exifEditingOnlyJpeg'));
             return;
         }
 
@@ -467,7 +469,7 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                             onClick={handleUndo}
                             disabled={historyIndex <= 0}
                             className="p-2 rounded-lg text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                            title="Undo"
+                            title={t('undo')}
                         >
                             <Undo2 className="w-4 h-4" />
                         </button>
@@ -475,7 +477,7 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                             onClick={handleRedo}
                             disabled={historyIndex >= history.length - 1}
                             className="p-2 rounded-lg text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                            title="Redo"
+                            title={t('redo')}
                         >
                             <Redo2 className="w-4 h-4" />
                         </button>
@@ -486,13 +488,13 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                         className="flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-sm font-medium rounded-lg dark:text-zinc-200 transition-colors shadow-sm border border-gray-200 dark:border-zinc-700/50"
                     >
                         <Download className="w-4 h-4 mr-2" />
-                        Download
+                        {t('download')}
                     </button>
                     <div className="w-px h-6 bg-gray-200 dark:bg-zinc-800 mx-1"></div>
                     <button
                         onClick={onRemove}
                         className="p-2 hover:bg-red-500/10 rounded-lg text-gray-500 dark:text-zinc-500 hover:text-red-500 dark:hover:text-red-400 transition-colors"
-                        title="Remove Image"
+                        title={t('removeImage')}
                     >
                         <Trash2 className="w-5 h-5" />
                     </button>
@@ -521,8 +523,8 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                                     <Sparkles className="w-6 h-6 text-[#0b9f84] absolute animate-pulse pointer-events-none" />
                                 </div>
                                 <div className="text-center">
-                                    <h3 className="text-base font-semibold text-gray-900 dark:text-zinc-200">{t_helper(language, 'processing')}</h3>
-                                    <p className="text-sm text-gray-500 dark:text-zinc-500 mt-1">{t_helper(language, 'processingDesc')}</p>
+                                    <h3 className="text-base font-semibold text-gray-900 dark:text-zinc-200">{t('processing')}</h3>
+                                    <p className="text-sm text-gray-500 dark:text-zinc-500 mt-1">{t('processingDesc')}</p>
                                 </div>
                             </div>
                         </div>
@@ -540,7 +542,7 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                                 }`}
                         >
                             <Wand2 className="w-3.5 h-3.5 mr-1.5" />
-                            AI
+                            {t('ai')}
                         </button>
                         <div className="w-1"></div>
                         <button
@@ -551,7 +553,7 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                                 }`}
                         >
                             <Camera className="w-3.5 h-3.5 mr-1.5" />
-                            EXIF
+                            {t('exif')}
                         </button>
                         <div className="w-1"></div>
                         <button
@@ -562,7 +564,7 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                                 }`}
                         >
                             <Info className="w-3.5 h-3.5 mr-1.5" />
-                            All Data
+                            {t('allData')}
                         </button>
                     </div>
 
@@ -578,7 +580,7 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                             <div className="space-y-8">
                                 <div className="space-y-3">
                                     <h3 className="text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider flex items-center">
-                                        {t_helper(language, 'actions')}
+                                        {t('actions')}
                                     </h3>
                                     <div className="grid grid-cols-1 gap-2.5">
                                         <button
@@ -589,7 +591,7 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                                             <div className="w-8 h-8 rounded-lg bg-white dark:bg-zinc-900 flex items-center justify-center mr-3 group-hover:bg-gray-50 dark:group-hover:bg-zinc-800 transition-colors border border-gray-100 dark:border-transparent">
                                                 <FileText className="w-4 h-4 text-gray-400 dark:text-zinc-400 group-hover:text-[#0b9f84]" />
                                             </div>
-                                            {t_helper(language, 'description')}
+                                            {t('description')}
                                         </button>
                                         <button
                                             onClick={() => handleAIEdit('Remove the background from this image. Make the background transparent or solid white.')}
@@ -599,7 +601,7 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                                             <div className="w-8 h-8 rounded-lg bg-white dark:bg-zinc-900 flex items-center justify-center mr-3 group-hover:bg-gray-50 dark:group-hover:bg-zinc-800 transition-colors border border-gray-100 dark:border-transparent">
                                                 <Eraser className="w-4 h-4 text-gray-400 dark:text-zinc-400 group-hover:text-[#0b9f84]" />
                                             </div>
-                                            {t_helper(language, 'removeBg')}
+                                            {t('removeBg')}
                                         </button>
 
                                         <button
@@ -610,18 +612,18 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                                             <div className="w-8 h-8 rounded-lg bg-white dark:bg-zinc-900 flex items-center justify-center mr-3 group-hover:bg-gray-50 dark:group-hover:bg-zinc-800 transition-colors border border-gray-100 dark:border-transparent">
                                                 <Sparkles className="w-4 h-4 text-gray-400 dark:text-zinc-400 group-hover:text-[#0b9f84]" />
                                             </div>
-                                            Improve Quality
+                                            {t('improveQuality')}
                                         </button>
                                     </div>
                                 </div>
 
                                 <div className="space-y-3">
-                                    <h3 className="text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Custom Edit</h3>
+                                    <h3 className="text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">{t('customEdit')}</h3>
                                     <div className="relative">
                                         <textarea
                                             value={customPrompt}
                                             onChange={(e) => setCustomPrompt(e.target.value)}
-                                            placeholder={t_helper(language, 'editPlaceholder')}
+                                            placeholder={t('editPlaceholder')}
                                             className="w-full h-28 bg-gray-50 dark:bg-zinc-950/50 border border-gray-200 dark:border-zinc-800 rounded-xl p-3.5 text-sm text-gray-800 dark:text-zinc-200 resize-none focus:outline-none focus:border-[#0b9f84] focus:ring-1 focus:ring-[#0b9f84] transition-all placeholder:text-gray-400 dark:placeholder:text-zinc-600"
                                         />
                                     </div>
@@ -630,14 +632,14 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                                         disabled={isProcessing || !customPrompt.trim()}
                                         className="w-full py-3 bg-[#0b9f84] hover:bg-[#088b73] text-white text-sm font-semibold rounded-xl transition-all duration-200 disabled:opacity-50 shadow-lg shadow-[#0b9f84]/20"
                                     >
-                                        {t_helper(language, 'apply')}
+                                        {t('apply')}
                                     </button>
                                 </div>
 
                                 <div className="p-4 bg-[#0b9f84]/5 border border-[#0b9f84]/10 rounded-xl flex items-start space-x-3">
                                     <Info className="w-5 h-5 text-[#0b9f84] shrink-0" />
                                     <p className="text-xs text-[#0b9f84]/80 leading-relaxed">
-                                        {t_helper(language, 'poweredBy')}
+                                        {t('poweredBy')}
                                     </p>
                                 </div>
                             </div>
@@ -649,7 +651,7 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                                     exifData ? (
                                         <div className="space-y-5">
                                             <div className="space-y-1.5">
-                                                <label className="text-xs font-medium text-gray-500 dark:text-zinc-400 ml-1">Artist</label>
+                                                <label className="text-xs font-medium text-gray-500 dark:text-zinc-400 ml-1">{t('exifArtist')}</label>
                                                 <input
                                                     type="text"
                                                     value={exifForm.artist}
@@ -658,7 +660,7 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                                                 />
                                             </div>
                                             <div className="space-y-1.5">
-                                                <label className="text-xs font-medium text-gray-500 dark:text-zinc-400 ml-1">Copyright</label>
+                                                <label className="text-xs font-medium text-gray-500 dark:text-zinc-400 ml-1">{t('exifCopyright')}</label>
                                                 <input
                                                     type="text"
                                                     value={exifForm.copyright}
@@ -667,7 +669,7 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                                                 />
                                             </div>
                                             <div className="space-y-1.5">
-                                                <label className="text-xs font-medium text-gray-500 dark:text-zinc-400 ml-1">Software</label>
+                                                <label className="text-xs font-medium text-gray-500 dark:text-zinc-400 ml-1">{t('exifSoftware')}</label>
                                                 <input
                                                     type="text"
                                                     value={exifForm.software}
@@ -676,17 +678,17 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                                                 />
                                             </div>
                                             <div className="space-y-1.5">
-                                                <label className="text-xs font-medium text-gray-500 dark:text-zinc-400 ml-1">Date/Time</label>
+                                                <label className="text-xs font-medium text-gray-500 dark:text-zinc-400 ml-1">{t('exifDateTime')}</label>
                                                 <input
                                                     type="text"
                                                     value={exifForm.dateTime}
                                                     onChange={(e) => setExifForm({ ...exifForm, dateTime: e.target.value })}
-                                                    placeholder="YYYY:MM:DD HH:MM:SS"
+                                                    placeholder={t('placeholderYyyyMmDd')}
                                                     className="w-full bg-gray-50 dark:bg-zinc-950/50 border border-gray-200 dark:border-zinc-800 rounded-xl px-3.5 py-2.5 text-sm text-gray-800 dark:text-zinc-200 focus:outline-none focus:border-[#0b9f84] focus:ring-1 focus:ring-[#0b9f84] transition-all"
                                                 />
                                             </div>
                                             <div className="space-y-1.5">
-                                                <label className="text-xs font-medium text-gray-500 dark:text-zinc-400 ml-1">Make</label>
+                                                <label className="text-xs font-medium text-gray-500 dark:text-zinc-400 ml-1">{t('exifMake')}</label>
                                                 <input
                                                     type="text"
                                                     value={exifForm.make}
@@ -695,7 +697,7 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                                                 />
                                             </div>
                                             <div className="space-y-1.5">
-                                                <label className="text-xs font-medium text-gray-500 dark:text-zinc-400 ml-1">Model</label>
+                                                <label className="text-xs font-medium text-gray-500 dark:text-zinc-400 ml-1">{t('exifModel')}</label>
                                                 <input
                                                     type="text"
                                                     value={exifForm.model}
@@ -704,7 +706,7 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                                                 />
                                             </div>
                                             <div className="space-y-1.5">
-                                                <label className="text-xs font-medium text-gray-500 dark:text-zinc-400 ml-1">Description</label>
+                                                <label className="text-xs font-medium text-gray-500 dark:text-zinc-400 ml-1">{t('exifDesc')}</label>
                                                 <input
                                                     type="text"
                                                     value={exifForm.description}
@@ -717,7 +719,7 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                                                     onClick={handleSaveExif}
                                                     className="w-full py-3 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-800 dark:text-white text-sm font-semibold rounded-xl transition-all duration-200 border border-gray-200 dark:border-zinc-700/50"
                                                 >
-                                                    Save EXIF Data
+                                                    {t('saveExifData')}
                                                 </button>
                                             </div>
                                         </div>
@@ -726,8 +728,8 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                                             <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-zinc-800/50 flex items-center justify-center mb-3">
                                                 <Camera className="w-6 h-6 text-gray-400 dark:text-zinc-500" />
                                             </div>
-                                            <p className="text-sm font-medium text-gray-700 dark:text-zinc-300">No EXIF data found</p>
-                                            <p className="text-xs text-gray-500 dark:text-zinc-500 mt-1">This image doesn&apos;t contain any EXIF metadata.</p>
+                                            <p className="text-sm font-medium text-gray-700 dark:text-zinc-300">{t('noExifDataFound')}</p>
+                                            <p className="text-xs text-gray-500 dark:text-zinc-500 mt-1">{t('noExifMetadata')}</p>
                                         </div>
                                     )
                                 ) : (
@@ -735,8 +737,8 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                                         <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-zinc-800/50 flex items-center justify-center mb-3">
                                             <AlertCircle className="w-6 h-6 text-gray-400 dark:text-zinc-500" />
                                         </div>
-                                        <p className="text-sm font-medium text-gray-700 dark:text-zinc-300">Unsupported Format</p>
-                                        <p className="text-xs text-gray-500 dark:text-zinc-500 mt-1">EXIF editing is only supported for JPEG images.</p>
+                                        <p className="text-sm font-medium text-gray-700 dark:text-zinc-300">{t('unsupportedFormat')}</p>
+                                        <p className="text-xs text-gray-500 dark:text-zinc-500 mt-1">{t('exifEditingOnlyJpeg')}</p>
                                     </div>
                                 )}
                             </div>
@@ -746,31 +748,31 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                             <div className="space-y-4">
                                 <div className="grid grid-cols-2 gap-2 pb-4 border-b border-gray-200 dark:border-zinc-800/50">
                                     <button onClick={() => setActiveTab('metadata')} className="px-2 py-2 bg-[#0b9f84]/10 text-[#0b9f84] border border-[#0b9f84]/20 text-[10px] uppercase tracking-wider font-semibold rounded-lg transition-colors text-center">
-                                        Voir les métadonnées
+                                        {t('viewMetadata')}
                                     </button>
                                     <button onClick={handleRemoveAllMetadata} className="px-2 py-2 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 text-[10px] uppercase tracking-wider font-semibold rounded-lg transition-colors text-center">
-                                        Supprimer les métadonnées
+                                        {t('deleteMetadata')}
                                     </button>
                                     <button onClick={() => setActiveTab('exif')} className="px-2 py-2 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 text-[10px] uppercase tracking-wider font-semibold rounded-lg transition-colors text-center">
-                                        Modifier les métadonnées
+                                        {t('editMetadata')}
                                     </button>
-                                    <button className="px-2 py-2 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-400 dark:text-zinc-500 text-[10px] uppercase tracking-wider font-semibold rounded-lg transition-colors opacity-50 cursor-not-allowed text-center" title="Coming soon">
-                                        Comparer les métadonnées
+                                    <button className="px-2 py-2 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-400 dark:text-zinc-500 text-[10px] uppercase tracking-wider font-semibold rounded-lg transition-colors opacity-50 cursor-not-allowed text-center" title={t('comingSoon')}>
+                                        {t('compareMetadata')}
                                     </button>
                                     <button onClick={() => setActiveTab('exif')} className="px-2 py-2 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 text-[10px] uppercase tracking-wider font-semibold rounded-lg transition-colors text-center">
-                                        Ajouter Meta
+                                        {t('addMeta')}
                                     </button>
-                                    <button className="px-2 py-2 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-400 dark:text-zinc-500 text-[10px] uppercase tracking-wider font-semibold rounded-lg transition-colors opacity-50 cursor-not-allowed text-center" title="Coming soon">
-                                        Copier les métadonnées
+                                    <button className="px-2 py-2 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-400 dark:text-zinc-500 text-[10px] uppercase tracking-wider font-semibold rounded-lg transition-colors opacity-50 cursor-not-allowed text-center" title={t('comingSoon')}>
+                                        {t('copyMetadata')}
                                     </button>
                                 </div>
 
                                 <div className="flex items-center justify-between">
                                     <h3 className="text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">
-                                        All Metadata
+                                        {t('allMetadata')}
                                     </h3>
                                     <span className="text-xs text-gray-500 dark:text-zinc-500 bg-gray-100 dark:bg-zinc-800/50 px-2 py-1 rounded-md">
-                                        {allMetadata.length} items
+                                        {allMetadata.length} {t('items')}
                                     </span>
                                 </div>
 
@@ -779,8 +781,8 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                                         <table className="w-full text-left text-sm">
                                             <thead className="bg-gray-100 dark:bg-zinc-900/80 sticky top-0 z-10 backdrop-blur-sm border-b border-gray-200 dark:border-zinc-800">
                                                 <tr>
-                                                    <th className="px-4 py-2.5 font-medium text-gray-600 dark:text-zinc-400 text-xs uppercase tracking-wider w-1/3">Property</th>
-                                                    <th className="px-4 py-2.5 font-medium text-gray-600 dark:text-zinc-400 text-xs uppercase tracking-wider">Value</th>
+                                                    <th className="px-4 py-2.5 font-medium text-gray-600 dark:text-zinc-400 text-xs uppercase tracking-wider w-1/3">{t('property')}</th>
+                                                    <th className="px-4 py-2.5 font-medium text-gray-600 dark:text-zinc-400 text-xs uppercase tracking-wider">{t('value')}</th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-gray-200 dark:divide-zinc-800/50">

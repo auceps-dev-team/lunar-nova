@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import useAppStore from '../../store';
 import Papa from 'papaparse';
+import { useTranslation } from 'react-i18next';
 
 export default function ContactImport() {
     const navigate = useNavigate();
     const showAppNotification = useAppStore(state => state.showAppNotification);
+    const { t } = useTranslation();
 
     // 1: Upload, 2: Map, 3: Success
     const [step, setStep] = useState(1);
@@ -32,7 +34,7 @@ export default function ContactImport() {
                 const fields = results.meta.fields || [];
 
                 if (data.length === 0) {
-                    showAppNotification('The CSV file is empty.', 'error');
+                    showAppNotification(t('errorCsvEmpty'), 'error');
                     return;
                 }
 
@@ -48,7 +50,7 @@ export default function ContactImport() {
             },
             error: (err) => {
                 console.error("CSV Parse Error: ", err);
-                showAppNotification('Failed to read the file.', 'error');
+                showAppNotification(t('errorReadFile'), 'error');
             }
         });
     };
@@ -104,7 +106,7 @@ export default function ContactImport() {
             const validPayload = payload.filter(p => p.phone || p.name);
 
             if (validPayload.length === 0) {
-                showAppNotification('No valid data mapped.', 'error');
+                showAppNotification(t('errorNoValidData'), 'error');
                 setIsSaving(false);
                 return;
             }
@@ -117,12 +119,12 @@ export default function ContactImport() {
 
             if (!res.ok) throw new Error('API rejection');
 
-            showAppNotification(`${validPayload.length} contacts imported successfully!`, 'success');
+            showAppNotification(t('successContactsImported', { count: validPayload.length }), 'success');
             setStep(3); // Success page
 
         } catch (error) {
             console.error(error);
-            showAppNotification('An error occurred during import.', 'error');
+            showAppNotification(t('errorImportFailed'), 'error');
         } finally {
             setIsSaving(false);
         }
@@ -134,10 +136,10 @@ export default function ContactImport() {
                 <div>
                     <Link to="/wa/contacts" className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-sm flex items-center gap-1 mb-2 transition-colors">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6" /></svg>
-                        Back to Contacts
+                        {t('backToContacts')}
                     </Link>
-                    <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">Importer votre fichier</h1>
-                    <p className="text-gray-500 dark:text-gray-400 mt-1">Sélectionnez un fichier contenant vos contacts à importer.</p>
+                    <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">{t('importYourFile')}</h1>
+                    <p className="text-gray-500 dark:text-gray-400 mt-1">{t('selectContactFileToImport')}</p>
                 </div>
             </div>
 
@@ -151,33 +153,33 @@ export default function ContactImport() {
                             htmlFor="file-upload"
                             className="relative cursor-pointer bg-white dark:bg-zinc-800 rounded-md font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500 focus-within:outline-none"
                         >
-                            <span>Upload a file</span>
+                            <span>{t('uploadFile')}</span>
                             <input id="file-upload" name="file-upload" type="file" className="sr-only" accept=".csv" onChange={handleFileUpload} />
                         </label>
-                        <p className="pl-1">or drag and drop</p>
+                        <p className="pl-1">{t('orDragAndDrop')}</p>
                     </div>
                     <p className="text-xs text-gray-500 dark:text-zinc-500 mt-2">
-                        CSV files only (max 5MB)
+                        {t('csvFilesOnly')}
                     </p>
                 </div>
             )}
 
             {step === 2 && (
                 <div className="space-y-6">
-                    {/* Success Banner matching screenshot */}
+                    {/* Success Banner */}
                     <div className="bg-green-50 border border-green-200 dark:bg-green-900/20 dark:border-green-800 p-4 rounded-lg flex justify-between items-center">
                         <div>
-                            <p className="text-green-800 dark:text-green-300 font-semibold mb-1">Votre fichier a été importé !</p>
+                            <p className="text-green-800 dark:text-green-300 font-semibold mb-1">{t('fileImportedSuccess')}</p>
                             <p className="text-green-600 dark:text-green-400 text-sm">{fileName}</p>
                         </div>
                         <button onClick={() => setStep(1)} className="text-gray-700 dark:text-gray-300 underline font-medium text-sm hover:text-gray-900">
-                            Annuler
+                            {t('cancel')}
                         </button>
                     </div>
 
                     {/* Preview Table */}
                     <div>
-                        <h3 className="font-semibold text-gray-900 dark:text-white mb-3">Prévisualiser les premières 10 lignes de votre fichier.</h3>
+                        <h3 className="font-semibold text-gray-900 dark:text-white mb-3">{t('previewFirst10Rows')}</h3>
                         <div className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-xl overflow-x-auto shadow-sm">
                             <table className="w-full text-left text-sm whitespace-nowrap">
                                 <thead className="bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-gray-300">
@@ -202,9 +204,9 @@ export default function ContactImport() {
                         </div>
                     </div>
 
-                    {/* Mapping Form matching Screenshot 2 */}
+                    {/* Mapping Form */}
                     <div className="space-y-4 pt-4">
-                        <h3 className="font-semibold text-gray-900 dark:text-white">Mappage des données</h3>
+                        <h3 className="font-semibold text-gray-900 dark:text-white">{t('dataMapping')}</h3>
 
                         {headers.map((header, idx) => (
                             <div key={idx} className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-xl p-5 flex flex-col md:flex-row md:items-start gap-4 shadow-sm">
@@ -223,12 +225,12 @@ export default function ContactImport() {
                                         value={mapping[header]}
                                         onChange={(e) => handleMappingChange(header, e.target.value)}
                                     >
-                                        <option value="none">Ne pas importer</option>
-                                        <option value="name">Nom / Name</option>
-                                        <option value="phone">Numéro / Phone</option>
-                                        <option value="email">Email</option>
-                                        <option value="address">Adresse / Address</option>
-                                        <option value="segment">Catégorie / Segment</option>
+                                        <option value="none">{t('doNotImport')}</option>
+                                        <option value="name">{t('name')}</option>
+                                        <option value="phone">{t('phone')}</option>
+                                        <option value="email">{t('email')}</option>
+                                        <option value="address">{t('address')}</option>
+                                        <option value="segment">{t('categorySegment')}</option>
                                     </select>
                                 </div>
                             </div>
@@ -241,7 +243,7 @@ export default function ContactImport() {
                             disabled={isSaving}
                             className="bg-gray-900 hover:bg-black text-white px-6 py-3 rounded-xl font-medium text-sm transition-colors shadow-sm disabled:opacity-50"
                         >
-                            {isSaving ? 'Importation en cours...' : 'Confirmer votre fichier'}
+                            {isSaving ? t('importing') : t('confirmFile')}
                         </button>
                     </div>
                 </div>
@@ -252,13 +254,13 @@ export default function ContactImport() {
                     <svg className="mx-auto h-16 w-16 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <h2 className="mt-4 text-2xl font-bold text-gray-900 dark:text-white">Importation réussie</h2>
-                    <p className="mt-2 text-gray-600 dark:text-zinc-400">Vos contacts ont été ajoutés et peuvent maintenant être analysés.</p>
+                    <h2 className="mt-4 text-2xl font-bold text-gray-900 dark:text-white">{t('importSuccessful')}</h2>
+                    <p className="mt-2 text-gray-600 dark:text-zinc-400">{t('contactsAddedSuccess')}</p>
                     <button
                         onClick={() => navigate('/wa/contacts')}
                         className="mt-6 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium text-sm transition-colors shadow-sm"
                     >
-                        Retourner aux contacts
+                        {t('returnToContacts')}
                     </button>
                 </div>
             )}

@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import useAppStore from '../../store';
+import { useTranslation } from 'react-i18next';
 
 export default function ContactAdd() {
     const navigate = useNavigate();
     const { id } = useParams();
     const isEditMode = !!id;
     const showAppNotification = useAppStore(state => state.showAppNotification);
+    const { t } = useTranslation();
 
     const [formData, setFormData] = useState({
         name: '',
@@ -55,11 +57,11 @@ export default function ContactAdd() {
                 })
                 .catch(err => {
                     console.error(err);
-                    showAppNotification('Failed to load contact data', 'error');
+                    showAppNotification(t('failedToLoadContact'), 'error');
                 })
                 .finally(() => setIsLoading(false));
         }
-    }, [id, showAppNotification]);
+    }, [id, showAppNotification, t]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -86,11 +88,11 @@ export default function ContactAdd() {
 
             if (!res.ok) throw new Error('Failed to save contact');
 
-            showAppNotification(`Contact successfully ${isEditMode ? 'updated' : 'added'}!`, 'success');
+            showAppNotification(isEditMode ? t('contactUpdatedSuccess') : t('contactAddedSuccess'), 'success');
             navigate('/wa/contacts');
         } catch (error) {
             console.error(error);
-            showAppNotification(`Failed to ${isEditMode ? 'update' : 'add'} contact: ` + error.message, 'error');
+            showAppNotification((isEditMode ? t('contactUpdateFailed') : t('contactAddFailed')) + error.message, 'error');
         } finally {
             setIsSaving(false);
         }
@@ -99,7 +101,7 @@ export default function ContactAdd() {
     const update = (field, value) => setFormData(prev => ({ ...prev, [field]: value }));
 
     if (isLoading) {
-        return <div className="p-8 text-center text-gray-500">Loading contact data...</div>;
+        return <div className="p-8 text-center text-gray-500">{t('loadingContactData')}</div>;
     }
 
     return (
@@ -108,20 +110,20 @@ export default function ContactAdd() {
                 <div>
                     <Link to="/wa/contacts" className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-sm flex items-center gap-1 mb-2 transition-colors">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6" /></svg>
-                        Retour aux contacts
+                        {t('backToContacts')}
                     </Link>
                     <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
-                        {isEditMode ? 'Modifier le contact' : 'Nouveau contact'}
+                        {isEditMode ? t('editContact') : t('newContact')}
                     </h1>
                     <p className="text-gray-500 dark:text-gray-400 mt-1">
-                        {isEditMode ? 'Mettez à jour les informations de ce contact.' : 'Ajoutez un nouveau contact à votre carnet WhatsApp.'}
+                        {isEditMode ? t('updateContactDesc') : t('addContactDesc')}
                     </p>
                 </div>
                 <button
                     onClick={() => navigate('/wa/contacts')}
                     className="bg-white hover:bg-gray-50 text-gray-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-gray-200 border border-gray-200 dark:border-zinc-700 px-4 py-2 rounded-lg font-medium text-sm transition-colors shadow-sm"
                 >
-                    Contacts
+                    {t('contacts')}
                 </button>
             </div>
 
@@ -129,11 +131,11 @@ export default function ContactAdd() {
                 <form onSubmit={handleSubmit} className="space-y-5">
                     {/* Name */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nom</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('name')}</label>
                         <input
                             type="text" required
                             className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block p-2.5 dark:bg-zinc-800 dark:border-zinc-700 dark:placeholder-gray-400 dark:text-white transition-colors"
-                            placeholder="Nom complet ou société"
+                            placeholder={t('fullNameOrCompany')}
                             value={formData.name}
                             onChange={(e) => update('name', e.target.value)}
                         />
@@ -141,10 +143,10 @@ export default function ContactAdd() {
 
                     {/* Phone */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Téléphone</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('phone')}</label>
                         <input
                             type="tel" required
-                            placeholder="ex: +225 07 07 07 07 07"
+                            placeholder={t('placeholderPhone')}
                             className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block p-2.5 dark:bg-zinc-800 dark:border-zinc-700 dark:placeholder-gray-400 dark:text-white transition-colors"
                             value={formData.phone}
                             onChange={(e) => update('phone', e.target.value)}
@@ -153,10 +155,10 @@ export default function ContactAdd() {
 
                     {/* Email */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('email')}</label>
                         <input
                             type="email"
-                            placeholder="contact@exemple.com"
+                            placeholder={t('placeholderEmail')}
                             className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block p-2.5 dark:bg-zinc-800 dark:border-zinc-700 dark:placeholder-gray-400 dark:text-white transition-colors"
                             value={formData.email}
                             onChange={(e) => update('email', e.target.value)}
@@ -165,10 +167,10 @@ export default function ContactAdd() {
 
                     {/* Address */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Adresse</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('address')}</label>
                         <textarea
                             rows={2}
-                            placeholder="Adresse postale complète"
+                            placeholder={t('completePostalAddress')}
                             className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block p-2.5 dark:bg-zinc-800 dark:border-zinc-700 dark:placeholder-gray-400 dark:text-white resize-none transition-colors"
                             value={formData.address}
                             onChange={(e) => update('address', e.target.value)}
@@ -178,26 +180,26 @@ export default function ContactAdd() {
                     {/* Two columns: List + Segment */}
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Liste de contacts</label>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('contactList')}</label>
                             <select
                                 className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block p-2.5 dark:bg-zinc-800 dark:border-zinc-700 dark:placeholder-gray-400 dark:text-white transition-colors"
                                 value={formData.listId}
                                 onChange={(e) => update('listId', e.target.value)}
                             >
-                                <option value="">Aucune liste</option>
+                                <option value="">{t('noList')}</option>
                                 {lists.map(list => (
                                     <option key={list.id} value={list.id}>{list.name}</option>
                                 ))}
                             </select>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Segment</label>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('segment')}</label>
                             <select
                                 className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block p-2.5 dark:bg-zinc-800 dark:border-zinc-700 dark:placeholder-gray-400 dark:text-white transition-colors"
                                 value={formData.segmentId}
                                 onChange={(e) => update('segmentId', e.target.value)}
                             >
-                                <option value="">Aucun segment</option>
+                                <option value="">{t('noSegment')}</option>
                                 {segments.map(segment => (
                                     <option key={segment.id} value={segment.id}>{segment.name}</option>
                                 ))}
@@ -211,7 +213,7 @@ export default function ContactAdd() {
                         className="w-full text-white font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-all disabled:opacity-50 active:scale-[.99]"
                         style={{ background: 'linear-gradient(135deg,#059669,#047857)' }}
                     >
-                        {isSaving ? 'Enregistrement...' : (isEditMode ? 'Mettre à jour' : 'Ajouter le contact')}
+                        {isSaving ? t('saving') : (isEditMode ? t('updateContactBtn') : t('addContactBtn'))}
                     </button>
                 </form>
             </div>

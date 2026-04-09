@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import useAppStore from '../store';
-import { getTranslation as t } from '../locales';
+import { useTranslation } from 'react-i18next';
+
 import '../styles/global.css';
 
 const Topbar = ({ activeInstance, currentTitle }) => {
+    const { t } = useTranslation();
     const language = useAppStore(state => state.appSettings?.language) || 'en';
     const tasks = useAppStore(state => state.tasks) || [];
     const [showNotifications, setShowNotifications] = useState(false);
@@ -18,17 +20,17 @@ const Topbar = ({ activeInstance, currentTitle }) => {
     });
 
     const getFormattedTitle = () => {
-        if (!currentTitle || currentTitle === '/') return t(language, 'whatsappHub');
-        if (currentTitle === '/whatsapp-hub') return activeInstance ? activeInstance.name : t(language, 'whatsappHub');
-        if (currentTitle === '/dashboard') return t(language, 'dashboard');
-        if (currentTitle === '/agents') return "Product Photo";
-        if (currentTitle === '/tasks') return t(language, 'tasks');
-        if (currentTitle === '/invoice-builder') return t(language, 'invoiceBuilder');
-        if (currentTitle === '/tools') return t(language, 'tools');
-        if (currentTitle === '/profile') return t(language, 'accountStrategy');
-        if (currentTitle === '/settings') return t(language, 'appSettings');
-        if (currentTitle === '/fashion/photoshoot') return "Photo Shoot";
-        return t(language, 'workspace');
+        if (!currentTitle || currentTitle === '/') return t('whatsappHub');
+        if (currentTitle === '/whatsapp-hub') return activeInstance ? activeInstance.name : t('whatsappHub');
+        if (currentTitle === '/dashboard') return t('dashboard');
+        if (currentTitle === '/agents') return t('productPhotoTitle');
+        if (currentTitle === '/tasks') return t('tasks');
+        if (currentTitle === '/invoice-builder') return t('invoiceBuilder');
+        if (currentTitle === '/tools') return t('tools');
+        if (currentTitle === '/profile') return t('accountStrategy');
+        if (currentTitle === '/settings') return t('appSettings');
+        if (currentTitle === '/fashion/photoshoot') return t('photoShootTitle');
+        return t('workspace');
     };
 
     return (
@@ -48,9 +50,9 @@ const Topbar = ({ activeInstance, currentTitle }) => {
                     </h2>
                     {activeInstance && (currentTitle === '/whatsapp-hub' || currentTitle === '/') && (
                         <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-xs text-text-muted dark:text-gray-400">Personal WhatsApp</span>
+                            <span className="text-xs text-text-muted dark:text-gray-400">{t('personalWhatsapp')}</span>
                             <span className="size-1 bg-gray-300 dark:bg-gray-600 rounded-full"></span>
-                            <span className="text-xs text-green-600 dark:text-green-400 font-medium bg-green-50 dark:bg-green-900/40 px-1.5 rounded">Connected</span>
+                            <span className="text-xs text-green-600 dark:text-green-400 font-medium bg-green-50 dark:bg-green-900/40 px-1.5 rounded">{t('connectedStatus')}</span>
                         </div>
                     )}
                 </div>
@@ -73,7 +75,7 @@ const Topbar = ({ activeInstance, currentTitle }) => {
                     {showNotifications && (
                         <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 z-50 overflow-hidden">
                             <div className="p-3 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Pending Tasks ({dueTasks.length})</h3>
+                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">{t('pendingTasksDue')} ({dueTasks.length})</h3>
                             </div>
                             <div className="max-h-64 overflow-y-auto custom-scrollbar">
                                 {dueTasks.length > 0 ? (
@@ -85,12 +87,12 @@ const Topbar = ({ activeInstance, currentTitle }) => {
                                     ))
                                 ) : (
                                     <div className="p-4 text-center text-sm text-gray-500 dark:text-gray-400">
-                                        No pending tasks due today or earlier.
+                                        {t('noPendingTasksDue')}
                                     </div>
                                 )}
                             </div>
                             <Link to="/tasks" onClick={() => setShowNotifications(false)} className="block p-3 text-center text-sm font-medium text-primary hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border-t border-gray-100 dark:border-gray-700">
-                                View all tasks
+                                {t('viewAllTasks')}
                             </Link>
                         </div>
                     )}
@@ -98,7 +100,7 @@ const Topbar = ({ activeInstance, currentTitle }) => {
 
                 <Link to="/settings" className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors shadow-sm bg-white dark:bg-gray-800">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-                    {t(language, 'settings')}
+                    {t('settings')}
                 </Link>
             </div>
         </header>

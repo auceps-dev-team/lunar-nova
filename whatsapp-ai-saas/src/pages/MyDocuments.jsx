@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import useAppStore from '../store';
 import { FileText, Trash2, Edit, Plus, Clock } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function MyDocuments() {
+    const { t } = useTranslation();
     const showAppNotification = useAppStore(state => state.showAppNotification);
     const navigate = useNavigate();
     const [documents, setDocuments] = useState([]);
@@ -21,18 +23,18 @@ export default function MyDocuments() {
             if (data.status === 'success') {
                 setDocuments(data.data || []);
             } else {
-                showAppNotification('Erreur lors du chargement des documents', 'error');
+                showAppNotification(t('errorLoadDocuments'), 'error');
             }
         } catch (err) {
             console.error(err);
-            showAppNotification('Erreur de connexion au serveur', 'error');
+            showAppNotification(t('errorServerConnection'), 'error');
         } finally {
             setIsLoading(false);
         }
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm("Voulez-vous vraiment supprimer ce document ?")) return;
+        if (!window.confirm(t('confirmDeleteDocument'))) return;
 
         try {
             const res = await fetch(`http://localhost:3000/api/documents/${id}`, {
@@ -40,14 +42,14 @@ export default function MyDocuments() {
             });
             const data = await res.json();
             if (data.status === 'success') {
-                showAppNotification('Document supprimé', 'success');
+                showAppNotification(t('documentDeletedSuccess'), 'success');
                 fetchDocuments();
             } else {
-                showAppNotification('Erreur lors de la suppression', 'error');
+                showAppNotification(t('errorDelete'), 'error');
             }
         } catch (err) {
             console.error(err);
-            showAppNotification('Erreur de connexion', 'error');
+            showAppNotification(t('errorConnection'), 'error');
         }
     };
 
@@ -73,14 +75,14 @@ export default function MyDocuments() {
                 <div>
                     <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
                         <FileText className="text-[#0b9f84]" size={28} />
-                        Mes Documents
+                        {t('myDocuments')}
                     </h1>
-                    <p className="text-gray-500 dark:text-gray-400 mt-1">Gérez et retrouvez tous vos contenus générés par l'IA.</p>
+                    <p className="text-gray-500 dark:text-gray-400 mt-1">{t('manageAiContentDesc')}</p>
                 </div>
 
                 <Link to="/ai-writer" className="flex items-center gap-2 bg-[#0b9f84] hover:bg-[#0a8c73] text-white px-4 py-2.5 rounded-lg transition-colors font-medium shadow-sm">
                     <Plus size={18} />
-                    Nouveau Document
+                    {t('newDocument')}
                 </Link>
             </div>
 
@@ -89,23 +91,23 @@ export default function MyDocuments() {
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 text-sm">
-                                <th className="py-3 px-6 font-medium">Titre du document</th>
-                                <th className="py-3 px-6 font-medium w-[200px]">Dernière modification</th>
-                                <th className="py-3 px-6 font-medium w-[150px] text-right">Actions</th>
+                                <th className="py-3 px-6 font-medium">{t('documentTitle')}</th>
+                                <th className="py-3 px-6 font-medium w-[200px]">{t('lastModified')}</th>
+                                <th className="py-3 px-6 font-medium w-[150px] text-right">{t('actions')}</th>
                             </tr>
                         </thead>
                         <tbody>
                             {isLoading ? (
                                 <tr>
-                                    <td colSpan="3" className="py-8 text-center text-gray-500">Chargement...</td>
+                                    <td colSpan="3" className="py-8 text-center text-gray-500">{t('loading')}</td>
                                 </tr>
                             ) : documents.length === 0 ? (
                                 <tr>
                                     <td colSpan="3" className="py-12 text-center">
                                         <div className="flex flex-col items-center justify-center text-gray-500">
                                             <FileText size={48} className="mb-4 text-gray-300 dark:text-gray-600" />
-                                            <p>Aucun document pour le moment.</p>
-                                            <Link to="/ai-writer" className="text-[#0b9f84] hover:underline mt-2">Créer mon premier document</Link>
+                                            <p>{t('noDocumentsYet')}</p>
+                                            <Link to="/ai-writer" className="text-[#0b9f84] hover:underline mt-2">{t('createMyFirstDocument')}</Link>
                                         </div>
                                     </td>
                                 </tr>
@@ -117,7 +119,7 @@ export default function MyDocuments() {
                                                 <div className="p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg text-[#0b9f84]">
                                                     <FileText size={18} />
                                                 </div>
-                                                {doc.title || 'Untitled Document'}
+                                                {doc.title || t('untitledDoc')}
                                             </div>
                                         </td>
                                         <td className="py-4 px-6 text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1.5 mt-2">
@@ -129,14 +131,14 @@ export default function MyDocuments() {
                                                 <button
                                                     onClick={() => handleEdit(doc.id)}
                                                     className="p-1.5 text-gray-400 hover:text-[#0b9f84] hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-md transition-colors"
-                                                    title="Modifier"
+                                                    title={t('editAction')}
                                                 >
                                                     <Edit size={18} />
                                                 </button>
                                                 <button
                                                     onClick={() => handleDelete(doc.id)}
                                                     className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
-                                                    title="Supprimer"
+                                                    title={t('delete')}
                                                 >
                                                     <Trash2 size={18} />
                                                 </button>

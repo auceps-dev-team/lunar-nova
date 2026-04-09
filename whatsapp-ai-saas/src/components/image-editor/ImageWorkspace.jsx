@@ -3,8 +3,10 @@ import { useDropzone } from 'react-dropzone';
 import { ImageEditor } from './ImageEditor';
 import { UploadCloud, Image as ImageIcon, Wand2 } from 'lucide-react';
 import useAppStore from '../../store';
+import { useTranslation } from 'react-i18next';
 
 export function ImageWorkspace() {
+    const { t } = useTranslation();
     const [images, setImages] = useState([]);
     const [selectedImageId, setSelectedImageId] = useState(null);
 
@@ -21,13 +23,14 @@ export function ImageWorkspace() {
                 previewUrl: pendingEditImage.data,
                 base64: pendingEditImage.data,
                 mimeType: pendingEditImage.mimeType || 'image/jpeg',
-                name: pendingEditImage.name || 'imported_image.jpg',
+                name: pendingEditImage.name || t('importedImageName'),
             };
             setImages(prev => [newImage, ...prev]);
             setSelectedImageId(id);
             clearPendingEditImage();
         }
-    }, [pendingEditImage]);
+    }, [pendingEditImage, t, clearPendingEditImage]);
+
     const onDrop = useCallback((acceptedFiles) => {
         // Limit to 20 images total
         const newFiles = acceptedFiles.slice(0, 20 - images.length);
@@ -70,20 +73,20 @@ export function ImageWorkspace() {
                     <div
                         {...getRootProps()}
                         className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all duration-200 ${isDragActive
-                                ? 'border-primary bg-primary/10 scale-[1.02]'
-                                : 'border-gray-300 dark:border-zinc-700 hover:border-gray-400 dark:hover:border-zinc-500 hover:bg-gray-100 dark:hover:bg-zinc-800/50'
+                            ? 'border-primary bg-primary/10 scale-[1.02]'
+                            : 'border-gray-300 dark:border-zinc-700 hover:border-gray-400 dark:hover:border-zinc-500 hover:bg-gray-100 dark:hover:bg-zinc-800/50'
                             }`}
                     >
                         <input {...getInputProps()} />
                         <UploadCloud className={`w-8 h-8 mx-auto mb-3 transition-colors ${isDragActive ? 'text-primary' : 'text-gray-400 dark:text-zinc-400'}`} />
-                        <p className="text-sm font-medium text-gray-700 dark:text-zinc-300">Drop images here</p>
-                        <p className="text-xs text-gray-500 dark:text-zinc-500 mt-1">PNG, JPG, SVG (Max 20)</p>
+                        <p className="text-sm font-medium text-gray-700 dark:text-zinc-300">{t('dropImagesHere')}</p>
+                        <p className="text-xs text-gray-500 dark:text-zinc-500 mt-1">{t('supportedFormatsMax')}</p>
                     </div>
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-4 space-y-3">
                     <div className="flex items-center justify-between mb-2">
-                        <h2 className="text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Gallery ({images.length}/20)</h2>
+                        <h2 className="text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">{t('gallery')} ({images.length}/20)</h2>
                     </div>
 
                     {images.map((img) => (
@@ -91,8 +94,8 @@ export function ImageWorkspace() {
                             key={img.id}
                             onClick={() => setSelectedImageId(img.id)}
                             className={`relative aspect-video rounded-xl overflow-hidden cursor-pointer border-2 transition-all duration-200 group ${selectedImageId === img.id
-                                    ? 'border-primary ring-4 ring-primary/20'
-                                    : 'border-transparent hover:border-gray-300 dark:hover:border-zinc-600'
+                                ? 'border-primary ring-4 ring-primary/20'
+                                : 'border-transparent hover:border-gray-300 dark:hover:border-zinc-600'
                                 }`}
                         >
                             <img src={img.previewUrl} alt={img.name} className="w-full h-full object-cover" />
@@ -108,8 +111,8 @@ export function ImageWorkspace() {
                             <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-zinc-800/50 flex items-center justify-center mb-3">
                                 <ImageIcon className="w-6 h-6 text-gray-500 dark:text-zinc-500" />
                             </div>
-                            <p className="text-sm font-medium text-gray-600 dark:text-zinc-400">No images uploaded</p>
-                            <p className="text-xs text-gray-500 dark:text-zinc-500 mt-1">Upload images to start editing</p>
+                            <p className="text-sm font-medium text-gray-600 dark:text-zinc-400">{t('noImagesUploaded')}</p>
+                            <p className="text-xs text-gray-500 dark:text-zinc-500 mt-1">{t('uploadImagesToStartEditing')}</p>
                         </div>
                     )}
                 </div>
@@ -134,9 +137,9 @@ export function ImageWorkspace() {
                             <div className="w-20 h-20 bg-white dark:bg-zinc-900 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-xl border border-gray-100 dark:border-zinc-800/50">
                                 <Wand2 className="w-10 h-10 text-gray-400 dark:text-zinc-600" />
                             </div>
-                            <h2 className="text-xl font-semibold text-gray-800 dark:text-zinc-200 mb-2">Select an image to edit</h2>
+                            <h2 className="text-xl font-semibold text-gray-800 dark:text-zinc-200 mb-2">{t('selectImageToEdit')}</h2>
                             <p className="text-sm text-gray-500 dark:text-zinc-500">
-                                Choose an image from the gallery on the left to remove watermarks, view EXIF data, or enhance quality using AI.
+                                {t('chooseImageFromGalleryDesc')}
                             </p>
                         </div>
                     </div>

@@ -12,7 +12,8 @@ import { CSS } from '@dnd-kit/utilities';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
-import { getTranslation as t } from '../locales';
+import { useTranslation } from 'react-i18next';
+
 
 /* ═══════════════════════════════════════════════════════
    CONSTANTS
@@ -20,10 +21,10 @@ import { getTranslation as t } from '../locales';
 const CURRENCIES = ['XOF', 'EUR', 'USD', 'GBP', 'CHF'];
 
 const STATUS_MAP = {
-    paid: { label: 'Payée', dot: '#10b981', bg: '#ecfdf5', text: '#047857' },
-    pending: { label: 'En attente', dot: '#f59e0b', bg: '#fffbeb', text: '#92400e' },
-    overdue: { label: 'En retard', dot: '#ef4444', bg: '#fef2f2', text: '#991b1b' },
-    draft: { label: 'Brouillon', dot: '#94a3b8', bg: '#f8fafc', text: '#475569' },
+    paid: { labelKey: 'paidState', dot: '#10b981', bg: '#ecfdf5', text: '#047857' },
+    pending: { labelKey: 'pendingState', dot: '#f59e0b', bg: '#fffbeb', text: '#92400e' },
+    overdue: { labelKey: 'overdueState', dot: '#ef4444', bg: '#fef2f2', text: '#991b1b' },
+    draft: { labelKey: 'draftState', dot: '#94a3b8', bg: '#f8fafc', text: '#475569' },
 };
 
 /* ═══════════════════════════════════════════════════════
@@ -110,7 +111,7 @@ function LogoPicker({ value, onChange, label, size = 56 }) {
 /* ═══════════════════════════════════════════════════════
    SORTABLE LINE ITEM
    ═══════════════════════════════════════════════════════ */
-function SortableLine({ item, onUpdate, onRemove, currency }) {
+function SortableLine({ item, onUpdate, onRemove, currency, t }) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
     const rowStyle = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? .45 : 1 };
     const total = (item.qty || 0) * (item.price || 0);
@@ -124,7 +125,7 @@ function SortableLine({ item, onUpdate, onRemove, currency }) {
             </td>
             <td className="py-3">
                 <input className="w-full bg-transparent text-sm font-medium text-gray-800 dark:text-gray-200 outline-none placeholder:text-gray-300"
-                    value={item.description} placeholder="Description du service ou produit..."
+                    value={item.description} placeholder={t('serviceProductDescription')}
                     onChange={e => onUpdate(item.id, 'description', e.target.value)} />
             </td>
             <td className="py-3 w-20">
@@ -148,7 +149,7 @@ function SortableLine({ item, onUpdate, onRemove, currency }) {
 /* ═══════════════════════════════════════════════════════
    HTML INVOICE TEMPLATE (for PDF rendering)
    ═══════════════════════════════════════════════════════ */
-function buildInvoiceHTML(draft) {
+function buildInvoiceHTML(draft, t) {
     const { sub, tax, total } = calc(draft.items, draft.taxRate);
     if (draft.template === 'stripe') {
         const rows = (draft.items || []).map(it => `
@@ -168,7 +169,7 @@ function buildInvoiceHTML(draft) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modèle de Facture - Violet</title>
+    <title>${t('invoiceTemplatePurple')}</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root { --bg-color: #f7f7f9; --purple-main: #3b1485; --text-dark: #333333; --text-light: #5a5a75; --white: #ffffff; --gold: #c2a370; --border-color: #d1d1e0; }
@@ -205,7 +206,7 @@ function buildInvoiceHTML(draft) {
 <body>
     <div class="invoice-container">
         <div class="header">
-            <h1 class="invoice-title">Facture</h1>
+            <h1 class="invoice-title">${t('invoice')}</h1>
             <div class="logo">
                 ${logoHTML}
             </div>
@@ -215,54 +216,54 @@ function buildInvoiceHTML(draft) {
 
         <div class="billing-info">
             <div class="invoice-to">
-                <h2>Facturé à :</h2>
-                <p><strong>${draft.clientName || 'Client / Société'}</strong></p>
+                <h2>${t('billedToColon')}</h2>
+                <p><strong>${draft.clientName || t('clientCompany')}</strong></p>
                 <p>${draft.clientAddress}</p>
             </div>
             <div class="invoice-meta">
-                <p>No : ${draft.invoiceNumber}<br>
-                Émission : ${draft.issueDate}<br>
-                Échéance : ${draft.dueDate}</p>
+                <p>${t('noColon')} ${draft.invoiceNumber}<br>
+                ${t('issuedColon')} ${draft.issueDate}<br>
+                ${t('dueDateColon')} ${draft.dueDate}</p>
             </div>
         </div>
 
         <div class="table-container">
             <div class="table-header">
-                <div>DESCRIPTION</div>
-                <div class="col-center">QTÉ</div>
-                <div class="col-center">PRIX</div>
-                <div class="col-right">TOTAL</div>
+                <div>${t('descriptionCaps')}</div>
+                <div class="col-center">${t('qtyCaps')}</div>
+                <div class="col-center">${t('priceCaps')}</div>
+                <div class="col-right">${t('totalCaps')}</div>
             </div>
             ${rows}
         </div>
 
         <div class="bottom-section">
             <div class="bottom-left">
-                ${draft.notes ? `<h3 class="section-title">Notes :</h3><p class="detail-text">${draft.notes}</p><hr class="divider-short">` : ''}
-                <h3 class="section-title">Coordonnées :</h3>
-                <p class="detail-text">${draft.companyName || 'Votre Entreprise'}<br>${draft.companyTagline || ''}<br>${draft.senderInfo || '—'}</p>
+                ${draft.notes ? `<h3 class="section-title">${t('notesColon')}</h3><p class="detail-text">${draft.notes}</p><hr class="divider-short">` : ''}
+                <h3 class="section-title">${t('contactDetailsColon')}</h3>
+                <p class="detail-text">${draft.companyName || t('yourCompany')}<br>${draft.companyTagline || ''}<br>${draft.senderInfo || '—'}</p>
             </div>
 
             <div class="bottom-right">
                 <div class="totals-row">
-                    <span>Sous-Total :</span>
+                    <span>${t('subtotalColon')}</span>
                     <span>${fmt(sub, draft.currency)}</span>
                 </div>
                 
                 <hr class="totals-divider">
                 
                 <div class="totals-row">
-                    <span>TVA (${draft.taxRate}%) :</span>
+                    <span>${t('vat')} (${draft.taxRate}%) :</span>
                     <span>${fmt(tax, draft.currency)}</span>
                 </div>
 
                 <div class="total-box">
-                    <span>Total :</span>
+                    <span>${t('totalColon')}</span>
                     <span>${fmt(total, draft.currency)}</span>
                 </div>
 
                 <div class="signature-box">
-                    <span class="signature-text">WaCopilote Automation</span>
+                    <span class="signature-text">${t('brandWacopiloteAutomation')}</span>
                 </div>
             </div>
         </div>
@@ -288,7 +289,7 @@ function buildInvoiceHTML(draft) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modèle de Facture</title>
+    <title>${t('invoiceTemplate')}</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         :root { --bg-color: #ede8dc; --text-dark: #0a2533; --teal-gradient: linear-gradient(90deg, #256a7c, #48a69e); --white: #ffffff; --footer-bg: #072535; }
@@ -329,7 +330,7 @@ function buildInvoiceHTML(draft) {
             <div class="logo-section">
                 ${logoHTML}
                 <div>
-                    <div class="company-name">${draft.companyName || 'Vos Informations'}</div>
+                    <div class="company-name">${draft.companyName || t('yourCompany')}</div>
                     <div class="company-sub">${draft.companyTagline || ''}</div>
                 </div>
             </div>
@@ -338,25 +339,25 @@ function buildInvoiceHTML(draft) {
 
         <div class="info-section">
             <div class="info-left">
-                <h3>DE</h3>
+                <h3>${t('fromCaps')}</h3>
                 <p style="white-space:pre-line">${draft.senderInfo || '—'}</p>
                 
-                <h3>FACTURÉ À</h3>
-                <p><strong>${draft.clientName || 'Client / Société'}</strong></p>
+                <h3>${t('billedToCaps')}</h3>
+                <p><strong>${draft.clientName || t('clientCompany')}</strong></p>
                 <p style="white-space:pre-line">${draft.clientAddress}</p>
             </div>
             <div class="info-right">
-                <p>Numéro: ${draft.invoiceNumber}</p>
-                <p>Date: ${draft.issueDate}</p>
-                <p>Échéance: ${draft.dueDate}</p>
+                <p>${t('number')}: ${draft.invoiceNumber}</p>
+                <p>${t('date')}: ${draft.issueDate}</p>
+                <p>${t('dueDate')}: ${draft.dueDate}</p>
             </div>
         </div>
 
         <div class="table-header">
-            <div>DESCRIPTION</div>
-            <div class="col-center">QTÉ</div>
-            <div class="col-center">PRIX</div>
-            <div class="col-right">TOTAL</div>
+            <div>${t('descriptionCaps')}</div>
+            <div class="col-center">${t('qtyCaps')}</div>
+            <div class="col-center">${t('priceCaps')}</div>
+            <div class="col-right">${t('totalCaps')}</div>
         </div>
 
         <div class="table-body">
@@ -365,15 +366,19 @@ function buildInvoiceHTML(draft) {
 
         <div class="summary-section">
             <div class="notes">
-                ${draft.notes ? `<h4>NOTES</h4><p style="white-space: pre-line">${draft.notes}</p>` : ''}
+                ${draft.notes ? `<h4>${t('notesCaps')}</h4><p style="white-space: pre-line">${draft.notes}</p>` : ''}
             </div>
             <div class="totals">
-                <div class="total-row"><span>SOUS-TOTAL</span><span>${fmt(sub, draft.currency)}</span></div>
-                <div class="total-row"><span>TVA (${draft.taxRate}%)</span><span>${fmt(tax, draft.currency)}</span></div>
-                <div class="total-row grand-total"><span>TOTAL</span><span>${fmt(total, draft.currency)}</span></div>
+                <div class="total-row"><span>${t('subtotalCaps')}</span><span>${fmt(sub, draft.currency)}</span></div>
+                <div class="total-row"><span>${t('vat')} (${draft.taxRate}%)</span><span>${fmt(tax, draft.currency)}</span></div>
+                <div class="total-row grand-total"><span>${t('totalCaps')}</span><span>${fmt(total, draft.currency)}</span></div>
             </div>
         </div>
 
+        <div class="footer-banner">
+            <span>${t('generatedByWacopilote')}</span>
+            <span>${t('thankYouForBusiness')}</span>
+        </div>
     </div>
 </body>
 </html>`;
@@ -406,16 +411,16 @@ function buildInvoiceHTML(draft) {
             <div style="display:flex;align-items:center;gap:14px">
                 ${logoHTML}
                 <div>
-                    <div style="font-size:20px;font-weight:800;color:#0f172a;letter-spacing:-0.3px">${draft.companyName || 'Votre Entreprise'}</div>
+                    <div style="font-size:20px;font-weight:800;color:#0f172a;letter-spacing:-0.3px">${draft.companyName || t('yourCompany')}</div>
                     <div style="font-size:12px;color:#64748b;margin-top:2px">${draft.companyTagline || ''}</div>
                 </div>
             </div>
             <div style="text-align:right">
-                <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:2px;margin-bottom:4px">Facture</div>
+                <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:2px;margin-bottom:4px">${t('invoice')}</div>
                 <div style="font-size:22px;font-weight:800;color:#0f172a">${draft.invoiceNumber}</div>
                 <div style="display:flex;gap:24px;justify-content:flex-end;margin-top:10px">
-                    <div><div style="font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1px">Date</div><div style="font-size:13px;color:#334155;margin-top:2px">${draft.issueDate}</div></div>
-                    <div><div style="font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1px">Échéance</div><div style="font-size:13px;color:#334155;margin-top:2px">${draft.dueDate}</div></div>
+                    <div><div style="font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1px">${t('date')}</div><div style="font-size:13px;color:#334155;margin-top:2px">${draft.issueDate}</div></div>
+                    <div><div style="font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1px">${t('dueDate')}</div><div style="font-size:13px;color:#334155;margin-top:2px">${draft.dueDate}</div></div>
                 </div>
             </div>
         </div>
@@ -423,11 +428,11 @@ function buildInvoiceHTML(draft) {
         <!-- Addresses -->
         <div style="display:flex;gap:40px;margin-bottom:36px">
             <div style="flex:1;background:#f8fafc;border-radius:12px;padding:18px">
-                <div style="font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:2px;margin-bottom:10px">De</div>
+                <div style="font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:2px;margin-bottom:10px">${t('from')}</div>
                 <div style="font-size:13px;color:#334155;white-space:pre-line;line-height:1.7">${draft.senderInfo || '—'}</div>
             </div>
             <div style="flex:1;padding:18px">
-                <div style="font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:2px;margin-bottom:10px">Facturé à</div>
+                <div style="font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:2px;margin-bottom:10px">${t('billedTo')}</div>
                 ${clientLogoHTML}
                 <div style="font-size:15px;font-weight:700;color:#0f172a;margin-bottom:4px">${draft.clientName || '—'}</div>
                 <div style="font-size:13px;color:#64748b;white-space:pre-line;line-height:1.7">${draft.clientAddress || ''}</div>
@@ -437,10 +442,10 @@ function buildInvoiceHTML(draft) {
         <!-- Items table -->
         <table style="width:100%;border-collapse:collapse;margin-bottom:24px">
             <thead><tr>
-                <th style="padding:10px 8px;text-align:left;font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1.5px;border-bottom:2px solid #e2e8f0">Description</th>
-                <th style="padding:10px 8px;text-align:center;font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1.5px;border-bottom:2px solid #e2e8f0;width:60px">Qté</th>
-                <th style="padding:10px 8px;text-align:right;font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1.5px;border-bottom:2px solid #e2e8f0;width:100px">Prix</th>
-                <th style="padding:10px 8px;text-align:right;font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1.5px;border-bottom:2px solid #e2e8f0;width:100px">Total</th>
+                <th style="padding:10px 8px;text-align:left;font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1.5px;border-bottom:2px solid #e2e8f0">${t('description')}</th>
+                <th style="padding:10px 8px;text-align:center;font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1.5px;border-bottom:2px solid #e2e8f0;width:60px">${t('qty')}</th>
+                <th style="padding:10px 8px;text-align:right;font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1.5px;border-bottom:2px solid #e2e8f0;width:100px">${t('price')}</th>
+                <th style="padding:10px 8px;text-align:right;font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1.5px;border-bottom:2px solid #e2e8f0;width:100px">${t('total')}</th>
             </tr></thead>
             <tbody>${rows}</tbody>
         </table>
@@ -448,15 +453,15 @@ function buildInvoiceHTML(draft) {
         <!-- Totals -->
         <div style="display:flex;justify-content:flex-end;margin-bottom:36px">
             <div style="width:260px">
-                <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;color:#64748b"><span>Sous-total</span><span>${fmt(sub, draft.currency)}</span></div>
-                <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;color:#64748b"><span>TVA (${draft.taxRate}%)</span><span>${fmt(tax, draft.currency)}</span></div>
-                <div style="display:flex;justify-content:space-between;padding:10px 0;margin-top:8px;border-top:2px solid #e2e8f0;font-size:18px;font-weight:800"><span style="color:#0f172a">Total</span><span class="accent">${fmt(total, draft.currency)}</span></div>
+                <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;color:#64748b"><span>${t('subtotal')}</span><span>${fmt(sub, draft.currency)}</span></div>
+                <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;color:#64748b"><span>${t('vat')} (${draft.taxRate}%)</span><span>${fmt(tax, draft.currency)}</span></div>
+                <div style="display:flex;justify-content:space-between;padding:10px 0;margin-top:8px;border-top:2px solid #e2e8f0;font-size:18px;font-weight:800"><span style="color:#0f172a">${t('total')}</span><span class="accent">${fmt(total, draft.currency)}</span></div>
             </div>
         </div>
 
-        ${draft.notes ? `<div style="background:#f8fafc;border-radius:12px;padding:16px;margin-bottom:24px"><div style="font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:2px;margin-bottom:6px">Notes</div><div style="font-size:12px;color:#64748b;line-height:1.6">${draft.notes}</div></div>` : ''}
+        ${draft.notes ? `<div style="background:#f8fafc;border-radius:12px;padding:16px;margin-bottom:24px"><div style="font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:2px;margin-bottom:6px">${t('notes')}</div><div style="font-size:12px;color:#64748b;line-height:1.6">${draft.notes}</div></div>` : ''}
 
-        <div style="text-align:center;padding-top:24px;border-top:1px solid #f1f5f9;font-size:10px;color:#cbd5e1">Facture générée automatiquement · ${draft.companyName || 'Votre Entreprise'}</div>
+        <div style="text-align:center;padding-top:24px;border-top:1px solid #f1f5f9;font-size:10px;color:#cbd5e1">${t('autoGeneratedInvoice')} · ${draft.companyName || t('yourCompany')}</div>
     </div>
     </body></html>`;
 }
@@ -481,12 +486,12 @@ function KPI({ label, value, sub, icon, accent }) {
    TEMPLATE THUMBNAILS
    ═══════════════════════════════════════════════════════ */
 const TPL_PREVIEWS = [
-    { id: 'clean', label: 'Modern Clean', colors: ['#059669', '#ecfdf5', '#fff'] },
-    { id: 'bold', label: 'Bold Header', colors: ['#1e293b', '#f8fafc', '#fff'] },
-    { id: 'stripe', label: 'Violet Gold', colors: ['#3b1485', '#f7f7f9', '#c2a370'] },
+    { id: 'clean', labelKey: 'templateModernClean', colors: ['#059669', '#ecfdf5', '#fff'] },
+    { id: 'bold', labelKey: 'templateBoldHeader', colors: ['#1e293b', '#f8fafc', '#fff'] },
+    { id: 'stripe', labelKey: 'templateVioletGold', colors: ['#3b1485', '#f7f7f9', '#c2a370'] },
 ];
 
-function TplThumb({ tpl, active, onClick }) {
+function TplThumb({ tpl, active, onClick, t }) {
     return (
         <button onClick={onClick} className={`w-full text-left transition-all duration-200 ${active ? 'scale-[1.02]' : 'hover:scale-[1.01]'}`}>
             <div className={`aspect-[3/4] rounded-xl overflow-hidden border-2 transition-all duration-200 ${active ? 'border-emerald-500 shadow-lg shadow-emerald-500/10' : 'border-gray-100 dark:border-gray-700 hover:border-gray-300'}`}>
@@ -500,7 +505,7 @@ function TplThumb({ tpl, active, onClick }) {
                 </div>
             </div>
             <div className="flex items-center justify-between mt-2">
-                <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{tpl.label}</span>
+                <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{t(tpl.labelKey)}</span>
                 {active && <div className="w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center"><svg width="10" height="10" fill="none" stroke="#fff" strokeWidth="3" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5" /></svg></div>}
             </div>
         </button>
@@ -511,6 +516,7 @@ function TplThumb({ tpl, active, onClick }) {
    MAIN COMPONENT
    ═══════════════════════════════════════════════════════ */
 export default function InvoiceBuilder({ activeId }) {
+    const { t } = useTranslation();
     const appSettings = useAppStore(s => s.appSettings) || {};
     const language = appSettings.language || 'en';
     const invoices = useAppStore(s => s.invoices) || [];
@@ -626,7 +632,7 @@ export default function InvoiceBuilder({ activeId }) {
 
     const handleExportPDF = async () => {
         if (!draft) return;
-        const html = buildInvoiceHTML(draft);
+        const html = buildInvoiceHTML(draft, t);
         const fileName = `${(draft.invoiceNumber || 'facture').replace(/[^a-zA-Z0-9-]/g, '_')}.pdf`;
 
         // Use Electron native PDF export if available
@@ -637,16 +643,16 @@ export default function InvoiceBuilder({ activeId }) {
                     // Show a brief success indicator
                     setSaved(true);
                 } else if (result?.reason !== 'cancelled') {
-                    alert('Erreur lors de l\'export PDF : ' + (result?.reason || 'inconnue'));
+                    alert(`${t('pdfExportError')}: ${result?.reason || 'inconnue'}`);
                 }
             } catch (err) {
                 console.error('PDF export error:', err);
-                alert('Erreur lors de l\'export PDF.');
+                alert(t('pdfExportError'));
             }
         } else {
             // Fallback for browser: open in new tab + print
             const win = window.open('', '_blank', 'width=800,height=1100');
-            if (!win) return alert('Veuillez autoriser les popups pour exporter en PDF.');
+            if (!win) return alert(t('allowPopupsPdf'));
             win.document.write(html);
             win.document.close();
             setTimeout(() => { win.focus(); win.print(); }, 400);
@@ -656,13 +662,13 @@ export default function InvoiceBuilder({ activeId }) {
     // Send invoice via WhatsApp
     const handleSendWhatsApp = async () => {
         if (!draft || !draft.clientPhone) {
-            alert('Veuillez d\'abord sélectionner un contact avec un numéro de téléphone.');
+            alert(t('selectContactWithPhone'));
             return;
         }
         setSendingWhatsApp(true);
         try {
             // First export the PDF
-            const html = buildInvoiceHTML(draft);
+            const html = buildInvoiceHTML(draft, t);
             const fileName = `${(draft.invoiceNumber || 'facture').replace(/[^a-zA-Z0-9-]/g, '_')}.pdf`;
             if (window.electronAPI?.printToPDF) {
                 const result = await window.electronAPI.printToPDF(html, fileName);
@@ -673,7 +679,7 @@ export default function InvoiceBuilder({ activeId }) {
 
             // Then open the WhatsApp chat
             if (!activeId) {
-                alert('Aucune instance WhatsApp active. Veuillez en démarrer une.');
+                alert(t('noActiveWaInstance'));
                 return;
             }
 
@@ -692,7 +698,7 @@ export default function InvoiceBuilder({ activeId }) {
             }
         } catch (err) {
             console.error('WhatsApp send error:', err);
-            alert('Erreur: ' + err.message);
+            alert(`${t('whatsappSendError')}: ${err.message}`);
         } finally {
             setSendingWhatsApp(false);
         }
@@ -721,28 +727,28 @@ export default function InvoiceBuilder({ activeId }) {
                 {/* Header */}
                 <div className="flex items-end justify-between">
                     <div>
-                        <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight">{t(language, 'invoiceDashTitle')}</h1>
-                        <p className="text-sm text-gray-400 mt-0.5">{t(language, 'invoiceDashDesc')}</p>
+                        <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight">{t('invoiceDashTitle')}</h1>
+                        <p className="text-sm text-gray-400 mt-0.5">{t('invoiceDashDesc')}</p>
                     </div>
                     <button onClick={handleNew}
                         className="h-10 px-5 rounded-xl text-white text-sm font-bold flex items-center gap-2 active:scale-[.97] transition-transform shadow-lg shadow-emerald-600/20"
                         style={{ background: 'linear-gradient(135deg,#059669,#047857)' }}>
                         <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-                        {t(language, 'newInvoiceBtn')}
+                        {t('newInvoiceBtn')}
                     </button>
                 </div>
 
                 {/* KPIs */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    <KPI label={t(language, 'totalInvoicesLabel')} value={invoices.length} icon="📄" accent="#059669" />
-                    <KPI label={t(language, 'revenueLabel')} value={totalRevStr} icon="💰" accent="#0891b2" />
-                    <KPI label={t(language, 'paidLabel')} value={paidN} sub={`${t(language, 'outOfTotal')} ${invoices.length}`} icon="✅" accent="#16a34a" />
-                    <KPI label={t(language, 'pendingLabel')} value={pendN} icon="⏳" accent="#d97706" />
+                    <KPI label={t('totalInvoicesLabel')} value={invoices.length} icon="📄" accent="#059669" />
+                    <KPI label={t('revenueLabel')} value={totalRevStr} icon="💰" accent="#0891b2" />
+                    <KPI label={t('paidLabel')} value={paidN} sub={`${t('outOf')} ${invoices.length}`} icon="✅" accent="#16a34a" />
+                    <KPI label={t('pendingLabel')} value={pendN} icon="⏳" accent="#d97706" />
                 </div>
 
                 {/* Chart */}
                 <div className="bg-white dark:bg-[#1a1f25] rounded-2xl p-6 border border-gray-100 dark:border-gray-800">
-                    <p className="text-[10px] font-bold uppercase tracking-[.15em] text-gray-400 mb-4">{t(language, 'monthlyRevLabel')}</p>
+                    <p className="text-[10px] font-bold uppercase tracking-[.15em] text-gray-400 mb-4">{t('monthlyRevLabel')}</p>
                     <ResponsiveContainer width="100%" height={200} minWidth={0} minHeight={0}>
                         <BarChart data={chartData} margin={{ left: -20 }}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
@@ -758,12 +764,12 @@ export default function InvoiceBuilder({ activeId }) {
                 {/* Invoice list */}
                 <div className="bg-white dark:bg-[#1a1f25] rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden">
                     <div className="flex items-center justify-between px-5 py-4 border-b border-gray-50 dark:border-gray-800">
-                        <p className="text-[10px] font-bold uppercase tracking-[.15em] text-gray-400">{t(language, 'invoicesListTitle')}</p>
+                        <p className="text-[10px] font-bold uppercase tracking-[.15em] text-gray-400">{t('invoicesListTitle')}</p>
                         <div className="flex gap-1.5">
                             {['all', 'paid', 'pending', 'overdue', 'draft'].map(s => (
                                 <button key={s} onClick={() => setFilterStatus(s)}
                                     className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all ${filterStatus === s ? 'bg-emerald-600 text-white' : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}>
-                                    {s === 'all' ? t(language, 'allInvoices') : t(language, s + 'State') || s}
+                                    {s === 'all' ? t('allInvoices') : t(s + 'State')}
                                 </button>
                             ))}
                         </div>
@@ -772,8 +778,8 @@ export default function InvoiceBuilder({ activeId }) {
                     {filtered.length === 0 ? (
                         <div className="text-center py-20 text-gray-300">
                             <div className="text-4xl mb-3">📋</div>
-                            <p className="text-sm">{t(language, 'noInvoicesCreated')}</p>
-                            <button onClick={handleNew} className="mt-3 text-sm text-emerald-600 font-semibold hover:underline">Créer →</button>
+                            <p className="text-sm">{t('noInvoiceCreated')}</p>
+                            <button onClick={handleNew} className="mt-3 text-sm text-emerald-600 font-semibold hover:underline">{t('createArrow')}</button>
                         </div>
                     ) : filtered.map(inv => {
                         const { total } = calc(inv.items, inv.taxRate);
@@ -791,9 +797,9 @@ export default function InvoiceBuilder({ activeId }) {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3">
-                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold" style={{ background: st.bg, color: st.text }}>{t(language, inv.status + 'State') || st.label}</span>
+                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold" style={{ background: st.bg, color: st.text }}>{t(st.labelKey)}</span>
                                     <span className="text-sm font-bold text-gray-800 dark:text-gray-100 w-28 text-right tabular-nums">{fmt(total, inv.currency)}</span>
-                                    <button onClick={e => { e.stopPropagation(); window.confirm('Supprimer ?') && deleteInvoice(inv.id); }}
+                                    <button onClick={e => { e.stopPropagation(); window.confirm(t('confirmDelete')) && deleteInvoice(inv.id); }}
                                         className="p-1 rounded-lg opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 transition-all">
                                         <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /></svg>
                                     </button>
@@ -816,7 +822,7 @@ export default function InvoiceBuilder({ activeId }) {
             {showSaveToast && (
                 <div className="absolute top-16 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-top-4 bg-emerald-600 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 font-medium text-sm">
                     <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                    Facture sauvegardée avec succès !
+                    {t('invoiceSavedSuccess')}
                 </div>
             )}
 
@@ -828,13 +834,13 @@ export default function InvoiceBuilder({ activeId }) {
                     </button>
                     <div>
                         <p className="text-sm font-bold text-gray-800 dark:text-white">{draft.invoiceNumber}</p>
-                        <p className="text-[10px] text-gray-400">{saved ? '✓ Sauvegardé' : '• Non sauvegardé'}</p>
+                        <p className="text-[10px] text-gray-400">{saved ? t('savedStatus') : t('unsavedStatus')}</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
                     <select value={draft.status} onChange={e => setDraft(d => ({ ...d, status: e.target.value }))}
                         className="text-[10px] font-bold uppercase border border-gray-200 dark:border-gray-700 rounded-lg px-2.5 py-1.5 bg-transparent text-gray-600 dark:text-gray-300 outline-none cursor-pointer">
-                        {Object.entries(STATUS_MAP).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+                        {Object.entries(STATUS_MAP).map(([k, v]) => <option key={k} value={k}>{t(v.labelKey)}</option>)}
                     </select>
                     <select value={draft.currency} onChange={e => setDraft(d => ({ ...d, currency: e.target.value }))}
                         className="text-[10px] font-bold border border-gray-200 dark:border-gray-700 rounded-lg px-2.5 py-1.5 bg-transparent text-gray-600 dark:text-gray-300 outline-none cursor-pointer">
@@ -843,15 +849,15 @@ export default function InvoiceBuilder({ activeId }) {
                     {/* Contact search button */}
                     <button onClick={() => setShowContactSearch(true)}
                         className="h-8 px-3 rounded-lg border border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all flex items-center gap-1.5"
-                        title="Rechercher un contact">
+                        title={t('searchContact')}>
                         <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
-                        Contact
+                        {t('contact')}
                     </button>
                     {/* WhatsApp send button */}
                     <button onClick={handleSendWhatsApp} disabled={sendingWhatsApp || !draft.clientPhone}
                         className="h-8 px-3 rounded-lg text-xs font-semibold text-white flex items-center gap-1.5 transition-all disabled:opacity-40 active:scale-[.97]"
                         style={{ background: '#25D366' }}
-                        title="Envoyer via WhatsApp">
+                        title={t('sendViaWhatsapp')}>
                         {sendingWhatsApp ? (
                             <svg className="animate-spin h-3.5 w-3.5" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                         ) : (
@@ -862,13 +868,13 @@ export default function InvoiceBuilder({ activeId }) {
                     <button onClick={handleExportPDF}
                         className="h-8 px-4 rounded-lg border border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all flex items-center gap-1.5">
                         <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" /></svg>
-                        Export PDF
+                        {t('exportPdf')}
                     </button>
                     <button onClick={handleSave}
                         className="h-8 px-5 rounded-lg text-xs font-bold text-white flex items-center gap-1.5 active:scale-[.97] transition-transform"
                         style={{ background: 'linear-gradient(135deg,#059669,#047857)' }}>
                         <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" /><polyline points="17 21 17 13 7 13 7 21" /></svg>
-                        Sauvegarder
+                        {t('save')}
                     </button>
                 </div>
             </div>
@@ -878,25 +884,25 @@ export default function InvoiceBuilder({ activeId }) {
                 <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 bg-black/40 backdrop-blur-sm" onClick={() => setShowContactSearch(false)}>
                     <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-gray-100 dark:border-gray-800 animate-in" onClick={e => e.stopPropagation()}>
                         <div className="p-5 border-b border-gray-100 dark:border-gray-800">
-                            <p className="text-sm font-bold text-gray-800 dark:text-white mb-3">Rechercher un contact</p>
+                            <p className="text-sm font-bold text-gray-800 dark:text-white mb-3">{t('searchContact')}</p>
                             <div className="flex gap-2">
                                 <input
                                     autoFocus
                                     className="flex-1 h-9 px-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm text-gray-800 dark:text-gray-200 outline-none focus:ring-2 ring-emerald-400 placeholder:text-gray-400 transition"
-                                    placeholder="Nom, email ou téléphone..."
+                                    placeholder={t('nameEmailPhone')}
                                     value={contactSearchQuery}
                                     onChange={e => setContactSearchQuery(e.target.value)}
                                 />
                                 <select value={contactFilterSegment} onChange={e => setContactFilterSegment(e.target.value)}
                                     className="h-9 px-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-xs font-semibold text-gray-600 dark:text-gray-300 outline-none cursor-pointer">
-                                    <option value="all">Tous segments</option>
+                                    <option value="all">{t('allSegments')}</option>
                                     {contactSegments.map(s => <option key={s} value={s}>{s}</option>)}
                                 </select>
                             </div>
                         </div>
                         <div className="max-h-72 overflow-y-auto divide-y divide-gray-50 dark:divide-gray-800">
                             {filteredContacts.length === 0 ? (
-                                <div className="text-center py-10 text-gray-400 text-sm">Aucun contact trouvé</div>
+                                <div className="text-center py-10 text-gray-400 text-sm">{t('noContactFound')}</div>
                             ) : filteredContacts.map(c => (
                                 <button key={c.id} onClick={() => handleSelectContact(c)}
                                     className="w-full text-left px-5 py-3 hover:bg-emerald-50 dark:hover:bg-emerald-900/10 transition-colors flex items-center justify-between group">
@@ -928,8 +934,8 @@ export default function InvoiceBuilder({ activeId }) {
                         <div className="max-w-3xl mx-auto rounded-none shadow-2xl p-14 bg-[#f7f7f9] text-[#333] font-['Inter',sans-serif]">
                             {/* Header */}
                             <div className="flex justify-between items-center mb-5">
-                                <h1 className="text-5xl font-extrabold text-[#3b1485] tracking-widest uppercase m-0">Facture</h1>
-                                <LogoPicker value={draft.companyLogo} onChange={v => setDraft(d => ({ ...d, companyLogo: v }))} label="Logo" size={80} />
+                                <h1 className="text-5xl font-extrabold text-[#3b1485] tracking-widest uppercase m-0">{t('invoice')}</h1>
+                                <LogoPicker value={draft.companyLogo} onChange={v => setDraft(d => ({ ...d, companyLogo: v }))} label={t('logoLabel')} size={80} />
                             </div>
 
                             <hr className="border-t border-[#d1d1e0] my-8" />
@@ -937,16 +943,16 @@ export default function InvoiceBuilder({ activeId }) {
                             {/* Billing Info */}
                             <div className="flex justify-between mb-10">
                                 <div className="flex-1 max-w-xs">
-                                    <h2 className="text-lg font-bold text-[#333] mt-0 mb-4">Facturé à :</h2>
+                                    <h2 className="text-lg font-bold text-[#333] mt-0 mb-4">{t('billedToColon')}</h2>
                                     <input className="w-full text-base font-bold text-[#333] bg-transparent outline-none pb-1 placeholder:text-gray-400 focus:border-[#3b1485] transition-colors"
-                                        value={draft.clientName} onChange={e => setDraft(d => ({ ...d, clientName: e.target.value }))} placeholder="Client / Société" />
+                                        value={draft.clientName} onChange={e => setDraft(d => ({ ...d, clientName: e.target.value }))} placeholder={t('clientCompany')} />
                                     <textarea className="w-full bg-transparent text-sm text-[#5a5a75] outline-none resize-none mt-2 leading-relaxed" rows={2}
-                                        value={draft.clientAddress} onChange={e => setDraft(d => ({ ...d, clientAddress: e.target.value }))} placeholder="Adresse du client" />
+                                        value={draft.clientAddress} onChange={e => setDraft(d => ({ ...d, clientAddress: e.target.value }))} placeholder={t('clientAddress')} />
                                 </div>
                                 <div className="text-right mt-10 text-sm text-[#5a5a75] leading-relaxed">
-                                    <div className="flex gap-2 justify-end mb-1"><span className="font-semibold">No :</span><input className="w-32 text-right bg-transparent outline-none text-[#333] font-bold" value={draft.invoiceNumber} onChange={e => setDraft(d => ({ ...d, invoiceNumber: e.target.value }))} /></div>
-                                    <div className="flex gap-2 justify-end mb-1"><span className="font-semibold">Émission :</span><input type="date" className="bg-transparent outline-none" value={draft.issueDate} onChange={e => setDraft(d => ({ ...d, issueDate: e.target.value }))} /></div>
-                                    <div className="flex gap-2 justify-end"><span className="font-semibold">Échéance :</span><input type="date" className="bg-transparent outline-none" value={draft.dueDate} onChange={e => setDraft(d => ({ ...d, dueDate: e.target.value }))} /></div>
+                                    <div className="flex gap-2 justify-end mb-1"><span className="font-semibold">{t('noColon')}</span><input className="w-32 text-right bg-transparent outline-none text-[#333] font-bold" value={draft.invoiceNumber} onChange={e => setDraft(d => ({ ...d, invoiceNumber: e.target.value }))} /></div>
+                                    <div className="flex gap-2 justify-end mb-1"><span className="font-semibold">{t('issuedColon')}</span><input type="date" className="bg-transparent outline-none" value={draft.issueDate} onChange={e => setDraft(d => ({ ...d, issueDate: e.target.value }))} /></div>
+                                    <div className="flex gap-2 justify-end"><span className="font-semibold">{t('dueDateColon')}</span><input type="date" className="bg-transparent outline-none" value={draft.dueDate} onChange={e => setDraft(d => ({ ...d, dueDate: e.target.value }))} /></div>
                                 </div>
                             </div>
 
@@ -954,10 +960,10 @@ export default function InvoiceBuilder({ activeId }) {
                             <div className="mb-10">
                                 <div className="bg-[#3b1485] text-white px-5 py-3 grid grid-cols-[1fr_4fr_1fr_2fr_2fr_1fr] md:grid-cols-[24px_4fr_1fr_2fr_2fr_24px] gap-2 items-center text-[13px] font-bold tracking-wide">
                                     <div></div>
-                                    <div>DESCRIPTION</div>
-                                    <div className="text-center">QTÉ</div>
-                                    <div className="text-center">PRIX</div>
-                                    <div className="text-right">TOTAL</div>
+                                    <div>{t('descriptionCaps')}</div>
+                                    <div className="text-center">{t('qtyCaps')}</div>
+                                    <div className="text-center">{t('priceCaps')}</div>
+                                    <div className="text-right">{t('totalCaps')}</div>
                                     <div></div>
                                 </div>
                                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
@@ -965,7 +971,7 @@ export default function InvoiceBuilder({ activeId }) {
                                         <table className="w-full"><tbody>
                                             <SortableContext items={draft.items} strategy={verticalListSortingStrategy}>
                                                 {draft.items.map(item => (
-                                                    <SortableLine key={item.id} item={item} onUpdate={updateItem} onRemove={removeItem} currency={draft.currency} />
+                                                    <SortableLine key={item.id} item={item} onUpdate={updateItem} onRemove={removeItem} currency={draft.currency} t={t} />
                                                 ))}
                                             </SortableContext>
                                         </tbody></table>
@@ -974,32 +980,32 @@ export default function InvoiceBuilder({ activeId }) {
                                 <button onClick={addItem}
                                     className="mt-3 flex items-center gap-1.5 text-xs font-bold text-[#3b1485] hover:text-[#2a0e63] transition-colors no-print">
                                     <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="16" /><line x1="8" y1="12" x2="16" y2="12" /></svg>
-                                    Ajouter une ligne
+                                    {t('addRow')}
                                 </button>
                             </div>
 
                             {/* Bottom Section */}
                             <div className="flex justify-between items-start mt-8">
                                 <div className="w-[45%]">
-                                    <h3 className="text-[1.1em] font-bold text-[#3b1485] mb-3 mt-0">Notes :</h3>
+                                    <h3 className="text-[1.1em] font-bold text-[#3b1485] mb-3 mt-0">{t('notesColon')}</h3>
                                     <textarea className="w-full text-sm bg-transparent outline-none resize-none text-[#5a5a75] leading-relaxed border-b border-[#d1d1e0] focus:border-[#3b1485] transition-colors" rows={3}
-                                        value={draft.notes} onChange={e => setDraft(d => ({ ...d, notes: e.target.value }))} placeholder="Notes et instructions de paiement..." />
+                                        value={draft.notes} onChange={e => setDraft(d => ({ ...d, notes: e.target.value }))} placeholder={t('paymentNotesAndInstructions')} />
 
                                     <hr className="border-t border-[#d1d1e0] my-6 w-64" />
 
-                                    <h3 className="text-[1.1em] font-bold text-[#3b1485] mb-3 mt-0">Coordonnées :</h3>
+                                    <h3 className="text-[1.1em] font-bold text-[#3b1485] mb-3 mt-0">{t('contactDetailsColon')}</h3>
                                     <input className="w-full text-sm font-bold text-[#5a5a75] bg-transparent outline-none border-b border-[#d1d1e0] pb-1 mb-1 focus:border-[#3b1485]"
-                                        value={draft.companyName} onChange={e => setDraft(d => ({ ...d, companyName: e.target.value }))} placeholder="Votre entreprise" />
+                                        value={draft.companyName} onChange={e => setDraft(d => ({ ...d, companyName: e.target.value }))} placeholder={t('yourCompany')} />
                                     <input className="w-full text-sm text-[#5a5a75] bg-transparent outline-none border-b border-[#d1d1e0] pb-1 mb-2 focus:border-[#3b1485]"
-                                        value={draft.companyTagline} onChange={e => setDraft(d => ({ ...d, companyTagline: e.target.value }))} placeholder="Sous-titre / Slogan" />
+                                        value={draft.companyTagline} onChange={e => setDraft(d => ({ ...d, companyTagline: e.target.value }))} placeholder={t('subtitleSlogan')} />
                                     <textarea className="w-full text-sm text-[#5a5a75] bg-transparent outline-none resize-none leading-relaxed border-b border-[#d1d1e0] pb-1 focus:border-[#3b1485]" rows={3}
-                                        value={draft.senderInfo} onChange={e => setDraft(d => ({ ...d, senderInfo: e.target.value }))} placeholder="Adresse et Contact" />
+                                        value={draft.senderInfo} onChange={e => setDraft(d => ({ ...d, senderInfo: e.target.value }))} placeholder={t('addressAndContact')} />
                                 </div>
                                 <div className="w-[45%]">
-                                    <div className="flex justify-between py-2 text-[0.95em] text-[#333] font-medium"><span>Sous-Total :</span><span>{fmt(sub, draft.currency)}</span></div>
+                                    <div className="flex justify-between py-2 text-[0.95em] text-[#333] font-medium"><span>{t('subtotalColon')}</span><span>{fmt(sub, draft.currency)}</span></div>
                                     <hr className="border-t border-[#9ba4b5] mx-5 my-1" />
                                     <div className="flex justify-between items-center py-2 text-[0.95em] text-[#333] font-medium">
-                                        <span className="flex items-center gap-1.5">TVA
+                                        <span className="flex items-center gap-1.5">{t('vat')}
                                             <input type="number" min="0" max="100" step="0.5"
                                                 className="w-12 text-center text-xs bg-gray-50 rounded-md py-0.5 outline-none border border-gray-200 no-print"
                                                 value={draft.taxRate} onChange={e => setDraft(d => ({ ...d, taxRate: parseFloat(e.target.value) || 0 }))} />% :
@@ -1007,12 +1013,12 @@ export default function InvoiceBuilder({ activeId }) {
                                         <span>{fmt(tax, draft.currency)}</span>
                                     </div>
                                     <div className="bg-[#3b1485] text-white flex justify-between p-4 px-5 text-[1.1em] font-bold mt-2.5">
-                                        <span>Total :</span>
+                                        <span>{t('totalColon')}</span>
                                         <span>{fmt(total, draft.currency)}</span>
                                     </div>
 
                                     <div className="mt-10 border border-[#d1d1d1] h-[120px] bg-white flex justify-center items-end pb-5">
-                                        <span className="text-[#a0a0a0] italic text-[0.9em]">WaCopilote Automation</span>
+                                        <span className="text-[#a0a0a0] italic text-[0.9em]">{t('brandWacopiloteAutomation')}</span>
                                     </div>
                                 </div>
                             </div>
@@ -1023,12 +1029,12 @@ export default function InvoiceBuilder({ activeId }) {
                                 {/* Header */}
                                 <div className="flex justify-between items-start">
                                     <div className="flex items-center gap-4">
-                                        <LogoPicker value={draft.companyLogo} onChange={v => setDraft(d => ({ ...d, companyLogo: v }))} label="Logo" size={48} />
+                                        <LogoPicker value={draft.companyLogo} onChange={v => setDraft(d => ({ ...d, companyLogo: v }))} label={t('logoLabel')} size={48} />
                                         <div>
                                             <input className="text-lg font-bold text-[#0a2533] uppercase tracking-wider bg-transparent outline-none w-full placeholder:text-gray-400"
-                                                value={draft.companyName} onChange={e => setDraft(d => ({ ...d, companyName: e.target.value }))} placeholder="VOTRE ENTREPRISE" />
+                                                value={draft.companyName} onChange={e => setDraft(d => ({ ...d, companyName: e.target.value }))} placeholder={t('yourCompanyCaps')} />
                                             <input className="text-sm text-[#0a2533] bg-transparent outline-none w-full placeholder:text-gray-400 mt-0.5"
-                                                value={draft.companyTagline} onChange={e => setDraft(d => ({ ...d, companyTagline: e.target.value }))} placeholder="Sous-titre / Slogan" />
+                                                value={draft.companyTagline} onChange={e => setDraft(d => ({ ...d, companyTagline: e.target.value }))} placeholder={t('subtitleSlogan')} />
                                         </div>
                                     </div>
                                     <div className="text-right">
@@ -1040,29 +1046,29 @@ export default function InvoiceBuilder({ activeId }) {
                                 {/* Info Section */}
                                 <div className="flex justify-between items-start mt-4">
                                     <div className="flex-1 max-w-sm">
-                                        <p className="text-xs font-bold uppercase tracking-wider mb-2">DE</p>
+                                        <p className="text-xs font-bold uppercase tracking-wider mb-2">{t('fromCaps')}</p>
                                         <textarea className="w-full bg-transparent text-sm text-[#0a2533] font-medium outline-none resize-none leading-relaxed" rows={3}
                                             value={draft.senderInfo} onChange={e => setDraft(d => ({ ...d, senderInfo: e.target.value }))}
-                                            placeholder={"Nom de l'entreprise\nAdresse\nEmail"} />
+                                            placeholder={`${t('companyName')}\n${t('address')}\n${t('email')}`} />
 
-                                        <p className="text-xs font-bold uppercase tracking-wider mt-4 mb-2">FACTURÉ À</p>
+                                        <p className="text-xs font-bold uppercase tracking-wider mt-4 mb-2">{t('billedToCaps')}</p>
                                         <div className="flex items-start gap-3">
                                             <LogoPicker value={draft.clientLogo} onChange={v => setDraft(d => ({ ...d, clientLogo: v }))} label="Client" size={40} />
                                             <div className="flex-1">
                                                 <input className="w-full text-base font-bold text-[#0a2533] bg-transparent outline-none border-b border-[#0a2533]/20 pb-1 placeholder:text-gray-400 focus:border-[#48a69e] transition-colors"
-                                                    value={draft.clientName} onChange={e => setDraft(d => ({ ...d, clientName: e.target.value }))} placeholder="Client / Société" />
+                                                    value={draft.clientName} onChange={e => setDraft(d => ({ ...d, clientName: e.target.value }))} placeholder={t('clientCompany')} />
                                                 <textarea className="w-full bg-transparent text-sm text-[#0a2533] font-medium outline-none resize-none mt-2 leading-relaxed" rows={2}
-                                                    value={draft.clientAddress} onChange={e => setDraft(d => ({ ...d, clientAddress: e.target.value }))} placeholder="Adresse du client" />
+                                                    value={draft.clientAddress} onChange={e => setDraft(d => ({ ...d, clientAddress: e.target.value }))} placeholder={t('clientAddress')} />
                                             </div>
                                         </div>
                                     </div>
                                     <div className="text-right space-y-3 mt-8">
                                         <div>
-                                            <p className="text-xs font-bold uppercase mb-1">Date</p>
+                                            <p className="text-xs font-bold uppercase mb-1">{t('date')}</p>
                                             <input type="date" className="text-sm font-medium text-[#0a2533] bg-transparent outline-none" value={draft.issueDate} onChange={e => setDraft(d => ({ ...d, issueDate: e.target.value }))} />
                                         </div>
                                         <div>
-                                            <p className="text-xs font-bold uppercase mb-1">Échéance</p>
+                                            <p className="text-xs font-bold uppercase mb-1">{t('dueDate')}</p>
                                             <input type="date" className="text-sm font-medium text-[#0a2533] bg-transparent outline-none" value={draft.dueDate} onChange={e => setDraft(d => ({ ...d, dueDate: e.target.value }))} />
                                         </div>
                                     </div>
@@ -1072,10 +1078,10 @@ export default function InvoiceBuilder({ activeId }) {
                                 <div>
                                     <div className="text-white rounded-[20px] px-8 py-3.5 mb-4 grid grid-cols-[1fr_4fr_2fr_2fr_3fr_1fr] md:grid-cols-[24px_4fr_2fr_2fr_3fr_24px] gap-2 items-center text-[13px] font-bold tracking-wider" style={{ background: 'linear-gradient(90deg, #256a7c, #48a69e)' }}>
                                         <div></div>
-                                        <div className="col-span-1">DESCRIPTION</div>
-                                        <div className="text-center">QTÉ</div>
-                                        <div className="text-center">PRIX</div>
-                                        <div className="text-right">TOTAL</div>
+                                        <div className="col-span-1">{t('descriptionCaps')}</div>
+                                        <div className="text-center">{t('qtyCaps')}</div>
+                                        <div className="text-center">{t('priceCaps')}</div>
+                                        <div className="text-right">{t('totalCaps')}</div>
                                         <div></div>
                                     </div>
                                     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
@@ -1083,7 +1089,7 @@ export default function InvoiceBuilder({ activeId }) {
                                             <table className="w-full"><tbody>
                                                 <SortableContext items={draft.items} strategy={verticalListSortingStrategy}>
                                                     {draft.items.map(item => (
-                                                        <SortableLine key={item.id} item={item} onUpdate={updateItem} onRemove={removeItem} currency={draft.currency} />
+                                                        <SortableLine key={item.id} item={item} onUpdate={updateItem} onRemove={removeItem} currency={draft.currency} t={t} />
                                                     ))}
                                                 </SortableContext>
                                             </tbody></table>
@@ -1092,21 +1098,21 @@ export default function InvoiceBuilder({ activeId }) {
                                     <button onClick={addItem}
                                         className="mt-3 ml-2 flex items-center gap-1.5 text-xs font-bold text-[#256a7c] hover:text-[#48a69e] transition-colors no-print">
                                         <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="16" /><line x1="8" y1="12" x2="16" y2="12" /></svg>
-                                        Ajouter une ligne
+                                        {t('addRow')}
                                     </button>
                                 </div>
 
                                 {/* Summary */}
                                 <div className="flex gap-8 items-start mt-8">
                                     <div className="flex-1">
-                                        <p className="text-[11px] font-bold uppercase tracking-wider mb-2">NOTES</p>
+                                        <p className="text-[11px] font-bold uppercase tracking-wider mb-2">{t('notesCaps')}</p>
                                         <textarea className="w-full text-sm bg-transparent outline-none resize-none text-[#0a2533] leading-relaxed border-b border-[#0a2533]/10 focus:border-[#48a69e] transition-colors" rows={4}
-                                            value={draft.notes} onChange={e => setDraft(d => ({ ...d, notes: e.target.value }))} placeholder="Conditions de paiement et notes..." />
+                                            value={draft.notes} onChange={e => setDraft(d => ({ ...d, notes: e.target.value }))} placeholder={t('paymentTermsAndNotes')} />
                                     </div>
                                     <div className="w-[300px] bg-white rounded-[20px] p-6 text-sm font-semibold text-[#0a2533]">
-                                        <div className="flex justify-between mb-3"><span>SOUS-TOTAL</span><span>{fmt(sub, draft.currency)}</span></div>
+                                        <div className="flex justify-between mb-3"><span>{t('subtotalCaps')}</span><span>{fmt(sub, draft.currency)}</span></div>
                                         <div className="flex justify-between items-center mb-3">
-                                            <span className="flex items-center gap-1.5">TVA
+                                            <span className="flex items-center gap-1.5">{t('vat')}
                                                 <input type="number" min="0" max="100" step="0.5"
                                                     className="w-10 text-center text-xs bg-gray-50 rounded-md py-0.5 outline-none border border-gray-200 no-print"
                                                     value={draft.taxRate} onChange={e => setDraft(d => ({ ...d, taxRate: parseFloat(e.target.value) || 0 }))} />%
@@ -1114,15 +1120,15 @@ export default function InvoiceBuilder({ activeId }) {
                                             <span>{fmt(tax, draft.currency)}</span>
                                         </div>
                                         <div className="flex justify-between items-center mt-5 pt-5 border-t-2 border-[#ede8dc] text-lg font-bold">
-                                            <span>TOTAL</span>
+                                            <span>{t('totalCaps')}</span>
                                             <span>{fmt(total, draft.currency)}</span>
                                         </div>
                                     </div>
                                 </div>
                                 {/* Footer Banner */}
                                 <div className="rounded-full px-8 py-3.5 flex justify-between items-center text-white text-xs font-medium" style={{ background: '#072535' }}>
-                                    <span>Généré par WaCopilote</span>
-                                    <span>MERCI POUR VOTRE CONFIANCE</span>
+                                    <span>{t('generatedByWacopilote')}</span>
+                                    <span>{t('thankYouForBusiness')}</span>
                                 </div>
                             </div>
                         </div>
@@ -1132,25 +1138,25 @@ export default function InvoiceBuilder({ activeId }) {
                             <div className="p-10 space-y-10">
                                 <div className="flex justify-between items-start">
                                     <div className="flex items-center gap-4">
-                                        <LogoPicker value={draft.companyLogo} onChange={v => setDraft(d => ({ ...d, companyLogo: v }))} label="Logo" size={56} />
+                                        <LogoPicker value={draft.companyLogo} onChange={v => setDraft(d => ({ ...d, companyLogo: v }))} label={t('logoLabel')} size={56} />
                                         <div>
                                             <input className="text-xl font-extrabold text-gray-900 dark:text-white bg-transparent outline-none w-full placeholder:text-gray-300 tracking-tight"
-                                                value={draft.companyName} onChange={e => setDraft(d => ({ ...d, companyName: e.target.value }))} placeholder="Votre entreprise" />
+                                                value={draft.companyName} onChange={e => setDraft(d => ({ ...d, companyName: e.target.value }))} placeholder={t('yourCompany')} />
                                             <input className="text-sm text-gray-400 bg-transparent outline-none w-full placeholder:text-gray-300 mt-0.5"
-                                                value={draft.companyTagline} onChange={e => setDraft(d => ({ ...d, companyTagline: e.target.value }))} placeholder="Sous-titre" />
+                                                value={draft.companyTagline} onChange={e => setDraft(d => ({ ...d, companyTagline: e.target.value }))} placeholder={t('subtitleSlogan')} />
                                         </div>
                                     </div>
                                     <div className="text-right">
-                                        <p className="text-[9px] font-bold uppercase tracking-[.2em] text-gray-400 mb-1">Facture</p>
+                                        <p className="text-[9px] font-bold uppercase tracking-[.2em] text-gray-400 mb-1">{t('invoice')}</p>
                                         <input className="text-xl font-extrabold text-gray-900 dark:text-white bg-transparent outline-none text-right w-48 tracking-tight"
                                             value={draft.invoiceNumber} onChange={e => setDraft(d => ({ ...d, invoiceNumber: e.target.value }))} />
                                         <div className="flex gap-6 justify-end mt-3">
                                             <div>
-                                                <p className="text-[9px] font-bold uppercase text-gray-400">Date</p>
+                                                <p className="text-[9px] font-bold uppercase text-gray-400">{t('date')}</p>
                                                 <input type="date" className="text-sm text-gray-700 dark:text-gray-300 bg-transparent outline-none" value={draft.issueDate} onChange={e => setDraft(d => ({ ...d, issueDate: e.target.value }))} />
                                             </div>
                                             <div>
-                                                <p className="text-[9px] font-bold uppercase text-gray-400">Échéance</p>
+                                                <p className="text-[9px] font-bold uppercase text-gray-400">{t('dueDate')}</p>
                                                 <input type="date" className="text-sm text-gray-700 dark:text-gray-300 bg-transparent outline-none" value={draft.dueDate} onChange={e => setDraft(d => ({ ...d, dueDate: e.target.value }))} />
                                             </div>
                                         </div>
@@ -1158,20 +1164,20 @@ export default function InvoiceBuilder({ activeId }) {
                                 </div>
                                 <div className="grid grid-cols-2 gap-10">
                                     <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-5">
-                                        <p className="text-[9px] font-bold uppercase tracking-[.2em] text-gray-400 mb-3">De</p>
+                                        <p className="text-[9px] font-bold uppercase tracking-[.2em] text-gray-400 mb-3">{t('from')}</p>
                                         <textarea className="w-full bg-transparent text-sm text-gray-700 dark:text-gray-300 outline-none resize-none leading-relaxed" rows={4}
                                             value={draft.senderInfo} onChange={e => setDraft(d => ({ ...d, senderInfo: e.target.value }))}
-                                            placeholder={"Nom de l'entreprise\nAdresse\nEmail"} />
+                                            placeholder={`${t('companyName')}\n${t('address')}\n${t('email')}`} />
                                     </div>
                                     <div className="p-5">
-                                        <p className="text-[9px] font-bold uppercase tracking-[.2em] text-gray-400 mb-3">Facturé à</p>
+                                        <p className="text-[9px] font-bold uppercase tracking-[.2em] text-gray-400 mb-3">{t('billedTo')}</p>
                                         <div className="flex items-start gap-3">
                                             <LogoPicker value={draft.clientLogo} onChange={v => setDraft(d => ({ ...d, clientLogo: v }))} label="Client" size={40} />
                                             <div className="flex-1">
                                                 <input className="w-full text-base font-bold text-gray-900 dark:text-white bg-transparent outline-none border-b border-gray-200 dark:border-gray-700 pb-1 placeholder:text-gray-300 focus:border-emerald-500 transition-colors"
-                                                    value={draft.clientName} onChange={e => setDraft(d => ({ ...d, clientName: e.target.value }))} placeholder="Client / Société" />
+                                                    value={draft.clientName} onChange={e => setDraft(d => ({ ...d, clientName: e.target.value }))} placeholder={t('clientCompany')} />
                                                 <textarea className="w-full bg-transparent text-sm text-gray-500 outline-none resize-none mt-2 leading-relaxed" rows={2}
-                                                    value={draft.clientAddress} onChange={e => setDraft(d => ({ ...d, clientAddress: e.target.value }))} placeholder="Adresse du client" />
+                                                    value={draft.clientAddress} onChange={e => setDraft(d => ({ ...d, clientAddress: e.target.value }))} placeholder={t('clientAddress')} />
                                             </div>
                                         </div>
                                     </div>
@@ -1182,17 +1188,17 @@ export default function InvoiceBuilder({ activeId }) {
                                             <thead>
                                                 <tr className="border-b-2 border-gray-100 dark:border-gray-700">
                                                     <th className="w-6"></th>
-                                                    <th className="text-left text-[9px] font-bold uppercase tracking-[.15em] text-gray-400 pb-3">Description</th>
-                                                    <th className="text-center text-[9px] font-bold uppercase tracking-[.15em] text-gray-400 pb-3 w-20">Qté</th>
-                                                    <th className="text-right text-[9px] font-bold uppercase tracking-[.15em] text-gray-400 pb-3 w-28">Prix</th>
-                                                    <th className="text-right text-[9px] font-bold uppercase tracking-[.15em] text-gray-400 pb-3 w-28">Total</th>
+                                                    <th className="text-left text-[9px] font-bold uppercase tracking-[.15em] text-gray-400 pb-3">{t('description')}</th>
+                                                    <th className="text-center text-[9px] font-bold uppercase tracking-[.15em] text-gray-400 pb-3 w-20">{t('qty')}</th>
+                                                    <th className="text-right text-[9px] font-bold uppercase tracking-[.15em] text-gray-400 pb-3 w-28">{t('price')}</th>
+                                                    <th className="text-right text-[9px] font-bold uppercase tracking-[.15em] text-gray-400 pb-3 w-28">{t('total')}</th>
                                                     <th className="w-8"></th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 <SortableContext items={draft.items} strategy={verticalListSortingStrategy}>
                                                     {draft.items.map(item => (
-                                                        <SortableLine key={item.id} item={item} onUpdate={updateItem} onRemove={removeItem} currency={draft.currency} />
+                                                        <SortableLine key={item.id} item={item} onUpdate={updateItem} onRemove={removeItem} currency={draft.currency} t={t} />
                                                     ))}
                                                 </SortableContext>
                                             </tbody>
@@ -1201,19 +1207,19 @@ export default function InvoiceBuilder({ activeId }) {
                                     <button onClick={addItem}
                                         className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-emerald-600 hover:text-emerald-700 transition-colors no-print">
                                         <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="16" /><line x1="8" y1="12" x2="16" y2="12" /></svg>
-                                        Ajouter une ligne
+                                        {t('addRow')}
                                     </button>
                                 </div>
                                 <div className="flex justify-between gap-8 pt-8 border-t border-gray-100 dark:border-gray-700">
                                     <div className="flex-1 max-w-xs">
-                                        <p className="text-[9px] font-bold uppercase tracking-[.2em] text-gray-400 mb-2">Notes</p>
+                                        <p className="text-[9px] font-bold uppercase tracking-[.2em] text-gray-400 mb-2">{t('notes')}</p>
                                         <textarea className="w-full text-sm bg-gray-50 dark:bg-gray-800/50 rounded-xl p-3.5 outline-none resize-none text-gray-600 dark:text-gray-400 border border-gray-100 dark:border-gray-700 focus:border-emerald-400 transition-colors" rows={4}
-                                            value={draft.notes} onChange={e => setDraft(d => ({ ...d, notes: e.target.value }))} placeholder="Note au client..." />
+                                            value={draft.notes} onChange={e => setDraft(d => ({ ...d, notes: e.target.value }))} placeholder={t('noteToClient')} />
                                     </div>
                                     <div className="w-64 space-y-2.5">
-                                        <div className="flex justify-between text-sm text-gray-500"><span>Sous-total</span><span className="tabular-nums">{fmt(sub, draft.currency)}</span></div>
+                                        <div className="flex justify-between text-sm text-gray-500"><span>{t('subtotal')}</span><span className="tabular-nums">{fmt(sub, draft.currency)}</span></div>
                                         <div className="flex justify-between text-sm text-gray-500 items-center">
-                                            <span className="flex items-center gap-1.5">TVA
+                                            <span className="flex items-center gap-1.5">{t('vat')}
                                                 <input type="number" min="0" max="100" step="0.5"
                                                     className="w-10 text-center text-xs bg-gray-50 dark:bg-gray-800 rounded-md py-0.5 outline-none border border-gray-200 dark:border-gray-700 no-print"
                                                     value={draft.taxRate} onChange={e => setDraft(d => ({ ...d, taxRate: parseFloat(e.target.value) || 0 }))} />%
@@ -1221,7 +1227,7 @@ export default function InvoiceBuilder({ activeId }) {
                                             <span className="tabular-nums">{fmt(tax, draft.currency)}</span>
                                         </div>
                                         <div className="flex justify-between items-center pt-3 border-t border-gray-100 dark:border-gray-700">
-                                            <span className="text-sm font-bold text-gray-800 dark:text-white">Total</span>
+                                            <span className="text-sm font-bold text-gray-800 dark:text-white">{t('total')}</span>
                                             <span className="text-2xl font-extrabold text-emerald-600 tabular-nums">{fmt(total, draft.currency)}</span>
                                         </div>
                                     </div>
@@ -1235,23 +1241,23 @@ export default function InvoiceBuilder({ activeId }) {
                 {/* Sidebar: Templates */}
                 <aside className="w-64 bg-white dark:bg-gray-900 border-l border-gray-100 dark:border-gray-800 p-5 flex flex-col gap-6 overflow-y-auto no-print">
                     <div>
-                        <p className="text-[9px] font-bold uppercase tracking-[.2em] text-gray-400 mb-4">Modèle</p>
+                        <p className="text-[9px] font-bold uppercase tracking-[.2em] text-gray-400 mb-4">{t('templateLabel')}</p>
                         <div className="space-y-4">
-                            {TPL_PREVIEWS.map(t => (
-                                <TplThumb key={t.id} tpl={t} active={draft.template === t.id} onClick={() => setDraft(d => ({ ...d, template: t.id }))} />
+                            {TPL_PREVIEWS.map(tItem => (
+                                <TplThumb key={tItem.id} tpl={tItem} active={draft.template === tItem.id} onClick={() => setDraft(d => ({ ...d, template: tItem.id }))} t={t} />
                             ))}
                         </div>
                     </div>
 
                     {/* Quick summary */}
                     <div className="mt-auto pt-5 border-t border-gray-100 dark:border-gray-800">
-                        <p className="text-[9px] font-bold uppercase tracking-[.2em] text-gray-400 mb-3">Résumé</p>
+                        <p className="text-[9px] font-bold uppercase tracking-[.2em] text-gray-400 mb-3">{t('summary')}</p>
                         <div className="space-y-2 text-xs">
-                            <div className="flex justify-between text-gray-500"><span>Lignes</span><span className="font-semibold">{draft.items.length}</span></div>
-                            <div className="flex justify-between text-gray-500"><span>Sous-total</span><span className="font-semibold">{fmt(sub, draft.currency)}</span></div>
-                            <div className="flex justify-between text-gray-500"><span>TVA</span><span className="font-semibold">{fmt(tax, draft.currency)}</span></div>
+                            <div className="flex justify-between text-gray-500"><span>{t('rows')}</span><span className="font-semibold">{draft.items.length}</span></div>
+                            <div className="flex justify-between text-gray-500"><span>{t('subtotal')}</span><span className="font-semibold">{fmt(sub, draft.currency)}</span></div>
+                            <div className="flex justify-between text-gray-500"><span>{t('vat')}</span><span className="font-semibold">{fmt(tax, draft.currency)}</span></div>
                             <div className="flex justify-between font-bold text-gray-800 dark:text-white pt-2 border-t border-gray-100 dark:border-gray-800">
-                                <span>Total</span><span className="text-emerald-600">{fmt(total, draft.currency)}</span>
+                                <span>{t('total')}</span><span className="text-emerald-600">{fmt(total, draft.currency)}</span>
                             </div>
                         </div>
                     </div>

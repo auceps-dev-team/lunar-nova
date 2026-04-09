@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const AgentManager = () => {
+    const { t } = useTranslation();
     const [agents, setAgents] = useState([]);
     const [isEditing, setIsEditing] = useState(false);
     const [currentAgent, setCurrentAgent] = useState(null);
@@ -44,14 +46,14 @@ const AgentManager = () => {
             setCurrentAgent(null);
         } catch (err) {
             console.error("Failed to save agent", err);
-            alert("Erreur lors de l'enregistrement de l'agent.");
+            alert(t('agentSaveError'));
         } finally {
             setIsLoading(false);
         }
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm("Êtes-vous sûr de vouloir supprimer cet agent ?")) return;
+        if (!window.confirm(t('deleteAgentConfirm'))) return;
         try {
             await fetch(`http://localhost:3000/api/agents/${id}`, { method: 'DELETE' });
             await fetchAgents();
@@ -69,23 +71,23 @@ const AgentManager = () => {
         <div className="max-w-5xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center mb-8">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Agents IA Personnalisés</h1>
-                    <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Créez et gérez des assistants avec des rôles et fournisseurs spécifiques.</p>
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('customAiAgents')}</h1>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">{t('manageAssistantsDesc')}</p>
                 </div>
                 <button
                     onClick={() => openEditor()}
                     className="px-4 py-2 bg-[#0b9f84] hover:bg-[#088b73] text-white text-sm font-medium rounded-lg shadow transition"
                 >
-                    + Créer un Agent
+                    {t('createAgent')}
                 </button>
             </div>
 
             {isEditing ? (
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-card border border-gray-100 dark:border-gray-700 p-6">
-                    <h2 className="text-lg font-semibold mb-4">{currentAgent.id.startsWith('agent_') ? 'Nouvel Agent' : 'Modifier l\'Agent'}</h2>
+                    <h2 className="text-lg font-semibold mb-4">{currentAgent.id.startsWith('agent_') ? t('newAgent') : t('editAgent')}</h2>
                     <form onSubmit={handleSave} className="space-y-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ID Technique (ex: expert_sav)</label>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('technicalId')}</label>
                             <input
                                 type="text"
                                 value={currentAgent.id}
@@ -96,7 +98,7 @@ const AgentManager = () => {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nom public</label>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('publicName')}</label>
                             <input
                                 type="text"
                                 value={currentAgent.name}
@@ -106,7 +108,7 @@ const AgentManager = () => {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Instructions Système (Le rôle de l'agent)</label>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('systemInstructions')}</label>
                             <textarea
                                 value={currentAgent.system_instruction}
                                 onChange={(e) => setCurrentAgent({ ...currentAgent, system_instruction: e.target.value })}
@@ -117,27 +119,27 @@ const AgentManager = () => {
                         </div>
                         <div className="flex gap-4">
                             <div className="flex-1">
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Format de Sortie</label>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('outputFormat')}</label>
                                 <select
                                     value={currentAgent.response_format || 'text'}
                                     onChange={(e) => setCurrentAgent({ ...currentAgent, response_format: e.target.value })}
                                     className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 bg-white dark:bg-gray-700 text-sm"
                                 >
-                                    <option value="text">Texte libre (Conversation)</option>
-                                    <option value="json">Format JSON (API/Data)</option>
+                                    <option value="text">{t('freeTextFormat')}</option>
+                                    <option value="json">{t('jsonFormat')}</option>
                                 </select>
                             </div>
                             <div className="flex-1">
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Forcer un Fournisseur (Override)</label>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('forceProvider')}</label>
                                 <select
                                     value={currentAgent.provider_override || ''}
                                     onChange={(e) => setCurrentAgent({ ...currentAgent, provider_override: e.target.value })}
                                     className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 bg-white dark:bg-gray-700 text-sm"
                                 >
-                                    <option value="">Utiliser le fournisseur global par défaut</option>
-                                    <option value="gemini">Forcer Google Gemini</option>
-                                    <option value="openrouter">Forcer OpenRouter</option>
-                                    <option value="ollama">Forcer Ollama (Local)</option>
+                                    <option value="">{t('useGlobalDefaultProvider')}</option>
+                                    <option value="gemini">{t('forceGoogleGemini')}</option>
+                                    <option value="openrouter">{t('forceOpenRouter')}</option>
+                                    <option value="ollama">{t('forceOllamaLocal')}</option>
                                 </select>
                             </div>
                         </div>
@@ -148,14 +150,14 @@ const AgentManager = () => {
                                 onClick={() => setIsEditing(false)}
                                 className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium"
                             >
-                                Annuler
+                                {t('cancel')}
                             </button>
                             <button
                                 type="submit"
                                 disabled={isLoading}
                                 className="px-4 py-2 bg-[#0b9f84] text-white rounded-lg text-sm font-medium shadow disabled:opacity-70"
                             >
-                                {isLoading ? 'Sauvegarde...' : 'Enregistrer l\'Agent'}
+                                {isLoading ? t('saving') : t('saveAgent')}
                             </button>
                         </div>
                     </form>
@@ -168,7 +170,7 @@ const AgentManager = () => {
                                 <h3 className="font-semibold text-lg text-gray-900 dark:text-white">{agent.name}</h3>
                                 <span className={`text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider ${agent.provider_override ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
                                     }`}>
-                                    {agent.provider_override || 'Global'}
+                                    {agent.provider_override || t('globalProvider')}
                                 </span>
                             </div>
                             <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 line-clamp-3 flex-1">
@@ -189,7 +191,7 @@ const AgentManager = () => {
                     ))}
                     {agents.length === 0 && (
                         <div className="col-span-full py-12 text-center text-gray-500 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-dashed border-gray-300 dark:border-gray-700">
-                            Aucun agent personnalisé trouvé. Cliquez sur "Créer un Agent" pour commencer.
+                            {t('noCustomAgentFound')}
                         </div>
                     )}
                 </div>

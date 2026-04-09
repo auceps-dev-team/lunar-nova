@@ -3,7 +3,8 @@ import { Link, useLocation } from 'react-router-dom';
 import useAppStore from '../store';
 import { Sparkles, Download, Undo, Redo, Copy, Edit3, AlignLeft, AlignCenter, AlignRight, Bold, Italic, Underline, List } from 'lucide-react';
 import html2pdf from 'html2pdf.js';
-import { getTranslation as t } from '../locales';
+import { useTranslation } from 'react-i18next';
+
 
 const SYSTEM_AGENTS = [
     { id: 'copywriter', name: 'Jarvis - SDR Senior', isSystem: true },
@@ -31,6 +32,7 @@ const SYSTEM_AGENTS = [
 ];
 
 export default function AiWriter() {
+    const { t } = useTranslation();
     const showAppNotification = useAppStore(state => state.showAppNotification);
     const appSettings = useAppStore(state => state.appSettings) || {};
     const uiLanguage = appSettings.language || 'en';
@@ -46,7 +48,7 @@ export default function AiWriter() {
     const [toneOfVoice, setToneOfVoice] = useState('Professional');
 
     const [isGenerating, setIsGenerating] = useState(false);
-    const [editorContent, setEditorContent] = useState('Untitled Document...');
+    const [editorContent, setEditorContent] = useState(t('untitledDoc'));
     const [showDownloadMenu, setShowDownloadMenu] = useState(false);
     const [documentId, setDocumentId] = useState(null);
 
@@ -100,8 +102,8 @@ export default function AiWriter() {
     };
 
     const handleGenerate = async () => {
-        if (!productName.trim() && !shortDescription.trim()) {
-            showAppNotification("Veuillez fournir un nom ou une description de produit/sujet.", "error");
+        if (!documentTitle.trim() && !shortDescription.trim()) {
+            showAppNotification(t('errorProvideNameOrDesc'), "error");
             return;
         }
 
@@ -109,7 +111,7 @@ export default function AiWriter() {
         try {
             // Construct the prompt
             let prompt = `Tâche : Écrire un contenu selon ces paramètres :
-- Sujet/Titre : ${documentTitle || 'Document sans titre'}
+- Sujet/Titre : ${documentTitle || t('untitledDoc')}
 - Description : ${shortDescription}
 - Langue : ${language}
 - Longueur cible : environ ${maxLength} mots
@@ -145,14 +147,14 @@ export default function AiWriter() {
                 if (editorRef.current) {
                     editorRef.current.innerHTML = text;
                 }
-                showAppNotification("Contenu généré avec succès !", "success");
+                showAppNotification(t('successContentGenerated'), "success");
             } else {
-                showAppNotification("Erreur de génération", "error");
+                showAppNotification(t('errorGeneration'), "error");
             }
 
         } catch (err) {
             console.error(err);
-            showAppNotification("Erreur de connexion au serveur", "error");
+            showAppNotification(t('errorServerConnection'), "error");
         } finally {
             setIsGenerating(false);
         }
@@ -176,7 +178,7 @@ export default function AiWriter() {
         if (!editorRef.current) return;
 
         const content = editorRef.current.innerHTML;
-        const title = documentTitle || 'Untitled Document';
+        const title = documentTitle || t('untitledDoc');
 
         try {
             const method = documentId ? 'PUT' : 'POST';
@@ -193,13 +195,13 @@ export default function AiWriter() {
                 if (!documentId) {
                     setDocumentId(data.data.id);
                 }
-                showAppNotification("Document sauvegardé avec succès !", "success");
+                showAppNotification(t('successDocSaved'), "success");
             } else {
-                showAppNotification("Erreur de sauvegarde", "error");
+                showAppNotification(t('errorSave'), "error");
             }
         } catch (err) {
             console.error(err);
-            showAppNotification("Erreur réseau lors de la sauvegarde", "error");
+            showAppNotification(t('errorNetworkSave'), "error");
         }
     };
 
@@ -208,12 +210,12 @@ export default function AiWriter() {
         const selectedText = selection.toString();
 
         if (!selectedText || selectedText.trim() === '') {
-            showAppNotification("Veuillez d'abord sélectionner du texte dans l'éditeur.", "error");
+            showAppNotification(t('errorSelectTextFirst'), "error");
             return;
         }
 
         setIsGenerating(true);
-        showAppNotification("Réécriture en cours...", "success");
+        showAppNotification(t('rewritingInProgress'), "success");
 
         try {
             const prompt = `Réécris le texte suivant pour l'améliorer, le rendre plus professionnel et percutant. Renvoie UNIQUEMENT le texte réécrit, sans aucune introduction, sans guillemets et sans formatage markdown additionnel:\n\n"${selectedText}"`;
@@ -233,13 +235,13 @@ export default function AiWriter() {
             if (data.response) {
                 let newText = data.response.replace(/```html/g, '').replace(/```/g, '').trim();
                 document.execCommand('insertText', false, newText);
-                showAppNotification("Texte réécrit !", "success");
+                showAppNotification(t('successTextRewritten'), "success");
             } else {
-                showAppNotification("Erreur lors de la réécriture.", "error");
+                showAppNotification(t('errorRewriting'), "error");
             }
         } catch (err) {
             console.error(err);
-            showAppNotification("Erreur de connexion au serveur.", "error");
+            showAppNotification(t('errorServerConnection'), "error");
         } finally {
             setIsGenerating(false);
         }
@@ -270,7 +272,7 @@ export default function AiWriter() {
         if (editorRef.current) {
             const text = editorRef.current.innerText;
             navigator.clipboard.writeText(text);
-            showAppNotification("Copié dans le presse-papier", "success");
+            showAppNotification(t('copyToClipboard'), "success");
         }
     };
 
@@ -279,9 +281,9 @@ export default function AiWriter() {
             {/* Left Column - Configuration */}
             <div className="w-[380px] shrink-0 flex flex-col gap-5 overflow-y-auto pr-2 scrollbar-hide">
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
-                    <h3 className="font-semibold text-gray-800 dark:text-gray-100 mb-4">{t(uiLanguage, 'agentConfig')}</h3>
+                    <h3 className="font-semibold text-gray-800 dark:text-gray-100 mb-4">{t('agentConfig')}</h3>
                     <div className="mb-4">
-                        <label className="text-xs font-medium text-gray-500 mb-1.5 block">{t(uiLanguage, 'selectAgent')}</label>
+                        <label className="text-xs font-medium text-gray-500 mb-1.5 block">{t('selectAgent')}</label>
                         <select
                             value={selectedAgent}
                             onChange={e => setSelectedAgent(e.target.value)}
@@ -296,21 +298,21 @@ export default function AiWriter() {
                 </div>
 
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5 flex-1 flex flex-col">
-                    <h3 className="font-semibold text-gray-800 dark:text-gray-100 mb-4">{t(uiLanguage, 'needDesc')}</h3>
+                    <h3 className="font-semibold text-gray-800 dark:text-gray-100 mb-4">{t('needDesc')}</h3>
 
                     <div className="mb-5 flex-1 flex flex-col">
-                        <label className="text-xs font-medium text-gray-500 mb-1.5 block">{t(uiLanguage, 'describeCreation')}</label>
+                        <label className="text-xs font-medium text-gray-500 mb-1.5 block">{t('describeCreation')}</label>
                         <textarea
                             value={shortDescription}
                             onChange={e => setShortDescription(e.target.value)}
-                            placeholder={t(uiLanguage, 'exLinkedin')}
+                            placeholder={t('exLinkedin')}
                             className="w-full flex-1 min-h-[180px] bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-[#0b9f84] focus:ring-1 focus:ring-[#0b9f84] resize-none dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 transition-shadow"
                         ></textarea>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4 mb-5">
                         <div>
-                            <label className="text-xs font-medium text-gray-500 mb-1.5 block">{t(uiLanguage, 'interfaceLang')}</label>
+                            <label className="text-xs font-medium text-gray-500 mb-1.5 block">{t('interfaceLang')}</label>
                             <select value={language} onChange={e => setLanguage(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
                                 <option>English (USA)</option>
                                 <option>Français (France)</option>
@@ -318,7 +320,7 @@ export default function AiWriter() {
                             </select>
                         </div>
                         <div>
-                            <label className="text-xs font-medium text-gray-500 mb-1.5 block">{t(uiLanguage, 'maxLen')}</label>
+                            <label className="text-xs font-medium text-gray-500 mb-1.5 block">{t('maxLen')}</label>
                             <input
                                 type="number"
                                 value={maxLength}
@@ -327,21 +329,21 @@ export default function AiWriter() {
                             />
                         </div>
                         <div>
-                            <label className="text-xs font-medium text-gray-500 mb-1.5 block">{t(uiLanguage, 'creativity')}</label>
+                            <label className="text-xs font-medium text-gray-500 mb-1.5 block">{t('creativity')}</label>
                             <select value={creativity} onChange={e => setCreativity(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
-                                <option>Optimal</option>
-                                <option>Good</option>
-                                <option>High</option>
-                                <option>Max</option>
+                                <option value="Optimal">{t('optimal')}</option>
+                                <option value="Good">{t('good')}</option>
+                                <option value="High">{t('high')}</option>
+                                <option value="Max">{t('max')}</option>
                             </select>
                         </div>
                         <div>
-                            <label className="text-xs font-medium text-gray-500 mb-1.5 block">{t(uiLanguage, 'toneOfVoice')}</label>
+                            <label className="text-xs font-medium text-gray-500 mb-1.5 block">{t('toneOfVoice')}</label>
                             <select value={toneOfVoice} onChange={e => setToneOfVoice(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
-                                <option>Professional</option>
-                                <option>Engaging</option>
-                                <option>Funny</option>
-                                <option>Authoritative</option>
+                                <option value="Professional">{t('professional')}</option>
+                                <option value="Engaging">{t('engaging')}</option>
+                                <option value="Funny">{t('funny')}</option>
+                                <option value="Authoritative">{t('authoritative')}</option>
                             </select>
                         </div>
                     </div>
@@ -354,9 +356,9 @@ export default function AiWriter() {
                         {isGenerating ? (
                             <>
                                 <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                                {t(uiLanguage, 'generating')}
+                                {t('generating')}
                             </>
-                        ) : t(uiLanguage, 'generateBtn').replace(' (Imagen 4)', '')}
+                        ) : t('generateBtn').replace(' (Imagen 4)', '')}
                     </button>
                 </div>
             </div>
@@ -371,26 +373,26 @@ export default function AiWriter() {
                     <div className="flex justify-between items-center w-full">
                         <Link to="/my-documents" className="text-sm font-medium text-gray-500 hover:text-[#0b9f84] transition-colors flex items-center gap-1.5">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-                            {t(uiLanguage, 'myDocuments')}
+                            {t('myDocuments')}
                         </Link>
                     </div>
 
                     <div className="flex w-full flex-wrap items-center gap-3">
                         <div className="flex grow">
                             <div className="flex w-full flex-wrap items-center gap-2">
-                                <button onClick={() => handleFormat('undo')} className="inline-flex h-8 w-8 items-center justify-center rounded-md transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300" title="Undo">
+                                <button onClick={() => handleFormat('undo')} className="inline-flex h-8 w-8 items-center justify-center rounded-md transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300" title={t('undo')}>
                                     <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
                                         <path d="M9 14l-4 -4l4 -4"></path>
                                         <path d="M5 10h11a4 4 0 1 1 0 8h-1"></path>
                                     </svg>
                                 </button>
-                                <button onClick={() => handleFormat('redo')} className="inline-flex h-8 w-8 items-center justify-center rounded-md transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300" title="Redo">
+                                <button onClick={() => handleFormat('redo')} className="inline-flex h-8 w-8 items-center justify-center rounded-md transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300" title={t('redo')}>
                                     <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
                                         <path d="M15 14l4 -4l-4 -4"></path>
                                         <path d="M19 10h-11a4 4 0 1 0 0 8h1"></path>
                                     </svg>
                                 </button>
-                                <button onClick={copyToClipboard} className="inline-flex h-8 w-8 items-center justify-center rounded-md transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300" title="Copy to clipboard">
+                                <button onClick={copyToClipboard} className="inline-flex h-8 w-8 items-center justify-center rounded-md transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300" title={t('copyToClipboard')}>
                                     <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
                                         <path d="M7 7m0 2.667a2.667 2.667 0 0 1 2.667 -2.667h8.666a2.667 2.667 0 0 1 2.667 2.667v8.666a2.667 2.667 0 0 1 -2.667 2.667h-8.666a2.667 2.667 0 0 1 -2.667 -2.667z"></path>
                                         <path d="M4.012 16.737a2.005 2.005 0 0 1 -1.012 -1.737v-10c0 -1.1 .9 -2 2 -2h10c.75 0 1.158 .385 1.5 1"></path>
@@ -402,7 +404,7 @@ export default function AiWriter() {
                                     <button
                                         onClick={() => setShowDownloadMenu(!showDownloadMenu)}
                                         className="inline-flex h-8 w-8 items-center justify-center rounded-md transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300"
-                                        title="Download"
+                                        title={t('download')}
                                     >
                                         <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
                                             <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2"></path>
@@ -417,14 +419,14 @@ export default function AiWriter() {
                                                 <svg strokeWidth="1.5" className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
                                                     <path d="M4 18h9v-12l-5 2v5l-4 2v-8l9 -4l7 2v13l-7 3z"></path>
                                                 </svg>
-                                                MS Word
+                                                {t('msWord')}
                                             </button>
                                             <button onClick={downloadPDF} className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2">
                                                 <svg strokeWidth="1.5" className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
                                                     <path d="M20 4l-2 14.5l-6 2l-6 -2l-2 -14.5z"></path>
                                                     <path d="M15.5 8h-7l.5 4h6l-.5 3.5l-2.5 .75l-2.5 -.75l-.1 -.5"></path>
                                                 </svg>
-                                                PDF Document
+                                                {t('pdfDocument')}
                                             </button>
                                         </div>
                                     )}
@@ -438,7 +440,7 @@ export default function AiWriter() {
                                     <path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"></path>
                                     <path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"></path>
                                 </svg>
-                                {t(uiLanguage, 'save')}
+                                {t('save')}
                             </button>
                         </div>
                     </div>
@@ -449,7 +451,7 @@ export default function AiWriter() {
                             type="text"
                             value={documentTitle}
                             onChange={e => setDocumentTitle(e.target.value)}
-                            placeholder={t(uiLanguage, 'untitledDoc')}
+                            placeholder={t('untitledDoc')}
                             className="block w-full py-2 bg-transparent text-gray-900 dark:text-gray-100 transition-colors focus:border-[#0b9f84] focus:outline-none focus:ring focus:ring-[#0b9f84]/20 h-12 border-transparent px-2 font-serif text-2xl placeholder-gray-400 dark:placeholder-gray-500 rounded-md"
                         />
                     </div>
@@ -458,14 +460,14 @@ export default function AiWriter() {
                 {/* Main Toolbar (Text Formatting) */}
                 <div className="flex items-center gap-1 p-2 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 flex-wrap">
                     <select onChange={(e) => handleFormat('formatBlock', e.target.value)} className="bg-transparent border border-gray-200 rounded px-2 py-1.5 text-sm outline-none ml-2 mr-3 focus:border-[#0b9f84] focus:ring-1 focus:ring-[#0b9f84] transition-shadow">
-                        <option value="p">{t(uiLanguage, 'normalP')}</option>
-                        <option value="h1">Heading 1</option>
-                        <option value="h2">Heading 2</option>
-                        <option value="h3">Heading 3</option>
+                        <option value="p">{t('normalP')}</option>
+                        <option value="h1">{t('heading1')}</option>
+                        <option value="h2">{t('heading2')}</option>
+                        <option value="h3">{t('heading3')}</option>
                     </select>
 
                     <button onClick={handleRewrite} disabled={isGenerating} className="px-3 py-1.5 flex items-center gap-1.5 text-sm font-medium text-[#0b9f84] hover:bg-[#0b9f84]/10 rounded-md border border-transparent transition mr-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                        <Sparkles size={16} /> {isGenerating ? '...' : t(uiLanguage, 'rewriteBtn')}
+                        <Sparkles size={16} /> {isGenerating ? '...' : t('rewriteBtn')}
                     </button>
 
                     <div className="w-px h-5 bg-gray-200 mx-1"></div>

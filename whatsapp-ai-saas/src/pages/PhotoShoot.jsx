@@ -1,7 +1,8 @@
 import React, { useState, useRef } from 'react';
 import { Sparkles } from 'lucide-react';
 import useAppStore from '../store';
-import { getTranslation as t } from '../locales';
+import { useTranslation } from 'react-i18next';
+
 
 // ── Preset Data ────────────────────────────────────────────────
 const MODELS = [
@@ -73,6 +74,7 @@ const PhotoShoot = ({ activeId }) => {
     const sessionContextRef = useRef(null);
     const fileInputRef = useRef(null);
 
+    const { t } = useTranslation();
     const agentHistory = useAppStore(state => state.agentHistory);
     const addAgentHistory = useAppStore(state => state.addAgentHistory);
     const removeAgentHistory = useAppStore(state => state.removeAgentHistory);
@@ -262,8 +264,8 @@ const PhotoShoot = ({ activeId }) => {
             return (
                 <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">Select a Model</h3>
-                        <button onClick={() => setActiveSection(null)} className="text-sm text-gray-500 hover:text-gray-900 dark:hover:text-white transition">← Back</button>
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">{t('selectAModel')}</h3>
+                        <button onClick={() => setActiveSection(null)} className="text-sm text-gray-500 hover:text-gray-900 dark:hover:text-white transition">{t('back')}</button>
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                         {MODELS.map(m => (
@@ -303,8 +305,8 @@ const PhotoShoot = ({ activeId }) => {
             return (
                 <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">Select a Pose</h3>
-                        <button onClick={() => setActiveSection(null)} className="text-sm text-gray-500 hover:text-gray-900 dark:hover:text-white transition">← Back</button>
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">{t('selectAPose')}</h3>
+                        <button onClick={() => setActiveSection(null)} className="text-sm text-gray-500 hover:text-gray-900 dark:hover:text-white transition">{t('back')}</button>
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                         {POSES.map(p => (
@@ -324,7 +326,7 @@ const PhotoShoot = ({ activeId }) => {
                                     )}
                                 </div>
                                 <div className="text-center">
-                                    <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full mb-1 bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300">Pose</span>
+                                    <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full mb-1 bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300">{t('pose')}</span>
                                     <p className="text-sm font-semibold text-gray-900 dark:text-white">{p.name}</p>
                                 </div>
                                 {selectedPose?.id === p.id && (
@@ -343,8 +345,8 @@ const PhotoShoot = ({ activeId }) => {
             return (
                 <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">Select a Background</h3>
-                        <button onClick={() => setActiveSection(null)} className="text-sm text-gray-500 hover:text-gray-900 dark:hover:text-white transition">← Back</button>
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">{t('selectABackground')}</h3>
+                        <button onClick={() => setActiveSection(null)} className="text-sm text-gray-500 hover:text-gray-900 dark:hover:text-white transition">{t('back')}</button>
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                         {BACKGROUNDS.map(b => (
@@ -402,15 +404,15 @@ const PhotoShoot = ({ activeId }) => {
                     <div className="p-5 border-b border-gray-100 dark:border-gray-800">
                         <h2 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
-                            {t(language, 'readyShootTitle')}
+                            {t('readyShootTitle')}
                         </h2>
                     </div>
 
                     <div className="flex-1 p-4 space-y-5">
                         {/* ── Product Upload ── */}
                         <div>
-                            <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 block">Products</label>
-                            <p className="text-xs text-gray-400 mb-2">Upload up to 3 product images</p>
+                            <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 block">{t('products')}</label>
+                            <p className="text-xs text-gray-400 mb-2">{t('uploadUpTo3ProductImages')}</p>
                             <input type="file" ref={fileInputRef} className="hidden" accept="image/*" multiple onChange={handleProductUpload} />
 
                             <div className="flex items-center gap-2 flex-wrap">
@@ -441,7 +443,7 @@ const PhotoShoot = ({ activeId }) => {
                             <div className="shrink-0 flex items-center gap-3 overflow-x-auto bg-gray-50 dark:bg-gray-900 border border-gray-100 rounded-xl p-3 shadow-sm dark:border-gray-700">
                                 <span className="text-[10px] font-semibold text-gray-500 mr-2 flex items-center gap-1 shrink-0">
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                                    {t(language, 'recent')}
+                                    {t('recent')}
                                 </span>
                                 {historyForAgent.slice(0, 5).map(hist => (
                                     <div key={hist.id} onClick={() => loadHistoryItem(hist)} className="w-10 h-10 shrink-0 rounded-lg border border-gray-200 hover:border-[#0b9f84] cursor-pointer overflow-hidden bg-gray-200 dark:bg-gray-800 transition-all hover:-translate-y-1">
@@ -457,8 +459,8 @@ const PhotoShoot = ({ activeId }) => {
 
                         {/* ── Model Selection ── */}
                         <div>
-                            <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1 block">Model</label>
-                            <p className="text-xs text-gray-400 mb-2">{selectedModel ? selectedModel.name : 'Random'}</p>
+                            <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1 block">{t('model')}</label>
+                            <p className="text-xs text-gray-400 mb-2">{selectedModel ? selectedModel.name : t('random')}</p>
                             <button
                                 onClick={() => setActiveSection(activeSection === 'model' ? null : 'model')}
                                 className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all ${activeSection === 'model' ? 'border-[#0b9f84] bg-[#0b9f84]/5' : 'border-gray-200 dark:border-gray-700 hover:border-[#0b9f84]/50'
@@ -478,7 +480,7 @@ const PhotoShoot = ({ activeId }) => {
                                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-400"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
                                         </div>
                                     )}
-                                    <span className="text-sm font-medium text-gray-900 dark:text-white">Select Model</span>
+                                    <span className="text-sm font-medium text-gray-900 dark:text-white">{t('selectModel')}</span>
                                 </div>
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-400"><polyline points="9 18 15 12 9 6"></polyline></svg>
                             </button>
@@ -486,8 +488,8 @@ const PhotoShoot = ({ activeId }) => {
 
                         {/* ── Pose Selection ── */}
                         <div>
-                            <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1 block">Pose</label>
-                            <p className="text-xs text-gray-400 mb-2">{selectedPose ? selectedPose.name : 'Random'}</p>
+                            <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1 block">{t('pose')}</label>
+                            <p className="text-xs text-gray-400 mb-2">{selectedPose ? selectedPose.name : t('random')}</p>
                             <button
                                 onClick={() => setActiveSection(activeSection === 'pose' ? null : 'pose')}
                                 className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all ${activeSection === 'pose' ? 'border-[#0b9f84] bg-[#0b9f84]/5' : 'border-gray-200 dark:border-gray-700 hover:border-[#0b9f84]/50'
@@ -497,7 +499,7 @@ const PhotoShoot = ({ activeId }) => {
                                     <div className="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-500">
                                         {getPoseIcon()}
                                     </div>
-                                    <span className="text-sm font-medium text-gray-900 dark:text-white">Select Pose</span>
+                                    <span className="text-sm font-medium text-gray-900 dark:text-white">{t('selectPose')}</span>
                                 </div>
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-400"><polyline points="9 18 15 12 9 6"></polyline></svg>
                             </button>
@@ -505,8 +507,8 @@ const PhotoShoot = ({ activeId }) => {
 
                         {/* ── Background Selection ── */}
                         <div>
-                            <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1 block">Background</label>
-                            <p className="text-xs text-gray-400 mb-2">{selectedBackground ? selectedBackground.name : 'Random'}</p>
+                            <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1 block">{t('background')}</label>
+                            <p className="text-xs text-gray-400 mb-2">{selectedBackground ? selectedBackground.name : t('random')}</p>
                             <button
                                 onClick={() => setActiveSection(activeSection === 'background' ? null : 'background')}
                                 className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all ${activeSection === 'background' ? 'border-[#0b9f84] bg-[#0b9f84]/5' : 'border-gray-200 dark:border-gray-700 hover:border-[#0b9f84]/50'
@@ -516,7 +518,7 @@ const PhotoShoot = ({ activeId }) => {
                                     <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-500">
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
                                     </div>
-                                    <span className="text-sm font-medium text-gray-900 dark:text-white">Select Background</span>
+                                    <span className="text-sm font-medium text-gray-900 dark:text-white">{t('selectBackground')}</span>
                                 </div>
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-400"><polyline points="9 18 15 12 9 6"></polyline></svg>
                             </button>
@@ -525,7 +527,7 @@ const PhotoShoot = ({ activeId }) => {
 
                     {/* ── Aspect Ratio ── */}
                     <div className="px-4 pb-3">
-                        <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-2">{t(language, 'aspectRatio')}</p>
+                        <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-2">{t('aspectRatio')}</p>
                         <div className="flex gap-2">
                             {['1:1', '3:4', '4:3', '9:16'].map(ratio => (
                                 <button
@@ -559,7 +561,7 @@ const PhotoShoot = ({ activeId }) => {
                                         <circle cx="11" cy="11" r="8"></circle>
                                         <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                                     </svg>
-                                    {t(language, 'analyzing')}
+                                    {t('analyzingProduct')}
                                 </>
                             ) : (
                                 <>
@@ -567,8 +569,7 @@ const PhotoShoot = ({ activeId }) => {
                                         <circle cx="11" cy="11" r="8"></circle>
                                         <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                                     </svg>
-                                    {/*{t(language, 'analyzing')} & */}
-                                    {t(language, 'analysisConcept')}
+                                    {t('analysisConcept')}
                                 </>
                             )}
                         </button>
@@ -590,27 +591,27 @@ const PhotoShoot = ({ activeId }) => {
                                             <Sparkles className="w-6 h-6 text-[#0b9f84] absolute animate-pulse pointer-events-none" />
                                         </div>
                                         <div className="text-center">
-                                            <h3 className="text-base font-semibold text-gray-900 dark:text-white uppercase tracking-wider">{t(language, 'generating')}</h3>
-                                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t(language, 'generatingDesc')}</p>
+                                            <h3 className="text-base font-semibold text-gray-900 dark:text-white uppercase tracking-wider">{t('generating')}</h3>
+                                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('generatingDesc')}</p>
                                         </div>
                                     </div>
                                 </div>
                             )}
 
                             <div className="flex items-center justify-between">
-                                <h3 className="text-lg font-bold text-gray-900 dark:text-white">{t(language, 'generateDone')}</h3>
-                                <span className="text-xs text-gray-400">{generatedResults.length} {t(language, 'results')}{generatedResults.length > 1 ? 's' : ''}</span>
+                                <h3 className="text-lg font-bold text-gray-900 dark:text-white">{t('generateDone')}</h3>
+                                <span className="text-xs text-gray-400">{generatedResults.length} {t('results')}{generatedResults.length > 1 ? 's' : ''}</span>
                             </div>
 
                             {/* Main image display */}
                             <div className="relative bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm" style={{ minHeight: '500px' }}>
                                 <img
                                     src={generatedResults[selectedResultIndex]}
-                                    alt="Generated photoshoot"
+                                    alt={t('photoShoot')}
                                     className="w-full h-full object-contain"
                                 />
                                 <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-xs font-medium flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-green-400"></span> {t(language, 'generatedResults')}
+                                    <span className="w-2 h-2 rounded-full bg-green-400"></span> {t('generatedResults')}
                                 </div>
                                 <div className="absolute top-4 right-4 flex gap-2">
                                     <button
@@ -623,7 +624,7 @@ const PhotoShoot = ({ activeId }) => {
                                                 setSelectedResultIndex(Math.max(0, newResults.length - 1));
                                             }
                                         }}
-                                        title="Delete result"
+                                        title={t('deleteResult')}
                                     >
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>
                                     </button>
@@ -637,7 +638,7 @@ const PhotoShoot = ({ activeId }) => {
                                         }}
                                     >
                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                                        {t(language, 'download')}
+                                        {t('download')}
                                     </button>
                                 </div>
 
@@ -663,7 +664,7 @@ const PhotoShoot = ({ activeId }) => {
                             {/* Generated prompt preview */}
                             {generatedPrompt && (
                                 <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-4">
-                                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Generated Prompt</h4>
+                                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{t('generatedPrompt')}</h4>
                                     <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-4">{generatedPrompt}</p>
                                     {/* Generate again button */}
                                     <button
@@ -681,14 +682,14 @@ const PhotoShoot = ({ activeId }) => {
                                                     <div className="pin"></div>
                                                     <div className="pin"></div>
                                                 </div>
-                                                {t(language, 'generating')}
+                                                {t('generating')}
                                             </>
                                         ) : (
                                             <>
                                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                                     <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
                                                 </svg>
-                                                {t(language, 'generateBtn')}
+                                                {t('generateBtn')}
                                             </>
                                         )}
                                     </button>
@@ -699,7 +700,7 @@ const PhotoShoot = ({ activeId }) => {
                         /* Prompt view after analysis, before image generation */
                         <div className="space-y-6">
                             <div className="flex items-center justify-between">
-                                <h3 className="text-lg font-bold text-gray-900 dark:text-white">{t(language, 'strategy')}</h3>
+                                <h3 className="text-lg font-bold text-gray-900 dark:text-white">{t('strategy')}</h3>
                             </div>
 
                             {isAnalyzing ? (
@@ -708,7 +709,7 @@ const PhotoShoot = ({ activeId }) => {
                                     <div className="flex flex-col items-center justify-center h-full gap-6">
                                         <div className="relative w-24 h-24">
                                             {productImages[0] && (
-                                                <img src={productImages[0].data} alt="Analyzing" className="w-full h-full object-cover rounded-xl opacity-60" />
+                                                <img src={productImages[0].data} alt={t('analyzingProduct')} className="w-full h-full object-cover rounded-xl opacity-60" />
                                             )}
                                             <div className="absolute inset-0 flex items-center justify-center">
                                                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-emerald-500 animate-scan-loupe">
@@ -718,8 +719,8 @@ const PhotoShoot = ({ activeId }) => {
                                             </div>
                                         </div>
                                         <div className="text-center">
-                                            <p className="text-sm font-semibold text-gray-900 dark:text-white mb-1">{t(language, 'analyzing')}</p>
-                                            <p className="text-xs text-gray-500">{t(language, 'analyzingDesc')}</p>
+                                            <p className="text-sm font-semibold text-gray-900 dark:text-white mb-1">{t('analyzingProduct')}</p>
+                                            <p className="text-xs text-gray-500">{t('analyzingDesc')}</p>
                                         </div>
                                         {/* Progress bar */}
                                         <div className="w-64 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
@@ -729,7 +730,7 @@ const PhotoShoot = ({ activeId }) => {
                                 </div>
                             ) : (
                                 <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-4">
-                                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Generated Prompt</h4>
+                                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{t('generatedPrompt')}</h4>
                                     <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{generatedPrompt}</p>
                                     {/* Generate Image button */}
                                     <button
@@ -747,14 +748,14 @@ const PhotoShoot = ({ activeId }) => {
                                                     <div className="pin"></div>
                                                     <div className="pin"></div>
                                                 </div>
-                                                {t(language, 'generating')}
+                                                {t('generating')}
                                             </>
                                         ) : (
                                             <>
                                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                                     <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
                                                 </svg>
-                                                {t(language, 'generateBtn')}
+                                                {t('generateBtn')}
                                             </>
                                         )}
                                     </button>
@@ -770,8 +771,8 @@ const PhotoShoot = ({ activeId }) => {
                                     <circle cx="12" cy="13" r="4"></circle>
                                 </svg>
                             </div>
-                            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{t(language, 'readyShootTitle')}</h3>
-                            <p className="text-sm text-gray-500 max-w-sm">{t(language, 'readyShootDesc')}</p>
+                            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{t('readyShootTitle')}</h3>
+                            <p className="text-sm text-gray-500 max-w-sm">{t('readyShootDesc')}</p>
                         </div>
                     )}
                 </div>
@@ -782,7 +783,7 @@ const PhotoShoot = ({ activeId }) => {
                         <div onClick={() => setIsHistoryOpen(!isHistoryOpen)} className="flex items-center gap-2 cursor-pointer hover:opacity-70 flex-1">
                             {isHistoryOpen ? (
                                 <>
-                                    <h2 className="text-sm font-semibold text-gray-900 dark:text-white">{t(language, 'recent')}</h2>
+                                    <h2 className="text-sm font-semibold text-gray-900 dark:text-white">{t('recents')}</h2>
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6" /></svg>
                                 </>
                             ) : (
@@ -792,7 +793,7 @@ const PhotoShoot = ({ activeId }) => {
                         {isHistoryOpen && historyForAgent.length > 0 && (
                             <button
                                 onClick={(e) => { e.stopPropagation(); clearAllHistory(); }}
-                                title="Supprimer tout l'historique"
+                                title={t('deleteAllHistoryTitle')}
                                 className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/30 text-gray-400 hover:text-red-500 transition-colors"
                             >
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>
@@ -806,10 +807,11 @@ const PhotoShoot = ({ activeId }) => {
                                 key={hist.id}
                                 className={`rounded-lg border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden relative group ${isHistoryOpen ? 'p-3' : 'w-10 h-10'}`}
                             >
+                                {/* Delete button always visible on hover */}
                                 <button
                                     onClick={(e) => { e.stopPropagation(); removeAgentHistory(hist.id); }}
                                     className="absolute top-1 right-1 z-10 bg-white/90 dark:bg-gray-900/90 text-red-400 hover:text-red-600 rounded-full w-5 h-5 items-center justify-center hidden group-hover:flex transition-all shadow"
-                                    title="Supprimer"
+                                    title={t('delete')}
                                 >
                                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                                 </button>

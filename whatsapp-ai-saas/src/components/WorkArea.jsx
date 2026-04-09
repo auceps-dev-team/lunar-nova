@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import useAppStore from '../store';
-import { getTranslation as t } from '../locales';
+import { useTranslation } from 'react-i18next';
+
 import '../styles/global.css';
 
 const WorkArea = ({ instances, activeId }) => {
     const [orchestratorStatus, setOrchestratorStatus] = useState('Checking...');
     const [activePlaywrightSessions, setActivePlaywrightSessions] = useState(0);
+    const { t } = useTranslation();
     const appSettings = useAppStore(state => state.appSettings) || {};
     const language = appSettings.language || 'en';
     const [copilotProposals, setCopilotProposals] = useState([]);
@@ -13,7 +15,7 @@ const WorkArea = ({ instances, activeId }) => {
     const [copiedIndex, setCopiedIndex] = useState(null);
     const [chatInput, setChatInput] = useState('');
     const [chatHistory, setChatHistory] = useState([
-        { role: 'agent', text: 'Hello! I am WhatCopilote. Click "Analyze Current Chat" to generate replies, or type a custom request below.' }
+        { role: 'agent', text: t('copilotWelcomeMsg') }
     ]);
     const [copilotWidth, setCopilotWidth] = useState(320);
     const [isResizing, setIsResizing] = useState(false);
@@ -57,18 +59,18 @@ const WorkArea = ({ instances, activeId }) => {
                 {
                     id: Date.now().toString(),
                     role: 'agent',
-                    text: `J'ai préparé l'interface de publication pour vous ! 🚀\nL'image a été injectée. Voici les textes générés à copier-coller dans les champs de votre catalogue :`,
+                    text: t('catalogDraftReadyMsg'),
                     proposals: [
-                        `Nom : ${catalogDraft.name || ''}`,
-                        catalogDraft.price ? `Prix : ${catalogDraft.price}` : null,
-                        catalogDraft.code ? `Code de l'article : ${catalogDraft.code}` : null,
-                        `Description :\n${catalogDraft.description || ''}`
+                        `${t('catalogName')} ${catalogDraft.name || ''}`,
+                        catalogDraft.price ? `${t('catalogPrice')} ${catalogDraft.price}` : null,
+                        catalogDraft.code ? `${t('catalogCode')} ${catalogDraft.code}` : null,
+                        `${t('catalogDesc')}${catalogDraft.description || ''}`
                     ].filter(Boolean)
                 }
             ]);
             clearCatalogDraft();
         }
-    }, [catalogDraft, clearCatalogDraft]);
+    }, [catalogDraft, clearCatalogDraft, t]);
 
     // Listen for incoming system notifications to display in Copilot
     useEffect(() => {
@@ -89,9 +91,9 @@ const WorkArea = ({ instances, activeId }) => {
     useEffect(() => {
         setCopilotProposals([]);
         setChatHistory([
-            { role: 'agent', text: 'Hello! I am WhatCopilote. Click "Analyze Current Chat" to generate replies, or type a custom request below.' }
+            { role: 'agent', text: t('copilotWelcomeMsg') }
         ]);
-    }, [activeId]);
+    }, [activeId, t]);
 
     const handleCopy = (text, index) => {
         navigator.clipboard.writeText(text);
@@ -149,7 +151,7 @@ const WorkArea = ({ instances, activeId }) => {
         if (!activeId || orchestratorStatus !== 'Connected') return;
 
         if (appSettings.allowAiRead === false) {
-            alert("AI Context Reading is disabled in Settings. Enable it to analyze chats.");
+            alert(t('errorAiReadDisabled'));
             return;
         }
 
@@ -175,23 +177,23 @@ const WorkArea = ({ instances, activeId }) => {
                     incrementCopilotReplies(geminiData.proposals.length || 1);
                     setChatHistory(prev => [
                         ...prev,
-                        { role: 'user', text: 'Analyze Current Chat' },
-                        { role: 'agent', text: 'I analyzed the active WhatsApp conversation. Here are some suggested replies:', proposals: geminiData.proposals }
+                        { role: 'user', text: t('analyzeChat') },
+                        { role: 'agent', text: t('copilotAnalyzedMsg'), proposals: geminiData.proposals }
                     ]);
                 }
             } else {
-                alert('Could not extract context. Please make sure a chat is open with visible messages.');
+                alert(t('errorExtractContext'));
             }
         } catch (error) {
             console.error('Copilot Error:', error);
 
             // Check if it's a network error
             if (error.message && error.message.includes('fetch')) {
-                alert(`Error: Could not connect to the Backend Orchestrator. Is it running? (${error.message})`);
+                alert(`${t('errorOrchestratorConnection')} (${error.message})`);
             } else if (error.name === 'SyntaxError') {
-                alert(`Error: The Backend Orchestrator returned an invalid response. Check the backend logs.`);
+                alert(t('errorOrchestratorInvalidResponse'));
             } else {
-                alert(`Error running Assistive Copilot: ${error.message || error}`);
+                alert(`${t('errorCopilotRun')} ${error.message || error}`);
             }
         }
         setIsCopilotLoading(false);
@@ -203,7 +205,7 @@ const WorkArea = ({ instances, activeId }) => {
 
         const userMsg = chatInput.trim();
         setChatInput('');
-        
+
         // Add user message to history
         setChatHistory(prev => [...prev, { role: 'user', text: userMsg }]);
         setIsCopilotLoading(true);
@@ -244,12 +246,12 @@ const WorkArea = ({ instances, activeId }) => {
             if (data.status === 'success') {
                 setChatHistory(prev => [...prev, { role: 'agent', text: data.response }]);
             } else {
-                setChatHistory(prev => [...prev, { role: 'agent', text: "Erreur lors de la communication avec l'agent." }]);
+                setChatHistory(prev => [...prev, { role: 'agent', text: t('errorAgentCommunication') }]);
             }
 
         } catch (err) {
             console.error('Chat error:', err);
-            setChatHistory(prev => [...prev, { role: 'agent', text: "Erreur réseau. Impossible de contacter l'agent." }]);
+            setChatHistory(prev => [...prev, { role: 'agent', text: t('errorAgentNetwork') }]);
         } finally {
             setIsCopilotLoading(false);
         }
@@ -280,8 +282,8 @@ const WorkArea = ({ instances, activeId }) => {
         return (
             <div className="flex-1 flex items-center justify-center p-8 bg-surface">
                 <div className="text-center max-w-md">
-                    <h2 className="text-2xl font-bold text-text-main mb-2">{t(language, 'welcomeWhatsAi')}</h2>
-                    <p className="text-text-muted">{t(language, 'clickNewInstance')}</p>
+                    <h2 className="text-2xl font-bold text-text-main mb-2">{t('welcomeWhatsAi')}</h2>
+                    <p className="text-text-muted">{t('clickNewInstance')}</p>
                 </div>
             </div>
         );
@@ -294,8 +296,8 @@ const WorkArea = ({ instances, activeId }) => {
         return (
             <div className="flex-1 flex items-center justify-center p-8 bg-surface">
                 <div className="text-center max-w-md">
-                    <h2 className="text-2xl font-bold text-text-main mb-2">{t(language, 'selectAccount')}</h2>
-                    <p className="text-text-muted">{t(language, 'chooseAccount')}</p>
+                    <h2 className="text-2xl font-bold text-text-main mb-2">{t('selectAccount')}</h2>
+                    <p className="text-text-muted">{t('chooseAccount')}</p>
                 </div>
             </div>
         );
@@ -340,7 +342,7 @@ const WorkArea = ({ instances, activeId }) => {
             <div
                 className={`w-2 cursor-col-resize shrink-0 transition-colors flex items-center justify-center z-20 group -ml-2 ${isResizing ? 'bg-primary/30' : 'hover:bg-primary/20'}`}
                 onMouseDown={startResizing}
-                title="Drag to resize panel"
+                title={t('dragToResizePanel')}
             >
                 <div className={`w-1 h-8 rounded-full transition-colors ${isResizing ? 'bg-primary' : 'bg-gray-300 group-hover:bg-primary'}`} />
             </div>
@@ -354,27 +356,27 @@ const WorkArea = ({ instances, activeId }) => {
                 <div className="card shrink-0">
                     <div className="card-header">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0b9f84" strokeWidth="2"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg>
-                        <h3>{t(language, 'instanceStatus')}</h3>
+                        <h3>{t('instanceStatus')}</h3>
                     </div>
                     <div className="card-body">
                         {orchestratorStatus === 'Connected' ? (
                             <div style={{ background: '#eef2ff', borderRadius: '8px', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px rgba(16, 185, 129, 0.4)' }}></span>
-                                    <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 'bold', color: '#1e1b4b' }}>{t(language, 'waActive')}</h4>
+                                    <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 'bold', color: '#1e1b4b' }}>{t('waActive')}</h4>
                                 </div>
                                 <p style={{ margin: 0, fontSize: '11px', color: '#4f46e5', paddingLeft: '16px', lineHeight: 1.4 }}>
-                                    {t(language, 'instanceConnected').replace('{name}', activeInstance?.name || '1')}
+                                    {t('instanceConnected')?.replace('{name}', activeInstance?.name || '1')}
                                 </p>
                             </div>
                         ) : (
                             <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px', border: '1px solid #e2e8f0' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                    <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 'bold', color: '#64748b' }}>{t(language, 'offline')}</h4>
+                                    <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 'bold', color: '#64748b' }}>{t('offline')}</h4>
                                     <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#cbd5e1' }}></span>
                                 </div>
                                 <p style={{ margin: 0, fontSize: '11px', color: '#64748b', lineHeight: 1.5 }}>
-                                    {t(language, 'startOrchestrator')}
+                                    {t('startOrchestrator')}
                                 </p>
                             </div>
                         )}
@@ -397,12 +399,12 @@ const WorkArea = ({ instances, activeId }) => {
                             >
                                 {isCopilotLoading ? (
                                     <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                                        <span className="pulse" style={{ position: 'relative', width: 8, height: 8 }}></span> {t(language, 'analyzing')}
+                                        <span className="pulse" style={{ position: 'relative', width: 8, height: 8 }}></span> {t('analyzing')}
                                     </span>
                                 ) : (
                                     <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 9l1.25-2.75L23 5l-2.75-1.25L19 1l-1.25 2.75L15 5l2.75 1.25L19 9zm-7.5.5L9 4 6.5 9.5 1 12l5.5 2.5L9 20l2.5-5.5L17 12l-5.5-2.5zM19 15l-1.25 2.75L15 19l2.75 1.25L19 23l1.25-2.75L23 19l-2.75-1.25L19 15z"></path></svg>
-                                        {t(language, 'analyzeChat')}
+                                        {t('analyzeChat')}
                                     </span>
                                 )}
                             </button>
@@ -448,7 +450,7 @@ const WorkArea = ({ instances, activeId }) => {
                                                             boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
                                                             lineHeight: 1.4
                                                         }}
-                                                        title="Click to copy"
+                                                        title={t('clickToCopy')}
                                                     >
                                                         {reply}
                                                         <div style={{ position: 'absolute', right: '8px', top: '10px', color: copiedIndex === id ? '#10b981' : '#94a3b8' }}>
@@ -490,7 +492,7 @@ const WorkArea = ({ instances, activeId }) => {
                                 type="text"
                                 value={chatInput}
                                 onChange={(e) => setChatInput(e.target.value)}
-                                placeholder={t(language, 'askCopilot')}
+                                placeholder={t('askCopilot')}
                                 style={{
                                     width: '100%',
                                     padding: '10px 40px 10px 12px',

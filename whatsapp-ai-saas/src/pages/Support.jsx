@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import useAppStore from '../store';
-import { getTranslation as t } from '../locales';
+import { useTranslation } from 'react-i18next';
 
 const Support = () => {
+    const { t } = useTranslation();
     const language = useAppStore(state => state.appSettings?.language) || 'en';
     const userProfile = useAppStore(state => state.userProfile) || {};
     const [ticketSent, setTicketSent] = useState(false);
@@ -14,10 +15,10 @@ const Support = () => {
     });
 
     const categories = [
-        { id: 'bug', label: t(language, 'bugReport') },
-        { id: 'feature', label: t(language, 'featureReq') },
-        { id: 'billing', label: t(language, 'billing') },
-        { id: 'other', label: t(language, 'other') }
+        { id: 'bug', label: t('bugReport') },
+        { id: 'feature', label: t('featureReq') },
+        { id: 'billing', label: t('billing') },
+        { id: 'other', label: t('other') }
     ];
 
     const changelog = [
@@ -31,7 +32,7 @@ const Support = () => {
         console.log('Submitting ticket:', form);
         setTicketSent(true);
         setTimeout(() => setTicketSent(false), 5000);
-        
+
         // Potential deep link to mail client
         const mailBody = encodeURIComponent(`Category: ${form.category}\n\n${form.message}`);
         const mailTo = `mailto:support@auceps-digital.agency?subject=${encodeURIComponent(form.subject)}&body=${mailBody}`;
@@ -43,9 +44,9 @@ const Support = () => {
             {/* Header Section */}
             <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-600 to-teal-900 p-12 text-white shadow-2xl">
                 <div className="relative z-10">
-                    <h1 className="text-4xl md:text-5xl font-display font-bold mb-4">{t(language, 'supportTitle')}</h1>
+                    <h1 className="text-4xl md:text-5xl font-display font-bold mb-4">{t('supportTitle')}</h1>
                     <p className="text-emerald-50 opacity-90 text-lg max-w-2xl">
-                        Besoin d'aide ou d'une nouvelle fonctionnalité ? Notre équipe chez Auceps Digital est là pour vous accompagner dans votre croissance.
+                        {t('promoHelpAuceps')}
                     </p>
                 </div>
                 {/* Abstract background shapes */}
@@ -61,19 +62,19 @@ const Support = () => {
                             <div className="size-10 bg-emerald-500/10 rounded-xl flex items-center justify-center text-emerald-600">
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
                             </div>
-                            <h2 className="text-xl font-display font-bold dark:text-white">Auceps Digital</h2>
+                            <h2 className="text-xl font-display font-bold dark:text-white">{t('brandAucepsDigital')}</h2>
                         </div>
 
                         <div className="space-y-4">
                             <a href="https://auceps-digital.agency" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
-                                auceps-digital.agency
+                                {t('brandAucepsDigitalAgency')}
                             </a>
                             <div className="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-400 transition-colors">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
                                 <div>
-                                    <p className="font-medium">Support: support@auceps-digital.agency</p>
-                                    <p className="opacity-70">Info: info@auceps-digital.agency</p>
+                                    <p className="font-medium">{t('emailSupportAuceps')}</p>
+                                    <p className="opacity-70">{t('emailInfoAuceps')}</p>
                                 </div>
                             </div>
                             <div className="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-400">
@@ -88,7 +89,7 @@ const Support = () => {
 
                     {/* Version History */}
                     <div className="bg-surface dark:bg-gray-900 p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-soft">
-                        <h2 className="text-xl font-display font-bold mb-6 dark:text-white">{t(language, 'changelog')}</h2>
+                        <h2 className="text-xl font-display font-bold mb-6 dark:text-white">{t('changelog')}</h2>
                         <div className="space-y-6">
                             {changelog.map((entry, idx) => (
                                 <div key={entry.version} className="relative pl-6 border-l-2 border-emerald-500/20 last:border-0 pb-6 last:pb-0">
@@ -109,36 +110,36 @@ const Support = () => {
                 {/* Right: Ticket Form */}
                 <div className="lg:col-span-2">
                     <div className="bg-surface dark:bg-gray-900 p-8 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-soft h-full">
-                        <h2 className="text-2xl font-display font-bold mb-6 dark:text-white">{t(language, 'submitTicket')}</h2>
-                        
+                        <h2 className="text-2xl font-display font-bold mb-6 dark:text-white">{t('submitTicket')}</h2>
+
                         {ticketSent ? (
                             <div className="h-64 flex flex-col items-center justify-center space-y-4 text-center">
                                 <div className="size-16 bg-emerald-500 text-white rounded-full flex items-center justify-center animate-bounce">
                                     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
                                 </div>
-                                <h3 className="text-xl font-bold dark:text-white">{t(language, 'ticketSuccess')}</h3>
-                                <p className="text-gray-500">Votre client de messagerie a été ouvert avec les détails du ticket.</p>
+                                <h3 className="text-xl font-bold dark:text-white">{t('ticketSuccess')}</h3>
+                                <p className="text-gray-500">{t('emailClientOpened')}</p>
                             </div>
                         ) : (
                             <form onSubmit={handleSubmit} className="space-y-6">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
-                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
+                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('email')}</label>
                                         <input
                                             type="email"
                                             required
                                             value={form.email}
-                                            onChange={e => setForm({...form, email: e.target.value})}
+                                            onChange={e => setForm({ ...form, email: e.target.value })}
                                             disabled={!!userProfile.email}
                                             className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all disabled:opacity-60"
-                                            placeholder={t(language, 'emailPlaceholder')}
+                                            placeholder={t('placeholderEmail')}
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t(language, 'category')}</label>
+                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('category')}</label>
                                         <select
                                             value={form.category}
-                                            onChange={e => setForm({...form, category: e.target.value})}
+                                            onChange={e => setForm({ ...form, category: e.target.value })}
                                             className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all"
                                         >
                                             {categories.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
@@ -147,26 +148,26 @@ const Support = () => {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t(language, 'subject')}</label>
+                                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('subject')}</label>
                                     <input
                                         type="text"
                                         required
                                         value={form.subject}
-                                        onChange={e => setForm({...form, subject: e.target.value})}
+                                        onChange={e => setForm({ ...form, subject: e.target.value })}
                                         className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all"
-                                        placeholder="Ex: Problème d'affichage..."
+                                        placeholder={t('subjectPlaceholder')}
                                     />
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t(language, 'message')}</label>
+                                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('message')}</label>
                                     <textarea
                                         rows="6"
                                         required
                                         value={form.message}
-                                        onChange={e => setForm({...form, message: e.target.value})}
+                                        onChange={e => setForm({ ...form, message: e.target.value })}
                                         className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all resize-none"
-                                        placeholder="Décrivez votre demande en détail..."
+                                        placeholder={t('describeRequestInDetail')}
                                     ></textarea>
                                 </div>
 
@@ -175,7 +176,7 @@ const Support = () => {
                                     className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/20 transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
                                 >
                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-                                    {t(language, 'sendTicket')}
+                                    {t('sendTicket')}
                                 </button>
                             </form>
                         )}

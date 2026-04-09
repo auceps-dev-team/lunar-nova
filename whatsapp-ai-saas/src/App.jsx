@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { HashRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
+import { useTranslation } from 'react-i18next';
 import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
 import WorkArea from './components/WorkArea';
@@ -45,6 +46,13 @@ function AppContent() {
   const appSettings = useAppStore(state => state.appSettings) || { theme: 'light', language: 'en' };
   const currentLang = appSettings?.language || 'fr';
   const appNotification = useAppStore(state => state.appNotification);
+  const { i18n } = useTranslation();
+
+  React.useEffect(() => {
+    if (appSettings?.language && i18n.language !== appSettings.language) {
+      i18n.changeLanguage(appSettings.language);
+    }
+  }, [appSettings?.language, i18n]);
 
   // On mount, if instances exist from persist but no active tab is selected, select the first
   React.useEffect(() => {
