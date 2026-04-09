@@ -13,3 +13,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
     storeGet: (key) => ipcRenderer.invoke('store-get', key),
     storeSet: (key, value) => ipcRenderer.invoke('store-set', key, value),
 });
+
+// NOUVEAU : Exposer le pont Updater
+contextBridge.exposeInMainWorld('updaterAPI', {
+    checkForUpdates: () => ipcRenderer.invoke('update:check'),
+    startDownload: (url) => ipcRenderer.invoke('update:start-download', url),
+    installUpdate: (filePath) => ipcRenderer.invoke('update:install', filePath),
+    onProgress: (callback) => {
+        ipcRenderer.removeAllListeners('update:progress');
+        ipcRenderer.on('update:progress', (event, percent) => callback(percent));
+    }
+});

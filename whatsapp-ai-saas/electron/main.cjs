@@ -2,7 +2,7 @@ const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { utilityProcess } = require('electron');
-const { autoUpdater } = require('electron-updater');
+const setupUpdater = require('./updater.cjs');
 
 let store;
 
@@ -110,19 +110,8 @@ app.whenReady().then(async () => {
             fs.appendFileSync(path.join(userDataPath, 'backend_error.log'), `[Main Exception] ${err.stack || err}\n`);
         }
 
-        // Auto Updater
-        autoUpdater.checkForUpdatesAndNotify();
-
-        autoUpdater.on('update-downloaded', () => {
-            dialog.showMessageBox(mainWindow, {
-                type: 'info',
-                title: 'Mise à jour WaCopilote',
-                message: 'Une nouvelle version a été téléchargée. Redémarrez pour l\'installer.',
-                buttons: ['Redémarrer maintenant', 'Plus tard']
-            }).then(result => {
-                if (result.response === 0) autoUpdater.quitAndInstall();
-            });
-        });
+        // Auto Updater (Setup Manual GitHub Releases)
+        setupUpdater(mainWindow);
     }
 
     // IPC pour electron-store

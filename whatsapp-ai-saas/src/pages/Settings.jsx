@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import useAppStore from '../store';
 import { useTranslation } from 'react-i18next';
-
-
+import UpdateManager from '../components/UpdateManager';
 const Settings = () => {
     const { t } = useTranslation();
     const settings = useAppStore(state => state.appSettings) || { theme: 'light', language: 'en', model: 'gemini-pro-latest', allowAiRead: true };
@@ -334,6 +333,10 @@ const Settings = () => {
                     </div>
                 </div>
 
+            </div>
+
+            <div className="mt-6">
+                <UpdateManager />
             </div>
         </div>
     );
