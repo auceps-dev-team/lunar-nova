@@ -253,6 +253,10 @@ export const translations = {
         updaterReady: "Update ready!",
         updaterReadyDesc: "The application will close to finalize the installation.",
         updaterInstallBtn: "Install and Restart",
+        updaterBanner: "A new update (v{{version}}) is ready! Click to install.",
+        updaterSuccessTitle: "Update Successful!",
+        updaterSuccessDesc: "WaCopilote has been successfully updated to version v{{version}}. Enjoy the latest features, optimizations, and bug fixes.",
+        updaterSuccessBtn: "See what's new",
 
         // --- 🧭 Navigation & Sidebar ---
         dashboard: "Dashboard",
@@ -1290,6 +1294,10 @@ export const translations = {
         updaterReady: "Mise à jour prête !",
         updaterReadyDesc: "L'application va se fermer pour finaliser l'installation.",
         updaterInstallBtn: "Installer et Redémarrer",
+        updaterBanner: "Une nouvelle mise à jour (v{{version}}) est prête ! Cliquez pour l'installer.",
+        updaterSuccessTitle: "Mise à jour réussie !",
+        updaterSuccessDesc: "WaCopilote a été mis à jour avec succès vers la version v{{version}}. Profitez de toutes les dernières nouveautés, optimisations et corrections de bugs.",
+        updaterSuccessBtn: "Voir toutes les nouveautés",
 
         // --- 🧭 Navigation & Sidebar ---
         dashboard: "Tableau de bord",
