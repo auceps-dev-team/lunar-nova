@@ -110,9 +110,10 @@ app.whenReady().then(async () => {
             fs.appendFileSync(path.join(userDataPath, 'backend_error.log'), `[Main Exception] ${err.stack || err}\n`);
         }
 
-        // Auto Updater (Setup Manual GitHub Releases)
-        setupUpdater(mainWindow);
     }
+
+    // Auto Updater (Setup Manual GitHub Releases)
+    setupUpdater(mainWindow);
 
     // IPC pour electron-store
     ipcMain.handle('store-get', (event, key) => {

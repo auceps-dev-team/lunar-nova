@@ -238,6 +238,22 @@ export const translations = {
         allowAiRead: "Allow AI to read context",
         allowAiReadDesc: "Allow the agent to safely read WhatsApp message background to propose better replies.",
 
+        // --- 🔄 Updater ---
+        updaterNotAvailable: "The update module is only available in production.",
+        updaterUpToDate: "Your application is up to date!",
+        updaterDownloadError: "Download error: ",
+        updaterTitle: "Application Update",
+        updaterDesc: "Check for and install the latest optimizations and features.",
+        updaterCheckBtn: "Check for updates",
+        updaterChecking: "Checking...",
+        updaterAvailable: "WaCopilote v{{version}} is available!",
+        updaterAvailableDesc: "An important update is waiting for you. Please download it.",
+        updaterDownloadBtn: "Download",
+        updaterDownloading: "Downloading...",
+        updaterReady: "Update ready!",
+        updaterReadyDesc: "The application will close to finalize the installation.",
+        updaterInstallBtn: "Install and Restart",
+
         // --- 🧭 Navigation & Sidebar ---
         dashboard: "Dashboard",
         whatsappHub: "WhatsApp Hub",
@@ -1258,6 +1274,22 @@ export const translations = {
         llmModelDesc: "Sélectionnez le moteur cognitif pour WhatCopilote.",
         allowAiRead: "Autoriser l'IA à lire le contexte",
         allowAiReadDesc: "Permet à l'agent de lire en toute sécurité le contexte des messages WhatsApp pour de meilleures réponses.",
+
+        // --- 🔄 Updater ---
+        updaterNotAvailable: "Le module de mise à jour n'est disponible qu'en production.",
+        updaterUpToDate: "Votre application est à jour !",
+        updaterDownloadError: "Erreur de téléchargement : ",
+        updaterTitle: "Mise à jour de l'application",
+        updaterDesc: "Recherchez et installez les dernières optimisations et fonctionnalités.",
+        updaterCheckBtn: "Rechercher des mises à jour",
+        updaterChecking: "Recherche en cours...",
+        updaterAvailable: "WaCopilote v{{version}} est disponible !",
+        updaterAvailableDesc: "Une mise à jour importante vous attend. Veuillez la télécharger.",
+        updaterDownloadBtn: "Télécharger",
+        updaterDownloading: "Téléchargement en cours...",
+        updaterReady: "Mise à jour prête !",
+        updaterReadyDesc: "L'application va se fermer pour finaliser l'installation.",
+        updaterInstallBtn: "Installer et Redémarrer",
 
         // --- 🧭 Navigation & Sidebar ---
         dashboard: "Tableau de bord",

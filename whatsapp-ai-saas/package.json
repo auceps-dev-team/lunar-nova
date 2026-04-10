@@ -1,7 +1,7 @@
 {
   "name": "wacopilote",
   "private": true,
-  "version": "1.28.4",
+  "version": "1.28.6.1",
   "main": "electron/main.cjs",
   "type": "module",
   "scripts": {
