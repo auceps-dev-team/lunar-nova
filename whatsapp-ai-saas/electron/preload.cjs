@@ -16,6 +16,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
 // NOUVEAU : Exposer le pont Updater
 contextBridge.exposeInMainWorld('updaterAPI', {
+    getVersion: () => ipcRenderer.invoke('update:get-version'),
     checkForUpdates: () => ipcRenderer.invoke('update:check'),
     startDownload: (url) => ipcRenderer.invoke('update:start-download', url),
     installUpdate: (filePath) => ipcRenderer.invoke('update:install', filePath),

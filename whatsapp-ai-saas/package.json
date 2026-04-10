@@ -1,7 +1,7 @@
 {
   "name": "wacopilote",
   "private": true,
-  "version": "1.28.6.1",
+  "version": "1.28.7",
   "main": "electron/main.cjs",
   "type": "module",
   "scripts": {
@@ -90,7 +90,7 @@
     "publish": {
       "provider": "github",
       "owner": "auceps-dev-team",
-      "repo": "lunar-nova"
+      "repo": "wacopilote-releases"
     },
     "nsis": {
       "oneClick": false,

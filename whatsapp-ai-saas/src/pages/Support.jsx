@@ -22,6 +22,7 @@ const Support = () => {
     ];
 
     const changelog = [
+        { version: 'v1.28.8', date: 'Aujourd\'hui', changes: ['Amélioration mineur de la mise à jour (UX)', 'Vérification silencieuse', 'Bannière et notes de patch automatisées'] },
         { version: 'v1.1.0', date: '2026-04-03', changes: ['AI Photo Studio optimization', 'Custom icons integration', 'Auto-update engine'] },
         { version: 'v1.0.5', date: '2026-03-25', changes: ['WhatsApp Hub performance fix', 'Advanced Analytics dashboard', 'State management refactor'] },
         { version: 'v1.0.0', date: '2026-03-01', changes: ['Initial Beta Release', 'Multi-instance support', 'Gemini AI integration'] }

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { HashRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { HashRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { useTranslation } from 'react-i18next';
 import Sidebar from './components/Sidebar';
@@ -42,11 +42,16 @@ function AppContent() {
 
   const [activeId, setActiveId] = useState(null);
   const location = useLocation();
+  const navigate = useNavigate();
 
   const appSettings = useAppStore(state => state.appSettings) || { theme: 'light', language: 'en' };
   const currentLang = appSettings?.language || 'fr';
   const appNotification = useAppStore(state => state.appNotification);
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation();
+
+  const updateAvailable = useAppStore(state => state.updateAvailable);
+  const setUpdateAvailable = useAppStore(state => state.setUpdateAvailable);
+  const [showPostUpdateModal, setShowPostUpdateModal] = useState(null);
 
   React.useEffect(() => {
     if (appSettings?.language && i18n.language !== appSettings.language) {
@@ -60,6 +65,34 @@ function AppContent() {
       setActiveId(instances[0].id);
     }
   }, [instances, activeId]);
+
+  // Update UX Initialization
+  React.useEffect(() => {
+    const initUpdateUX = async () => {
+      if (!window.electronAPI || !window.updaterAPI) return;
+      
+      try {
+        // 1. POST UPDATE CHECK
+        const pendingUpdateStr = await window.electronAPI.storeGet('pendingUpdateInfo');
+        if (pendingUpdateStr) {
+          const currentVersion = await window.updaterAPI.getVersion();
+          if (pendingUpdateStr.version === currentVersion) {
+              setShowPostUpdateModal(pendingUpdateStr);
+          }
+          await window.electronAPI.storeSet('pendingUpdateInfo', null); // clear it
+        }
+
+        // 2. SILENT BACKGROUND CHECK
+        const checkResult = await window.updaterAPI.checkForUpdates();
+        if (checkResult && checkResult.hasUpdate) {
+            setUpdateAvailable(checkResult);
+        }
+      } catch (e) {
+          console.error("Update UX init error:", e);
+      }
+    };
+    initUpdateUX();
+  }, [setUpdateAvailable]);
 
   const handleAddInstance = () => {
     const id = `wa-tab-${Date.now()}`;
@@ -87,8 +120,55 @@ function AppContent() {
 
   return (
     <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID_HERE"}>
-      <div className={`font-body h-screen w-screen overflow-hidden p-4 ${appSettings.theme === 'dark' ? 'dark bg-gray-950 text-gray-100' : 'bg-background-light text-text-main'}`} dir={appSettings.language === 'ar' ? 'rtl' : 'ltr'}>
-        <div className="flex h-full w-full gap-4 max-w-[1800px] mx-auto">
+      <div className={`font-body h-screen w-screen overflow-hidden p-4 relative ${appSettings.theme === 'dark' ? 'dark bg-gray-950 text-gray-100' : 'bg-background-light text-text-main'}`} dir={appSettings.language === 'ar' ? 'rtl' : 'ltr'}>
+        
+        {/* Update Banner */}
+        {updateAvailable && location.pathname !== '/settings' && location.pathname !== '/support' && (
+           <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-top-4 fade-in duration-500">
+              <button 
+                  onClick={() => navigate('/settings')} 
+                  className="bg-gradient-to-r from-emerald-600 to-teal-800 text-white px-6 py-3 rounded-full flex items-center gap-3 shadow-xl hover:shadow-emerald-900/30 hover:scale-105 transition-all outline-none"
+              >
+                 <span className="flex h-2.5 w-2.5 relative">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-200 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400"></span>
+                 </span>
+                 <span className="font-medium text-sm">Une nouvelle mise à jour ({updateAvailable.version}) est prête ! Cliquez pour l'installer.</span>
+              </button>
+           </div>
+        )}
+
+        {/* Post-Update Welcome Modal */}
+        {showPostUpdateModal && (
+           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+              <div className="bg-white dark:bg-gray-900 w-full max-w-lg rounded-3xl shadow-2xl p-8 border border-gray-100 dark:border-gray-800 animate-in zoom-in-95 duration-500">
+                 <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-3">
+                        <div className="size-10 bg-emerald-500/10 text-emerald-600 rounded-xl flex items-center justify-center">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                        </div>
+                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Mise à jour réussie !</h2>
+                    </div>
+                    <button onClick={() => setShowPostUpdateModal(null)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-2">
+                       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                 </div>
+                 <p className="text-gray-600 dark:text-gray-300 mb-8 whitespace-pre-wrap leading-relaxed">
+                    WaCopilote a été mis à jour avec succès vers la version <span className="font-bold text-emerald-600">v{showPostUpdateModal.version}</span>.<br/><br/>
+                    Profitez de toutes les dernières nouveautés, optimisations et corrections de bugs.
+                 </p>
+                 <button onClick={() => {
+                    if(window.electronAPI) window.electronAPI.openExternalUrl('https://auceps-digital.agency/projects/saas/wacopilote/release-wacopilote/');
+                    setShowPostUpdateModal(null);
+                 }} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-emerald-600/20 flex justify-center items-center gap-2">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                    Voir toutes les nouveautés
+                 </button>
+              </div>
+           </div>
+        )}
+
+        <div className="flex h-full w-full gap-4 max-w-[1800px] mx-auto relative z-10">
           <Sidebar
             instances={instances}
             activeId={activeId}

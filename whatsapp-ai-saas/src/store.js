@@ -19,6 +19,8 @@ const useAppStore = create(
             invoiceDraft: null,
             copilotNotification: null,
             appNotification: null,
+            updateAvailable: null, // Stores update object if available
+            setUpdateAvailable: (status) => set({ updateAvailable: status }),
 
             // --- WA Analysis (persisted across route changes, reset each session) ---
             waAnalysis: {

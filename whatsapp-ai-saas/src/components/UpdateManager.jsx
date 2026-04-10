@@ -48,7 +48,10 @@ export default function UpdateManager() {
         }
     };
 
-    const install = () => {
+    const install = async () => {
+        if (window.electronAPI) {
+            await window.electronAPI.storeSet('pendingUpdateInfo', updateInfo);
+        }
         window.updaterAPI.installUpdate(updateInfo.filePath);
     };
 

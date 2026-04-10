@@ -7,6 +7,11 @@ const { spawn } = require('child_process');
 const REPO_URL = 'https://api.github.com/repos/auceps-dev-team/wacopilote-releases/releases/latest';
 
 module.exports = function setupUpdater(mainWindow) {
+    // 0. OBTENTION DE LA VERSION LOCALE
+    ipcMain.handle('update:get-version', () => {
+        return app.getVersion();
+    });
+
     // 1. VÉRIFICATION DE LA VERSION
     ipcMain.handle('update:check', async () => {
         try {
