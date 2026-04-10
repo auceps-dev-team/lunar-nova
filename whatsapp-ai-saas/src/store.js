@@ -21,6 +21,14 @@ const useAppStore = create(
             appNotification: null,
             updateAvailable: null, // Stores update object if available
             setUpdateAvailable: (status) => set({ updateAvailable: status }),
+            
+            aiQuota: {
+                hasCustomKey: false,
+                imageUsed: 0,
+                imageLimit: 40,
+                resetDate: ''
+            },
+
 
             // --- WA Analysis (persisted across route changes, reset each session) ---
             waAnalysis: {
@@ -101,6 +109,19 @@ const useAppStore = create(
                 setTimeout(() => set({ appNotification: null }), 4000);
             },
             clearAppNotification: () => set({ appNotification: null }),
+
+            fetchAiQuota: async () => {
+                try {
+                    const res = await fetch('http://localhost:3000/api/settings/quota');
+                    const data = await res.json();
+                    if (data.status === 'success') {
+                        set({ aiQuota: data.data });
+                    }
+                } catch (e) {
+                    console.error("Failed to fetch AI Quota:", e);
+                }
+            },
+
 
             setInstances: (newInstances) => set({ instances: newInstances }),
 

@@ -51,7 +51,10 @@ function AppContent() {
 
   const updateAvailable = useAppStore(state => state.updateAvailable);
   const setUpdateAvailable = useAppStore(state => state.setUpdateAvailable);
+  const aiQuota = useAppStore(state => state.aiQuota);
+  const fetchAiQuota = useAppStore(state => state.fetchAiQuota);
   const [showPostUpdateModal, setShowPostUpdateModal] = useState(null);
+
 
   React.useEffect(() => {
     if (appSettings?.language && i18n.language !== appSettings.language) {
@@ -92,7 +95,9 @@ function AppContent() {
       }
     };
     initUpdateUX();
-  }, [setUpdateAvailable]);
+    fetchAiQuota();
+  }, [setUpdateAvailable, fetchAiQuota]);
+
 
   const handleAddInstance = () => {
     const id = `wa-tab-${Date.now()}`;
@@ -167,7 +172,40 @@ function AppContent() {
           </div>
         )}
 
+        {/* Quota Warning Banner */}
+        {!aiQuota.hasCustomKey && aiQuota.imageUsed >= aiQuota.imageLimit * 0.8 && (
+          <div className={`fixed bottom-6 right-6 z-[80] max-w-sm w-full animate-in slide-in-from-right-10 duration-500`}>
+             <div className={`bg-white dark:bg-gray-800 rounded-2xl shadow-xl border-l-4 ${aiQuota.imageUsed >= aiQuota.imageLimit ? 'border-red-500' : 'border-orange-500'} p-4 flex gap-4 items-start`}>
+                <div className={`size-10 rounded-xl flex-shrink-0 flex items-center justify-center ${aiQuota.imageUsed >= aiQuota.imageLimit ? 'bg-red-50/50 text-red-600' : 'bg-orange-50/50 text-orange-600'}`}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-sm font-bold text-gray-900 dark:text-white">
+                    {aiQuota.imageUsed >= aiQuota.imageLimit ? t('quotaExceededTitle') : t('quotaWarningTitle')}
+                  </h4>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
+                    {aiQuota.imageUsed >= aiQuota.imageLimit ? t('quotaExceededDesc') : t('quotaWarningDesc', { used: aiQuota.imageUsed, limit: aiQuota.imageLimit })}
+                  </p>
+                  <button 
+                    onClick={() => navigate('/settings')}
+                    className="mt-3 text-[11px] font-bold text-primary hover:underline flex items-center gap-1"
+                  >
+                    {t('configureMyKey')}
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14M12 5l7 7-7 7"></path></svg>
+                  </button>
+                </div>
+                <button 
+                  onClick={() => useAppStore.getState().set({ aiQuota: { ...aiQuota, imageUsed: 0, imageLimit: 99999, hasCustomKey: true } })} // Temporary hack to hide for session
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+             </div>
+          </div>
+        )}
+
         <div className="flex h-full w-full gap-4 max-w-[1800px] mx-auto relative z-10">
+
           <Sidebar
             instances={instances}
             activeId={activeId}

@@ -10,10 +10,14 @@ const Settings = () => {
 
     const [backendSettings, setBackendSettings] = useState({
         default_ai_provider: 'gemini',
+        gemini_api_key: '',
         openrouter_api_key: '',
         ollama_api_key: '',
         default_image_model: ''
     });
+    const aiQuota = useAppStore(state => state.aiQuota);
+    const fetchAiQuota = useAppStore(state => state.fetchAiQuota);
+
     const [availableChatModels, setAvailableChatModels] = useState([]);
     const [availableImageModels, setAvailableImageModels] = useState([]);
     const [isLoadingModels, setIsLoadingModels] = useState(false);
@@ -29,8 +33,12 @@ const Settings = () => {
                 }
             })
             .catch(console.error)
-            .finally(() => fetchModels());
+            .finally(() => {
+                fetchModels();
+                fetchAiQuota();
+            });
     }, []);
+
 
     const fetchModels = (providerOverride) => {
         setIsLoadingModels(true);
@@ -203,6 +211,50 @@ const Settings = () => {
                             <option value="ollama">{t('ollamaLocalFree')}</option>
                         </select>
                     </div>
+
+                    <div className="flex flex-col gap-6 mb-8 bg-gray-50 dark:bg-gray-750 p-5 rounded-xl border border-gray-100 dark:border-gray-700">
+                        <div className="flex items-center justify-between">
+                            <div className="w-1/2">
+                                <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">{t('geminiApiKey')}</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('configurePersonalKeyForUnlimitedImages')}</p>
+                            </div>
+                            <div className="w-1/2 flex justify-end">
+                                <input
+                                    type="password"
+                                    placeholder={t('placeholderApiKey')}
+                                    value={backendSettings.gemini_api_key || ''}
+                                    onChange={(e) => setBackendSettings(prev => ({ ...prev, gemini_api_key: e.target.value }))}
+                                    onBlur={() => fetchModels()}
+                                    className="border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none bg-white dark:bg-gray-700 dark:text-white w-full max-w-[300px]"
+                                />
+                            </div>
+                        </div>
+
+                        {!aiQuota.hasCustomKey && (
+                            <div className="pt-4 border-t border-gray-100 dark:border-gray-700">
+                                <div className="flex justify-between items-center mb-2">
+                                    <p className="text-xs font-medium text-gray-600 dark:text-gray-400">{t('freeTierUsage')}</p>
+                                    <p className="text-xs font-bold text-primary">{aiQuota.imageUsed} / {aiQuota.imageLimit} {t('images')}</p>
+                                </div>
+                                <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-2">
+                                    <div
+                                        className={`h-2 rounded-full transition-all duration-500 ${aiQuota.imageUsed >= aiQuota.imageLimit * 0.9 ? 'bg-red-500' : aiQuota.imageUsed >= aiQuota.imageLimit * 0.8 ? 'bg-orange-500' : 'bg-primary'}`}
+                                        style={{ width: `${Math.min(100, (aiQuota.imageUsed / aiQuota.imageLimit) * 100)}%` }}
+                                    ></div>
+                                </div>
+                                <div className="flex justify-between items-center mt-2">
+                                    <p className="text-[10px] text-gray-400">{t('resetEachMonthOnThe5th')}</p>
+                                    {aiQuota.imageUsed >= aiQuota.imageLimit && (
+                                        <p className="text-[10px] text-red-500 font-medium">{t('quotaExceededWarning')}</p>
+                                    )}
+                                </div>
+                                <p className="text-[11px] text-blue-500 dark:text-blue-400 mt-3 p-2 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-100 dark:border-blue-800/30">
+                                    💡 <strong>Tip:</strong> <a href="https://auceps-digital.agency/projects/saas/wacopilote/" target="_blank" rel="noreferrer" className="underline hover:text-blue-600">{t('getFreeGeminiKeyHere')}</a> {t('toContinueGeneratingImages')}
+                                </p>
+                            </div>
+                        )}
+                    </div>
+
 
                     {backendSettings.default_ai_provider === 'openrouter' && (
                         <div className="flex items-center justify-between mb-6 bg-gray-50 dark:bg-gray-750 p-4 rounded-lg">

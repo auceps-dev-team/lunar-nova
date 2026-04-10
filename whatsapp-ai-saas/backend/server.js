@@ -273,6 +273,26 @@ app.put('/api/settings', async (req, res) => {
     }
 });
 
+app.get('/api/settings/quota', async (req, res) => {
+    try {
+        const key = await getSetting('gemini_api_key', '');
+        const count = parseInt(await getSetting('gemini_image_count', '0')) || 0;
+        const resetDate = await getSetting('gemini_quota_reset_date', '');
+        
+        res.json({
+            status: 'success',
+            data: {
+                hasCustomKey: key !== '',
+                imageUsed: count,
+                imageLimit: 40,
+                resetDate: resetDate
+            }
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.get('/api/agents', async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM ai_agents');

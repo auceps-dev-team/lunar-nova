@@ -1,76 +1,17 @@
 require('dotenv').config({ path: require('path').join(__dirname, '.env') });
 const { GoogleGenAI } = require('@google/genai');
-const db = require('./db');
 
 // Helper function to get Gemini Client dynamically to support runtime API key updates
-async function getGeminiClient(modality = 'none', requestedModel = '') {
-    // modality: 'image' or 'text' or 'none'
-
-    let key = await db.getSetting('gemini_api_key', '');
-    let isDefaultKey = false;
-    
+function getGeminiClient() {
+    const key = process.env.GEMINI_API_KEY;
     if (!key) {
-        key = process.env.GEMINI_API_KEY;
-        isDefaultKey = true;
+        console.warn("[Gemini] GEMINI_API_KEY is missing. Please set it in Settings.");
     }
-
-    if (!key) {
-        throw new Error('API key not valid');
-    }
-
-    if (isDefaultKey) {
-        // Enforce Limits
-        if (modality === 'text') {
-            const allowedModels = ['gemini-2.5-flash', 'gemini-3-pro', 'gemini-2.5-flash-latest'];
-            if (!allowedModels.includes(requestedModel) && requestedModel !== '') {
-                throw new Error('MODEL_RESTRICTED');
-            }
-        } else if (modality === 'image') {
-            const limit = 40;
-            // Check current count and reset date
-            let count = parseInt(await db.getSetting('gemini_image_count', '0')) || 0;
-            let lastResetDateStr = await db.getSetting('gemini_quota_reset_date', '');
-            
-            const now = new Date();
-            const yearStr = now.getFullYear().toString();
-            const monthStr = (now.getMonth() + 1).toString().padStart(2, '0');
-            const targetResetDateStr = `${yearStr}-${monthStr}`;
-
-            // Reset condition: If it's the 5th of the month or later, and we haven't reset this month yet
-            if (now.getDate() >= 5) {
-                if (lastResetDateStr !== targetResetDateStr) {
-                    count = 0;
-                    await db.setSetting('gemini_image_count', '0');
-                    await db.setSetting('gemini_quota_reset_date', targetResetDateStr);
-                }
-            } else {
-                // If it's before the 5th, the reset applies to the previous month
-                let prevTarget = '';
-                if (now.getMonth() === 0) {
-                     prevTarget = `${now.getFullYear() - 1}-12`;
-                } else {
-                     prevTarget = `${now.getFullYear()}-${now.getMonth().toString().padStart(2, '0')}`;
-                }
-                if (lastResetDateStr !== prevTarget && lastResetDateStr !== targetResetDateStr) {
-                     count = 0;
-                     await db.setSetting('gemini_image_count', '0');
-                     await db.setSetting('gemini_quota_reset_date', prevTarget);
-                }
-            }
-
-            if (count >= limit) {
-                throw new Error('QUOTA_EXCEEDED');
-            }
-        }
-    }
-
-    return {
-        client: new GoogleGenAI({ apiKey: key }),
-        isDefaultKey: isDefaultKey
-    };
+    return new GoogleGenAI({ apiKey: key || 'MISSING_KEY' });
 }
 
 const orchestrator = require('./agents/orchestrator');
+const db = require('./db');
 
 // S'exécute au lancement pour cacher les modèles Gemini dans la DB
 async function syncGeminiModels() {
@@ -152,9 +93,7 @@ async function generateProposals(chatContext, modelParam) {
 
         const copilotPersona = orchestrator.getPersona('copilot');
 
-        const { client } = await getGeminiClient('text', targetModel);
-
-        const response = await client.models.generateContent({
+        const response = await getGeminiClient().models.generateContent({
             model: targetModel,
             contents: formattedChat,
             config: {
@@ -176,8 +115,6 @@ async function generateProposals(chatContext, modelParam) {
             userMessage = "API Key Error: Please check that your Gemini API key is valid in backend/.env.";
         } else if (errMessage.includes('location is not supported')) {
             userMessage = "Region Error: Gemini API is not supported in your region, or requires billing.";
-        } else if (errMessage.includes('MODEL_RESTRICTED')) {
-            userMessage = "Free Tier Limit: This model is not available on the free tier. Please add your own Gemini API key in Settings.";
         } else {
             userMessage = `AI Error: ${errMessage}`;
         }
@@ -254,9 +191,7 @@ async function chatWithAgent(personaId, message, imageParams, promptFormat = 'te
             config.responseMimeType = "application/json";
         }
 
-        const { client } = await getGeminiClient('text', 'gemini-2.5-flash');
-
-        const response = await client.models.generateContent({
+        const response = await getGeminiClient().models.generateContent({
             model: 'gemini-2.5-flash',
             contents: contents,
             config: config
@@ -337,9 +272,7 @@ async function generateImage(prompt, configAspectRatio = '1:1', imageParams = nu
                 return { error: "Erreur : Vous avez sélectionné un modèle Text-to-Image (Imagen) pour une tâche de retouche d'image (Image-to-Image). Veuillez sélectionner un modèle multimodal (ex: Gemini Flash) dans les paramètres." };
             }
 
-            const { client, isDefaultKey } = await getGeminiClient('image', editModel);
-
-            const response = await client.models.generateContent({
+            const response = await getGeminiClient().models.generateContent({
                 model: editModel,
                 contents: [
                     {
@@ -367,10 +300,6 @@ async function generateImage(prompt, configAspectRatio = '1:1', imageParams = nu
             if (response.candidates && response.candidates[0]?.content?.parts) {
                 for (const part of response.candidates[0].content.parts) {
                     if (part.inlineData && part.inlineData.data) {
-                        if (isDefaultKey) {
-                            let count = parseInt(await db.getSetting('gemini_image_count', '0')) || 0;
-                            await db.setSetting('gemini_image_count', (count + 1).toString());
-                        }
                         return { imageBytes: part.inlineData.data };
                     }
                 }
@@ -396,9 +325,7 @@ async function generateImage(prompt, configAspectRatio = '1:1', imageParams = nu
     try {
         if (isNanoBanana) {
             // --- Nano Banana path (generateContent) ---
-            const { client, isDefaultKey } = await getGeminiClient('image', imageModel);
-
-            const response = await client.models.generateContent({
+            const response = await getGeminiClient().models.generateContent({
                 model: imageModel,
                 contents: [{ role: 'user', parts: [{ text: prompt }] }],
                 config: {
@@ -412,10 +339,6 @@ async function generateImage(prompt, configAspectRatio = '1:1', imageParams = nu
             if (response.candidates?.[0]?.content?.parts) {
                 for (const part of response.candidates[0].content.parts) {
                     if (part.inlineData?.data) {
-                        if (isDefaultKey) {
-                            let count = parseInt(await db.getSetting('gemini_image_count', '0')) || 0;
-                            await db.setSetting('gemini_image_count', (count + 1).toString());
-                        }
                         return { imageBytes: part.inlineData.data };
                     }
                 }
@@ -425,9 +348,7 @@ async function generateImage(prompt, configAspectRatio = '1:1', imageParams = nu
         } else {
             // --- Imagen path (generateImages) ---
             const genModel = isImagen ? imageModel : 'imagen-4.0-generate-001';
-            const { client, isDefaultKey } = await getGeminiClient('image', genModel);
-
-            const response = await client.models.generateImages({
+            const response = await getGeminiClient().models.generateImages({
                 model: genModel,
                 prompt: prompt,
                 config: {
@@ -437,10 +358,6 @@ async function generateImage(prompt, configAspectRatio = '1:1', imageParams = nu
                 }
             });
             if (response.generatedImages?.length > 0) {
-                if (isDefaultKey) {
-                    let count = parseInt(await db.getSetting('gemini_image_count', '0')) || 0;
-                    await db.setSetting('gemini_image_count', (count + 1).toString());
-                }
                 return { imageBytes: response.generatedImages[0].image.imageBytes };
             }
             return { error: 'No image generated.' };
@@ -449,9 +366,7 @@ async function generateImage(prompt, configAspectRatio = '1:1', imageParams = nu
         console.error("Image Generation Error:", error);
         const errMessage = error.message || error.toString();
         let userMessage = errMessage;
-        if (errMessage.includes('QUOTA_EXCEEDED')) {
-            userMessage = "Free Tier Limit Reached. You have used your 40 free images for this month. Please configure your own Gemini API key in Settings.";
-        } else if (errMessage.includes('404') || errMessage.includes('not found')) {
+        if (errMessage.includes('404') || errMessage.includes('not found')) {
             userMessage = "Modèle non disponible avec cette clé API.";
         } else if (errMessage.includes('billing')) {
             userMessage = "Ce modèle nécessite un compte payant / billing activé.";

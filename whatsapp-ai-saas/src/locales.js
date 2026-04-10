@@ -1,6 +1,15 @@
 export const translations = {
     en: {
 
+        // --- 🔑 Gemini API & Quotas ---
+        configurePersonalKeyForUnlimitedImages: "Configure your personal key for unlimited images",
+        freeTierUsage: "Free tier usage",
+        resetEachMonthOnThe5th: "Resets each month on the 5th",
+        getFreeGeminiKeyHere: "Get your free Gemini key here",
+        toContinueGeneratingImages: "to continue generating images.",
+
+        welcomeWhatsAi: "Welcome to Wacopilote",
+        clickNewInstance: "Click 'New Instance' to get started.",
         // --- 🤖 Agents Hub ---
         productPhoto: "Product Photo",
         agentCreativeDesc: "Creative agent for product photography and styling.",
@@ -224,6 +233,19 @@ export const translations = {
         photoShootTitle: "Photo Shoot",
         workspace: "Workspace",
 
+        // --- 🔑 API & Gemini Settings ---
+        geminiApiKeyDesc: "Get your free API key from Google AI Studio.",
+        getApiKey: "Get API Key",
+        enterGeminiKey: "Enter your Gemini API key...",
+        verifyKey: "Verify Key",
+        keyValid: "API Key is valid",
+        keyInvalid: "Invalid API Key",
+        billingRequired: "This model requires a paid account (billing enabled).",
+        modelNotAvailable: "Model not available with this API key.",
+        providerGemini: "Google Gemini",
+        providerOpenRouter: "OpenRouter",
+        providerOllama: "Ollama (Local)",
+
         // --- ⚙️ Settings (Apparence & Modèles) ---
         appearance: "Appearance",
         themeMode: "Theme Mode",
@@ -257,6 +279,22 @@ export const translations = {
         updaterSuccessTitle: "Update Successful!",
         updaterSuccessDesc: "WaCopilote has been successfully updated to version v{{version}}. Enjoy the latest features, optimizations, and bug fixes.",
         updaterSuccessBtn: "See what's new",
+
+        // --- 🔑 Quota & Limits ---
+        settingsGeminiKey: "Gemini API Key (Optional)",
+        settingsGeminiKeyDesc: "Leave empty to use our limited free tier.",
+        quotaFreeTier: "Free Tier",
+        quotaImagesUsed: "Images generated this month: {{used}}/{{limit}}",
+        quotaResetDate: "Resets on the 5th of every month.",
+        notificationQuotaWarning: "Warning: You have reached 80% of your free image quota.",
+        notificationQuotaReached: "Quota reached. Add your own key to continue.",
+        notificationReadMore: "Learn how to configure",
+        quotaWarningTitle: "Free Tier Limit Approaching",
+        quotaWarningDesc: "You have used {{used}} of your {{limit}} free images this month.",
+        quotaExceededTitle: "Free Quota Exceeded",
+        quotaExceededDesc: "You have reached your 40 free images limit. Please add your own API key to continue.",
+        configureMyKey: "Configure my key",
+
 
         // --- 🧭 Navigation & Sidebar ---
         dashboard: "Dashboard",
@@ -1009,6 +1047,31 @@ export const translations = {
         saveChanges: "Save Changes",
 
         // --- ⚙️ Settings ---
+        settingsTitle: "Settings",
+        generalSettings: "General Settings",
+        aiProvidersConfig: "AI Providers Configuration",
+        apiKeys: "API Keys",
+        saveSettings: "Save Settings",
+        themeLabel: "Theme",
+        languageLabel: "Language",
+        lightTheme: "Light",
+        darkTheme: "Dark",
+        systemTheme: "System",
+        defaultAiProvider: "Default AI Provider",
+        geminiApiKey: "Gemini API Key",
+        openrouterApiKey: "OpenRouter API Key",
+        ollamaApiKey: "Ollama URL (Local)",
+        defaultChatModel: "Default Chat Model",
+        defaultImageModel: "Default Image Model",
+        whatsappTemplate: "Default WhatsApp Template",
+        helloNameThanksForInterest: "Hello [Name], thank you for your interest in our services...",
+        availableVariables: "Available variables:",
+        refreshModels: "Refresh Models",
+        fetchingModels: "Fetching models...",
+        settingsSavedSuccess: "Settings saved successfully!",
+        settingsSaveError: "Failed to save settings.",
+        aiQuota: "AI Quota",
+        allowAiRead: "Allow AI to read my data",
         saveSettings: "Save Config",
         successSettingsSaved: "AI Configuration saved successfully!",
         defaultProviderDesc: "The engine used for general interactions (Assistive Copilot, etc.)",
@@ -1041,6 +1104,15 @@ export const translations = {
         errorEllaConnection: "Sorry, I'm having connection issues. Check if the backend is active.",
     },
     fr: {
+
+        // --- 🔑 Gemini API & Quotas ---
+        configurePersonalKeyForUnlimitedImages: "Configurez votre clé personnelle pour des images illimitées",
+        freeTierUsage: "Utilisation du forfait gratuit",
+        resetEachMonthOnThe5th: "Réinitialisé le 5 de chaque mois",
+        getFreeGeminiKeyHere: "Obtenez votre clé Gemini gratuite ici",
+        toContinueGeneratingImages: "pour continuer à générer des images.",
+        welcomeWhatsAi: "Bienvenue sur Wacopilote",
+        clickNewInstance: "Cliquez sur 'Nouvelle instance'.",
 
         // --- 🤖 Agents Hub ---
         productPhoto: "Photo Produit",
@@ -1265,6 +1337,19 @@ export const translations = {
         photoShootTitle: "Séance Photo",
         workspace: "Espace de travail",
 
+        // --- 🔑 API & Gemini Settings ---
+        geminiApiKeyDesc: "Obtenez votre clé API gratuite sur Google AI Studio.",
+        getApiKey: "Obtenir une clé API",
+        enterGeminiKey: "Entrez votre clé API Gemini...",
+        verifyKey: "Vérifier la clé",
+        keyValid: "Clé API valide",
+        keyInvalid: "Clé API invalide",
+        billingRequired: "Ce modèle nécessite un compte payant (facturation activée).",
+        modelNotAvailable: "Modèle non disponible avec cette clé API.",
+        providerGemini: "Google Gemini",
+        providerOpenRouter: "OpenRouter",
+        providerOllama: "Ollama (Local)",
+
         // --- ⚙️ Settings (Apparence & Modèles) ---
         appearance: "Apparence",
         themeMode: "Mode de thème",
@@ -1299,6 +1384,45 @@ export const translations = {
         updaterSuccessDesc: "WaCopilote a été mis à jour avec succès vers la version v{{version}}. Profitez de toutes les dernières nouveautés, optimisations et corrections de bugs.",
         updaterSuccessBtn: "Voir toutes les nouveautés",
 
+        // --- ⚙️ Settings ---
+        settingsTitle: "Paramètres",
+        generalSettings: "Paramètres Généraux",
+        aiProvidersConfig: "Configuration des fournisseurs d'IA",
+        apiKeys: "Clés API",
+        saveSettings: "Enregistrer les paramètres",
+        themeLabel: "Thème",
+        languageLabel: "Langue",
+        lightTheme: "Clair",
+        darkTheme: "Sombre",
+        systemTheme: "Système",
+        defaultAiProvider: "Fournisseur d'IA par défaut",
+        geminiApiKey: "Clé API Gemini",
+        openrouterApiKey: "Clé API OpenRouter",
+        ollamaApiKey: "URL Ollama (Local)",
+        defaultChatModel: "Modèle de Chat par défaut",
+        defaultImageModel: "Modèle d'Image par défaut",
+        whatsappTemplate: "Modèle WhatsApp par défaut",
+        helloNameThanksForInterest: "Bonjour [Nom], merci pour l'intérêt que vous portez à nos services...",
+        availableVariables: "Variables disponibles :",
+        refreshModels: "Actualiser les modèles",
+        fetchingModels: "Récupération des modèles...",
+        settingsSavedSuccess: "Paramètres enregistrés avec succès !",
+        settingsSaveError: "Échec de l'enregistrement des paramètres.",
+        aiQuota: "Quota IA",
+        allowAiRead: "Autoriser l'IA à lire mes données",
+        settingsGeminiKey: "Clé API Gemini (Optionnel)",
+        settingsGeminiKeyDesc: "Laissez vide pour utiliser notre quota gratuit limité.",
+        quotaFreeTier: "Quota gratuit",
+        quotaImagesUsed: "Images générées ce mois-ci : {{used}}/{{limit}}",
+        quotaResetDate: "Réinitialisation le 5 de chaque mois.",
+        notificationQuotaWarning: "Attention, vous avez atteint 80% de votre quota gratuit d'images.",
+        notificationQuotaReached: "Limite atteinte. Ajoutez votre propre clé pour continuer.",
+        notificationReadMore: "Voir comment configurer",
+        quotaWarningTitle: "Limite de quota proche",
+        quotaWarningDesc: "Vous avez utilisé {{used}} sur {{limit}} de vos images gratuites ce mois-ci.",
+        quotaExceededTitle: "Quota gratuit atteint",
+        quotaExceededDesc: "Vous avez atteint votre limite de 40 images gratuites. Veuillez ajouter votre propre clé API pour continuer.",
+        configureMyKey: "Configurer ma clé",
         // --- 🧭 Navigation & Sidebar ---
         dashboard: "Tableau de bord",
         whatsappHub: "Hub WhatsApp",
