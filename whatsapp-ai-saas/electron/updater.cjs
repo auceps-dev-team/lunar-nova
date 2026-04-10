@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
 
-const REPO_URL = 'https://api.github.com/repos/auceps-dev-team/lunar-nova/releases/latest';
+const REPO_URL = 'https://api.github.com/repos/auceps-dev-team/wacopilote-releases/releases/latest';
 
 module.exports = function setupUpdater(mainWindow) {
     // 1. VÉRIFICATION DE LA VERSION

@@ -21,6 +21,9 @@ export default function UpdateManager() {
         if (result.hasUpdate) {
             setUpdateInfo(result);
             setStatus('AVAILABLE');
+        } else if (result.error) {
+            setStatus('IDLE');
+            showAppNotification("Erreur de vérification: " + result.error, "error");
         } else {
             setStatus('IDLE');
             showAppNotification(t('updaterUpToDate'), "success");
