@@ -22,7 +22,8 @@ const Support = () => {
     ];
 
     const changelog = [
-        { version: 'v1.29.0', date: 'Aujourd\'hui', changes: ['Correctif du système de mise à jour', 'Harmonisation visuelle (Émeraude)', 'Drag & Drop complet du menu latéral', 'Nouvel écran d\'installation (Onboarding)'] },
+        { version: 'v1.29.1', date: 'Aujourd\'hui', changes: ['Correctif notification de mise à jour persistante', 'Exclusion de l\'état updateAvailable de la persistance IndexedDB', 'Garde de version côté client (double vérification sémantique)'] },
+        { version: 'v1.29.0', date: '2026-04-13', changes: ['Correctif du système de mise à jour', 'Harmonisation visuelle (Émeraude)', 'Drag & Drop complet du menu latéral', 'Nouvel écran d\'installation (Onboarding)'] },
         { version: 'v1.28.8', date: '2026-04-12', changes: ['Amélioration mineur de la mise à jour (UX)', 'Vérification silencieuse', 'Bannière et notes de patch automatisées'] },
         { version: 'v1.1.0', date: '2026-04-03', changes: ['AI Photo Studio optimization', 'Custom icons integration', 'Auto-update engine'] },
         { version: 'v1.0.5', date: '2026-03-25', changes: ['WhatsApp Hub performance fix', 'Advanced Analytics dashboard', 'State management refactor'] },

@@ -85,11 +85,30 @@ function AppContent() {
           }
           await window.electronAPI.storeSet('pendingUpdateInfo', null); // clear it
         }
+        // Safety: always clear any stale persisted update state on mount
+        setUpdateAvailable(null);
 
         // 2. SILENT BACKGROUND CHECK
         const checkResult = await window.updaterAPI.checkForUpdates();
         if (checkResult && checkResult.hasUpdate) {
-          setUpdateAvailable(checkResult);
+          // Double-check: ensure the remote version is strictly greater than the running version.
+          // This prevents the banner from showing when remote == current.
+          const currentVersion = await window.updaterAPI.getVersion();
+          const remoteVersion = checkResult.version;
+          const compareVersions = (v1, v2) => {
+            const p1 = String(v1).split('.').map(Number);
+            const p2 = String(v2).split('.').map(Number);
+            for (let i = 0; i < Math.max(p1.length, p2.length); i++) {
+              const n1 = p1[i] || 0;
+              const n2 = p2[i] || 0;
+              if (n1 > n2) return 1;
+              if (n1 < n2) return -1;
+            }
+            return 0;
+          };
+          if (compareVersions(remoteVersion, currentVersion) > 0) {
+            setUpdateAvailable(checkResult);
+          }
         }
       } catch (e) {
         console.error("Update UX init error:", e);

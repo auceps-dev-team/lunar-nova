@@ -244,8 +244,11 @@ const useAppStore = create(
             name: 'whatsapp-saas-storage',
             storage: createJSONStorage(() => idbStorage),
             // Exclude transient session state from persistence
+            // updateAvailable must NOT be persisted — it represents a live check result
+            // that should be re-evaluated fresh on each app start from GitHub API.
+            // Persisting it caused the stale update banner to persist even on the latest version.
             partialize: (state) => {
-                const { waAnalysis, ...rest } = state;
+                const { waAnalysis, updateAvailable, ...rest } = state;
                 return rest;
             },
         }
