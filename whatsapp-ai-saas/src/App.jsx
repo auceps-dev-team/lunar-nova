@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
 import WorkArea from './components/WorkArea';
+import OnboardingModal from './components/OnboardingModal';
 
 import Dashboard from './pages/Dashboard';
 import AdvancedAnalytics from './pages/AdvancedAnalytics';
@@ -113,11 +114,13 @@ function AppContent() {
     if (activeId === id) setActiveId(newInstances.length > 0 ? newInstances[0].id : null);
     if (window.electronAPI) window.electronAPI.removeInstance(id);
   };
-
   const handleUpdateInstance = (id, updates) => {
+    if (id === '__reorder__') {
+      setInstances(updates);
+      return;
+    }
     setInstances(instances.map(inst => inst.id === id ? { ...inst, ...updates } : inst));
   };
-
   const activeInstance = instances.find(inst => inst.id === activeId);
 
   // Check if we are currently on the WhatsApp route
@@ -126,6 +129,11 @@ function AppContent() {
   return (
     <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID_HERE"}>
       <div className={`font-body h-screen w-screen overflow-hidden p-4 relative ${appSettings.theme === 'dark' ? 'dark bg-gray-950 text-gray-100' : 'bg-background-light text-text-main'}`} dir={appSettings.language === 'ar' ? 'rtl' : 'ltr'}>
+
+        {/* Onboarding Modal (Language Selection) */}
+        {!appSettings?.hasCompletedOnboarding && (
+            <OnboardingModal />
+        )}
 
         {/* Update Banner */}
         {updateAvailable && location.pathname !== '/settings' && location.pathname !== '/support' && (

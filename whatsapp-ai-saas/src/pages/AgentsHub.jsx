@@ -634,7 +634,7 @@ const AgentsHub = ({ activeId }) => {
                                         <div className="relative w-full h-full flex items-center justify-center">
                                             <img src={generationRefImage.data} alt="Reference" className="max-w-full max-h-full object-contain rounded-lg shadow-md opacity-90" />
                                             <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-xs font-medium flex items-center gap-2">
-                                                <span className="w-2 h-2 rounded-full bg-blue-400"></span> {t('referenceImage')}
+                                                <span className="w-2 h-2 rounded-full bg-emerald-400"></span> {t('referenceImage')}
                                             </div>
                                             <button
                                                 className="absolute top-4 right-4 bg-white/90 hover:bg-red-50 text-red-500 p-2 rounded-lg shadow transition"

@@ -72,12 +72,12 @@ export default function UpdateManager() {
             </div>
 
             {status === 'AVAILABLE' && (
-                <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800 rounded-lg flex items-center justify-between">
+                <div className="mt-4 p-4 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-100 dark:border-emerald-800 rounded-lg flex items-center justify-between">
                     <div>
-                        <p className="text-blue-800 dark:text-blue-300 font-semibold mb-1">{t('updaterAvailable', { version: updateInfo.version })}</p>
-                        <p className="text-xs text-blue-600 dark:text-blue-400">{t('updaterAvailableDesc')}</p>
+                        <p className="text-emerald-800 dark:text-emerald-300 font-semibold mb-1">{t('updaterAvailable', { version: updateInfo.version })}</p>
+                        <p className="text-xs text-emerald-600 dark:text-emerald-400">{t('updaterAvailableDesc')}</p>
                     </div>
-                    <button onClick={startDownload} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg shadow-sm">
+                    <button onClick={startDownload} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg shadow-sm">
                         {t('updaterDownloadBtn')}
                     </button>
                 </div>
@@ -90,7 +90,7 @@ export default function UpdateManager() {
                         <span>{progress}%</span>
                     </div>
                     <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2.5">
-                        <div className="bg-blue-600 h-2.5 rounded-full transition-all duration-300 ease-out" style={{ width: `${progress}%` }}></div>
+                        <div className="bg-emerald-600 h-2.5 rounded-full transition-all duration-300 ease-out" style={{ width: `${progress}%` }}></div>
                     </div>
                 </div>
             )}

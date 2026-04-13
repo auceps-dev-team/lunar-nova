@@ -48,7 +48,7 @@ const SortableTask = ({ task, onEdit, onDelete, t }) => {
                 <button
                     onClick={(e) => { e.stopPropagation(); onEdit(task); }}
                     onPointerDown={(e) => e.stopPropagation()}
-                    className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors"
+                    className="p-1.5 text-gray-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-md transition-colors"
                     title={t('editTask')}
                 >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
@@ -76,7 +76,7 @@ const SortableTask = ({ task, onEdit, onDelete, t }) => {
 
             {task.annotations && (
                 <div className="flex flex-wrap gap-2 mb-3">
-                    <span className="inline-flex items-center gap-1 bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 text-[10px] font-medium px-2 py-0.5 rounded-md">
+                    <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400 text-[10px] font-medium px-2 py-0.5 rounded-md">
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
                         {t('note')}
                     </span>

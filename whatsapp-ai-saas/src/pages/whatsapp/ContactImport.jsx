@@ -151,7 +151,7 @@ export default function ContactImport() {
                     <div className="mt-4 flex text-sm text-gray-600 dark:text-zinc-400 justify-center">
                         <label
                             htmlFor="file-upload"
-                            className="relative cursor-pointer bg-white dark:bg-zinc-800 rounded-md font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500 focus-within:outline-none"
+                            className="relative cursor-pointer bg-white dark:bg-zinc-800 rounded-md font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 focus-within:outline-none"
                         >
                             <span>{t('uploadFile')}</span>
                             <input id="file-upload" name="file-upload" type="file" className="sr-only" accept=".csv" onChange={handleFileUpload} />
@@ -221,7 +221,7 @@ export default function ContactImport() {
                                 </div>
                                 <div className="w-64 shrink-0 flex flex-col gap-2">
                                     <select
-                                        className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-zinc-800 dark:border-zinc-700 dark:text-white"
+                                        className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block p-2.5 dark:bg-zinc-800 dark:border-zinc-700 dark:text-white"
                                         value={mapping[header]}
                                         onChange={(e) => handleMappingChange(header, e.target.value)}
                                     >
@@ -258,7 +258,7 @@ export default function ContactImport() {
                     <p className="mt-2 text-gray-600 dark:text-zinc-400">{t('contactsAddedSuccess')}</p>
                     <button
                         onClick={() => navigate('/wa/contacts')}
-                        className="mt-6 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium text-sm transition-colors shadow-sm"
+                        className="mt-6 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-lg font-medium text-sm transition-colors shadow-sm"
                     >
                         {t('returnToContacts')}
                     </button>

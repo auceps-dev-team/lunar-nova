@@ -435,20 +435,20 @@ export default function Contacts({ activeId }) {
                 </div>
                 <div className="flex items-center gap-3">
                     {selectedContacts.length > 0 && (
-                        <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 px-3 py-1.5 rounded-lg border border-blue-100 dark:border-blue-800/50">
-                            <span className="text-sm font-medium text-blue-700 dark:text-blue-400">
+                        <div className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-900/20 px-3 py-1.5 rounded-lg border border-emerald-100 dark:border-emerald-800/50">
+                            <span className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
                                 {selectedContacts.length} {t('selected')}
                             </span>
-                            <div className="h-4 w-px bg-blue-200 dark:bg-blue-800 mx-1"></div>
+                            <div className="h-4 w-px bg-emerald-200 dark:bg-emerald-800 mx-1"></div>
                             <button
                                 onClick={() => setIsBulkEditModalOpen(true)}
-                                className="text-sm font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                                className="text-sm font-medium text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300 transition-colors"
                             >
                                 {t('editSegment')}
                             </button>
                             <button
                                 onClick={() => setIsBulkListEditModalOpen(true)}
-                                className="text-sm font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors ml-2"
+                                className="text-sm font-medium text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300 transition-colors ml-2"
                             >
                                 {t('editList')}
                             </button>
@@ -475,7 +475,7 @@ export default function Contacts({ activeId }) {
                     </button>
                     <button
                         onClick={() => navigate('/wa/contacts/add')}
-                        className="bg-gray-900 hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-200 dark:text-gray-900 text-white px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-colors shadow-sm"
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-colors shadow-sm"
                     >
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14" /></svg>
                         {t('addNewContact')}
@@ -540,7 +540,7 @@ export default function Contacts({ activeId }) {
                                 <th className="p-4 border-b border-gray-100 dark:border-zinc-800 w-10">
                                     <input
                                         type="checkbox"
-                                        className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 dark:border-zinc-600 dark:bg-zinc-700 dark:checked:bg-blue-500"
+                                        className="rounded border-gray-300 text-emerald-600 shadow-sm focus:border-emerald-300 focus:ring focus:ring-emerald-200 focus:ring-opacity-50 dark:border-zinc-600 dark:bg-zinc-700 dark:checked:bg-emerald-500"
                                         checked={processedContacts.length > 0 && selectedContacts.length === processedContacts.length}
                                         onChange={handleSelectAll}
                                     />
@@ -583,7 +583,7 @@ export default function Contacts({ activeId }) {
                                     <td className="p-4">
                                         <input
                                             type="checkbox"
-                                            className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 dark:border-zinc-600 dark:bg-zinc-700 dark:checked:bg-blue-500"
+                                            className="rounded border-gray-300 text-emerald-600 shadow-sm focus:border-emerald-300 focus:ring focus:ring-emerald-200 focus:ring-opacity-50 dark:border-zinc-600 dark:bg-zinc-700 dark:checked:bg-emerald-500"
                                             checked={selectedContacts.includes(contact.id)}
                                             onChange={() => handleSelectContact(contact.id)}
                                         />
@@ -706,7 +706,7 @@ export default function Contacts({ activeId }) {
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('selectNewSegment')}</label>
                                     <select
-                                        className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-zinc-800 dark:border-zinc-700 dark:placeholder-gray-400 dark:text-white transition-colors"
+                                        className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block p-2.5 dark:bg-zinc-800 dark:border-zinc-700 dark:placeholder-gray-400 dark:text-white transition-colors"
                                         value={bulkSegmentId}
                                         onChange={(e) => setBulkSegmentId(e.target.value)}
                                         required
@@ -762,7 +762,7 @@ export default function Contacts({ activeId }) {
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('selectNewList')}</label>
                                     <select
-                                        className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-zinc-800 dark:border-zinc-700 dark:placeholder-gray-400 dark:text-white transition-colors"
+                                        className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block p-2.5 dark:bg-zinc-800 dark:border-zinc-700 dark:placeholder-gray-400 dark:text-white transition-colors"
                                         value={bulkListId}
                                         onChange={(e) => setBulkListId(e.target.value)}
                                         required

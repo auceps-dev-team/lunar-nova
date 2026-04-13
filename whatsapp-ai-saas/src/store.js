@@ -68,7 +68,9 @@ const useAppStore = create(
                 language: 'en',
                 model: 'gemini-2.5-flash',
                 allowAiRead: true,
-                promptFormat: 'json'
+                promptFormat: 'json',
+                hasCompletedOnboarding: false,
+                mainMenuOrder: []
             },
 
             // --- Agent Chats & History ---

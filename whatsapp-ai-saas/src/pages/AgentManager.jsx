@@ -179,7 +179,7 @@ const AgentManager = () => {
                             <div className="flex justify-between items-center pt-4 border-t border-gray-100 dark:border-gray-700">
                                 <span className="text-xs text-gray-400 font-mono">{agent.id}</span>
                                 <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button onClick={() => openEditor(agent)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded">
+                                    <button onClick={() => openEditor(agent)} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded">
                                         ✏️
                                     </button>
                                     <button onClick={() => handleDelete(agent.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded">

@@ -131,7 +131,7 @@ const Settings = () => {
                     <button
                         onClick={handleSaveAll}
                         disabled={isSaving}
-                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg shadow transition disabled:opacity-70"
+                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg shadow transition disabled:opacity-70"
                     >
                         {isSaving ? t('saving') : t('saveSettings')}
                     </button>
@@ -248,8 +248,8 @@ const Settings = () => {
                                         <p className="text-[10px] text-red-500 font-medium">{t('quotaExceededWarning')}</p>
                                     )}
                                 </div>
-                                <p className="text-[11px] text-blue-500 dark:text-blue-400 mt-3 p-2 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-100 dark:border-blue-800/30">
-                                    💡 <strong>Tip:</strong> <a href="https://auceps-digital.agency/projects/saas/wacopilote/" target="_blank" rel="noreferrer" className="underline hover:text-blue-600">{t('getFreeGeminiKeyHere')}</a> {t('toContinueGeneratingImages')}
+                                <p className="text-[11px] text-emerald-500 dark:text-emerald-400 mt-3 p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded border border-emerald-100 dark:border-emerald-800/30">
+                                    💡 <strong>Tip:</strong> <a href="https://auceps-digital.agency/projects/saas/wacopilote/" target="_blank" rel="noreferrer" className="underline hover:text-emerald-600">{t('getFreeGeminiKeyHere')}</a> {t('toContinueGeneratingImages')}
                                 </p>
                             </div>
                         )}

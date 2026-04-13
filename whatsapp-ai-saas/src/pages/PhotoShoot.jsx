@@ -53,7 +53,7 @@ const CATEGORY_COLORS = {
     studio: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300',
     outdoor: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
     city: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
-    Male: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+    Male: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
     Female: 'bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300',
 };
 

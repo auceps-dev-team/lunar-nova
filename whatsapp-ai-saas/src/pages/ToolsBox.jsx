@@ -113,7 +113,7 @@ const WhatsAppTextFormatter = () => {
 
     return (
         <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex flex-col h-full">
-            <div className="flex items-center gap-3 mb-4 text-blue-500">
+            <div className="flex items-center gap-3 mb-4 text-emerald-500">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line></svg>
                 <h3 className="text-lg font-semibold text-gray-900">{t('waFormatter')}</h3>
             </div>
@@ -125,7 +125,7 @@ const WhatsAppTextFormatter = () => {
                     <button
                         key={opt.id}
                         onClick={() => setFormat(opt.id)}
-                        className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${format === opt.id ? 'bg-blue-50 text-blue-600 border border-blue-200' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${format === opt.id ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}
                     >
                         {opt.label}
                     </button>
@@ -137,7 +137,7 @@ const WhatsAppTextFormatter = () => {
                 onChange={(e) => setText(e.target.value)}
                 placeholder={t('enterText')}
                 rows="3"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 mb-4 flex-1 resize-none"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 mb-4 flex-1 resize-none"
             ></textarea>
 
             <div className="flex gap-3">
@@ -147,7 +147,7 @@ const WhatsAppTextFormatter = () => {
                 <button
                     onClick={handleCopy}
                     disabled={!text}
-                    className="shrink-0 bg-blue-500 text-white p-2 rounded hover:bg-blue-600 disabled:opacity-50 transition-colors"
+                    className="shrink-0 bg-emerald-500 text-white p-2 rounded hover:bg-emerald-600 disabled:opacity-50 transition-colors"
                 >
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                 </button>
