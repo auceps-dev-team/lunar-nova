@@ -125,6 +125,8 @@ export const translations = {
         deleteAll: "Delete All",
         importContact: "Import Contact",
         addNewContact: "Add New Contact",
+        allLists: "All Lists",
+        allSegments: "All Segments",
         contactsFound: "contacts found",
         loadingContacts: "Loading contacts...",
         noContactsFound: "No contacts found.",
@@ -259,7 +261,10 @@ export const translations = {
         llmModelDesc: "Select the cognitive engine for WhatCopilote.",
         allowAiRead: "Allow AI to read context",
         allowAiReadDesc: "Allow the agent to safely read WhatsApp message background to propose better replies.",
-
+        english: "English",
+        french: "French",
+        spanish: "Spanish",
+        arabic: "Arabic",
         // --- 🔄 Updater ---
         updaterNotAvailable: "The update module is only available in production.",
         updaterUpToDate: "Your application is up to date!",
@@ -1229,6 +1234,8 @@ export const translations = {
         deleteAll: "Tout supprimer",
         importContact: "Importer",
         addNewContact: "Nouveau contact",
+        allLists: "Toutes les listes",
+        allSegments: "Tous les segments",
         contactsFound: "contacts trouvés",
         loadingContacts: "Chargement des contacts...",
         noContactsFound: "Aucun contact trouvé.",
@@ -1362,7 +1369,11 @@ export const translations = {
         llmModel: "Modèle LLM (Conversations)",
         llmModelDesc: "Sélectionnez le moteur cognitif pour WhatCopilote.",
         allowAiRead: "Autoriser l'IA à lire le contexte",
-        allowAiReadDesc: "Permet à l'agent de lire en toute sécurité le contexte des messages WhatsApp pour de meilleures réponses.",
+        allowAiReadDesc: "Permettre à l'agent de lire en toute sécurité le contexte des messages WhatsApp pour proposer de meilleures réponses.",
+        english: "Anglais",
+        french: "Français",
+        spanish: "Espagnol",
+        arabic: "Arabe",
 
         // --- 🔄 Updater ---
         updaterNotAvailable: "Le module de mise à jour n'est disponible qu'en production.",

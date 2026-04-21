@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import useAppStore from '../store';
 import { useTranslation } from 'react-i18next';
 import UpdateManager from '../components/UpdateManager';
+import CustomSelect from '../components/CustomSelect';
 const Settings = () => {
     const { t } = useTranslation();
     const settings = useAppStore(state => state.appSettings) || { theme: 'light', language: 'en', model: 'gemini-pro-latest', allowAiRead: true };
@@ -179,16 +180,18 @@ const Settings = () => {
                             <p className="text-base font-medium text-gray-800 dark:text-gray-100">{t('interfaceLang')}</p>
                             <p className="text-sm text-gray-500 dark:text-gray-400">{t('interfaceLangDesc')}</p>
                         </div>
-                        <select
+                        <CustomSelect
                             value={settings.language}
-                            onChange={(e) => handleChange('language', e.target.value)}
-                            className="border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none bg-white dark:bg-gray-700 dark:text-white min-w-[150px]"
-                        >
-                            <option value="en">English (Default)</option>
-                            <option value="fr">Français</option>
-                            <option value="es">Español</option>
-                            <option value="ar">العربية (Arabic)</option>
-                        </select>
+                            onChange={(v) => handleChange('language', v)}
+                            width="w-48"
+                            panelWidth="w-48"
+                            options={[
+                                { value: 'en', label: t('english') },
+                                { value: 'fr', label: t('french') },
+                                { value: 'es', label: t('spanish') },
+                                { value: 'ar', label: t('arabic') },
+                            ]}
+                        />
                     </div>
                 </div>
 
@@ -201,15 +204,17 @@ const Settings = () => {
                             <p className="text-base font-medium text-gray-800 dark:text-gray-100">{t('defaultProvider')}</p>
                             <p className="text-sm text-gray-500 dark:text-gray-400">{t('defaultProviderDesc')}</p>
                         </div>
-                        <select
+                        <CustomSelect
                             value={backendSettings.default_ai_provider}
-                            onChange={(e) => handleBackendChange('default_ai_provider', e.target.value)}
-                            className="border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none bg-white dark:bg-gray-700 dark:text-white min-w-[200px]"
-                        >
-                            <option value="gemini">{t('googleGeminiDefault')}</option>
-                            <option value="openrouter">{t('openRouterGptClaude')}</option>
-                            <option value="ollama">{t('ollamaLocalFree')}</option>
-                        </select>
+                            onChange={(v) => handleBackendChange('default_ai_provider', v)}
+                            width="w-64"
+                            panelWidth="w-64"
+                            options={[
+                                { value: 'gemini', label: t('googleGeminiDefault'), description: 'Gemini Flash / Pro · Free tier' },
+                                { value: 'openrouter', label: t('openRouterGptClaude'), description: 'GPT-4o, Claude, Mistral…' },
+                                { value: 'ollama', label: t('ollamaLocalFree'), description: 'Local · No API key needed' },
+                            ]}
+                        />
                     </div>
 
                     <div className="flex flex-col gap-6 mb-8 bg-gray-50 dark:bg-gray-750 p-5 rounded-xl border border-gray-100 dark:border-gray-700">
@@ -299,22 +304,16 @@ const Settings = () => {
                             <p className="text-base font-medium text-gray-800 dark:text-gray-100">{t('llmModel')}</p>
                             <p className="text-sm text-gray-500 dark:text-gray-400">{t('llmModelDesc')}</p>
                         </div>
-                        <select
+                        <CustomSelect
                             value={settings.model}
-                            onChange={(e) => handleChange('model', e.target.value)}
+                            onChange={(v) => handleChange('model', v)}
+                            width="w-72"
+                            searchable={availableChatModels.length > 4}
                             disabled={isLoadingModels}
-                            className="border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none bg-white dark:bg-gray-700 dark:text-white min-w-[200px] disabled:opacity-50"
-                        >
-                            {isLoadingModels ? (
-                                <option value="">{t('loading')}</option>
-                            ) : availableChatModels.length > 0 ? (
-                                availableChatModels.map(m => (
-                                    <option key={m.id} value={m.id}>{m.name}</option>
-                                ))
-                            ) : (
-                                <option value="" disabled>{t('noModelAvailable')}</option>
-                            )}
-                        </select>
+                            panelWidth="w-72"
+                            placeholder={isLoadingModels ? t('loading') : t('noModelAvailable')}
+                            options={availableChatModels.map(m => ({ value: m.id, label: m.name }))}
+                        />
                     </div>
 
                     <div className="flex items-center justify-between mb-6">
@@ -322,22 +321,16 @@ const Settings = () => {
                             <p className="text-base font-medium text-gray-800 dark:text-gray-100">{t('imageGenerationModel')}</p>
                             <p className="text-sm text-gray-500 dark:text-gray-400">{t('selectModelForVisualCreation')}</p>
                         </div>
-                        <select
+                        <CustomSelect
                             value={backendSettings.default_image_model || ''}
-                            onChange={(e) => setBackendSettings(prev => ({ ...prev, default_image_model: e.target.value }))}
+                            onChange={(v) => setBackendSettings(prev => ({ ...prev, default_image_model: v }))}
+                            width="w-72"
+                            searchable={availableImageModels.length > 4}
                             disabled={isLoadingModels}
-                            className="border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none bg-white dark:bg-gray-700 dark:text-white min-w-[200px] disabled:opacity-50"
-                        >
-                            {isLoadingModels ? (
-                                <option value="">{t('loading')}</option>
-                            ) : availableImageModels.length > 0 ? (
-                                availableImageModels.map(m => (
-                                    <option key={m.id} value={m.id}>{m.name}</option>
-                                ))
-                            ) : (
-                                <option value="" disabled>{t('imageGenerationNotSupported')}</option>
-                            )}
-                        </select>
+                            panelWidth="w-72"
+                            placeholder={isLoadingModels ? t('loading') : t('imageGenerationNotSupported')}
+                            options={availableImageModels.map(m => ({ value: m.id, label: m.name }))}
+                        />
                     </div>
 
                     <div className="flex items-center justify-between">

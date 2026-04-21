@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import useAppStore from '../../store';
 import { useTranslation } from 'react-i18next';
+import CustomSelect from '../../components/CustomSelect';
+import { COUNTRIES } from '../../constants/countries';
 
 export default function ContactAdd() {
     const navigate = useNavigate();
@@ -18,6 +20,7 @@ export default function ContactAdd() {
         listId: '',
         segmentId: ''
     });
+    const [indicator, setIndicator] = useState('+225');
 
     const [lists, setLists] = useState([]);
     const [segments, setSegments] = useState([]);
@@ -45,14 +48,27 @@ export default function ContactAdd() {
                 .then(data => {
                     if (data.status === 'success') {
                         const c = data.data;
+                        let foundPhone = c.phone || '';
+                        let foundIndicator = '+225';
+                        
+                        // Détecter l'indicateur existant
+                        for (const country of COUNTRIES) {
+                            if (foundPhone.startsWith(country.value)) {
+                                foundIndicator = country.value;
+                                foundPhone = foundPhone.replace(country.value, '').trim();
+                                break;
+                            }
+                        }
+
                         setFormData({
                             name: c.name || '',
-                            phone: c.phone || '',
+                            phone: foundPhone,
                             email: c.email || '',
                             address: c.address || '',
                             listId: c.list_id || '',
                             segmentId: c.segment_id || ''
                         });
+                        setIndicator(foundIndicator);
                     }
                 })
                 .catch(err => {
@@ -78,7 +94,7 @@ export default function ContactAdd() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     name: formData.name,
-                    phone: formData.phone,
+                    phone: `${indicator}${formData.phone.replace(/\s+/g, '')}`,
                     email: formData.email || null,
                     address: formData.address || null,
                     list_id: formData.listId || null,
@@ -99,6 +115,21 @@ export default function ContactAdd() {
     };
 
     const update = (field, value) => setFormData(prev => ({ ...prev, [field]: value }));
+
+    const handlePhoneChange = (val) => {
+        let cleanVal = val;
+        // Détection auto de l'indicateur si l'utilisateur tape ou colle un '+'
+        if (cleanVal.startsWith('+')) {
+            for (const country of COUNTRIES) {
+                if (cleanVal.startsWith(country.value)) {
+                    setIndicator(country.value);
+                    cleanVal = cleanVal.replace(country.value, '').trim();
+                    break;
+                }
+            }
+        }
+        update('phone', cleanVal);
+    };
 
     if (isLoading) {
         return <div className="p-8 text-center text-gray-500">{t('loadingContactData')}</div>;
@@ -144,13 +175,23 @@ export default function ContactAdd() {
                     {/* Phone */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('phone')}</label>
-                        <input
-                            type="tel" required
-                            placeholder={t('placeholderPhone')}
-                            className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block p-2.5 dark:bg-zinc-800 dark:border-zinc-700 dark:placeholder-gray-400 dark:text-white transition-colors"
-                            value={formData.phone}
-                            onChange={(e) => update('phone', e.target.value)}
-                        />
+                        <div className="flex gap-2">
+                            <CustomSelect
+                                value={indicator}
+                                onChange={setIndicator}
+                                options={COUNTRIES}
+                                width="w-44"
+                                panelWidth="w-64"
+                                searchable={true}
+                            />
+                            <input
+                                type="tel" required
+                                placeholder={t('placeholderPhone')}
+                                className="flex-1 bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block p-2.5 dark:bg-zinc-800 dark:border-zinc-700 dark:placeholder-gray-400 dark:text-white transition-colors"
+                                value={formData.phone}
+                                onChange={(e) => handlePhoneChange(e.target.value)}
+                            />
+                        </div>
                     </div>
 
                     {/* Email */}

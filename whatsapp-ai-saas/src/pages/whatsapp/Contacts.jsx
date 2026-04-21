@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import useAppStore from '../../store';
 
 import { useTranslation } from 'react-i18next';
+import CustomSelect from '../../components/CustomSelect';
 
 
 export default function Contacts({ activeId }) {
@@ -485,46 +486,50 @@ export default function Contacts({ activeId }) {
 
             {/* Filters Bar */}
             <div className="flex flex-wrap gap-4 items-center bg-white dark:bg-zinc-900 p-4 border border-gray-100 dark:border-zinc-800 rounded-xl shadow-sm">
+                {/* Filtre Statut */}
                 <div className="flex items-center gap-2">
                     <label className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('status')}:</label>
-                    <select
+                    <CustomSelect
                         value={filterStatus}
-                        onChange={(e) => { setFilterStatus(e.target.value); setCurrentPage(1); }}
-                        className="bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-gray-800 dark:text-gray-200 text-sm rounded-lg py-1.5 px-3 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
-                    >
-                        <option value="all">{t('all')}</option>
-                        <option value="valid">✅ {t('valid')}</option>
-                        <option value="invalid">❌ {t('invalid')}</option>
-                        <option value="unverified">⏱️ {t('unverified')}</option>
-                    </select>
+                        onChange={(v) => { setFilterStatus(v); setCurrentPage(1); }}
+                        panelWidth="w-44"
+                        options={[
+                            { value: 'all', label: t('all') },
+                            { value: 'valid', label: `✅ ${t('valid')}` },
+                            { value: 'invalid', label: `❌ ${t('invalid')}` },
+                            { value: 'unverified', label: `⏱️ ${t('unverified')}` },
+                        ]}
+                    />
                 </div>
 
+                {/* Filtre Segment */}
                 <div className="flex items-center gap-2">
                     <label className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('segment')}:</label>
-                    <select
+                    <CustomSelect
                         value={filterSegment}
-                        onChange={(e) => { setFilterSegment(e.target.value); setCurrentPage(1); }}
-                        className="bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-gray-800 dark:text-gray-200 text-sm rounded-lg py-1.5 px-3 focus:ring-emerald-500 focus:border-emerald-500 outline-none max-w-[200px]"
-                    >
-                        <option value="all">{t('allSegments')}</option>
-                        {uniqueSegments.map(seg => (
-                            <option key={seg} value={seg}>{seg}</option>
-                        ))}
-                    </select>
+                        onChange={(v) => { setFilterSegment(v); setCurrentPage(1); }}
+                        searchable={uniqueSegments.length > 5}
+                        panelWidth="w-52"
+                        options={[
+                            { value: 'all', label: t('allSegments') },
+                            ...uniqueSegments.map(seg => ({ value: seg, label: seg })),
+                        ]}
+                    />
                 </div>
 
+                {/* Filtre Liste */}
                 <div className="flex items-center gap-2">
                     <label className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('list')}:</label>
-                    <select
+                    <CustomSelect
                         value={filterList}
-                        onChange={(e) => { setFilterList(e.target.value); setCurrentPage(1); }}
-                        className="bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-gray-800 dark:text-gray-200 text-sm rounded-lg py-1.5 px-3 focus:ring-emerald-500 focus:border-emerald-500 outline-none max-w-[200px]"
-                    >
-                        <option value="all">{t('allLists')}</option>
-                        {uniqueLists.map(lst => (
-                            <option key={lst} value={lst}>{lst}</option>
-                        ))}
-                    </select>
+                        onChange={(v) => { setFilterList(v); setCurrentPage(1); }}
+                        searchable={uniqueLists.length > 5}
+                        panelWidth="w-52"
+                        options={[
+                            { value: 'all', label: t('allLists') },
+                            ...uniqueLists.map(lst => ({ value: lst, label: lst })),
+                        ]}
+                    />
                 </div>
 
                 <div className="ml-auto text-sm text-gray-500 dark:text-gray-400 font-medium">

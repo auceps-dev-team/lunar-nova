@@ -13,6 +13,7 @@ import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
 import { useTranslation } from 'react-i18next';
+import CustomSelect from '../components/CustomSelect';
 
 
 /* ═══════════════════════════════════════════════════════
@@ -838,14 +839,20 @@ export default function InvoiceBuilder({ activeId }) {
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
-                    <select value={draft.status} onChange={e => setDraft(d => ({ ...d, status: e.target.value }))}
-                        className="text-[10px] font-bold uppercase border border-gray-200 dark:border-gray-700 rounded-lg px-2.5 py-1.5 bg-transparent text-gray-600 dark:text-gray-300 outline-none cursor-pointer">
-                        {Object.entries(STATUS_MAP).map(([k, v]) => <option key={k} value={k}>{t(v.labelKey)}</option>)}
-                    </select>
-                    <select value={draft.currency} onChange={e => setDraft(d => ({ ...d, currency: e.target.value }))}
-                        className="text-[10px] font-bold border border-gray-200 dark:border-gray-700 rounded-lg px-2.5 py-1.5 bg-transparent text-gray-600 dark:text-gray-300 outline-none cursor-pointer">
-                        {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
-                    </select>
+                    {/* Statut */}
+                    <CustomSelect
+                        value={draft.status}
+                        onChange={(v) => setDraft(d => ({ ...d, status: v }))}
+                        panelWidth="w-40"
+                        options={Object.entries(STATUS_MAP).map(([k, v]) => ({ value: k, label: t(v.labelKey), color: { bg: v.bg, text: v.text } }))}
+                    />
+                    {/* Devise */}
+                    <CustomSelect
+                        value={draft.currency}
+                        onChange={(v) => setDraft(d => ({ ...d, currency: v }))}
+                        panelWidth="w-28"
+                        options={CURRENCIES.map(c => ({ value: c, label: c }))}
+                    />
                     {/* Contact search button */}
                     <button onClick={() => setShowContactSearch(true)}
                         className="h-8 px-3 rounded-lg border border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all flex items-center gap-1.5"
@@ -893,11 +900,16 @@ export default function InvoiceBuilder({ activeId }) {
                                     value={contactSearchQuery}
                                     onChange={e => setContactSearchQuery(e.target.value)}
                                 />
-                                <select value={contactFilterSegment} onChange={e => setContactFilterSegment(e.target.value)}
-                                    className="h-9 px-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-xs font-semibold text-gray-600 dark:text-gray-300 outline-none cursor-pointer">
-                                    <option value="all">{t('allSegments')}</option>
-                                    {contactSegments.map(s => <option key={s} value={s}>{s}</option>)}
-                                </select>
+                                <CustomSelect
+                                    value={contactFilterSegment}
+                                    onChange={(v) => setContactFilterSegment(v)}
+                                    searchable={contactSegments.length > 5}
+                                    panelWidth="w-44"
+                                    options={[
+                                        { value: 'all', label: t('allSegments') },
+                                        ...contactSegments.map(s => ({ value: s, label: s })),
+                                    ]}
+                                />
                             </div>
                         </div>
                         <div className="max-h-72 overflow-y-auto divide-y divide-gray-50 dark:divide-gray-800">

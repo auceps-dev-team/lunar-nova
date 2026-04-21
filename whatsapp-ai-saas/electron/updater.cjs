@@ -69,7 +69,16 @@ module.exports = function setupUpdater(mainWindow) {
 
             response.data.on('data', (chunk) => {
                 downloaded += chunk.length;
-                const percent = Math.round((downloaded / totalLength) * 100);
+                
+                // Calcul sécurisé du pourcentage
+                let percent = 0;
+                if (totalLength && totalLength > 0) {
+                    percent = Math.round((downloaded / totalLength) * 100);
+                } else {
+                    // Si pas de content-length, on simule une progression lente basée sur des moyennes (environ 40Mo)
+                    // ou on laisse à 0 pour indiquer une activité indéterminée
+                    percent = Math.min(99, Math.round((downloaded / (40 * 1024 * 1024)) * 100));
+                }
                 
                 // Throttling: on n'envoie au front que si le pourcentage change
                 if (percent > lastPercent) {

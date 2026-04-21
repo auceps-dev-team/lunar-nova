@@ -4,6 +4,7 @@ import useAppStore from '../store';
 import { Sparkles, Download, Undo, Redo, Copy, Edit3, AlignLeft, AlignCenter, AlignRight, Bold, Italic, Underline, List } from 'lucide-react';
 import html2pdf from 'html2pdf.js';
 import { useTranslation } from 'react-i18next';
+import CustomSelect from '../components/CustomSelect';
 
 
 const SYSTEM_AGENTS = [
@@ -284,15 +285,17 @@ export default function AiWriter() {
                     <h3 className="font-semibold text-gray-800 dark:text-gray-100 mb-4">{t('agentConfig')}</h3>
                     <div className="mb-4">
                         <label className="text-xs font-medium text-gray-500 mb-1.5 block">{t('selectAgent')}</label>
-                        <select
+                        <CustomSelect
                             value={selectedAgent}
-                            onChange={e => setSelectedAgent(e.target.value)}
-                            className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200"
-                        >
-                            {allAgents.map(a => (
-                                <option key={a.id} value={a.id}>{a.name}</option>
-                            ))}
-                        </select>
+                            onChange={setSelectedAgent}
+                            searchable
+                            panelWidth="w-72"
+                            options={allAgents.map(a => ({
+                                value: a.id,
+                                label: a.name,
+                                description: a.isSystem ? t('system') : t('customBadge'),
+                            }))}
+                        />
                     </div>
 
                 </div>
@@ -313,11 +316,15 @@ export default function AiWriter() {
                     <div className="grid grid-cols-2 gap-4 mb-5">
                         <div>
                             <label className="text-xs font-medium text-gray-500 mb-1.5 block">{t('interfaceLang')}</label>
-                            <select value={language} onChange={e => setLanguage(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
-                                <option>English (USA)</option>
-                                <option>Français (France)</option>
-                                <option>Español</option>
-                            </select>
+                            <CustomSelect
+                                value={language}
+                                onChange={setLanguage}
+                                options={[
+                                    { value: 'English (USA)', label: 'English (USA)' },
+                                    { value: 'Français (France)', label: 'Français (France)' },
+                                    { value: 'Español', label: 'Español' },
+                                ]}
+                            />
                         </div>
                         <div>
                             <label className="text-xs font-medium text-gray-500 mb-1.5 block">{t('maxLen')}</label>
@@ -330,21 +337,29 @@ export default function AiWriter() {
                         </div>
                         <div>
                             <label className="text-xs font-medium text-gray-500 mb-1.5 block">{t('creativity')}</label>
-                            <select value={creativity} onChange={e => setCreativity(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
-                                <option value="Optimal">{t('optimal')}</option>
-                                <option value="Good">{t('good')}</option>
-                                <option value="High">{t('high')}</option>
-                                <option value="Max">{t('max')}</option>
-                            </select>
+                            <CustomSelect
+                                value={creativity}
+                                onChange={setCreativity}
+                                options={[
+                                    { value: 'Optimal', label: t('optimal') },
+                                    { value: 'Good', label: t('good') },
+                                    { value: 'High', label: t('high') },
+                                    { value: 'Max', label: t('max') },
+                                ]}
+                            />
                         </div>
                         <div>
                             <label className="text-xs font-medium text-gray-500 mb-1.5 block">{t('toneOfVoice')}</label>
-                            <select value={toneOfVoice} onChange={e => setToneOfVoice(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
-                                <option value="Professional">{t('professional')}</option>
-                                <option value="Engaging">{t('engaging')}</option>
-                                <option value="Funny">{t('funny')}</option>
-                                <option value="Authoritative">{t('authoritative')}</option>
-                            </select>
+                            <CustomSelect
+                                value={toneOfVoice}
+                                onChange={setToneOfVoice}
+                                options={[
+                                    { value: 'Professional', label: t('professional') },
+                                    { value: 'Engaging', label: t('engaging') },
+                                    { value: 'Funny', label: t('funny') },
+                                    { value: 'Authoritative', label: t('authoritative') },
+                                ]}
+                            />
                         </div>
                     </div>
 
