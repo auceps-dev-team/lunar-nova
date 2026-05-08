@@ -61,6 +61,7 @@ const DEFAULT_MENU_ITEMS = [
     { id: 'tasks', to: '/tasks', labelKey: 'tasks', icon: <><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></> },
     { id: 'invoice-builder', to: '/invoice-builder', labelKey: 'invoiceBuilder', icon: <><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></> },
     { id: 'tools', to: '/tools', labelKey: 'tools', icon: <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path> },
+    { id: 'wordpress', to: '/wordpress', labelKey: 'wordpressBridge', icon: <><circle cx="12" cy="12" r="10" /><path d="M2 12h4M18 12h4M12 2v4M12 18v4" /><path d="m4.93 4.93 2.83 2.83M16.24 16.24l2.83 2.83M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" /></> },
 ];
 
 // ─────────────────────────────────────────────────────────────

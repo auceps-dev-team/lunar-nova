@@ -45,6 +45,10 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 const authGoogleRouter = require('./routes/authGoogle');
 app.use('/api/auth/google', authGoogleRouter);
 
+// --- WordPress Bridge (Phase 30) ---
+const wordpressRouter = require('./routes/wordpress');
+app.use('/api/wp', wordpressRouter);
+
 // API route to get WhatsApp instances status
 app.get('/api/instances', async (req, res) => {
     let browser = null;

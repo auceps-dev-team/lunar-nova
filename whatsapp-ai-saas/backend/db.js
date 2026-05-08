@@ -167,6 +167,18 @@ async function initDB() {
             );
         `);
 
+        // WordPress Bridge (Phase 30)
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS wp_connections (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                site_url TEXT NOT NULL,
+                token TEXT NOT NULL,
+                is_active INTEGER DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        `);
+
         client.release();
         isDbConnected = true;
         console.log('[SQLite] Connected and tables verified.');

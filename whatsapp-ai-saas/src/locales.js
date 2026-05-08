@@ -306,6 +306,7 @@ export const translations = {
         whatsappHub: "WhatsApp Hub",
         invoiceBuilder: "Invoice Builder",
         tools: "Tools",
+        wordpressBridge: "WordPress Bridge",
         support: "Support",
 
         // --- 🛠️ Tools Box ---
@@ -1439,6 +1440,7 @@ export const translations = {
         whatsappHub: "Hub WhatsApp",
         invoiceBuilder: "Créateur de Factures",
         tools: "Outils",
+        wordpressBridge: "WordPress Bridge",
         support: "Support",
 
         // --- 🛠️ Tools Box ---

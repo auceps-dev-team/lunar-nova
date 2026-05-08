@@ -33,6 +33,7 @@ import ContactAdd from './pages/whatsapp/ContactAdd';
 import ContactImport from './pages/whatsapp/ContactImport';
 
 // Placeholder Pages for Phase 2
+import WordPressBridge from './pages/WordPressBridge';
 
 import useAppStore from './store';
 import './styles/global.css';
@@ -291,6 +292,7 @@ function AppContent() {
                   <Route path="/wa/contacts/edit/:id" element={<ContactAdd />} />
                   <Route path="/wa/contacts/import" element={<ContactImport />} />
                   <Route path="/support" element={<Support />} />
+                  <Route path="/wordpress" element={<WordPressBridge />} />
                 </Routes>
               </div>
             )}
