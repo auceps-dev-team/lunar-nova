@@ -247,6 +247,7 @@ export const translations = {
         providerGemini: "Google Gemini",
         providerOpenRouter: "OpenRouter",
         providerOllama: "Ollama (Local)",
+        providerOpenAi: "OpenAI Compatible",
 
         // --- ⚙️ Settings (Apparence & Modèles) ---
         appearance: "Appearance",
@@ -1069,6 +1070,8 @@ export const translations = {
         ollamaApiKey: "Ollama URL (Local)",
         defaultChatModel: "Default Chat Model",
         defaultImageModel: "Default Image Model",
+        appliedToAllImagePages: "Applied to: Photo Studio, Shooting & Image Editor",
+        nvidiaPerModelKeys: "Advanced Keys (per NVIDIA model)",
         whatsappTemplate: "Default WhatsApp Template",
         helloNameThanksForInterest: "Hello [Name], thank you for your interest in our services...",
         availableVariables: "Available variables:",
@@ -1084,6 +1087,10 @@ export const translations = {
         googleGeminiDefault: "Google Gemini (Default)",
         openRouterGptClaude: "OpenRouter (GPT-4, Claude)",
         ollamaLocalFree: "Ollama (Local / Free)",
+        openAiCompatibleNvidia: "OpenAI Compatible (NVIDIA, Groq...)",
+        openaiApiKey: "OpenAI/NVIDIA API Key",
+        openaiBaseUrl: "Base URL",
+        placeholderOpenAiBaseUrl: "e.g. https://integrate.api.nvidia.com/v1",
         ollamaCloudApiKey: "Ollama Cloud API Key (Optional)",
         quickMessageTemplate: "Quick Message Template (Smart Copy)",
 
@@ -1357,6 +1364,7 @@ export const translations = {
         providerGemini: "Google Gemini",
         providerOpenRouter: "OpenRouter",
         providerOllama: "Ollama (Local)",
+        providerOpenAi: "OpenAI Compatible",
 
         // --- ⚙️ Settings (Apparence & Modèles) ---
         appearance: "Apparence",
@@ -1413,6 +1421,8 @@ export const translations = {
         ollamaApiKey: "URL Ollama (Local)",
         defaultChatModel: "Modèle de Chat par défaut",
         defaultImageModel: "Modèle d'Image par défaut",
+        appliedToAllImagePages: "Appliqué à : Photo Produit, Séance Photo & Éditer l'image",
+        nvidiaPerModelKeys: "Clés avancées (par modèle NVIDIA)",
         whatsappTemplate: "Modèle WhatsApp par défaut",
         helloNameThanksForInterest: "Bonjour [Nom], merci pour l'intérêt que vous portez à nos services...",
         availableVariables: "Variables disponibles :",
@@ -1435,7 +1445,23 @@ export const translations = {
         quotaExceededTitle: "Quota gratuit atteint",
         quotaExceededDesc: "Vous avez atteint votre limite de 40 images gratuites. Veuillez ajouter votre propre clé API pour continuer.",
         configureMyKey: "Configurer ma clé",
+
+        // --- 🤖 AI Provider OpenAI Compatible ---
+        defaultProviderDesc: "Le moteur utilisé pour les interactions générales (Copilot, agents...).",
+        googleGeminiDefault: "Google Gemini (Défaut)",
+        openRouterGptClaude: "OpenRouter (GPT-4, Claude)",
+        ollamaLocalFree: "Ollama (Local / Gratuit)",
+        openAiCompatibleNvidia: "OpenAI Compatible (NVIDIA, Groq...)",
+        openaiApiKey: "Clé API OpenAI / NVIDIA",
+        openaiBaseUrl: "URL de base",
+        placeholderOpenAiBaseUrl: "ex. https://integrate.api.nvidia.com/v1",
+        ollamaCloudApiKey: "Clé API Ollama Cloud (Optionnel)",
+        quickMessageTemplate: "Modèle de message rapide (Smart Copy)",
+        saveSettings: "Enregistrer la configuration",
+        successSettingsSaved: "Configuration IA enregistrée avec succès !",
+
         // --- 🧭 Navigation & Sidebar ---
+
         dashboard: "Tableau de bord",
         whatsappHub: "Hub WhatsApp",
         invoiceBuilder: "Créateur de Factures",

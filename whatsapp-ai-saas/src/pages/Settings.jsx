@@ -14,8 +14,17 @@ const Settings = () => {
         gemini_api_key: '',
         openrouter_api_key: '',
         ollama_api_key: '',
-        default_image_model: ''
+        openai_api_key: '',
+        openai_base_url: 'https://integrate.api.nvidia.com/v1',
+        default_image_model: '',
+        // Per-model NVIDIA API keys
+        nvidia_key_llama: '',
+        nvidia_key_gemma: '',
+        nvidia_key_glm: '',
+        nvidia_key_qwen_image: '',
+        nvidia_key_qwen_edit: '',
     });
+    const [showNvidiaPerModelKeys, setShowNvidiaPerModelKeys] = useState(false);
     const aiQuota = useAppStore(state => state.aiQuota);
     const fetchAiQuota = useAppStore(state => state.fetchAiQuota);
 
@@ -45,10 +54,18 @@ const Settings = () => {
         setIsLoadingModels(true);
         const provider = providerOverride || backendSettings.default_ai_provider;
 
-        // Pass the API key if it's OpenRouter so we can test it before saving
-        const apiKeyParam = provider === 'openrouter' && backendSettings.openrouter_api_key
-            ? `&apiKey=${encodeURIComponent(backendSettings.openrouter_api_key)}`
-            : '';
+        // Pass the API key/baseURL so we can test it before saving
+        let apiKeyParam = '';
+        if (provider === 'openrouter' && backendSettings.openrouter_api_key) {
+            apiKeyParam = `&apiKey=${encodeURIComponent(backendSettings.openrouter_api_key)}`;
+        } else if (provider === 'openai') {
+            if (backendSettings.openai_api_key) {
+                apiKeyParam += `&apiKey=${encodeURIComponent(backendSettings.openai_api_key)}`;
+            }
+            if (backendSettings.openai_base_url) {
+                apiKeyParam += `&baseURL=${encodeURIComponent(backendSettings.openai_base_url)}`;
+            }
+        }
 
         fetch(`http://localhost:3000/api/ai/models?provider=${provider}${apiKeyParam}`)
             .then(res => res.json())
@@ -213,6 +230,7 @@ const Settings = () => {
                                 { value: 'gemini', label: t('googleGeminiDefault'), description: 'Gemini Flash / Pro · Free tier' },
                                 { value: 'openrouter', label: t('openRouterGptClaude'), description: 'GPT-4o, Claude, Mistral…' },
                                 { value: 'ollama', label: t('ollamaLocalFree'), description: 'Local · No API key needed' },
+                                { value: 'openai', label: t('openAiCompatibleNvidia'), description: 'NVIDIA, Groq, OpenAI...' },
                             ]}
                         />
                     </div>
@@ -299,6 +317,78 @@ const Settings = () => {
                         </div>
                     )}
 
+                    {backendSettings.default_ai_provider === 'openai' && (
+                        <div className="flex flex-col gap-4 mb-6 bg-gray-50 dark:bg-gray-750 p-4 rounded-lg">
+                            {/* Main API Key + Base URL */}
+                            <div className="flex items-center justify-between">
+                                <div className="w-1/2">
+                                    <p className="text-sm font-medium text-gray-800 dark:text-gray-100">{t('openaiApiKey')}</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Clé par défaut (ex: moonshotai, openai...)</p>
+                                </div>
+                                <div className="w-1/2 flex justify-end">
+                                    <input
+                                        type="password"
+                                        placeholder={t('placeholderApiKey')}
+                                        value={backendSettings.openai_api_key || ''}
+                                        onChange={(e) => setBackendSettings(prev => ({ ...prev, openai_api_key: e.target.value }))}
+                                        onBlur={() => fetchModels()}
+                                        className="border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none bg-white dark:bg-gray-700 dark:text-white w-full max-w-[300px]"
+                                    />
+                                </div>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <div className="w-1/2">
+                                    <p className="text-sm font-medium text-gray-800 dark:text-gray-100">{t('openaiBaseUrl')}</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Laissez par défaut pour NVIDIA NIM</p>
+                                </div>
+                                <div className="w-1/2 flex justify-end">
+                                    <input
+                                        type="text"
+                                        placeholder={t('placeholderOpenAiBaseUrl')}
+                                        value={backendSettings.openai_base_url || 'https://integrate.api.nvidia.com/v1'}
+                                        onChange={(e) => setBackendSettings(prev => ({ ...prev, openai_base_url: e.target.value }))}
+                                        onBlur={() => fetchModels()}
+                                        className="border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none bg-white dark:bg-gray-700 dark:text-white w-full max-w-[300px]"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Per-model keys collapsible */}
+                            <div className="border-t border-gray-200 dark:border-gray-600 pt-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowNvidiaPerModelKeys(v => !v)}
+                                    className="flex items-center gap-2 text-xs font-semibold text-primary hover:text-primary/80 transition"
+                                >
+                                    <span>{showNvidiaPerModelKeys ? '▼' : '▶'}</span>
+                                    {t('nvidiaPerModelKeys')}
+                                </button>
+                                {showNvidiaPerModelKeys && (
+                                    <div className="mt-3 flex flex-col gap-3">
+                                        {[
+                                            { key: 'nvidia_key_llama',      label: 'meta/llama-4-maverick-17b-128e-instruct', placeholder: 'nvapi-...' },
+                                            { key: 'nvidia_key_gemma',      label: 'google/gemma-3n-e2b-it',                  placeholder: 'nvapi-...' },
+                                            { key: 'nvidia_key_glm',        label: 'z-ai/glm-4.7',                            placeholder: 'nvapi-...' },
+                                            { key: 'nvidia_key_qwen_image', label: 'Qwen Vision (3dd66593...)',               placeholder: 'nvapi-...' },
+                                            { key: 'nvidia_key_qwen_edit',  label: 'Qwen Image Edit (e396d9ed...)',           placeholder: 'nvapi-...' },
+                                        ].map(({ key, label, placeholder }) => (
+                                            <div key={key} className="flex items-center justify-between gap-4">
+                                                <p className="text-xs font-mono text-gray-600 dark:text-gray-300 w-1/2 truncate" title={label}>{label}</p>
+                                                <input
+                                                    type="password"
+                                                    placeholder={placeholder}
+                                                    value={backendSettings[key] || ''}
+                                                    onChange={(e) => setBackendSettings(prev => ({ ...prev, [key]: e.target.value }))}
+                                                    className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none bg-white dark:bg-gray-700 dark:text-white w-1/2"
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
                     <div className="flex items-center justify-between mb-6">
                         <div>
                             <p className="text-base font-medium text-gray-800 dark:text-gray-100">{t('llmModel')}</p>
@@ -320,6 +410,9 @@ const Settings = () => {
                         <div>
                             <p className="text-base font-medium text-gray-800 dark:text-gray-100">{t('imageGenerationModel')}</p>
                             <p className="text-sm text-gray-500 dark:text-gray-400">{t('selectModelForVisualCreation')}</p>
+                            <p className="text-xs text-primary/80 mt-1">
+                                👁 Vision · 🎨 Image-Edit &nbsp;—&nbsp; {t('appliedToAllImagePages')}
+                            </p>
                         </div>
                         <CustomSelect
                             value={backendSettings.default_image_model || ''}

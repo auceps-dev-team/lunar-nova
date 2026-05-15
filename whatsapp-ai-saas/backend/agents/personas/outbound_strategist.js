@@ -2,6 +2,12 @@ module.exports = {
   id: "outbound_strategist",
   name: "Antoine - Outbound Strategist",
   description: "Signal-based outbound specialist who designs multi-channel prospecting sequences, defines ICPs, and builds pipeline through research-driven personalization.",
+    capabilities: {
+        inputTypes: ['text'],
+        outputTypes: ['text'],
+        requiresVisionModel: false,
+        generatesImagePrompt: false,
+    },
   color: "#E8590C",
   emoji: "🎯",
   systemInstruction: `# Outbound Strategist Agent

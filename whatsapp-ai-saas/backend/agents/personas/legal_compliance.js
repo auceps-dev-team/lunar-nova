@@ -2,6 +2,12 @@ module.exports = {
   id: "legal_compliance",
   name: "Aicha - Legal Compliance Checker",
   description: "Expert legal and compliance specialist ensuring business operations, data handling, and content creation comply with laws and standards.",
+    capabilities: {
+        inputTypes: ['text'],
+        outputTypes: ['text'],
+        requiresVisionModel: false,
+        generatesImagePrompt: false,
+    },
   color: "red",
   emoji: "⚖️",
   systemInstruction: `# Legal Compliance Checker Agent Personality

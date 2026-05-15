@@ -2,15 +2,27 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
 
-// Helper: proxy a call to the WordPress plugin
-async function wpFetch(siteUrl, token, endpoint, params = '', method = 'GET', body = null) {
+// Helper: proxy a call to the WordPress plugin (Phase 2 — Basic Auth via App Passwords)
+/**
+ * @param {string} siteUrl        - WordPress site URL
+ * @param {string} wpUsername     - WordPress username
+ * @param {string} appPassword    - Application Password (spaces allowed, WP handles it)
+ * @param {string} endpoint       - REST path under /wacopilote/v1
+ * @param {string} params         - Query string (e.g. '?page=2')
+ * @param {string} method         - HTTP method
+ * @param {object|null} body      - JSON body
+ */
+async function wpFetch(siteUrl, wpUsername, appPassword, endpoint, params = '', method = 'GET', body = null) {
     const fetch = (await import('node-fetch')).default;
     const url = `${siteUrl.replace(/\/$/, '')}/wp-json/wacopilote/v1${endpoint}${params}`;
+
+    // WordPress Application Passwords use Basic Auth: base64(username:app_password)
+    const credentials = Buffer.from(`${wpUsername}:${appPassword}`).toString('base64');
 
     const options = {
         method,
         headers: {
-            'Authorization': `Bearer ${token}`,
+            'Authorization': `Basic ${credentials}`,
             'Content-Type': 'application/json',
         },
         timeout: 15000,
@@ -24,7 +36,7 @@ async function wpFetch(siteUrl, token, endpoint, params = '', method = 'GET', bo
 
     if (!response.ok) {
         const err = await response.json().catch(() => ({ message: response.statusText }));
-        throw new Error(err.message || `HTTP ${response.status}`);
+        throw new Error(err.message || `HTTP ${response.status} — ${url}`);
     }
 
     return response.json();
@@ -42,16 +54,16 @@ router.get('/connections', async (req, res) => {
     }
 });
 
-// POST /api/wp/connections — Add a new WordPress site
+// POST /api/wp/connections — Add a new WordPress site (Phase 2: username + app_password)
 router.post('/connections', async (req, res) => {
-    const { name, site_url, token } = req.body;
-    if (!name || !site_url || !token) {
-        return res.status(400).json({ error: 'Missing name, site_url or token.' });
+    const { name, site_url, wp_username, app_password } = req.body;
+    if (!name || !site_url || !wp_username || !app_password) {
+        return res.status(400).json({ error: 'Missing name, site_url, wp_username or app_password.' });
     }
     try {
         const result = await pool.query(
-            'INSERT INTO wp_connections (name, site_url, token) VALUES ($1, $2, $3) RETURNING id, name, site_url, is_active, created_at',
-            [name, site_url.trim().replace(/\/$/, ''), token.trim()]
+            'INSERT INTO wp_connections (name, site_url, wp_username, app_password) VALUES ($1, $2, $3, $4) RETURNING id, name, site_url, is_active, created_at',
+            [name, site_url.trim().replace(/\/$/, ''), wp_username.trim(), app_password.trim()]
         );
         res.json({ status: 'success', data: result.rows[0] });
     } catch (err) {
@@ -76,7 +88,7 @@ router.post('/connections/:id/test', async (req, res) => {
         if (result.rows.length === 0) return res.status(404).json({ error: 'Connection not found.' });
 
         const conn = result.rows[0];
-        const stats = await wpFetch(conn.site_url, conn.token, '/stats');
+        const stats = await wpFetch(conn.site_url, conn.wp_username, conn.app_password, '/stats');
 
         res.json({ status: 'success', site_name: stats.site_name, wp_version: stats.wp_version, plugins: stats.plugins });
     } catch (err) {
@@ -91,7 +103,7 @@ router.get('/:id/stats', async (req, res) => {
     try {
         const conn = (await pool.query('SELECT * FROM wp_connections WHERE id = $1', [req.params.id])).rows[0];
         if (!conn) return res.status(404).json({ error: 'Connection not found.' });
-        const data = await wpFetch(conn.site_url, conn.token, '/stats');
+        const data = await wpFetch(conn.site_url, conn.wp_username, conn.app_password, '/stats');
         res.json({ status: 'success', data });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -104,7 +116,7 @@ router.get('/:id/posts', async (req, res) => {
         const conn = (await pool.query('SELECT * FROM wp_connections WHERE id = $1', [req.params.id])).rows[0];
         if (!conn) return res.status(404).json({ error: 'Connection not found.' });
         const { limit = 15, page = 1 } = req.query;
-        const data = await wpFetch(conn.site_url, conn.token, '/posts', `?limit=${limit}&page=${page}`);
+        const data = await wpFetch(conn.site_url, conn.wp_username, conn.app_password, '/posts', `?limit=${limit}&page=${page}`);
         res.json({ status: 'success', data });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -116,7 +128,7 @@ router.get('/:id/products/meta', async (req, res) => {
     try {
         const conn = (await pool.query('SELECT * FROM wp_connections WHERE id = $1', [req.params.id])).rows[0];
         if (!conn) return res.status(404).json({ error: 'Connection not found.' });
-        const data = await wpFetch(conn.site_url, conn.token, '/products/meta');
+        const data = await wpFetch(conn.site_url, conn.wp_username, conn.app_password, '/products/meta');
         res.json({ status: 'success', data });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -137,7 +149,7 @@ router.get('/:id/products', async (req, res) => {
         if (stock_status) params.set('stock_status', stock_status);
         if (brand)        params.set('brand', brand);
         if (search)       params.set('search', search);
-        const data = await wpFetch(conn.site_url, conn.token, '/products', `?${params.toString()}`);
+        const data = await wpFetch(conn.site_url, conn.wp_username, conn.app_password, '/products', `?${params.toString()}`);
         res.json({ status: 'success', data });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -150,7 +162,7 @@ router.get('/:id/orders', async (req, res) => {
         const conn = (await pool.query('SELECT * FROM wp_connections WHERE id = $1', [req.params.id])).rows[0];
         if (!conn) return res.status(404).json({ error: 'Connection not found.' });
         const { limit = 15 } = req.query;
-        const data = await wpFetch(conn.site_url, conn.token, '/orders', `?limit=${limit}`);
+        const data = await wpFetch(conn.site_url, conn.wp_username, conn.app_password, '/orders', `?limit=${limit}`);
         res.json({ status: 'success', data });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -162,7 +174,7 @@ router.get('/:id/seo-meta', async (req, res) => {
     try {
         const conn = (await pool.query('SELECT * FROM wp_connections WHERE id = $1', [req.params.id])).rows[0];
         if (!conn) return res.status(404).json({ error: 'Connection not found.' });
-        const data = await wpFetch(conn.site_url, conn.token, '/seo-meta');
+        const data = await wpFetch(conn.site_url, conn.wp_username, conn.app_password, '/seo-meta');
         res.json({ status: 'success', data });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -183,7 +195,7 @@ router.get('/:id/analytics', async (req, res) => {
             params = `?${queryParams.toString()}`;
         }
         
-        const data = await wpFetch(conn.site_url, conn.token, '/analytics', params);
+        const data = await wpFetch(conn.site_url, conn.wp_username, conn.app_password, '/analytics', params);
         res.json({ status: 'success', data });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -195,7 +207,7 @@ router.post('/:id/posts', async (req, res) => {
     try {
         const conn = (await pool.query('SELECT * FROM wp_connections WHERE id = $1', [req.params.id])).rows[0];
         if (!conn) return res.status(404).json({ error: 'Connection not found.' });
-        const data = await wpFetch(conn.site_url, conn.token, '/posts', '', 'POST', req.body);
+        const data = await wpFetch(conn.site_url, conn.wp_username, conn.app_password, '/posts', '', 'POST', req.body);
         res.json({ status: 'success', data });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -207,11 +219,117 @@ router.post('/:id/products', async (req, res) => {
     try {
         const conn = (await pool.query('SELECT * FROM wp_connections WHERE id = $1', [req.params.id])).rows[0];
         if (!conn) return res.status(404).json({ error: 'Connection not found.' });
-        const data = await wpFetch(conn.site_url, conn.token, '/products', '', 'POST', req.body);
+        const data = await wpFetch(conn.site_url, conn.wp_username, conn.app_password, '/products', '', 'POST', req.body);
         res.json({ status: 'success', data });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
+// ─── HITL Governance Routes ──────────────────────────────────────────────────
+
+// GET /api/wp/:id/actions — List AI proposals (pending by default)
+router.get('/:id/actions', async (req, res) => {
+    try {
+        const conn = (await pool.query('SELECT * FROM wp_connections WHERE id = $1', [req.params.id])).rows[0];
+        if (!conn) return res.status(404).json({ error: 'Connection not found.' });
+        const status = req.query.status || 'pending_review';
+        const data = await wpFetch(conn.site_url, conn.wp_username, conn.app_password, '/actions', `?status=${status}`);
+        res.json({ status: 'success', data });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// POST /api/wp/:id/propose — Agent submits a proposal (stored, not executed)
+router.post('/:id/propose', async (req, res) => {
+    try {
+        const conn = (await pool.query('SELECT * FROM wp_connections WHERE id = $1', [req.params.id])).rows[0];
+        if (!conn) return res.status(404).json({ error: 'Connection not found.' });
+        const data = await wpFetch(conn.site_url, conn.wp_username, conn.app_password, '/propose', '', 'POST', req.body);
+        res.status(201).json({ status: 'success', data });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// POST /api/wp/:id/execute/:actionId — Admin approves a proposal
+router.post('/:id/execute/:actionId', async (req, res) => {
+    try {
+        const conn = (await pool.query('SELECT * FROM wp_connections WHERE id = $1', [req.params.id])).rows[0];
+        if (!conn) return res.status(404).json({ error: 'Connection not found.' });
+        const data = await wpFetch(conn.site_url, conn.wp_username, conn.app_password, `/execute/${req.params.actionId}`, '', 'POST', {});
+        res.json({ status: 'success', data });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// DELETE /api/wp/:id/execute/:actionId — Admin rejects a proposal
+router.delete('/:id/execute/:actionId', async (req, res) => {
+    try {
+        const conn = (await pool.query('SELECT * FROM wp_connections WHERE id = $1', [req.params.id])).rows[0];
+        if (!conn) return res.status(404).json({ error: 'Connection not found.' });
+        const data = await wpFetch(conn.site_url, conn.wp_username, conn.app_password, `/execute/${req.params.actionId}`, '', 'DELETE');
+        res.json({ status: 'success', data });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// POST /api/wp/:id/media/upload — Forward multipart file upload to WP media library
+router.post('/:id/media/upload', async (req, res) => {
+    try {
+        const fetch = (await import('node-fetch')).default;
+        const FormData = (await import('form-data')).default;
+        const conn = (await pool.query('SELECT * FROM wp_connections WHERE id = $1', [req.params.id])).rows[0];
+        if (!conn) return res.status(404).json({ error: 'Connection not found.' });
+
+        // req must be pre-processed by multer (memory storage) — attach in server.js
+        if (!req.file) return res.status(400).json({ error: 'No file in request. Use field name "file".' });
+
+        const form = new FormData();
+        form.append('file', req.file.buffer, {
+            filename: req.file.originalname,
+            contentType: req.file.mimetype,
+        });
+        if (req.body.post_id) form.append('post_id', req.body.post_id);
+        if (req.body.title)   form.append('title',   req.body.title);
+
+        const url = `${conn.site_url.replace(/\/$/, '')}/wp-json/wacopilote/v1/media/upload`;
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${conn.token}`, ...form.getHeaders() },
+            body: form,
+            timeout: 60000,
+        });
+
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({ message: response.statusText }));
+            return res.status(response.status).json({ error: err.message });
+        }
+
+        const data = await response.json();
+        res.json({ status: 'success', data });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// GET /api/wp/:id/logs
+router.get('/:id/logs', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const limit = req.query.limit || 50;
+        const offset = req.query.offset || 0;
+        const status = req.query.status || '';
+        const site = await getSite(id);
+        const data = await wpFetch(site.site_url, site.wp_username, site.app_password, '/logs', `?limit=${limit}&offset=${offset}&status=${status}`);
+        res.json(data);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 module.exports = router;
+

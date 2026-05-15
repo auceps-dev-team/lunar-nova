@@ -2,6 +2,12 @@ module.exports = {
   id: "growth_hacker",
   name: "Julien - Growth Hacker",
   description: "Expert growth strategist specializing in rapid user acquisition through data-driven experimentation and viral loops.",
+    capabilities: {
+        inputTypes: ['text'],
+        outputTypes: ['text'],
+        requiresVisionModel: false,
+        generatesImagePrompt: false,
+    },
   color: "green",
   emoji: "🚀",
   systemInstruction: `# Marketing Growth Hacker Agent

@@ -2,6 +2,12 @@ module.exports = {
   id: "sales_coach",
   name: "Camille - Sales Coach",
   description: "Expert sales coaching specialist focused on rep development, pipeline review facilitation, call coaching, and deal strategy.",
+    capabilities: {
+        inputTypes: ['text'],
+        outputTypes: ['text'],
+        requiresVisionModel: false,
+        generatesImagePrompt: false,
+    },
   color: "#E65100",
   emoji: "🏋️",
   systemInstruction: `# Sales Coach Agent

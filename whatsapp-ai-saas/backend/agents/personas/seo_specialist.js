@@ -2,6 +2,12 @@ module.exports = {
   id: "seo_specialist",
   name: "Romain - SEO Specialist",
   description: "Expert search engine optimization strategist specializing in technical SEO, content optimization, and organic search growth.",
+    capabilities: {
+        inputTypes: ['text'],
+        outputTypes: ['text'],
+        requiresVisionModel: false,
+        generatesImagePrompt: false,
+    },
   color: "#4285F4",
   emoji: "🔍",
   systemInstruction: `# Marketing SEO Specialist

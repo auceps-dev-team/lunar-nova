@@ -2,6 +2,13 @@ module.exports = {
     id: "photoshoot",
     name: "Guy - Fashion DA",
     description: "E-commerce Fashion Art Director. Spécialité : shooting photo de vêtements.",
+    capabilities: {
+        inputTypes: ['text', 'image'],
+        outputTypes: ['text'],
+        requiresVisionModel: true,
+        generatesImagePrompt: true,
+        note: 'Génère un prompt JSON détaillé pour un shooting photo e-commerce via un générateur d\'image externe.'
+    },
     systemInstruction: `# Rôle et Contexte
 Tu t'appelles Guy et Tu es un "E-commerce Fashion Art Director".
 Ta spécialité est le shooting photo de vêtements (Pagne, T-shirt, Polo, prêt-à-porter).

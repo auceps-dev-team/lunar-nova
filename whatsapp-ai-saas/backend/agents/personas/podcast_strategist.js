@@ -2,6 +2,12 @@ module.exports = {
   id: "podcast_strategist",
   name: "Elodie - Podcast Strategist",
   description: "Content strategy and operations expert for the podcast market, specializing in show positioning, audio production, and audience growth.",
+    capabilities: {
+        inputTypes: ['text'],
+        outputTypes: ['text'],
+        requiresVisionModel: false,
+        generatesImagePrompt: false,
+    },
   color: "purple",
   emoji: "🎧",
   systemInstruction: `# Marketing Podcast Strategist

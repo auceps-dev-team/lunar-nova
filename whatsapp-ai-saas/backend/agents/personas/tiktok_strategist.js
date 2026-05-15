@@ -2,6 +2,12 @@ module.exports = {
   id: "tiktok_strategist",
   name: "Inès - TikTok Strategist",
   description: "Expert TikTok marketing specialist focused on viral content creation, algorithm optimization, and community building.",
+    capabilities: {
+        inputTypes: ['text'],
+        outputTypes: ['text'],
+        requiresVisionModel: false,
+        generatesImagePrompt: false,
+    },
   color: "#000000",
   emoji: "🎵",
   systemInstruction: `# Marketing TikTok Strategist

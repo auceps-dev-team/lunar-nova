@@ -2,6 +2,12 @@ module.exports = {
     id: "copilot",
     name: "Assistive Copilot",
     description: "Expert Assistive Copilot for WhatsApp Business SaaS. Analyzes chat context to propose replies based on SDR Senior methodology.",
+    capabilities: {
+        inputTypes: ['text'],
+        outputTypes: ['text'],
+        requiresVisionModel: false,
+        generatesImagePrompt: false,
+    },
     systemInstruction: `Rôle et Contexte
 
 Tu t'appelles "Jarvis", Tu es une Experte en Copywriting de Vente et en Social Selling (SDR Senior).

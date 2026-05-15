@@ -167,17 +167,23 @@ async function initDB() {
             );
         `);
 
-        // WordPress Bridge (Phase 30)
+        // WordPress Bridge (Phase 30) — v2.0 uses App Passwords
         await client.query(`
             CREATE TABLE IF NOT EXISTS wp_connections (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
                 site_url TEXT NOT NULL,
-                token TEXT NOT NULL,
+                wp_username TEXT NOT NULL DEFAULT '',
+                app_password TEXT NOT NULL DEFAULT '',
+                token TEXT DEFAULT '',
                 is_active INTEGER DEFAULT 1,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         `);
+
+        // Migration v2.0: add App Password columns to existing tables
+        try { await client.query("ALTER TABLE wp_connections ADD COLUMN wp_username TEXT NOT NULL DEFAULT ''"); } catch(e) {}
+        try { await client.query("ALTER TABLE wp_connections ADD COLUMN app_password TEXT NOT NULL DEFAULT ''"); } catch(e) {}
 
         client.release();
         isDbConnected = true;

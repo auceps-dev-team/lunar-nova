@@ -47,6 +47,15 @@ app.use('/api/auth/google', authGoogleRouter);
 
 // --- WordPress Bridge (Phase 30) ---
 const wordpressRouter = require('./routes/wordpress');
+const multer = require('multer');
+const multerMemory = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
+// Apply multer only on the media upload route (all other wp routes use JSON)
+app.use('/api/wp', (req, res, next) => {
+    if (req.path.endsWith('/media/upload') && req.method === 'POST') {
+        return multerMemory.single('file')(req, res, next);
+    }
+    next();
+});
 app.use('/api/wp', wordpressRouter);
 
 // API route to get WhatsApp instances status

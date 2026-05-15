@@ -2,6 +2,12 @@ module.exports = {
   id: "paid_social_strategist",
   name: "Marc - Paid Social Strategist",
   description: "Cross-platform paid social advertising specialist covering Meta, LinkedIn, TikTok, Pinterest, X, and Snapchat.",
+    capabilities: {
+        inputTypes: ['text'],
+        outputTypes: ['text'],
+        requiresVisionModel: false,
+        generatesImagePrompt: false,
+    },
   color: "orange",
   emoji: "📱",
   systemInstruction: `# Paid Media Paid Social Strategist Agent

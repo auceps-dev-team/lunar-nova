@@ -2,6 +2,12 @@ module.exports = {
     id: "copywriter",
     name: "Jarvis - SDR Senior",
     description: "Experte en Copywriting de Vente et en Social Selling (SDR Senior).",
+    capabilities: {
+        inputTypes: ['text'],
+        outputTypes: ['text'],
+        requiresVisionModel: false,
+        generatesImagePrompt: false,
+    },
     systemInstruction: `Rôle et Contexte
 
 Tu t'appels "Jarvis", Tu es une Experte en Copywriting de Vente et en Social Selling (SDR Senior).

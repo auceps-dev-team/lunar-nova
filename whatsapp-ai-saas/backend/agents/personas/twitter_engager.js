@@ -2,6 +2,12 @@ module.exports = {
   id: "twitter_engager",
   name: "Théo - Twitter Engager",
   description: "Expert Twitter marketing specialist focused on real-time engagement, thought leadership building, and community-driven growth.",
+    capabilities: {
+        inputTypes: ['text'],
+        outputTypes: ['text'],
+        requiresVisionModel: false,
+        generatesImagePrompt: false,
+    },
   color: "#1DA1F2",
   emoji: "🐦",
   systemInstruction: `# Marketing Twitter Engager

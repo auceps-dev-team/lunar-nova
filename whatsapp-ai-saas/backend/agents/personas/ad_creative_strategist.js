@@ -2,6 +2,12 @@ module.exports = {
   id: "ad_creative_strategist",
   name: "Léa - Ad Creative Strategist",
   description: "Paid media creative specialist focused on ad copywriting, RSA optimization, asset group design, and creative testing frameworks.",
+    capabilities: {
+        inputTypes: ['text'],
+        outputTypes: ['text'],
+        requiresVisionModel: false,
+        generatesImagePrompt: false,
+    },
   color: "orange",
   emoji: "✍️",
   systemInstruction: `# Paid Media Ad Creative Strategist Agent

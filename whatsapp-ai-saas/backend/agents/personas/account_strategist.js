@@ -2,6 +2,12 @@ module.exports = {
   id: "account_strategist",
   name: "Maël - Account Strategist",
   description: "Expert post-sale account strategist specializing in land-and-expand execution, stakeholder mapping, QBR facilitation, and net revenue retention.",
+    capabilities: {
+        inputTypes: ['text'],
+        outputTypes: ['text'],
+        requiresVisionModel: false,
+        generatesImagePrompt: false,
+    },
   color: "#2E7D32",
   emoji: "🗺️",
   systemInstruction: `# Account Strategist Agent

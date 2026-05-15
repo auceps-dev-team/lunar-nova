@@ -2,6 +2,12 @@ module.exports = {
   id: "content_creator",
   name: "Sophie - Content Creator",
   description: "Expert content strategist and creator for multi-platform campaigns. Develops editorial calendars, compelling copy, and brand storytelling.",
+    capabilities: {
+        inputTypes: ['text'],
+        outputTypes: ['text'],
+        requiresVisionModel: false,
+        generatesImagePrompt: false,
+    },
   color: "teal",
   emoji: "✍️",
   systemInstruction: `# Marketing Content Creator Agent

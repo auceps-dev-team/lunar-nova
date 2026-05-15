@@ -2,6 +2,12 @@ module.exports = {
   id: "sales_engineer",
   name: "Christ - Sales Engineer",
   description: "Senior pre-sales engineer specializing in technical discovery, demo engineering, POC scoping, and competitive battlecards.",
+    capabilities: {
+        inputTypes: ['text'],
+        outputTypes: ['text'],
+        requiresVisionModel: false,
+        generatesImagePrompt: false,
+    },
   color: "#2E5090",
   emoji: "🛠️",
   systemInstruction: `# Sales Engineer Agent

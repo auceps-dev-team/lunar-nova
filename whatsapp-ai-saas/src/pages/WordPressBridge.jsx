@@ -169,7 +169,7 @@ export default function WordPressBridge() {
     const [tab, setTab] = useState('connection');
     const [connections, setConnections] = useState([]);
     const [selectedId, setSelectedId] = useState(null);
-    const [form, setForm] = useState({ name: '', site_url: '', token: '' });
+    const [form, setForm] = useState({ name: '', site_url: '', wp_username: '', app_password: '' });
     const [isSaving, setIsSaving] = useState(false);
     const [isTesting, setIsTesting] = useState(null);
     const [isDeleting, setIsDeleting] = useState(null);
@@ -179,6 +179,10 @@ export default function WordPressBridge() {
     const [productModal, setProductModal] = useState(null);
     const [posts, setPosts] = useState([]);
     const [products, setProducts] = useState([]);
+    const [logs, setLogs] = useState([]);
+    const [logsPagination, setLogsPagination] = useState({ total: 0, pages: 1, per_page: 25, current_page: 1 });
+    const [logsFilters, setLogsFilters] = useState({ status: '', page: 1, per_page: 25 });
+    const [isLogsLoading, setIsLogsLoading] = useState(false);
     const [productsMeta, setProductsMeta] = useState({ categories: [], brands: [], types: [] });
     const [productsPagination, setProductsPagination] = useState({ total: 0, pages: 1, per_page: 25, current_page: 1 });
     const [productFilters, setProductFilters] = useState({ search: '', category: '', type: '', stock_status: '', brand: '', page: 1, per_page: 25 });
@@ -238,52 +242,14 @@ export default function WordPressBridge() {
             if (parsed) {
                 if (parsed.text) replyText = parsed.text;
 
-                if (parsed.actions && Array.isArray(parsed.actions)) {
-                    for (const action of parsed.actions) {
-                        try {
-                            if (action.type === 'CREATE_PRODUCT' && action.payload) {
-                                const r = await fetch(`http://localhost:3000/api/wp/${selectedId}/products`, {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify(action.payload)
-                                });
-                                const d = await r.json();
-                                if (d.status === 'success') {
-                                    replyText += `\n\n✅ Produit créé avec succès ! [Voir le brouillon](${d.data?.url || '#'})`;
-                                    showAppNotification('Produit créé sur WordPress !', 'success');
-                                    // Refresh products list if on shop tab
-                                    if (tab === 'shop') {
-                                        const pr = await fetch(`http://localhost:3000/api/wp/${selectedId}/products?limit=15`);
-                                        const pd = await pr.json();
-                                        if (pd.status === 'success') setProducts(pd.data?.data || []);
-                                    }
-                                } else {
-                                    replyText += `\n\n❌ Erreur lors de la création : ${d.error}`;
-                                }
-                            } else if (action.type === 'CREATE_POST' && action.payload) {
-                                const r = await fetch(`http://localhost:3000/api/wp/${selectedId}/posts`, {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify(action.payload)
-                                });
-                                const d = await r.json();
-                                if (d.status === 'success') {
-                                    replyText += `\n\n✅ Article créé avec succès ! [Voir le brouillon](${d.data?.url || '#'})`;
-                                    showAppNotification('Article créé sur WordPress !', 'success');
-                                    // Refresh posts if on posts tab
-                                    if (tab === 'posts') {
-                                        const rp = await fetch(`http://localhost:3000/api/wp/${selectedId}/posts?limit=20`);
-                                        const dp = await rp.json();
-                                        if (dp.status === 'success') setPosts(dp.data?.data || []);
-                                    }
-                                } else {
-                                    replyText += `\n\n❌ Erreur lors de la création : ${d.error}`;
-                                }
-                            }
-                        } catch (actionErr) {
-                            replyText += `\n\n❌ Erreur technique : ${actionErr.message}`;
-                        }
-                    }
+                if (parsed.actions && Array.isArray(parsed.actions) && parsed.actions.length > 0) {
+                    const action = parsed.actions[0];
+                    setJarvisHistory(prev => [...prev, {
+                        sender: 'agent',
+                        text: replyText,
+                        proposal: { action, userMessage }
+                    }]);
+                    return; // Skip the generic setJarvisHistory at the end
                 }
             }
 
@@ -294,6 +260,61 @@ export default function WordPressBridge() {
             setIsJarvisLoading(false);
         }
     };
+
+    const handleConfirmProposal = async (msgIndex) => {
+        const msg = jarvisHistory[msgIndex];
+        const { action, userMessage } = msg.proposal;
+
+        setJarvisHistory(prev => {
+            const next = [...prev];
+            next[msgIndex] = { ...next[msgIndex], isProposing: true };
+            return next;
+        });
+
+        try {
+            const payload = {
+                intent_type: action.type,
+                intent_data: action.payload,
+                agent_context: userMessage
+            };
+            const r = await fetch(`http://localhost:3000/api/wp/${selectedId}/propose`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const d = await r.json();
+
+            setJarvisHistory(prev => {
+                const next = [...prev];
+                next[msgIndex].isProposing = false;
+                if (d.status === 'success') {
+                    next[msgIndex].isProposed = true;
+                    next[msgIndex].text += `\n\n✅ Action proposée avec succès ! (ID d'action WordPress : ${d.data?.action_id || 'N/A'})\nElle est en attente de validation dans l'administration WordPress.`;
+                } else {
+                    next[msgIndex].error = d.error;
+                }
+                return next;
+            });
+        } catch (e) {
+            setJarvisHistory(prev => {
+                const next = [...prev];
+                next[msgIndex].isProposing = false;
+                next[msgIndex].error = e.message;
+                return next;
+            });
+        }
+    };
+
+    const handleCancelProposal = (msgIndex) => {
+        setJarvisHistory(prev => {
+            const next = [...prev];
+            next[msgIndex] = { ...next[msgIndex], isCancelled: true };
+            next[msgIndex].text += `\n\n❌ Proposition annulée.`;
+            return next;
+        });
+    };
+
+
 
     const selected = connections.find(c => c.id === selectedId);
 
@@ -310,6 +331,22 @@ export default function WordPressBridge() {
     }, [selectedId]);
 
     useEffect(() => { loadConnections(); }, [loadConnections]);
+
+    // ── Dedicated logs loader (handles filters + pagination) ──
+    const loadLogs = useCallback(async (filters, connId) => {
+        if (!connId) return;
+        setIsLogsLoading(true);
+        try {
+            const offset = (filters.page - 1) * filters.per_page;
+            const r = await fetch(`http://localhost:3000/api/wp/${connId}/logs?limit=${filters.per_page}&offset=${offset}&status=${filters.status}`);
+            const d = await r.json();
+            if (d.status === 'success') {
+                setLogs(d.data || []);
+                if (d.pagination) setLogsPagination(d.pagination);
+            }
+        } catch (e) { /* silent */ }
+        setIsLogsLoading(false);
+    }, []);
 
     // ── Dedicated product loader (handles filters + pagination) ──
     const loadProducts = useCallback(async (filters, connId) => {
@@ -383,12 +420,17 @@ export default function WordPressBridge() {
                     if (metaD.status === 'success') setProductsMeta(metaD.data || { categories: [], brands: [], types: [] });
                     if (od.status === 'success') setOrders(od.data?.data || []);
                     await loadProducts(resetFilters, selectedId);
+                } else if (tab === 'logs') {
+                    // Reset filters when switching to logs tab
+                    const resetFilters = { status: '', page: 1, per_page: 25 };
+                    setLogsFilters(resetFilters);
+                    await loadLogs(resetFilters, selectedId);
                 }
             } catch (e) { /* silent */ }
             setIsLoading(false);
         };
         load();
-    }, [selectedId, tab, analyticsPeriod, loadProducts]);
+    }, [selectedId, tab, analyticsPeriod, loadProducts, loadLogs]);
 
     const handleAdd = async (e) => {
         e.preventDefault();
@@ -401,7 +443,7 @@ export default function WordPressBridge() {
             const d = await res.json();
             if (d.status === 'success') {
                 showAppNotification('Site WordPress connecté !', 'success');
-                setForm({ name: '', site_url: '', token: '' });
+                setForm({ name: '', site_url: '', wp_username: '', app_password: '' });
                 await loadConnections();
                 setSelectedId(d.data.id);
             } else throw new Error(d.error);
@@ -486,6 +528,7 @@ export default function WordPressBridge() {
                     <TabBtn active={tab === 'overview'}   icon={Ico.chart} label="Vue d'ensemble" onClick={() => setTab('overview')} />
                     <TabBtn active={tab === 'posts'}      icon={Ico.file}  label="Articles"        onClick={() => setTab('posts')} />
                     <TabBtn active={tab === 'shop'}       icon={Ico.bag}   label="Boutique"        onClick={() => setTab('shop')} />
+                    <TabBtn active={tab === 'logs'}       icon={Ico.shield} label="Logs d'audit"    onClick={() => setTab('logs')} />
                 </div>
 
                 {/* ══ TAB: CONNEXION ══════════════════════════════════════════ */}
@@ -505,8 +548,11 @@ export default function WordPressBridge() {
                                 <Field label="URL DU SITE">
                                     <Input required type="url" placeholder="https://ma-boutique.com" value={form.site_url} onChange={e => setForm({ ...form, site_url: e.target.value })} />
                                 </Field>
-                                <Field label="TOKEN DE SÉCURITÉ" hint="Disponible dans Réglages > WaCopilote Bridge sur votre WordPress">
-                                    <Input required mono type="text" placeholder="Collez le token du plugin ici" value={form.token} onChange={e => setForm({ ...form, token: e.target.value })} />
+                                <Field label="LOGIN WORDPRESS" hint="Le nom d'utilisateur du compte WordPress (pas l'email)">
+                                    <Input required mono type="text" placeholder="admin" value={form.wp_username} onChange={e => setForm({ ...form, wp_username: e.target.value })} />
+                                </Field>
+                                <Field label="MOT DE PASSE D'APPLICATION" hint="WordPress Admin → Profil → Mots de passe d'application → Ajouter">
+                                    <Input required mono type="password" placeholder="xxxx xxxx xxxx xxxx xxxx xxxx" value={form.app_password} onChange={e => setForm({ ...form, app_password: e.target.value })} />
                                 </Field>
                                 <button type="submit" disabled={isSaving} style={{
                                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
@@ -520,11 +566,14 @@ export default function WordPressBridge() {
                                 </button>
                             </form>
 
-                            {/* Plugin install hint */}
+                            {/* App Password hint */}
                             <div style={{ margin: '0 22px 22px', padding: '12px 16px', background: C.primary + '0d', border: `1px solid ${C.primary}25`, borderRadius: 10 }}>
-                                <div style={{ fontSize: 12, fontWeight: 700, color: C.primary, marginBottom: 4 }}>📦 Installer le plugin</div>
-                                <div style={{ fontSize: 12, color: C.textSub, lineHeight: 1.6 }}>
-                                    WordPress Admin → <strong>Extensions → Ajouter → Envoyer</strong> → uploadez <code style={{ background: '#f1f5f9', padding: '1px 5px', borderRadius: 4, fontSize: 11 }}>wacopilote-bridge.zip</code>
+                                <div style={{ fontSize: 12, fontWeight: 700, color: C.primary, marginBottom: 6 }}>🔑 Générer un mot de passe d'application</div>
+                                <div style={{ fontSize: 12, color: C.textSub, lineHeight: 1.7 }}>
+                                    <strong>1.</strong> WordPress Admin → <strong>Utilisateurs → Votre profil</strong><br/>
+                                    <strong>2.</strong> Faites défiler jusqu'à <strong>Mots de passe d'application</strong><br/>
+                                    <strong>3.</strong> Saisissez <em>WaCopilote</em> → cliquez <strong>Ajouter</strong><br/>
+                                    <strong>4.</strong> Copiez le mot de passe généré dans le champ ci-dessus
                                 </div>
                             </div>
                         </Card>
@@ -1099,9 +1148,125 @@ export default function WordPressBridge() {
                         )}
                     </div>
                 )}
-
-
-                {/* ── Modal Description Produit ── */}
+                {/* ══ TAB: LOGS ══════════════════════════════════════════ */}
+                {tab === 'logs' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                        {!selected && <EmptyState icon={Ico.file} title="Aucun site sélectionné" sub="Sélectionnez un site dans l'onglet Connexion." />}
+                        {selected && (
+                            <div style={{ background: '#fff', padding: 24, borderRadius: 16, border: `1px solid ${C.border}`, boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                                    <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}><Ico.shield /> Journal d'audit (WaCopilote)</h3>
+                                    <div style={{ display: 'flex', gap: 10 }}>
+                                        <select 
+                                            value={logsFilters.status} 
+                                            onChange={e => {
+                                                const f = { ...logsFilters, status: e.target.value, page: 1 };
+                                                setLogsFilters(f);
+                                                loadLogs(f, selectedId);
+                                            }}
+                                            style={{ padding: '6px 12px', borderRadius: 8, border: `1px solid ${C.border}`, outline: 'none', background: '#f8fafc', fontSize: 13, color: C.text }}
+                                        >
+                                            <option value="">Tous les statuts</option>
+                                            <option value="EXECUTED">Exécuté</option>
+                                            <option value="REJECTED">Rejeté</option>
+                                            <option value="PENDING">En attente</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                {isLoading ? <div style={{ padding: 40, textAlign: 'center', color: C.textSub }}>Chargement des logs...</div> : (
+                                    <div style={{ overflowX: 'auto' }}>
+                                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, textAlign: 'left' }}>
+                                            <thead>
+                                                <tr style={{ background: '#f8fafc', borderBottom: `1px solid ${C.border}` }}>
+                                                    <th style={{ padding: '12px 16px', fontWeight: 600, color: C.textSub }}>Date</th>
+                                                    <th style={{ padding: '12px 16px', fontWeight: 600, color: C.textSub }}>Action</th>
+                                                    <th style={{ padding: '12px 16px', fontWeight: 600, color: C.textSub }}>Statut</th>
+                                                    <th style={{ padding: '12px 16px', fontWeight: 600, color: C.textSub }}>Détails</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {logs.length === 0 ? (
+                                                    <tr><td colSpan="4" style={{ padding: 20, textAlign: 'center', color: C.textSub }}>Aucun log trouvé.</td></tr>
+                                                ) : logs.map(l => (
+                                                    <tr key={l.id} style={{ borderBottom: `1px solid ${C.border}` }}>
+                                                        <td style={{ padding: '12px 16px' }}>{new Date(l.created_at).toLocaleString()}</td>
+                                                        <td style={{ padding: '12px 16px', fontWeight: 500 }}>{l.action_type}</td>
+                                                        <td style={{ padding: '12px 16px' }}>
+                                                            <span style={{ 
+                                                                padding: '4px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600,
+                                                                background: l.status === 'EXECUTED' ? '#dcfce7' : l.status === 'REJECTED' ? '#fee2e2' : '#fef9c3',
+                                                                color: l.status === 'EXECUTED' ? '#166534' : l.status === 'REJECTED' ? '#991b1b' : '#854d0e'
+                                                            }}>
+                                                                {l.status}
+                                                            </span>
+                                                        </td>
+                                                        <td style={{ padding: '12px 16px', color: C.textSub, fontSize: 12 }}>
+                                                            <div style={{ maxWidth: 350, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={l.context}>
+                                                                {l.context}
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                        
+                                        {/* Pagination Controls */}
+                                        {logsPagination.pages > 1 && (
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, borderTop: `1px solid ${C.border}`, paddingTop: 16 }}>
+                                            <div style={{ fontSize: 13, color: C.textSub }}>
+                                                Total : <strong style={{ color: C.text }}>{logsPagination.total}</strong> logs
+                                            </div>
+                                            <div style={{ display: 'flex', gap: 6 }}>
+                                                {/* Prev */}
+                                                <button disabled={logsPagination.current_page <= 1}
+                                                    onClick={() => {
+                                                        const f = { ...logsFilters, page: logsPagination.current_page - 1 };
+                                                        setLogsFilters(f); loadLogs(f, selectedId);
+                                                    }}
+                                                    style={{ border: `1px solid ${C.border}`, borderRadius: 7, padding: '5px 12px', fontSize: 13, cursor: logsPagination.current_page <= 1 ? 'default' : 'pointer', background: 'transparent', color: logsPagination.current_page <= 1 ? C.textSub : C.text, opacity: logsPagination.current_page <= 1 ? 0.4 : 1 }}>
+                                                    &larr;
+                                                </button>
+                                                {/* Page numbers */}
+                                                {Array.from({ length: Math.min(logsPagination.pages, 7) }, (_, k) => {
+                                                    const total = logsPagination.pages;
+                                                    const cur = logsPagination.current_page;
+                                                    let pg;
+                                                    if (total <= 7) pg = k + 1;
+                                                    else if (k === 0) pg = 1;
+                                                    else if (k === 6) pg = total;
+                                                    else if (cur <= 4) pg = k + 1;
+                                                    else if (cur >= total - 3) pg = total - 6 + k;
+                                                    else pg = cur - 2 + k;
+                                                    const isActive = pg === cur;
+                                                    return (
+                                                        <button key={pg} onClick={() => {
+                                                            const f = { ...logsFilters, page: pg };
+                                                            setLogsFilters(f); loadLogs(f, selectedId);
+                                                        }}
+                                                            style={{ border: `1px solid ${isActive ? C.primary : C.border}`, borderRadius: 7, padding: '5px 10px', fontSize: 13, cursor: 'pointer', background: isActive ? C.primary : 'transparent', color: isActive ? '#fff' : C.text, fontWeight: isActive ? 700 : 400, minWidth: 34 }}>
+                                                            {pg}
+                                                        </button>
+                                                    );
+                                                })}
+                                                {/* Next */}
+                                                <button disabled={logsPagination.current_page >= logsPagination.pages}
+                                                    onClick={() => {
+                                                        const f = { ...logsFilters, page: logsPagination.current_page + 1 };
+                                                        setLogsFilters(f); loadLogs(f, selectedId);
+                                                    }}
+                                                    style={{ border: `1px solid ${C.border}`, borderRadius: 7, padding: '5px 12px', fontSize: 13, cursor: logsPagination.current_page >= logsPagination.pages ? 'default' : 'pointer', background: 'transparent', color: logsPagination.current_page >= logsPagination.pages ? C.textSub : C.text, opacity: logsPagination.current_page >= logsPagination.pages ? 0.4 : 1 }}>
+                                                    &rarr;
+                                                </button>
+                                            </div>
+                                        </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                )}
+            {/* ── Modal Description Produit ── */}
                 {productModal && (
                     <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999, backdropFilter: 'blur(2px)' }} onClick={() => setProductModal(null)}>
                         <div style={{ background: C.panel, borderRadius: 16, width: 640, maxWidth: '90%', maxHeight: '85vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', animation: 'fadeUp 0.2s ease', boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }} onClick={e => e.stopPropagation()}>
@@ -1200,7 +1365,44 @@ export default function WordPressBridge() {
                                     border: `1px solid ${C.border}`,
                                     color: C.text, borderBottomLeftRadius: 4,
                                 })
-                            }}>{msg.text}</div>
+                            }}>
+                                {msg.text}
+                                
+                                {/* Proposal UI */}
+                                {msg.proposal && !msg.isProposed && !msg.isCancelled && (
+                                    <div style={{ marginTop: 12, padding: 12, background: '#fff', border: `1px solid ${C.border}`, borderRadius: 10, color: C.text }}>
+                                        <div style={{ fontSize: 12, fontWeight: 700, color: C.primary, marginBottom: 8, textTransform: 'uppercase' }}>
+                                            Action proposée : {msg.proposal.action.type.replace('_', ' ')}
+                                        </div>
+                                        <pre style={{ margin: 0, padding: 8, background: '#f1f5f9', borderRadius: 6, fontSize: 11, overflowX: 'auto', maxHeight: 150 }}>
+                                            {JSON.stringify(msg.proposal.action.payload, null, 2)}
+                                        </pre>
+                                        
+                                        {msg.error && (
+                                            <div style={{ marginTop: 8, padding: 8, background: '#fee2e2', color: '#b91c1c', borderRadius: 6, fontSize: 12 }}>
+                                                ❌ {msg.error}
+                                            </div>
+                                        )}
+
+                                        <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                                            <button 
+                                                onClick={() => handleConfirmProposal(i)} 
+                                                disabled={msg.isProposing}
+                                                style={{ flex: 1, padding: '6px', background: C.primary, color: '#fff', border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: msg.isProposing ? 'not-allowed' : 'pointer', opacity: msg.isProposing ? 0.7 : 1 }}
+                                            >
+                                                {msg.isProposing ? 'Envoi...' : 'Confirmer'}
+                                            </button>
+                                            <button 
+                                                onClick={() => handleCancelProposal(i)} 
+                                                disabled={msg.isProposing}
+                                                style={{ flex: 1, padding: '6px', background: '#e2e8f0', color: C.textSub, border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: msg.isProposing ? 'not-allowed' : 'pointer' }}
+                                            >
+                                                Annuler
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     ))}
                     {isJarvisLoading && (

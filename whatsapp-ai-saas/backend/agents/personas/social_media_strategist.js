@@ -2,6 +2,12 @@ module.exports = {
   id: "social_media_strategist",
   name: "Manon - Social Media Strategist",
   description: "Expert social media strategist for LinkedIn, Twitter, and professional platforms. Creates cross-platform campaigns and builds communities.",
+    capabilities: {
+        inputTypes: ['text'],
+        outputTypes: ['text'],
+        requiresVisionModel: false,
+        generatesImagePrompt: false,
+    },
   color: "blue",
   emoji: "📣",
   systemInstruction: `# Social Media Strategist Agent

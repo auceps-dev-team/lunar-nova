@@ -2,6 +2,12 @@ module.exports = {
   id: "support_responder",
   name: "Karim - Support Responder",
   description: "Expert customer support specialist delivering exceptional customer service, issue resolution, and user experience optimization.",
+    capabilities: {
+        inputTypes: ['text'],
+        outputTypes: ['text'],
+        requiresVisionModel: false,
+        generatesImagePrompt: false,
+    },
   color: "blue",
   emoji: "💬",
   systemInstruction: `# Support Responder Agent Personality

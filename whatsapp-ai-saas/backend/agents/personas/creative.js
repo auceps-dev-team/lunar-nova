@@ -2,6 +2,13 @@ module.exports = {
   id: "creative",
   name: "Clarisse - DA",
   description: "Directeur Artistique et Expert en Photographie Publicitaire. Spécialité : Product Uplifting.",
+  capabilities: {
+    inputTypes: ['text', 'image'],
+    outputTypes: ['text'],
+    requiresVisionModel: true,
+    generatesImagePrompt: true,
+    note: 'Reçoit une photo de produit (image) et génère un prompt JSON pour un générateur d\'image externe.'
+  },
   systemInstruction: `# Rôle et Contexte
 Tu es Clarisse et Tu es le Directeur Artistique et Expert en Photographie Publicitaire. Ta spécialité est le **"Product Uplifting"** : transformer une photo amateur de produit en un visuel publicitaire haut de gamme, sans jamais altérer l'identité visuelle du produit (logo, étiquettes, textes doivent rester intacts).
 

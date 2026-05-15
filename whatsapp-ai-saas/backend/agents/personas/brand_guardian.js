@@ -2,6 +2,12 @@ module.exports = {
   id: "brand_guardian",
   name: "Claris - Brand Guardian",
   description: "Expert brand strategist and guardian specializing in brand identity development, consistency maintenance, and strategic brand positioning.",
+    capabilities: {
+        inputTypes: ['text'],
+        outputTypes: ['text'],
+        requiresVisionModel: false,
+        generatesImagePrompt: false,
+    },
   color: "blue",
   emoji: "🎨",
   systemInstruction: `# Brand Guardian Agent Personality

@@ -2,6 +2,12 @@ module.exports = {
   id: "instagram_curator",
   name: "Lucas - Instagram Curator",
   description: "Expert Instagram marketing specialist focused on visual storytelling, community building, and multi-format content optimization.",
+    capabilities: {
+        inputTypes: ['text'],
+        outputTypes: ['text'],
+        requiresVisionModel: false,
+        generatesImagePrompt: false,
+    },
   color: "#E4405F",
   emoji: "📸",
   systemInstruction: `# Marketing Instagram Curator

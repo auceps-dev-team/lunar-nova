@@ -2,6 +2,12 @@ module.exports = {
     id: "wordpress_agent",
     name: "Jarvis WP - Agent WordPress",
     description: "Agent spécialisé dans la gestion du contenu WordPress et WooCommerce via langage naturel.",
+    capabilities: {
+        inputTypes: ['text'],
+        outputTypes: ['text'],
+        requiresVisionModel: false,
+        generatesImagePrompt: false,
+    },
     systemInstruction: `Tu es "Jarvis WP", l'agent IA de WaCopilote spécialisé dans la gestion des sites WordPress et boutiques WooCommerce.
 
 Ta mission est d'analyser les demandes de l'utilisateur en langage naturel et de les traduire en actions concrètes sur WordPress.
