@@ -415,14 +415,14 @@ app.post('/api/ai/copilot', aiLimiter, async (req, res) => {
 
 // Endpoint for specialized Persona AI Agents (Legal, Creative)
 app.post('/api/ai/agent', aiLimiter, async (req, res) => {
-    const { persona, message, messages, imageParams, promptFormat, currentTasks, isRealTime } = req.body;
+    const { persona, message, messages, imageParams, promptFormat, currentTasks, isRealTime, modelOverride } = req.body;
 
     if (!message && (!messages || messages.length === 0)) {
         return res.status(400).json({ error: 'Missing message.' });
     }
 
     try {
-        const aiResponse = await aiController.chatWithAgent(persona, message, imageParams, promptFormat, messages, currentTasks, isRealTime);
+        const aiResponse = await aiController.chatWithAgent(persona, message, imageParams, promptFormat, messages, currentTasks, isRealTime, modelOverride);
         res.json({
             status: 'success',
             response: aiResponse.response
@@ -433,18 +433,19 @@ app.post('/api/ai/agent', aiLimiter, async (req, res) => {
     }
 });
 
-// Endpoint to generate an image via Gemini Imagen 4
+// Endpoint to generate an image (Gemini, NVIDIA NIM, etc.)
 app.post('/api/ai/generate-image', aiLimiter, async (req, res) => {
-    const { prompt, aspectRatio, imageParams, editMode, mode } = req.body;
+    const { prompt, aspectRatio, imageParams, editMode, mode, provider, imageModel } = req.body;
 
     if (!prompt) {
         return res.status(400).json({ error: 'Missing prompt.' });
     }
 
     try {
-        const generationResponse = await aiController.generateImage(prompt, aspectRatio, imageParams, editMode, mode);
+        const generationResponse = await aiController.generateImage(prompt, aspectRatio, imageParams, editMode, mode, provider || null, imageModel || null);
         if (generationResponse.error) {
-            return res.status(500).json({ error: generationResponse.error });
+            // Retourner 200 avec status 'error' pour que le frontend puisse afficher le message
+            return res.json({ status: 'error', error: generationResponse.error });
         }
         res.json({
             status: 'success',

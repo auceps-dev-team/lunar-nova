@@ -8,6 +8,8 @@ const Settings = () => {
     const { t } = useTranslation();
     const settings = useAppStore(state => state.appSettings) || { theme: 'light', language: 'en', model: 'gemini-pro-latest', allowAiRead: true };
     const updateSettings = useAppStore(state => state.updateSettings);
+    const setZustandBackendSettings = useAppStore(state => state.setBackendSettings);
+    const fetchGlobalModels = useAppStore(state => state.fetchGlobalModels);
 
     const [backendSettings, setBackendSettings] = useState({
         default_ai_provider: 'gemini',
@@ -21,8 +23,8 @@ const Settings = () => {
         nvidia_key_llama: '',
         nvidia_key_gemma: '',
         nvidia_key_glm: '',
-        nvidia_key_qwen_image: '',
-        nvidia_key_qwen_edit: '',
+        nvidia_key_llama_vision: '',
+        nvidia_key_sd3: '',
     });
     const [showNvidiaPerModelKeys, setShowNvidiaPerModelKeys] = useState(false);
     const aiQuota = useAppStore(state => state.aiQuota);
@@ -40,30 +42,41 @@ const Settings = () => {
             .then(data => {
                 if (data.status === 'success' && data.settings) {
                     setBackendSettings(prev => ({ ...prev, ...data.settings }));
+                    // Pass the newly fetched settings directly to fetchModels
+                    fetchModels(data.settings.default_ai_provider, data.settings);
+                } else {
+                    fetchModels();
                 }
             })
-            .catch(console.error)
-            .finally(() => {
+            .catch(err => {
+                console.error(err);
                 fetchModels();
+            })
+            .finally(() => {
                 fetchAiQuota();
             });
     }, []);
 
 
-    const fetchModels = (providerOverride) => {
+    const fetchModels = (providerOverride, currentSettings) => {
         setIsLoadingModels(true);
-        const provider = providerOverride || backendSettings.default_ai_provider;
+        // Clear models so we don't show stale ones if fetch fails
+        setAvailableChatModels([]);
+        setAvailableImageModels([]);
+
+        const settingsToUse = currentSettings || backendSettings;
+        const provider = providerOverride || settingsToUse.default_ai_provider;
 
         // Pass the API key/baseURL so we can test it before saving
         let apiKeyParam = '';
-        if (provider === 'openrouter' && backendSettings.openrouter_api_key) {
-            apiKeyParam = `&apiKey=${encodeURIComponent(backendSettings.openrouter_api_key)}`;
+        if (provider === 'openrouter' && settingsToUse.openrouter_api_key) {
+            apiKeyParam = `&apiKey=${encodeURIComponent(settingsToUse.openrouter_api_key)}`;
         } else if (provider === 'openai') {
-            if (backendSettings.openai_api_key) {
-                apiKeyParam += `&apiKey=${encodeURIComponent(backendSettings.openai_api_key)}`;
+            if (settingsToUse.openai_api_key) {
+                apiKeyParam += `&apiKey=${encodeURIComponent(settingsToUse.openai_api_key)}`;
             }
-            if (backendSettings.openai_base_url) {
-                apiKeyParam += `&baseURL=${encodeURIComponent(backendSettings.openai_base_url)}`;
+            if (settingsToUse.openai_base_url) {
+                apiKeyParam += `&baseURL=${encodeURIComponent(settingsToUse.openai_base_url)}`;
             }
         }
 
@@ -97,9 +110,15 @@ const Settings = () => {
                         }
                         return { ...prev, default_image_model: updatedImageModel };
                     });
+                } else {
+                    // Fetch didn't succeed (e.g. invalid API key)
+                    showAppNotification(data.error || t('noModelAvailable'), 'error');
                 }
             })
-            .catch(console.error)
+            .catch(err => {
+                console.error(err);
+                showAppNotification(t('noModelAvailable'), 'error');
+            })
             .finally(() => setIsLoadingModels(false));
     };
 
@@ -118,6 +137,12 @@ const Settings = () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(backendSettings)
             });
+            // Sync the saved settings into Zustand so all pages (PhotoShoot, AgentsHub, etc.)
+            // immediately see the new provider/model without a full app restart.
+            setZustandBackendSettings(backendSettings);
+            // Also fetch global models so other pages have the updated model list
+            fetchGlobalModels();
+
             showAppNotification(t('successSettingsSaved'), "success");
             fetchModels();
         } catch (err) {
@@ -366,11 +391,11 @@ const Settings = () => {
                                 {showNvidiaPerModelKeys && (
                                     <div className="mt-3 flex flex-col gap-3">
                                         {[
-                                            { key: 'nvidia_key_llama',      label: 'meta/llama-4-maverick-17b-128e-instruct', placeholder: 'nvapi-...' },
-                                            { key: 'nvidia_key_gemma',      label: 'google/gemma-3n-e2b-it',                  placeholder: 'nvapi-...' },
-                                            { key: 'nvidia_key_glm',        label: 'z-ai/glm-4.7',                            placeholder: 'nvapi-...' },
-                                            { key: 'nvidia_key_qwen_image', label: 'Qwen Vision (3dd66593...)',               placeholder: 'nvapi-...' },
-                                            { key: 'nvidia_key_qwen_edit',  label: 'Qwen Image Edit (e396d9ed...)',           placeholder: 'nvapi-...' },
+                                            { key: 'nvidia_key_llama', label: 'meta/llama-4-maverick-17b-128e-instruct', placeholder: 'nvapi-...' },
+                                            { key: 'nvidia_key_gemma', label: 'google/gemma-3n-e2b-it', placeholder: 'nvapi-...' },
+                                            { key: 'nvidia_key_glm', label: 'z-ai/glm-4.7', placeholder: 'nvapi-...' },
+                                            { key: 'nvidia_key_llama_vision', label: 'Llama 3.2 90B Vision', placeholder: 'nvapi-...' },
+                                            { key: 'nvidia_key_sd3', label: 'Stable Diffusion 3 Medium', placeholder: 'nvapi-...' },
                                         ].map(({ key, label, placeholder }) => (
                                             <div key={key} className="flex items-center justify-between gap-4">
                                                 <p className="text-xs font-mono text-gray-600 dark:text-gray-300 w-1/2 truncate" title={label}>{label}</p>
@@ -411,7 +436,7 @@ const Settings = () => {
                             <p className="text-base font-medium text-gray-800 dark:text-gray-100">{t('imageGenerationModel')}</p>
                             <p className="text-sm text-gray-500 dark:text-gray-400">{t('selectModelForVisualCreation')}</p>
                             <p className="text-xs text-primary/80 mt-1">
-                                👁 Vision · 🎨 Image-Edit &nbsp;—&nbsp; {t('appliedToAllImagePages')}
+                                Vision ·  Image-Edit &nbsp;—&nbsp; {t('appliedToAllImagePages')}
                             </p>
                         </div>
                         <CustomSelect

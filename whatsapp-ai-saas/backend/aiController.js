@@ -47,7 +47,7 @@ async function generateProposals(chatContext, modelParam) {
     }
 }
 
-async function chatWithAgent(personaId, message, imageParams, promptFormat, messages = null, currentTasks = null, isRealTime = false) {
+async function chatWithAgent(personaId, message, imageParams, promptFormat, messages = null, currentTasks = null, isRealTime = false, modelOverride = null) {
     const { provider, dbAgent } = await getProviderConfig(personaId);
 
     if (provider === 'openrouter') {
@@ -57,18 +57,40 @@ async function chatWithAgent(personaId, message, imageParams, promptFormat, mess
         const apiKey = await db.getSetting('ollama_api_key', '');
         return await ollamaService.chatWithAgent(personaId, message, imageParams, promptFormat, dbAgent, apiKey, messages, currentTasks, isRealTime);
     } else if (provider === 'openai') {
-        const selectedModel = dbAgent?.model_override || await db.getSetting('default_chat_model', '');
+        const selectedModel = modelOverride || dbAgent?.model_override || await db.getSetting('default_chat_model', '');
         const apiKey = await resolveNvidiaKey(selectedModel);
         const baseURL = await db.getSetting('openai_base_url', nvidiaModels.NVIDIA_BASE_URL);
-        return await openaiService.chatWithAgent(personaId, message, imageParams, promptFormat, apiKey, baseURL, dbAgent);
+        
+        // Pass the modelOverride down by merging into a faux dbAgent if needed
+        let effectiveAgent = dbAgent;
+        if (selectedModel) {
+            const overrideDef = nvidiaModels.getModelDef(selectedModel);
+            // Allow override only if it's a valid chat/vision model
+            if (overrideDef && (overrideDef.type === 'text' || overrideDef.type === 'vision')) {
+                if (effectiveAgent) {
+                    effectiveAgent.model_override = selectedModel;
+                } else {
+                    const orchestrator = require('./agents/orchestrator');
+                    const p = orchestrator.getPersona(personaId) || orchestrator.getPersona('creative');
+                    effectiveAgent = { 
+                        model_override: selectedModel, 
+                        system_instruction: p.systemInstruction, 
+                        response_format: orchestrator.requiresJsonFormat(personaId) ? 'json' : promptFormat 
+                    };
+                }
+            }
+        }
+        
+        return await openaiService.chatWithAgent(personaId, message, imageParams, promptFormat, apiKey, baseURL, effectiveAgent);
     } else {
         return await geminiService.chatWithAgent(personaId, message, imageParams, promptFormat, dbAgent, messages, currentTasks, isRealTime);
     }
 }
 
-async function generateImage(prompt, aspectRatio, imageParams, editMode, mode) {
-    const provider = await db.getSetting('default_ai_provider', 'gemini');
-    const imageModel = await db.getSetting('default_image_model', '');
+async function generateImage(prompt, aspectRatio, imageParams, editMode, mode, providerOverride = null, imageModelOverride = null) {
+    // Priorité : valeur explicite du body > settings DB
+    const provider   = providerOverride   || await db.getSetting('default_ai_provider', 'gemini');
+    const imageModel = imageModelOverride || await db.getSetting('default_image_model', '');
 
     if (provider === 'openrouter') {
         return { error: "Erreur : La génération d'images via OpenRouter n'est pas supportée. Utilisez Gemini ou NVIDIA NIM." };
@@ -77,11 +99,8 @@ async function generateImage(prompt, aspectRatio, imageParams, editMode, mode) {
     } else if (provider === 'openai') {
         // Vérifier que le modèle image sélectionné est bien un modèle vision/image-edit
         const modelDef = nvidiaModels.getModelDef(imageModel);
-        if (!modelDef || modelDef.type === 'text') {
-            // Suggestion utile : lister les modèles image disponibles
-            const imageModels = nvidiaModels.getModelsByType('vision').concat(nvidiaModels.getModelsByType('image-edit'));
-            const suggestion = imageModels.map(m => `${m.badge} ${m.name}`).join(', ');
-            return { error: `Sélectionnez un modèle image dans les paramètres. Modèles disponibles : ${suggestion}` };
+        if (!modelDef || modelDef.type === 'text' || modelDef.type === 'vision') {
+            return { error: `Le modèle sélectionné (${modelDef ? modelDef.name : imageModel}) est conçu pour l'analyse de texte/image, pas pour la génération d'images. Veuillez sélectionner un modèle de génération (ex: Stable Diffusion 3).` };
         }
         const baseURL = await db.getSetting('openai_base_url', nvidiaModels.NVIDIA_BASE_URL);
         const apiKey = await resolveNvidiaKey(imageModel);
@@ -90,6 +109,7 @@ async function generateImage(prompt, aspectRatio, imageParams, editMode, mode) {
         return await geminiService.generateImage(prompt, aspectRatio, imageParams, editMode, mode, imageModel);
     }
 }
+
 
 
 async function listModels(providerOverride = null, apiKeyOverride = null) {

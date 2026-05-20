@@ -21,7 +21,6 @@ const MODELS = [
         id: 'meta/llama-4-maverick-17b-128e-instruct',
         name: 'Llama 4 Maverick 17B',
         type: 'text',
-        badge: '🔤',
         dbKey: 'nvidia_key_llama',
         envKey: 'NVIDIA_KEY_LLAMA',
         thinking: false,
@@ -30,7 +29,6 @@ const MODELS = [
         id: 'google/gemma-3n-e2b-it',
         name: 'Gemma 3N E2B IT',
         type: 'text',
-        badge: '🔤',
         dbKey: 'nvidia_key_gemma',
         envKey: 'NVIDIA_KEY_GEMMA',
         thinking: false,
@@ -39,7 +37,6 @@ const MODELS = [
         id: 'z-ai/glm-4.7',
         name: 'GLM 4.7 (Thinking)',
         type: 'text',
-        badge: '🔤',
         dbKey: 'nvidia_key_glm',
         envKey: 'NVIDIA_KEY_GLM',
         thinking: true,
@@ -48,7 +45,6 @@ const MODELS = [
         id: 'moonshotai/kimi-k2-instruct',
         name: 'Kimi K2 Instruct',
         type: 'text',
-        badge: '🔤',
         dbKey: null,         // pas de clé système, l'utilisateur doit fournir la sienne
         envKey: null,
         thinking: false,
@@ -56,23 +52,21 @@ const MODELS = [
 
     // ─── Modèles Vision (image input → text output) ────────────────────
     {
-        id: '3dd66593-03a3-4e27-88d4-df34d77e0746',
-        name: 'Qwen Vision (Autogen-73)',
+        id: 'meta/llama-3.2-90b-vision-instruct',
+        name: 'Llama 3.2 90B Vision',
         type: 'vision',
-        badge: '👁',
-        dbKey: 'nvidia_key_qwen_image',
-        envKey: 'NVIDIA_KEY_QWEN_IMAGE',
+        dbKey: 'nvidia_key_llama_vision',
+        envKey: 'NVIDIA_KEY_LLAMA_VISION',
         thinking: false,
     },
 
     // ─── Modèles Image-Edit (image input → image output / description) ─
     {
-        id: 'e396d9ed-c376-467e-b250-b5c615712ff7',
-        name: 'Qwen Image Edit (Autogen-84)',
+        id: 'stabilityai/stable-diffusion-3-medium',
+        name: 'Stable Diffusion 3 Medium',
         type: 'image-edit',
-        badge: '🎨',
-        dbKey: 'nvidia_key_qwen_edit',
-        envKey: 'NVIDIA_KEY_QWEN_EDIT',
+        dbKey: 'nvidia_key_sd3',
+        envKey: 'NVIDIA_KEY_SD3',
         thinking: false,
     },
 ];

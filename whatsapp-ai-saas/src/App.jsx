@@ -55,6 +55,8 @@ function AppContent() {
   const setUpdateAvailable = useAppStore(state => state.setUpdateAvailable);
   const aiQuota = useAppStore(state => state.aiQuota);
   const fetchAiQuota = useAppStore(state => state.fetchAiQuota);
+  const fetchAndSyncBackendSettings = useAppStore(state => state.fetchAndSyncBackendSettings);
+  const fetchGlobalModels = useAppStore(state => state.fetchGlobalModels);
   const [showPostUpdateModal, setShowPostUpdateModal] = useState(null);
 
 
@@ -117,7 +119,10 @@ function AppContent() {
     };
     initUpdateUX();
     fetchAiQuota();
-  }, [setUpdateAvailable, fetchAiQuota]);
+    fetchAndSyncBackendSettings().then(() => {
+      fetchGlobalModels();
+    });
+  }, [setUpdateAvailable, fetchAiQuota, fetchAndSyncBackendSettings, fetchGlobalModels]);
 
 
   const handleAddInstance = () => {

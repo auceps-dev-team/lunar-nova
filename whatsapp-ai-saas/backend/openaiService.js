@@ -160,8 +160,20 @@ async function chatWithAgent(persona, message, imageParams, promptFormat, apiKey
 
         return { response: resultText };
     } catch (error) {
-        console.error(`OpenAI/NVIDIA Agent Error:`, error);
-        return { response: "I am currently offline or experiencing a connection error. Please try again." };
+        console.error(`OpenAI/NVIDIA Agent Error:`, error.response ? error.response.data : error.message);
+        
+        let errorMsg = error.message;
+        if (error.response && error.response.data) {
+            if (error.response.data.detail) {
+                errorMsg = error.response.data.detail;
+            } else if (typeof error.response.data === 'string') {
+                errorMsg = error.response.data;
+            } else {
+                errorMsg = JSON.stringify(error.response.data);
+            }
+        }
+        
+        return { response: `API Error: ${errorMsg}. Please check your API key and settings.` };
     }
 }
 
@@ -174,6 +186,54 @@ async function analyzeOrEditImage(prompt, imageParams, apiKey, baseURL, modelId)
     if (!openai) return { error: "API Key missing." };
 
     try {
+        // Use true image generation endpoint for stability/SDXL models
+        if (modelId.includes('stable-diffusion') || modelId.includes('sdxl') || modelId === 'stabilityai/stable-diffusion-3-medium') {
+            const axios = require('axios');
+            
+            // Si on est sur NVIDIA, l'endpoint est diffAcrent du format OpenAI classique
+            if (baseURL.includes('nvidia')) {
+                const nvidiaResponse = await axios.post(
+                    `https://ai.api.nvidia.com/v1/genai/${modelId}`,
+                    {
+                        prompt: prompt || "Generate a fashion photo",
+                        mode: "text-to-image",
+                        model: "sd3",
+                        aspect_ratio: "1:1",
+                        cfg_scale: 5,
+                        seed: 0,
+                        steps: 50,
+                        output_format: "jpeg"
+                    },
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${apiKey}`,
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        }
+                    }
+                );
+                return {
+                    success: true,
+                    // NVIDIA API returns { image: "base64..." }
+                    imageBytes: nvidiaResponse.data.image
+                };
+            } else {
+                // Standard OpenAI compatibility
+                const response = await openai.images.generate({
+                    model: modelId,
+                    prompt: prompt || "Generate a fashion photo",
+                    n: 1,
+                    size: "1024x1024",
+                    response_format: "b64_json"
+                });
+                return {
+                    success: true,
+                    imageBytes: response.data[0].b64_json
+                };
+            }
+        }
+
+        // Fallback for chat-based vision models (returns description)
         const messages = [];
         if (imageParams && imageParams.data) {
             messages.push({
@@ -197,18 +257,26 @@ async function analyzeOrEditImage(prompt, imageParams, apiKey, baseURL, modelId)
             stream: false
         });
 
-        // Since these are vision-to-text models, we return the description/result text
-        // Note: For actual image "editing" (outputting a new image), NVIDIA NIM models usually 
-        // return text descriptions or JSON instructions. If it's a true generative model 
-        // that returns b64 images, we would handle response.data[0].b64_json here.
         return { 
             success: true, 
             description: response.choices[0].message.content,
-            revisedPrompt: response.choices[0].message.content // Use as prompt for next step if needed
+            imageBytes: null // Text-only vision models don't return images
         };
     } catch (error) {
-        console.error("NVIDIA Vision Error:", error);
-        return { error: error.message };
+        console.error("NVIDIA/OpenAI Image Error:", error.response ? error.response.data : error.message);
+        
+        let errorMsg = error.message;
+        if (error.response && error.response.data) {
+            if (error.response.data.detail) {
+                errorMsg = error.response.data.detail;
+            } else if (typeof error.response.data === 'string') {
+                errorMsg = error.response.data;
+            } else {
+                errorMsg = JSON.stringify(error.response.data);
+            }
+        }
+        
+        return { error: errorMsg };
     }
 }
 
@@ -218,7 +286,7 @@ async function listModels(apiKey, baseURL) {
     // Construire les listes à partir du catalogue centralisé
     const catalogChatModels = nvidiaModels.getModelsByType('text').map(m => ({
         id: m.id,
-        name: `${m.badge} ${m.name}`,
+        name: m.name,
         type: m.type
     }));
 
@@ -227,7 +295,7 @@ async function listModels(apiKey, baseURL) {
         ...nvidiaModels.getModelsByType('image-edit'),
     ].map(m => ({
         id: m.id,
-        name: `${m.badge} ${m.name}`,
+        name: m.name,
         type: m.type
     }));
 
@@ -246,7 +314,7 @@ async function listModels(apiKey, baseURL) {
                 if (inCatalog && inCatalog.type !== 'text') return;
                 // Éviter les doublons avec les modèles prioritaires
                 if (!chatModels.some(pm => pm.id === m.id)) {
-                    chatModels.push({ id: m.id, name: `🔤 ${m.id}`, type: 'text' });
+                    chatModels.push({ id: m.id, name: m.id, type: 'text' });
                 }
             });
             // Les modèles prioritaires restent en tête, les autres triés alphabétiquement

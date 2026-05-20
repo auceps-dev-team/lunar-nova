@@ -9,7 +9,7 @@ const dbFileName = 'database.sqlite';
 // En production (forked depuis main.cjs), process.env.USER_DATA_PATH sera défini.
 // En dev, on garde le dossier backend local.
 const userDataPath = process.env.USER_DATA_PATH;
-const dbFilePath = userDataPath ? path.join(userDataPath, dbFileName) : path.join(__dirname, dbFileName);
+const dbFilePath = userDataPath ? path.join(userDataPath, dbFileName) : path.join(__dirname, '..', dbFileName);
 
 // Open SQLite database
 const dbPromise = open({

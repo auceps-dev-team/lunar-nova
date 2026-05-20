@@ -83,6 +83,21 @@ const useAppStore = create(
             // --- Invoice Builder (Phase 18) ---
             invoices: [],
 
+            // --- Available AI Models ---
+            availableModels: { chat: [], image: [] },
+            setAvailableModels: (models) => set({ availableModels: models }),
+
+            // --- Backend Settings (provider, models, API keys) ---
+            // Synced from GET /api/settings and persisted in IndexedDB
+            // so all pages (PhotoShoot, AgentsHub, etc.) can read them without
+            // re-fetching on each mount.
+            backendSettings: {
+                default_ai_provider: 'gemini',
+                default_image_model: '',
+                openai_base_url: 'https://integrate.api.nvidia.com/v1',
+                // other keys are populated after fetch
+            },
+
             // --- Actions ---
             updateSettings: (updates) => set((state) => ({
                 appSettings: { ...state.appSettings, ...updates }
@@ -126,6 +141,62 @@ const useAppStore = create(
 
 
             setInstances: (newInstances) => set({ instances: newInstances }),
+
+            setBackendSettings: (settings) => set((state) => ({
+                backendSettings: { ...state.backendSettings, ...settings }
+            })),
+
+            fetchAndSyncBackendSettings: async () => {
+                try {
+                    const res = await fetch('http://localhost:3000/api/settings');
+                    const data = await res.json();
+                    if (data.status === 'success' && data.settings) {
+                        set((state) => ({
+                            backendSettings: { ...state.backendSettings, ...data.settings }
+                        }));
+                    }
+                } catch (e) {
+                    console.error('[Store] Failed to sync backend settings:', e);
+                }
+            },
+
+            fetchGlobalModels: async () => {
+                const state = get();
+                const provider = state.backendSettings.default_ai_provider || 'gemini';
+                let apiKeyParam = '';
+                if (provider === 'openrouter' && state.backendSettings.openrouter_api_key) {
+                    apiKeyParam = `&apiKey=${encodeURIComponent(state.backendSettings.openrouter_api_key)}`;
+                } else if (provider === 'openai' && state.backendSettings.openai_api_key) {
+                    apiKeyParam = `&apiKey=${encodeURIComponent(state.backendSettings.openai_api_key)}&baseURL=${encodeURIComponent(state.backendSettings.openai_base_url || '')}`;
+                }
+
+                try {
+                    const res = await fetch(`http://localhost:3000/api/ai/models?provider=${provider}${apiKeyParam}`);
+                    const data = await res.json();
+                    if (data.status === 'success' && data.models) {
+                        let newChat = [];
+                        let newImage = [];
+                        if (data.models.chat) {
+                            newChat = data.models.chat;
+                            newImage = data.models.image;
+                        } else if (Array.isArray(data.models)) {
+                            newChat = data.models;
+                        }
+                        
+                        // Sécurité additionnelle : nettoyer les emojis résiduels des noms
+                        const cleanName = (str) => (str || '').replace(/^[\u2700-\u27BF\u1F000-\u1F9FF\u2600-\u26FF]\s*/, '');
+                        newChat = newChat.map(m => ({ ...m, name: cleanName(m.name) }));
+                        newImage = newImage.map(m => ({ ...m, name: cleanName(m.name) }));
+
+                        set({ availableModels: { chat: newChat, image: newImage } });
+                    } else {
+                        set({ availableModels: { chat: [], image: [] } });
+                    }
+                } catch (e) {
+                    console.error("[Store] Failed to fetch global models:", e);
+                    set({ availableModels: { chat: [], image: [] } });
+                }
+            },
 
             // --- WA Analysis Actions ---
             startWaAnalysis: (total) => set({
@@ -248,7 +319,7 @@ const useAppStore = create(
             // that should be re-evaluated fresh on each app start from GitHub API.
             // Persisting it caused the stale update banner to persist even on the latest version.
             partialize: (state) => {
-                const { waAnalysis, updateAvailable, ...rest } = state;
+                const { waAnalysis, updateAvailable, backendSettings, availableModels, ...rest } = state;
                 return rest;
             },
         }

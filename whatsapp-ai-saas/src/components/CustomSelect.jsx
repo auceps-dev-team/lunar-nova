@@ -1,36 +1,18 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 
 /**
- * CustomSelect — Dropdown stylisé réutilisable, inspiré du picker AiChat.jsx
+ * CustomSelect — Dropdown stylisé réutilisable
  *
  * Props:
  *  - value        : valeur actuellement sélectionnée (string)
  *  - onChange     : (value) => void
- *  - options      : Array<{ value: string, label: string, description?: string, icon?: ReactNode, color?: { bg, text } }>
+ *  - options      : Array<{ value: string, label: string, description?: string }>
  *  - placeholder  : string (affiché si aucune valeur)
  *  - searchable   : boolean — affiche un champ de recherche dans le panneau
  *  - className    : string — classes supplémentaires sur le trigger
  *  - panelWidth   : string — largeur du panneau (ex: 'w-64', 'w-80') default 'w-56'
  *  - disabled     : boolean
  */
-
-const PASTEL_PALETTE = [
-    { bg: '#d0f5e8', text: '#047857' },
-    { bg: '#e8d5f5', text: '#7c3aed' },
-    { bg: '#fde8d0', text: '#b45309' },
-    { bg: '#d4e8ff', text: '#1d6fa4' },
-    { bg: '#fde8f0', text: '#be185d' },
-    { bg: '#f5f0d0', text: '#92400e' },
-    { bg: '#d0f0f5', text: '#0e7490' },
-];
-
-const getInitials = (label = '') =>
-    label.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
-
-const getAutoColor = (label = '') => {
-    const idx = label.split('').reduce((a, c) => a + c.charCodeAt(0), 0) % PASTEL_PALETTE.length;
-    return PASTEL_PALETTE[idx];
-};
 
 export default function CustomSelect({
     value,
@@ -94,23 +76,6 @@ export default function CustomSelect({
                     className,
                 ].join(' ')}
             >
-                {/* Avatar ou icon si fourni */}
-                {selected?.icon && (
-                    <span className="flex-shrink-0">{selected.icon}</span>
-                )}
-                {!selected?.icon && selected?.label && (
-                    <span
-                        className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold"
-                        style={
-                            selected.color
-                                ? { background: selected.color.bg, color: selected.color.text }
-                                : { background: getAutoColor(selected.label).bg, color: getAutoColor(selected.label).text }
-                        }
-                    >
-                        {getInitials(selected.label)}
-                    </span>
-                )}
-
                 <span className="flex-1 text-left truncate">
                     {selected?.label ?? placeholder}
                 </span>
@@ -164,7 +129,6 @@ export default function CustomSelect({
                         )}
                         {filtered.map(opt => {
                             const isActive = opt.value === value;
-                            const color = opt.color ?? getAutoColor(opt.label);
                             return (
                                 <button
                                     key={opt.value}
@@ -178,18 +142,6 @@ export default function CustomSelect({
                                             : 'hover:bg-gray-50 dark:hover:bg-zinc-800',
                                     ].join(' ')}
                                 >
-                                    {/* Avatar / icon */}
-                                    {opt.icon ? (
-                                        <span className="flex-shrink-0">{opt.icon}</span>
-                                    ) : (
-                                        <span
-                                            className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold"
-                                            style={{ background: color.bg, color: color.text }}
-                                        >
-                                            {getInitials(opt.label)}
-                                        </span>
-                                    )}
-
                                     {/* Textes */}
                                     <div className="flex-1 min-w-0">
                                         <p className={`text-sm font-medium truncate ${isActive ? 'text-emerald-700 dark:text-emerald-400' : 'text-gray-800 dark:text-gray-200'}`}>
