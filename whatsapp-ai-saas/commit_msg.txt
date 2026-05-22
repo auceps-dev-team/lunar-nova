@@ -1,0 +1,23 @@
+WaCopilote v1.32.1 - Multi-Fournisseurs & Multi-Modèles IA System
+
+=== Multi-Fournisseurs & Modèles Dynamiques ===
+
+feat(ai): Complete overhaul of AI provider and model routing
+
+backend/aiController.js: implemented dynamic model override propagation 
+for Gemini, OpenRouter, and Ollama agents.
+
+backend/geminiService.js, openrouterService.js, ollamaService.js: removed 
+hardcoded models and switched to dynamic model resolution.
+
+backend/db.js: added model_override to ai_agents table and tracking 
+columns (provider, model, tokens, cost, status) to copilot_logs.
+
+src/pages/AgentManager.jsx: added dynamic model override selector in UI.
+
+src/pages/AiChat.jsx: added dynamic provider/model badge in chat header.
+
+src/pages/Dashboard.jsx: integrated real-time consumption KPIs (Top Provider/Model).
+
+src/pages/TasksMap.jsx, src/components/WorkArea.jsx, src/components/image-editor/ImageEditor.jsx: 
+passed provider and model dynamically from app settings into AI requests.

@@ -186,7 +186,9 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                     data: image.base64.split(',')[1],
                     mimeType: image.mimeType
                 },
-                mode: 'product'
+                mode: 'product',
+                provider: useAppStore.getState().backendSettings?.default_image_provider,
+                imageModel: useAppStore.getState().backendSettings?.default_image_model
             };
 
             const resProxy = await fetch('http://localhost:3000/api/ai/generate-image', {

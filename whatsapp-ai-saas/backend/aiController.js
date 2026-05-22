@@ -62,10 +62,30 @@ async function chatWithAgent(personaId, message, imageParams, promptFormat, mess
 
     if (provider === 'openrouter') {
         const apiKey = await db.getSetting('openrouter_api_key', '');
-        return await openrouterService.chatWithAgent(personaId, message, imageParams, promptFormat, apiKey, dbAgent, messages, currentTasks, isRealTime);
+        let effectiveAgent = dbAgent;
+        if (modelOverride) {
+            if (effectiveAgent) {
+                effectiveAgent.model_override = modelOverride;
+            } else {
+                const orchestrator = require('./agents/orchestrator');
+                const p = orchestrator.getPersona(personaId) || orchestrator.getPersona('creative');
+                effectiveAgent = { model_override: modelOverride, system_instruction: p.systemInstruction, response_format: orchestrator.requiresJsonFormat(personaId) ? 'json' : promptFormat };
+            }
+        }
+        return await openrouterService.chatWithAgent(personaId, message, imageParams, promptFormat, apiKey, effectiveAgent, messages, currentTasks, isRealTime);
     } else if (provider === 'ollama') {
         const apiKey = await db.getSetting('ollama_api_key', '');
-        return await ollamaService.chatWithAgent(personaId, message, imageParams, promptFormat, dbAgent, apiKey, messages, currentTasks, isRealTime);
+        let effectiveAgent = dbAgent;
+        if (modelOverride) {
+            if (effectiveAgent) {
+                effectiveAgent.model_override = modelOverride;
+            } else {
+                const orchestrator = require('./agents/orchestrator');
+                const p = orchestrator.getPersona(personaId) || orchestrator.getPersona('creative');
+                effectiveAgent = { model_override: modelOverride, system_instruction: p.systemInstruction, response_format: orchestrator.requiresJsonFormat(personaId) ? 'json' : promptFormat };
+            }
+        }
+        return await ollamaService.chatWithAgent(personaId, message, imageParams, promptFormat, effectiveAgent, apiKey, messages, currentTasks, isRealTime);
     } else if (provider === 'openai') {
         let selectedModel = modelOverride || dbAgent?.model_override || await db.getSetting('default_chat_model', '');
         const nvidiaModels = getNvidiaModels();
@@ -101,10 +121,23 @@ async function chatWithAgent(personaId, message, imageParams, promptFormat, mess
                 }
             }
         }
-        
         return await openaiService.chatWithAgent(personaId, message, imageParams, promptFormat, apiKey, baseURL, effectiveAgent);
     } else {
-        return await geminiService.chatWithAgent(personaId, message, imageParams, promptFormat, dbAgent, messages, currentTasks, isRealTime);
+        let effectiveAgent = dbAgent;
+        if (modelOverride) {
+            if (effectiveAgent) {
+                effectiveAgent.model_override = modelOverride;
+            } else {
+                const orchestrator = require('./agents/orchestrator');
+                const p = orchestrator.getPersona(personaId) || orchestrator.getPersona('creative');
+                effectiveAgent = { 
+                    model_override: modelOverride, 
+                    system_instruction: p.systemInstruction, 
+                    response_format: orchestrator.requiresJsonFormat(personaId) ? 'json' : promptFormat 
+                };
+            }
+        }
+        return await geminiService.chatWithAgent(personaId, message, imageParams, promptFormat, effectiveAgent, messages, currentTasks, isRealTime);
     }
 }
 

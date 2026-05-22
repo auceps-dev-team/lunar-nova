@@ -266,7 +266,13 @@ Description brouillon : "${taskForm.description}"`;
             const res = await fetch('http://127.0.0.1:3000/api/ai/agent', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: prompt, persona: 'ella', promptFormat: 'text' })
+                body: JSON.stringify({ 
+                    message: prompt, 
+                    persona: 'ella', 
+                    promptFormat: 'text',
+                    provider: useAppStore.getState().appSettings?.provider,
+                    model: useAppStore.getState().appSettings?.model
+                })
             });
             const data = await res.json();
             if (data.response) {
@@ -307,7 +313,13 @@ Description brouillon : "${taskForm.description}"`;
             const res = await fetch('http://127.0.0.1:3000/api/ai/agent', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: promptContext, persona: 'ella', promptFormat: 'json' })
+                body: JSON.stringify({ 
+                    message: promptContext, 
+                    persona: 'ella', 
+                    promptFormat: 'json',
+                    provider: useAppStore.getState().appSettings?.provider,
+                    model: useAppStore.getState().appSettings?.model
+                })
             });
             const data = await res.json();
 

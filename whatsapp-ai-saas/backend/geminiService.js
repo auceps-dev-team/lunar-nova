@@ -254,10 +254,15 @@ async function chatWithAgent(personaId, message, imageParams, promptFormat = 'te
             config.responseMimeType = "application/json";
         }
 
-        const { client } = await getGeminiClient('text', 'gemini-2.5-flash');
+        let selectedModel = 'gemini-2.5-flash';
+        if (dbAgent && dbAgent.model_override) {
+            selectedModel = dbAgent.model_override;
+        }
+
+        const { client } = await getGeminiClient('text', selectedModel);
 
         const response = await client.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: selectedModel,
             contents: contents,
             config: config
         });

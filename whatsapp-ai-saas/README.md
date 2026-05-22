@@ -4,10 +4,11 @@ WaCopilote est une application de bureau complète (Electron + React + Express) 
 
 ## 🚀 Fonctionnalités Principales
 
-- **Agents IA Multimodèles** : Support de Gemini, OpenRouter, Ollama (local) et NVIDIA NIM (Llama, Gemma, Qwen).
+- **Agents IA Multimodèles** : Support de Gemini, OpenRouter, Ollama (local) et NVIDIA NIM (Llama, Gemma, Qwen). Routage dynamique et surcharge des modèles par agent.
 - **Génération et Édition d'Images** : Création de photos produit et de "Photo Shoots" virtuels, inpainting, et retouche via IA.
 - **Support Client Intelligent** : Agents conversationnels spécialisés (Creative, Support, Analyst, etc.).
 - **Gestion de Catalogue** : Extraction de données structurées et création automatisée de catalogues.
+- **Tableau de Bord Avancé** : Tracking détaillé (coûts, tokens, latence) avec identification du fournisseur et du modèle par requête.
 - **Backend Robuste** : Express.js avec SQLite pour le stockage persistant et Redis pour la gestion du cache et des limites de requêtes.
 
 ## 🏗 Architecture du Projet

@@ -62,9 +62,21 @@ async function initDB() {
                 contact_name VARCHAR(255) NOT NULL,
                 extracted_context TEXT NOT NULL,
                 proposed_replies TEXT NOT NULL,
+                provider VARCHAR(50),
+                model VARCHAR(100),
+                tokens INTEGER DEFAULT 0,
+                cost REAL DEFAULT 0.0,
+                status VARCHAR(50) DEFAULT 'success',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         `);
+
+        // Migrations for Phase 2: Add tracking columns to copilot_logs
+        try { await client.query("ALTER TABLE copilot_logs ADD COLUMN provider VARCHAR(50)"); } catch(e) {}
+        try { await client.query("ALTER TABLE copilot_logs ADD COLUMN model VARCHAR(100)"); } catch(e) {}
+        try { await client.query("ALTER TABLE copilot_logs ADD COLUMN tokens INTEGER DEFAULT 0"); } catch(e) {}
+        try { await client.query("ALTER TABLE copilot_logs ADD COLUMN cost REAL DEFAULT 0.0"); } catch(e) {}
+        try { await client.query("ALTER TABLE copilot_logs ADD COLUMN status VARCHAR(50) DEFAULT 'success'"); } catch(e) {}
 
         // Phase 13: WhatsApp Contact Management Tables
         await client.query(`
@@ -156,16 +168,19 @@ async function initDB() {
             VALUES ('default_ai_provider', 'gemini')
         `);
 
-        await client.query(`
             CREATE TABLE IF NOT EXISTS ai_agents (
                 id VARCHAR(255) PRIMARY KEY,
                 name VARCHAR(255) NOT NULL,
                 system_instruction TEXT NOT NULL,
                 response_format VARCHAR(50) DEFAULT 'text',
                 provider_override VARCHAR(50) DEFAULT NULL,
+                model_override VARCHAR(100) DEFAULT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         `);
+
+        // Migrations for Phase 2: Add model_override to ai_agents
+        try { await client.query("ALTER TABLE ai_agents ADD COLUMN model_override VARCHAR(100) DEFAULT NULL"); } catch(e) {}
 
         // WordPress Bridge (Phase 30) — v2.0 uses App Passwords
         await client.query(`
@@ -197,7 +212,7 @@ async function initDB() {
 // Fire and forget initialization
 initDB();
 
-async function logCopilotInteraction(instance_id, contact_name, context, proposals) {
+async function logCopilotInteraction(instance_id, contact_name, context, proposals, provider = 'gemini', model = 'gemini-1.5-pro', tokens = 0, cost = 0.0, status = 'success') {
     if (!isDbConnected) {
         console.log(`[DB Mock] Logged interaction for ${instance_id} with ${contact_name}`);
         return;
@@ -205,14 +220,19 @@ async function logCopilotInteraction(instance_id, contact_name, context, proposa
 
     try {
         const query = `
-            INSERT INTO copilot_logs (instance_id, contact_name, extracted_context, proposed_replies)
-            VALUES ($1, $2, $3, $4)
+            INSERT INTO copilot_logs (instance_id, contact_name, extracted_context, proposed_replies, provider, model, tokens, cost, status)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         `;
         const values = [
             instance_id,
             contact_name,
             JSON.stringify(context),
-            JSON.stringify(proposals)
+            JSON.stringify(proposals),
+            provider,
+            model,
+            tokens,
+            cost,
+            status
         ];
 
         await pool.query(query, values);

@@ -321,12 +321,12 @@ app.get('/api/agents', async (req, res) => {
 });
 
 app.post('/api/agents', async (req, res) => {
-    const { id, name, system_instruction, response_format, provider_override } = req.body;
+    const { id, name, system_instruction, response_format, provider_override, model_override } = req.body;
     try {
         const agentId = id || `agent_${Date.now()}`;
         await pool.query(
-            'INSERT INTO ai_agents (id, name, system_instruction, response_format, provider_override) VALUES ($1, $2, $3, $4, $5) ON CONFLICT(id) DO UPDATE SET name = $2, system_instruction = $3, response_format = $4, provider_override = $5',
-            [agentId, name, system_instruction, response_format || 'text', provider_override || null]
+            'INSERT INTO ai_agents (id, name, system_instruction, response_format, provider_override, model_override) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT(id) DO UPDATE SET name = $2, system_instruction = $3, response_format = $4, provider_override = $5, model_override = $6',
+            [agentId, name, system_instruction, response_format || 'text', provider_override || null, model_override || null]
         );
         res.json({ status: 'success', id: agentId });
     } catch (err) {
@@ -361,6 +361,22 @@ app.get('/api/ai/models', aiLimiter, async (req, res) => {
     }
 });
 
+// Endpoint to test model / API key connection (Soft Validation)
+app.post('/api/test-model', aiLimiter, async (req, res) => {
+    const { provider, apiKey, model } = req.body;
+    try {
+        const models = await aiController.listModels(provider, apiKey);
+        if (models && (Array.isArray(models) ? models.length > 0 : (models.chat && models.chat.length > 0))) {
+            res.json({ status: 'success', message: 'API connection successful' });
+        } else {
+            res.json({ status: 'warning', message: 'API connection successful but no models returned' });
+        }
+    } catch (err) {
+        // Soft validation: return warning instead of 500 error
+        res.json({ status: 'warning', message: 'API connection failed: ' + err.message });
+    }
+});
+
 // Debug: return nvidia model definition (hot-loaded)
 app.get('/api/debug/nvidia-model', aiLimiter, async (req, res) => {
     try {
@@ -378,7 +394,7 @@ app.get('/api/debug/nvidia-model', aiLimiter, async (req, res) => {
 app.post('/api/ai/copilot', aiLimiter, async (req, res) => {
     // Requires instance_id for DB logging in a multi-tenant environment.
     // Usually passed as part of the request. Let's assume frontend passes it.
-    const { instance_id, chatContext, model } = req.body;
+    const { instance_id, chatContext, model, provider } = req.body;
 
     if (!chatContext) {
         return res.status(400).json({ error: 'Missing chat context.' });
@@ -407,6 +423,13 @@ app.post('/api/ai/copilot', aiLimiter, async (req, res) => {
         console.log(`[Cache Miss] Generating new proposals for ${chatContext.contactName}`);
         const proposalsObj = await aiController.generateProposals(chatContext, model);
         const proposals = proposalsObj.proposed_replies || [];
+        
+        // Obtenir le provider depuis la réponse ou utiliser les valeurs par défaut
+        const usedProvider = proposalsObj.provider || provider || 'gemini';
+        const usedModel = proposalsObj.model || model || 'gemini-1.5-pro';
+        const tokens = proposalsObj.tokens || 0;
+        const cost = proposalsObj.cost || 0.0;
+        const status = proposalsObj.status || 'success';
 
         // Cache for 60 seconds
         await setCachedProposals(cacheKey, proposals, 60);
@@ -417,7 +440,12 @@ app.post('/api/ai/copilot', aiLimiter, async (req, res) => {
             instance_id || 'unknown_instance',
             chatContext.contactName,
             chatContext,
-            proposals
+            proposals,
+            usedProvider,
+            usedModel,
+            tokens,
+            cost,
+            status
         );
 
         res.json({
@@ -1255,6 +1283,11 @@ app.get('/api/wa/analytics', async (req, res) => {
         `);
         const messagesRes = await pool.query('SELECT COUNT(*) as count FROM wa_message_logs');
 
+        // AI Consumption Statistics
+        const aiProviderRes = await pool.query('SELECT provider, COUNT(id) as count FROM copilot_logs GROUP BY provider');
+        const aiModelRes = await pool.query('SELECT model, COUNT(id) as count FROM copilot_logs GROUP BY model');
+        const aiRecentRes = await pool.query("SELECT date(created_at) as date, COUNT(id) as count FROM copilot_logs WHERE created_at >= date('now', '-7 days') GROUP BY date(created_at) ORDER BY date(created_at) ASC");
+
         res.json({
             status: 'success',
             data: {
@@ -1262,7 +1295,10 @@ app.get('/api/wa/analytics', async (req, res) => {
                 bySegment: segmentRes.rows.map(r => ({ name: r.name, count: parseInt(r.count, 10) })),
                 byList: listRes.rows.map(r => ({ name: r.name, count: parseInt(r.count, 10) })),
                 byStatus: statusRes.rows.map(r => ({ name: r.status, count: parseInt(r.count, 10) })),
-                totalMessagesSent: parseInt(messagesRes.rows[0]?.count || 0, 10)
+                totalMessagesSent: parseInt(messagesRes.rows[0]?.count || 0, 10),
+                aiByProvider: aiProviderRes.rows.map(r => ({ name: r.provider || 'unknown', count: parseInt(r.count, 10) })),
+                aiByModel: aiModelRes.rows.map(r => ({ name: r.model || 'unknown', count: parseInt(r.count, 10) })),
+                aiRecentActivity: aiRecentRes.rows.map(r => ({ date: r.date, count: parseInt(r.count, 10) }))
             }
         });
     } catch (err) {

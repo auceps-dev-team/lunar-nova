@@ -168,7 +168,8 @@ const WorkArea = ({ instances, activeId }) => {
                     body: JSON.stringify({
                         instance_id: activeId,
                         chatContext: ctxDataContext,
-                        model: appSettings.model || 'gemini-1.5-pro'
+                        provider: appSettings.provider,
+                        model: appSettings.model
                     })
                 });
                 const geminiData = await geminiRes.json();
@@ -238,7 +239,9 @@ const WorkArea = ({ instances, activeId }) => {
                     persona: 'copilot',
                     message: finalMessage,
                     messages: historyForAgent,
-                    promptFormat: 'text'
+                    promptFormat: 'text',
+                    provider: appSettings.provider,
+                    model: appSettings.model
                 })
             });
 

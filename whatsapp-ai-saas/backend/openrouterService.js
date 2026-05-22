@@ -163,6 +163,11 @@ async function chatWithAgent(persona, message, imageParams, promptFormat, apiKey
             messages[0].content += "\n\nCRITICAL: Return ONLY a valid JSON output. No markdown, no conversational text.";
         }
 
+        let selectedModel = 'anthropic/claude-3.5-sonnet';
+        if (dbAgent && dbAgent.model_override) {
+            selectedModel = dbAgent.model_override;
+        }
+
         const response = await _fetch(OPENROUTER_URL, {
             method: 'POST',
             headers: {
@@ -172,7 +177,7 @@ async function chatWithAgent(persona, message, imageParams, promptFormat, apiKey
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                model: 'anthropic/claude-3.5-sonnet', // Default robust model
+                model: selectedModel,
                 messages: messages,
                 max_tokens: 4096
             })

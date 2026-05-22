@@ -164,7 +164,9 @@ const PhotoShoot = ({ activeId }) => {
                     imageParams: {
                         data: productImages[0].data.split(',')[1],
                         mimeType: 'image/jpeg'
-                    }
+                    },
+                    provider: useAppStore.getState().appSettings?.provider,
+                    model: useAppStore.getState().appSettings?.model
                 })
             });
             const agentData = await agentRes.json();

@@ -129,6 +129,29 @@ const Dashboard = () => {
         return data;
     }, [copilotCount, t]);
 
+    const chartData = useMemo(() => {
+        if (contactAnalytics?.aiRecentActivity && contactAnalytics.aiRecentActivity.length > 0) {
+            return contactAnalytics.aiRecentActivity.map(item => {
+                const dateObj = new Date(item.date);
+                const dayName = dateObj.toLocaleDateString(language, { weekday: 'short' });
+                return { name: dayName, replies: item.count };
+            });
+        }
+        return mockChartData;
+    }, [contactAnalytics, mockChartData, language]);
+
+    const topProvider = useMemo(() => {
+        if (!contactAnalytics?.aiByProvider || contactAnalytics.aiByProvider.length === 0) return 'Gemini';
+        const top = [...contactAnalytics.aiByProvider].sort((a, b) => b.count - a.count)[0];
+        return top.name;
+    }, [contactAnalytics]);
+
+    const topModel = useMemo(() => {
+        if (!contactAnalytics?.aiByModel || contactAnalytics.aiByModel.length === 0) return 'gemini-1.5-pro';
+        const top = [...contactAnalytics.aiByModel].sort((a, b) => b.count - a.count)[0];
+        return top.name;
+    }, [contactAnalytics]);
+
     return (
         <div style={{ maxWidth: 1000, margin: '0 auto', animation: 'fadeIn 0.3s ease-in-out' }}>
             <div style={{ marginBottom: 32, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
@@ -181,11 +204,18 @@ const Dashboard = () => {
                     color={C.blue}
                 />
                 <KPICard
-                    icon={Icons.checkCircle}
-                    label={t('tasksCompleted')}
-                    value={completedTasksCount.toString()}
-                    sub={`${completedPercentage}% ${t('completionRate')} (${totalTasksCount} ${t('all')})`}
-                    color={C.amber}
+                    icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 12h4l2-9 5 18 3-9h6"></path></svg>}
+                    label={t('topProvider', 'Top Provider')}
+                    value={topProvider}
+                    sub={t('mostUsedAI', 'Fournisseur principal')}
+                    color={C.purple}
+                />
+                <KPICard
+                    icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>}
+                    label={t('topModel', 'Top Model')}
+                    value={topModel}
+                    sub={t('mostUsedModel', 'Modèle principal')}
+                    color={C.red}
                 />
             </div>
 
@@ -206,7 +236,7 @@ const Dashboard = () => {
 
                 <div style={{ width: '100%' }}>
                     <ResponsiveContainer width="100%" height={280} minWidth={0}>
-                        <AreaChart data={mockChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                             <defs>
                                 <linearGradient id="colorReplies" x1="0" y1="0" x2="0" y2="1">
                                     <stop offset="5%" stopColor={C.primary} stopOpacity={0.35} />

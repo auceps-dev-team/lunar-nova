@@ -101,7 +101,9 @@ const AgentsHub = ({ activeId }) => {
                     imageParams: {
                         data: selectedImage.data.split(',')[1],
                         mimeType: 'image/jpeg'
-                    }
+                    },
+                    provider: useAppStore.getState().appSettings?.provider,
+                    model: useAppStore.getState().appSettings?.model
                 })
             });
             const data = await res.json();

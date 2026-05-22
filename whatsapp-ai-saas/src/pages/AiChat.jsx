@@ -29,7 +29,8 @@ const formatMessage = (text) => {
 export default function AiChat() {
     const { t } = useTranslation();
     const showAppNotification = useAppStore(state => state.showAppNotification);
-    const language = useAppStore(state => state.appSettings?.language) || 'en';
+    const appSettings = useAppStore(state => state.appSettings) || {};
+    const language = appSettings.language || 'en';
 
     // ── Agents système (définis à l'intérieur pour utiliser t()) ───────────
     const SYSTEM_AGENTS = [
@@ -252,7 +253,9 @@ export default function AiChat() {
                 message: userMsg.text,
                 messages: fullHistory.map(m => ({ role: m.role, text: m.text })), // clean history for backend
                 imageParams: currentImageParams,
-                promptFormat: selectedAgent.response_format || 'text'
+                promptFormat: selectedAgent.response_format || 'text',
+                provider: useAppStore.getState().appSettings?.provider,
+                model: useAppStore.getState().appSettings?.model
             };
 
             if (selectedAgent.id === 'ella') {
@@ -485,6 +488,10 @@ export default function AiChat() {
                             <div style={{ textAlign: 'left' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                                     <span style={{ fontWeight: 700, fontSize: 15, color: '#0f172a' }}>{selectedAgent?.name}</span>
+                                    <span style={{ fontSize: 10, fontWeight: 'bold', padding: '2px 6px', borderRadius: 12, background: '#e0e7ff', color: '#4338ca', textTransform: 'uppercase' }}>
+                                        {selectedAgent?.provider_override || appSettings.provider || 'gemini'} 
+                                        {selectedAgent?.model_override ? ` • ${selectedAgent.model_override}` : (appSettings.model ? ` • ${appSettings.model}` : '')}
+                                    </span>
                                     <svg style={{ color: '#94a3b8', transition: 'transform 0.2s', transform: isSwitchOpen ? 'rotate(180deg)' : 'none' }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9" /></svg>
                                 </div>
                                 <span style={{ fontSize: 12, color: '#94a3b8' }}>{selectedAgent?.description?.slice(0, 40)}{selectedAgent?.description?.length > 40 ? '…' : ''}</span>

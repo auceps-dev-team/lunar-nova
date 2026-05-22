@@ -13,7 +13,8 @@ const AgentManager = () => {
         name: '',
         system_instruction: '',
         response_format: 'text',
-        provider_override: ''
+        provider_override: '',
+        model_override: ''
     };
 
     useEffect(() => {
@@ -140,7 +141,18 @@ const AgentManager = () => {
                                     <option value="gemini">{t('forceGoogleGemini')}</option>
                                     <option value="openrouter">{t('forceOpenRouter')}</option>
                                     <option value="ollama">{t('forceOllamaLocal')}</option>
+                                    <option value="openai">OpenAI / NVIDIA NIM</option>
                                 </select>
+                            </div>
+                            <div className="flex-1">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('forceModel', 'Modèle spécifique')}</label>
+                                <input
+                                    type="text"
+                                    value={currentAgent.model_override || ''}
+                                    onChange={(e) => setCurrentAgent({ ...currentAgent, model_override: e.target.value })}
+                                    placeholder={t('modelOverridePlaceholder', 'Laisser vide pour défaut')}
+                                    className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 bg-white dark:bg-gray-700 text-sm"
+                                />
                             </div>
                         </div>
 
@@ -168,10 +180,16 @@ const AgentManager = () => {
                         <div key={agent.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5 flex flex-col relative group">
                             <div className="flex justify-between items-start mb-2">
                                 <h3 className="font-semibold text-lg text-gray-900 dark:text-white">{agent.name}</h3>
-                                <span className={`text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider ${agent.provider_override ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
-                                    }`}>
-                                    {agent.provider_override || t('globalProvider')}
-                                </span>
+                                <div className="flex flex-col items-end gap-1">
+                                    <span className={`text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider ${agent.provider_override ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'}`}>
+                                        {agent.provider_override || t('globalProvider')}
+                                    </span>
+                                    {agent.model_override && (
+                                        <span className="text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300">
+                                            {agent.model_override}
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                             <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 line-clamp-3 flex-1">
                                 {agent.system_instruction}

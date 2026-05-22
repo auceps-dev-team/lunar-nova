@@ -102,9 +102,14 @@ async function chatWithAgent(persona, message, imageParams, promptFormat, dbAgen
             messages[0].content += "\n\nCRITICAL: Return ONLY a valid JSON output.";
         }
 
+        let selectedModel = 'llama3';
+        if (dbAgent && dbAgent.model_override) {
+            selectedModel = dbAgent.model_override;
+        }
+
         const ollama = getClient(apiKey);
         const chatRequest = {
-            model: 'llama3', // Default local model
+            model: selectedModel,
             messages: messages,
             stream: false,
             options: {
