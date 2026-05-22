@@ -20,7 +20,7 @@ redisClient.on('error', (err) => {
     // Only log once, regardless of how many reconnect attempts fire
     if (!hasLoggedError) {
         hasLoggedError = true;
-        console.warn('[Redis] Could not connect to cache server. Caching bypassed.', err.message);
+        console.error('[CRITICAL] Redis connection failed. Caching bypassed and falling back to direct API/DB calls.', err.message);
     }
 });
 
@@ -38,24 +38,30 @@ redisClient.on('reconnecting', () => {
 redisClient.connect().catch(() => { });
 
 async function getCachedProposals(cacheKey) {
-    if (!isRedisConnected) return null;
+    if (!isRedisConnected) {
+        console.warn('[Redis] Fallback: Cache read bypassed, returning null.');
+        return null;
+    }
     try {
         const cached = await redisClient.get(cacheKey);
         if (cached) {
             return JSON.parse(cached);
         }
     } catch (err) {
-        console.error('[Redis] Get Error:', err.message);
+        console.error('[CRITICAL] Redis Get Error, using fallback:', err.message);
     }
     return null;
 }
 
 async function setCachedProposals(cacheKey, proposals, expirationSeconds = 60) {
-    if (!isRedisConnected) return;
+    if (!isRedisConnected) {
+        console.warn('[Redis] Fallback: Cache write bypassed.');
+        return;
+    }
     try {
         await redisClient.setEx(cacheKey, expirationSeconds, JSON.stringify(proposals));
     } catch (err) {
-        console.error('[Redis] Set Error:', err.message);
+        console.error('[CRITICAL] Redis Set Error:', err.message);
     }
 }
 

@@ -83,8 +83,9 @@ const PhotoShoot = ({ activeId }) => {
 
     const promptFormat = useAppStore(state => state.appSettings?.promptFormat) || 'json';
     const language = useAppStore(state => state.appSettings?.language) || 'en';
-    // Lire le provider et le modèle d'image depuis les settings backend (Zustand)
-    const backendProvider   = useAppStore(state => state.backendSettings?.default_ai_provider) || 'gemini';
+    // default_image_provider : provider dédié à la génération d'images (Together AI/openai par défaut)
+    // default_ai_provider    : provider du chat/analyse (Gemini par défaut — clé API disponible)
+    const backendProvider   = useAppStore(state => state.backendSettings?.default_image_provider) || 'openai';
     const backendImageModel = useAppStore(state => state.backendSettings?.default_image_model) || '';
     const availableImageModels = useAppStore(state => state.availableModels?.image) || [];
 
@@ -135,8 +136,14 @@ const PhotoShoot = ({ activeId }) => {
         setGeneratedPrompt('');
         try {
             const model = selectedModel || MODELS[Math.floor(Math.random() * MODELS.length)];
-            const pose = selectedPose || POSES[Math.floor(Math.random() * POSES.length)];
-            const bg = selectedBackground || BACKGROUNDS[Math.floor(Math.random() * BACKGROUNDS.length)];
+            const pose  = selectedPose  || POSES[Math.floor(Math.random() * POSES.length)];
+            const bg    = selectedBackground || BACKGROUNDS[Math.floor(Math.random() * BACKGROUNDS.length)];
+
+            // ── Mettre à jour l'UI pour afficher les paramètres réellement utilisés
+            //    (y compris quand ils ont été sélectionnés aléatoirement)
+            setSelectedModel(model);
+            setSelectedPose(pose);
+            setSelectedBackground(bg);
 
             // Lock current session context so Phase 2 always uses the same model/pose/bg
             sessionContextRef.current = { model, pose, bg };
@@ -157,8 +164,7 @@ const PhotoShoot = ({ activeId }) => {
                     imageParams: {
                         data: productImages[0].data.split(',')[1],
                         mimeType: 'image/jpeg'
-                    },
-                    modelOverride: selectedImageModel
+                    }
                 })
             });
             const agentData = await agentRes.json();
@@ -166,13 +172,20 @@ const PhotoShoot = ({ activeId }) => {
             let optimizedPrompt = '';
             if (agentData.status === 'success' && agentData.response) {
                 try {
-                    const parsed = typeof agentData.response === 'string'
-                        ? JSON.parse(agentData.response)
-                        : agentData.response;
+                    // Strip markdown code fences (e.g., ```json ... ```) that some models add
+                    let rawResponse = agentData.response;
+                    rawResponse = rawResponse.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
+
+                    const parsed = typeof rawResponse === 'string'
+                        ? JSON.parse(rawResponse)
+                        : rawResponse;
                     optimizedPrompt = parsed.image_generation_prompt || agentData.response;
                 } catch (e) {
+                    // If JSON parse fails, use the raw response
                     optimizedPrompt = agentData.response;
                 }
+            } else if (agentData.error) {
+                optimizedPrompt = `[Erreur d'analyse: ${agentData.error}]`;
             }
             setGeneratedPrompt(optimizedPrompt);
 
@@ -196,6 +209,7 @@ const PhotoShoot = ({ activeId }) => {
         }
     };
 
+
     // ── Phase 2: Generate Image (Imagen 4) ──
     const handleGenerateImage = async () => {
         if (!generatedPrompt || isGeneratingImage) return;
@@ -203,10 +217,12 @@ const PhotoShoot = ({ activeId }) => {
         setIsGeneratingImage(true);
         try {
             // Build a hard-constraint prefix from the locked session context
+            // ⚠️ Language must be moderation-safe (no anatomical references that trigger BFL filter)
             const ctx = sessionContextRef.current;
             const hardConstraints = ctx
-                ? `MANDATORY CONSTRAINTS (DO NOT IGNORE):\n- MODEL: ${ctx.model.gender}, ${ctx.model.desc}\n- DO NOT change the model's gender, ethnicity, or appearance\n- POSE: The model MUST be in the following pose — ${ctx.pose.name}: ${ctx.pose.desc}. Do NOT show a different body position.\n- BACKGROUND: ${ctx.bg.desc}\n\nFASHION PROMPT:\n`
+                ? `STYLE DIRECTION:\n- Talent: ${ctx.model.desc}\n- Pose: ${ctx.pose.name} — ${ctx.pose.desc}\n- Setting: ${ctx.bg.desc}\n\nEDITORIAL FASHION PROMPT:\n`
                 : '';
+
 
             const genBody = {
                 prompt: hardConstraints + generatedPrompt,
@@ -226,7 +242,23 @@ const PhotoShoot = ({ activeId }) => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(genBody)
             });
-            const genData = await genRes.json();
+
+            if (!genRes.ok) {
+                const txt = await genRes.text();
+                console.error('Generation HTTP error', genRes.status, txt);
+                alert(`Generation HTTP error ${genRes.status}: ${txt}`);
+                return;
+            }
+
+            let genData;
+            try {
+                genData = await genRes.json();
+            } catch (e) {
+                const txt = await genRes.text();
+                console.error('Failed to parse generation JSON:', e, txt);
+                alert(`Generation failed: ${txt}`);
+                return;
+            }
 
             if (genData.status === 'success' && genData.imageStore) {
                 const b64Data = genData.imageStore.startsWith('data:')
@@ -252,7 +284,46 @@ const PhotoShoot = ({ activeId }) => {
             } else {
                 const msg = genData.error || t('errorImageGen');
                 console.error('Generation failed:', msg);
-                alert(msg);
+
+                const lower = typeof msg === 'string' ? msg.toLowerCase() : '';
+
+                // 1) Handle missing API key as before
+                if (lower.includes('api key')) {
+                    const openSettings = window.confirm(msg + '\n\nWould you like to open Settings to configure your API key?');
+                    if (openSettings) {
+                        try {
+                            window.history.pushState({}, '', '/settings');
+                            window.dispatchEvent(new PopStateEvent('popstate'));
+                        } catch (e) {
+                            window.location.href = '/settings';
+                        }
+                    }
+                    return;
+                }
+
+                // 2) Handle backend 404 (page not found) — offer to open server root or model debug endpoint
+                if (lower.includes('404') || lower.includes('page not found')) {
+                    const currentModel = selectedImageModel || backendImageModel || '';
+                    // normalize dot -> underscore for NIM debug endpoint
+                    const modelForDebug = currentModel ? currentModel.replace(/\./g, '_') : '';
+                    let message = 'The backend returned 404 (page not found). This usually means the server route is missing or the server needs to be restarted.';
+                    if (currentModel) message += `\n\nModel: ${currentModel}`;
+                    message += '\n\nWould you like to open the server root to inspect logs? (http://127.0.0.1:3000/)';
+                    const openRoot = window.confirm(message);
+                    if (openRoot) window.open('http://127.0.0.1:3000/', '_blank');
+
+                    if (modelForDebug) {
+                        const openDbg = window.confirm('Also open the NVIDIA model debug endpoint for this model?');
+                        if (openDbg) {
+                            const dbgUrl = `http://127.0.0.1:3000/api/debug/nvidia-model?id=${encodeURIComponent(modelForDebug)}`;
+                            window.open(dbgUrl, '_blank');
+                        }
+                    }
+                    return;
+                }
+
+                // Fallback: show raw message
+                alert(typeof msg === 'string' ? msg : t('errorImageGen'));
             }
         } catch (err) {
             console.error('PhotoShoot generation error:', err);

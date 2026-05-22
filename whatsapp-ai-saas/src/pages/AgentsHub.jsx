@@ -36,10 +36,11 @@ const AgentsHub = ({ activeId }) => {
     const setPendingEditImage = useAppStore(state => state.setPendingEditImage);
     const promptFormat = useAppStore(state => state.appSettings?.promptFormat) || 'json';
     const language = useAppStore(state => state.appSettings?.language) || 'en';
-    // Lire le provider et modèle image depuis les settings backend
-    const backendProvider   = useAppStore(state => state.backendSettings?.default_ai_provider) || 'gemini';
+    // default_image_provider : provider dédié à la génération d'images (Together AI/openai)
+    const backendProvider   = useAppStore(state => state.backendSettings?.default_image_provider) || 'openai';
     const backendImageModel = useAppStore(state => state.backendSettings?.default_image_model) || '';
     const availableImageModels = useAppStore(state => state.availableModels?.image) || [];
+
 
     const clearAllHistory = () => {
         historyForAgent.forEach(h => removeAgentHistory(h.id));

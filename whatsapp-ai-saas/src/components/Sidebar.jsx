@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+/** @jsxImportSource react */
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import useAppStore from '../store';
 import { useTranslation } from 'react-i18next';
@@ -485,3 +486,4 @@ const Sidebar = ({ instances, activeId, onSelect, onAdd, onRemove, onUpdate, cur
 };
 
 export default Sidebar;
+

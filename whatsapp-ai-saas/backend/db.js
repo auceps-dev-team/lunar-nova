@@ -189,7 +189,8 @@ async function initDB() {
         isDbConnected = true;
         console.log('[SQLite] Connected and tables verified.');
     } catch (err) {
-        console.warn('[SQLite] Could not initialize database. Logging will be bypassed.', err.message);
+        console.error('[CRITICAL] DB Init Failed:', err.message);
+        process.exit(1);
     }
 }
 

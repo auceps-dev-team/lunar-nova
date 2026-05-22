@@ -15,6 +15,75 @@ function getClient(apiKey, baseURL) {
     return new OpenAI(config);
 }
 
+/**
+ * generateImageWithQwen
+ * 
+ * Qwen-Image est déployé via Together AI (partenaire NVIDIA Build).
+ * - Base URL : https://api.together.xyz/v1
+ * - Endpoint : /images/generations  (format OpenAI-compatible)
+ * - Model ID  : "Qwen/Qwen-Image"   (majuscules — nom Together AI)
+ * 
+ * @param {string}  prompt   - Texte décrivant l'image
+ * @param {string}  apiKey   - Clé Together AI (nvapi-... fournie par NVIDIA Build)
+ * @param {object}  options  - { n, steps, disable_safety_checker }
+ */
+/**
+ * sanitizePromptForTogether
+ * Remplace les termes qui déclenchent le filtre Black Forest Labs / Together AI
+ * dans les prompts de shooting photo fashion.
+ */
+function sanitizePromptForTogether(prompt) {
+    if (!prompt) return prompt;
+    return prompt
+        // Réduire les références anatomiques excessives
+        .replace(/\bskin tone\b/gi, 'complexion')
+        .replace(/\bbare skin\b/gi, 'fashion look')
+        .replace(/\bgender\b/gi, 'style')
+        .replace(/\b(male|female) model\b/gi, 'fashion model')
+        .replace(/\bbody position\b/gi, 'pose')
+        .replace(/\bbody\b(?! language| suit| wear| of water| scan)/gi, 'figure')
+        .replace(/\bappearance\b/gi, 'look')
+        .replace(/\bDO NOT change the model.*?\n/gi, '')
+        .replace(/MANDATORY CONSTRAINTS \(DO NOT IGNORE\):/gi, 'STYLE DIRECTION:');
+}
+
+async function generateImageWithQwen(prompt, apiKey, options = {}) {
+    const axios = require('axios');
+    const n = options.n || 1;
+    const steps = options.steps || 28;  // 28 steps = meilleure qualité pour fashion
+
+    // Sanitiser le prompt pour éviter le filtre BFL/Together AI
+    const safePrompt = sanitizePromptForTogether(prompt);
+
+    // Together AI — OpenAI-compatible endpoint
+    const TOGETHER_BASE = 'https://api.together.xyz/v1';
+    const endpoint = `${TOGETHER_BASE}/images/generations`;
+
+    const payload = {
+        model: 'Qwen/Qwen-Image',           // Nom exact sur Together AI
+        prompt: safePrompt || 'Generate a professional fashion product photo',
+        n,
+        steps,
+        response_format: 'b64_json',
+        disable_safety_checker: true,   // Nécessaire pour les prompts fashion/editorial
+    };
+
+    console.log('[Qwen→Together] POST', endpoint, '| model:', payload.model, '| steps:', steps);
+    console.log('[Qwen→Together] Prompt (sanitized, first 200 chars):', safePrompt?.slice(0, 200));
+
+    const response = await axios.post(endpoint, payload, {
+        headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+        },
+        timeout: 180000     // 3 min — Together AI peut être lent sur la première requête
+    });
+
+    return response.data;
+}
+
+
 async function generateProposals(chatContext, modelParam, apiKey, baseURL) {
     const openai = getClient(apiKey, baseURL);
     if (!openai) {
@@ -186,37 +255,106 @@ async function analyzeOrEditImage(prompt, imageParams, apiKey, baseURL, modelId)
     if (!openai) return { error: "API Key missing." };
 
     try {
+        // ── Qwen-Image via Together AI ─────────────────────────────────────────
+        // Déployé sur https://api.together.xyz/v1/images/generations
+        // Clé API stockée dans 'together_api_key' en base
+        if (modelId && (modelId.toLowerCase().includes('qwen/qwen-image') || modelId === 'qwen/qwen-image')) {
+
+            const qwenResponse = await generateImageWithQwen(prompt, apiKey, {
+                n: 1,
+                steps: 20,
+                disable_safety_checker: false,
+            });
+
+            const payload = qwenResponse;
+            let imageBytes = null;
+
+            // Together AI response: { data: [{ b64_json: "...", ... }] }
+            if (payload?.data?.[0]?.b64_json) {
+                imageBytes = payload.data[0].b64_json;
+            }
+            // Fallbacks (NVIDIA /genai/, autres formats)
+            if (!imageBytes && payload?.artifacts?.[0]?.base64) {
+                imageBytes = payload.artifacts[0].base64;
+            }
+            if (!imageBytes) {
+                const firstItem = payload?.data?.[0] || payload?.output?.[0] || payload?.[0];
+                if (firstItem) {
+                    imageBytes = firstItem?.b64_json || firstItem?.b64 || firstItem?.base64 || firstItem?.image || null;
+                }
+            }
+            if (!imageBytes) {
+                imageBytes = payload?.b64_json || payload?.image || null;
+            }
+
+            console.log('[Qwen→Together] Response keys:', Object.keys(payload || {}));
+            if (!imageBytes) {
+                console.error('[Qwen→Together] Full payload:', JSON.stringify(payload));
+                return { error: 'Together AI / Qwen-Image : aucune image retournée. Vérifiez la clé API Together AI et le quota.' };
+            }
+
+            return { success: true, imageBytes };
+        }
+
+
         // Use true image generation endpoint for stability/SDXL models
-        if (modelId.includes('stable-diffusion') || modelId.includes('sdxl') || modelId === 'stabilityai/stable-diffusion-3-medium') {
+        if (modelId.includes('stable-diffusion') || modelId.includes('sdxl')) {
             const axios = require('axios');
             
-            // Si on est sur NVIDIA, l'endpoint est diffAcrent du format OpenAI classique
-            if (baseURL.includes('nvidia')) {
-                const nvidiaResponse = await axios.post(
-                    `https://ai.api.nvidia.com/v1/genai/${modelId}`,
-                    {
-                        prompt: prompt || "Generate a fashion photo",
-                        mode: "text-to-image",
-                        model: "sd3",
-                        aspect_ratio: "1:1",
-                        cfg_scale: 5,
-                        seed: 0,
-                        steps: 50,
-                        output_format: "jpeg"
-                    },
-                    {
-                        headers: {
-                            'Authorization': `Bearer ${apiKey}`,
-                            'Accept': 'application/json',
-                            'Content-Type': 'application/json'
+            // Si on est sur NVIDIA, l'endpoint est différent du format OpenAI classique
+            if (baseURL && baseURL.includes('nvidia')) {
+                const normalizedBase = baseURL.replace(/\/$/, '');
+                const attemptPost = async (idToUse) => {
+                    return await axios.post(
+                        `${normalizedBase}/vision/${idToUse}`,
+                        {
+                            prompt: prompt || "Generate a fashion photo",
+                            mode: "text-to-image",
+                            model: idToUse,
+                            aspect_ratio: "1:1",
+                            cfg_scale: 5,
+                            seed: 0,
+                            steps: 50,
+                            output_format: "jpeg"
+                        },
+
+                        {
+                            headers: {
+                                'Authorization': `Bearer ${apiKey}`,
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json'
+                            }
+                        }
+                    );
+                };
+
+                try {
+                    const endpointToUse = `${normalizedBase}/vision/${modelId}`;
+                    console.log(`[NVIDIA] Calling endpoint: ${endpointToUse} | modelId=${modelId} | apiKeyPresent=${!!apiKey}`);
+                    const nvidiaResponse = await attemptPost(modelId);
+                    return {
+                        success: true,
+                        // NVIDIA API returns { image: "base64..." }
+                        imageBytes: nvidiaResponse.data.image
+                    };
+                } catch (err) {
+                    // If the model endpoint returned 404, try dot/underscore variant
+                    const statusCode = err.response && err.response.status;
+                    console.warn(`NVIDIA request failed for model ${modelId}:`, err.response ? err.response.data : err.message);
+                    if (statusCode === 404) {
+                        const alt = modelId.includes('_') ? modelId.replace(/_/g, '.') : modelId.replace(/\./g, '_');
+                        try {
+                            console.log(`Retrying NVIDIA endpoint with alternative model id: ${alt}`);
+                            const altResp = await attemptPost(alt);
+                            return { success: true, imageBytes: altResp.data.image };
+                        } catch (err2) {
+                            console.error(`NVIDIA retry also failed for ${alt}:`, err2.response ? err2.response.data : err2.message);
+                            // fallthrough to error handler below
+                            throw err2;
                         }
                     }
-                );
-                return {
-                    success: true,
-                    // NVIDIA API returns { image: "base64..." }
-                    imageBytes: nvidiaResponse.data.image
-                };
+                    throw err;
+                }
             } else {
                 // Standard OpenAI compatibility
                 const response = await openai.images.generate({

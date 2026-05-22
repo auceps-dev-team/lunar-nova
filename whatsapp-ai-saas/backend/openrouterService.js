@@ -2,7 +2,7 @@ const orchestrator = require('./agents/orchestrator');
 const db = require('./db');
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-const OPENROUTER_FALLBACK_API_KEY = "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";
+const OPENROUTER_FALLBACK_API_KEY = process.env.OPENROUTER_API_KEY || "";
 
 // S'exécute au lancement pour cacher les modèles d'OpenRouter dans la DB
 async function syncOpenRouterModels() {

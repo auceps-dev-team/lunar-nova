@@ -93,10 +93,12 @@ const useAppStore = create(
             // re-fetching on each mount.
             backendSettings: {
                 default_ai_provider: 'gemini',
+                default_image_provider: 'openai', // dédié à la génération d'images (Together AI/NVIDIA)
                 default_image_model: '',
                 openai_base_url: 'https://integrate.api.nvidia.com/v1',
                 // other keys are populated after fetch
             },
+
 
             // --- Actions ---
             updateSettings: (updates) => set((state) => ({
@@ -162,38 +164,54 @@ const useAppStore = create(
 
             fetchGlobalModels: async () => {
                 const state = get();
-                const provider = state.backendSettings.default_ai_provider || 'gemini';
+                const chatProvider  = state.backendSettings.default_ai_provider  || 'gemini';
+                const imageProvider = state.backendSettings.default_image_provider || chatProvider;
+
                 let apiKeyParam = '';
-                if (provider === 'openrouter' && state.backendSettings.openrouter_api_key) {
+                if (chatProvider === 'openrouter' && state.backendSettings.openrouter_api_key) {
                     apiKeyParam = `&apiKey=${encodeURIComponent(state.backendSettings.openrouter_api_key)}`;
-                } else if (provider === 'openai' && state.backendSettings.openai_api_key) {
+                } else if (chatProvider === 'openai' && state.backendSettings.openai_api_key) {
                     apiKeyParam = `&apiKey=${encodeURIComponent(state.backendSettings.openai_api_key)}&baseURL=${encodeURIComponent(state.backendSettings.openai_base_url || '')}`;
                 }
 
                 try {
-                    const res = await fetch(`http://localhost:3000/api/ai/models?provider=${provider}${apiKeyParam}`);
-                    const data = await res.json();
-                    if (data.status === 'success' && data.models) {
-                        let newChat = [];
-                        let newImage = [];
-                        if (data.models.chat) {
-                            newChat = data.models.chat;
-                            newImage = data.models.image;
-                        } else if (Array.isArray(data.models)) {
-                            newChat = data.models;
-                        }
-                        
-                        // Sécurité additionnelle : nettoyer les emojis résiduels des noms
-                        const cleanName = (str) => (str || '').replace(/^[\u2700-\u27BF\u1F000-\u1F9FF\u2600-\u26FF]\s*/, '');
-                        newChat = newChat.map(m => ({ ...m, name: cleanName(m.name) }));
-                        newImage = newImage.map(m => ({ ...m, name: cleanName(m.name) }));
+                    // 1. Fetch chat models (selon chatProvider)
+                    const chatRes = await fetch(`http://localhost:3000/api/ai/models?provider=${chatProvider}${apiKeyParam}`);
+                    const chatData = await chatRes.json();
 
-                        set({ availableModels: { chat: newChat, image: newImage } });
-                    } else {
-                        set({ availableModels: { chat: [], image: [] } });
+                    let newChat = [];
+                    let newImage = [];
+
+                    if (chatData.status === 'success' && chatData.models) {
+                        if (chatData.models.chat) {
+                            newChat = chatData.models.chat;
+                            newImage = chatData.models.image || [];
+                        } else if (Array.isArray(chatData.models)) {
+                            newChat = chatData.models;
+                        }
                     }
+
+                    // 2. Si imageProvider ≠ chatProvider, fetch les modèles image séparément
+                    if (imageProvider && imageProvider !== chatProvider) {
+                        try {
+                            const imgRes = await fetch(`http://localhost:3000/api/ai/models?provider=${imageProvider}`);
+                            const imgData = await imgRes.json();
+                            if (imgData.status === 'success' && imgData.models?.image) {
+                                newImage = imgData.models.image;
+                            }
+                        } catch (e) {
+                            console.warn('[Store] Failed to fetch image models:', e);
+                        }
+                    }
+
+                    // Sécurité additionnelle : nettoyer les emojis résiduels des noms
+                    const cleanName = (str) => (str || '').replace(/^[\u2700-\u27BF\u1F000-\u1F9FF\u2600-\u26FF]\s*/, '');
+                    newChat  = newChat.map(m => ({ ...m, name: cleanName(m.name) }));
+                    newImage = newImage.map(m => ({ ...m, name: cleanName(m.name) }));
+
+                    set({ availableModels: { chat: newChat, image: newImage } });
                 } catch (e) {
-                    console.error("[Store] Failed to fetch global models:", e);
+                    console.error('[Store] Failed to fetch global models:', e);
                     set({ availableModels: { chat: [], image: [] } });
                 }
             },

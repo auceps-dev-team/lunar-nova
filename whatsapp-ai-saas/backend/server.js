@@ -4,13 +4,14 @@ const rateLimit = require('express-rate-limit');
 const puppeteer = require('puppeteer-core');
 const crypto = require('crypto');
 const fs = require('fs');
+const { z } = require('zod');
 const path = require('path');
 const aiController = require('./aiController');
 const { logCopilotInteraction, pool, getSetting, setSetting } = require('./db');
 const { getCachedProposals, setCachedProposals } = require('./redisClient');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || process.env.BACKEND_PORT || 3000;
 
 // Update process.env if main process sends new secrets (electron-store)
 function handleMessage(msg) {
@@ -97,7 +98,11 @@ app.get('/api/instances', async (req, res) => {
                                     }
                                 });
                             });
-                            observer.observe(document.body, { childList: true, subtree: true });
+                            if (document.body) {
+                                observer.observe(document.body, { childList: true, subtree: true });
+                            } else {
+                                console.log('[Orchestrator] document.body not available for observation');
+                            }
                         }).catch(err => console.error('Failed to attach observer:', err));
                     } catch (err) {
                         console.error('Error attaching observer to page:', err);
@@ -356,6 +361,19 @@ app.get('/api/ai/models', aiLimiter, async (req, res) => {
     }
 });
 
+// Debug: return nvidia model definition (hot-loaded)
+app.get('/api/debug/nvidia-model', aiLimiter, async (req, res) => {
+    try {
+        const id = req.query.id;
+        try { delete require.cache[require.resolve('./nvidiaModels')]; } catch (e) {}
+        const nm = require('./nvidiaModels');
+        const def = nm.getModelDef(id);
+        res.json({ status: 'success', model: def });
+    } catch (err) {
+        res.status(500).json({ status: 'error', error: err.message });
+    }
+});
+
 // Endpoint to fetch Copilot Generative Replies
 app.post('/api/ai/copilot', aiLimiter, async (req, res) => {
     // Requires instance_id for DB logging in a multi-tenant environment.
@@ -413,21 +431,39 @@ app.post('/api/ai/copilot', aiLimiter, async (req, res) => {
     }
 });
 
+// Schema de validation Zod pour l'agent
+const agentSchema = z.object({
+    persona: z.string().optional(),
+    message: z.string().optional(),
+    messages: z.array(z.any()).optional(),
+    imageParams: z.object({
+        data: z.string(),
+        mimeType: z.string()
+    }).optional(),
+    promptFormat: z.string().optional(),
+    currentTasks: z.array(z.any()).optional(),
+    isRealTime: z.boolean().optional(),
+    modelOverride: z.string().optional()
+}).refine(data => data.message || (data.messages && data.messages.length > 0), {
+    message: "Missing message.",
+});
+
 // Endpoint for specialized Persona AI Agents (Legal, Creative)
 app.post('/api/ai/agent', aiLimiter, async (req, res) => {
-    const { persona, message, messages, imageParams, promptFormat, currentTasks, isRealTime, modelOverride } = req.body;
-
-    if (!message && (!messages || messages.length === 0)) {
-        return res.status(400).json({ error: 'Missing message.' });
-    }
-
     try {
+        // Validation des inputs avec Zod
+        const validatedData = agentSchema.parse(req.body);
+        const { persona, message, messages, imageParams, promptFormat, currentTasks, isRealTime, modelOverride } = validatedData;
+
         const aiResponse = await aiController.chatWithAgent(persona, message, imageParams, promptFormat, messages, currentTasks, isRealTime, modelOverride);
         res.json({
             status: 'success',
             response: aiResponse.response
         });
     } catch (error) {
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ error: 'Validation failed', details: error.errors });
+        }
         console.error('Agent Route Error:', error);
         res.status(500).json({ error: 'Failed to chat with agent.' });
     }
@@ -454,6 +490,26 @@ app.post('/api/ai/generate-image', aiLimiter, async (req, res) => {
     } catch (error) {
         console.error('Image Generation Error:', error);
         res.status(500).json({ error: 'Failed to generate image via API.' });
+    }
+});
+
+// Explicit Qwen-Image alias route for direct text-to-image generation
+app.post('/api/ai/generate-image-qwen', aiLimiter, async (req, res) => {
+    const { prompt, size, seed, provider } = req.body;
+
+    if (!prompt) {
+        return res.status(400).json({ error: 'Missing prompt.' });
+    }
+
+    try {
+        const generationResponse = await aiController.generateImage(prompt, null, { seed }, null, null, provider || null, 'qwen/qwen-image');
+        if (generationResponse.error) {
+            return res.json({ status: 'error', error: generationResponse.error });
+        }
+        res.json({ status: 'success', imageStore: generationResponse.imageBytes });
+    } catch (error) {
+        console.error('Qwen Image Generation Error:', error);
+        res.status(500).json({ error: 'Failed to generate Qwen image via API.' });
     }
 });
 
@@ -1215,7 +1271,17 @@ app.get('/api/wa/analytics', async (req, res) => {
     }
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
     console.log(`[Orchestrator] Running on http://localhost:${PORT}`);
     console.log(`[Orchestrator] Ready to connect to Electron CDP at port 8315`);
+});
+
+server.on('error', (e) => {
+    if (e.code === 'EADDRINUSE') {
+        console.error(`[CRITICAL] Port ${PORT} is already in use. Exiting to prevent zombie processes.`);
+        process.exit(1);
+    } else {
+        console.error(`[CRITICAL] Server error:`, e);
+        process.exit(1);
+    }
 });

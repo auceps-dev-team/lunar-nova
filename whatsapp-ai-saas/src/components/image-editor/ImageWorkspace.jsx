@@ -13,6 +13,17 @@ export function ImageWorkspace() {
     const pendingEditImage = useAppStore(state => state.pendingEditImage);
     const clearPendingEditImage = useAppStore(state => state.clearPendingEditImage);
 
+    // Cleanup blob URLs on unmount
+    useEffect(() => {
+        return () => {
+            images.forEach(img => {
+                if (img.previewUrl && img.previewUrl.startsWith('blob:')) {
+                    URL.revokeObjectURL(img.previewUrl);
+                }
+            });
+        };
+    }, [images]);
+
     // Auto-load image passed from Product Photo / Photo Shoot
     useEffect(() => {
         if (pendingEditImage && pendingEditImage.data) {
@@ -127,6 +138,9 @@ export function ImageWorkspace() {
                             setImages((prev) => prev.map((img) => img.id === updatedImage.id ? updatedImage : img));
                         }}
                         onRemove={() => {
+                            if (selectedImage.previewUrl && selectedImage.previewUrl.startsWith('blob:')) {
+                                URL.revokeObjectURL(selectedImage.previewUrl);
+                            }
                             setImages((prev) => prev.filter((img) => img.id !== selectedImage.id));
                             setSelectedImageId(null);
                         }}

@@ -2,7 +2,15 @@ const geminiService = require('./geminiService');
 const openrouterService = require('./openrouterService');
 const ollamaService = require('./ollamaService');
 const openaiService = require('./openaiService');
-const nvidiaModels = require('./nvidiaModels');
+// nvidiaModels may be edited at runtime; load dynamically to pick changes without restart
+function getNvidiaModels() {
+    try {
+        delete require.cache[require.resolve('./nvidiaModels')];
+    } catch (e) {
+        // ignore
+    }
+    return require('./nvidiaModels');
+}
 const db = require('./db');
 
 /**
@@ -12,6 +20,7 @@ const db = require('./db');
  *   3. Clé système dans .env (fallback silencieux)
  */
 async function resolveNvidiaKey(modelId) {
+    const nvidiaModels = getNvidiaModels();
     return nvidiaModels.resolveKey(modelId, db.getSetting.bind(db));
 }
 
@@ -40,6 +49,7 @@ async function generateProposals(chatContext, modelParam) {
         return await ollamaService.generateProposals(chatContext, modelParam, apiKey);
     } else if (provider === 'openai') {
         const apiKey = await resolveNvidiaKey(modelParam);
+        const nvidiaModels = getNvidiaModels();
         const baseURL = await db.getSetting('openai_base_url', nvidiaModels.NVIDIA_BASE_URL);
         return await openaiService.generateProposals(chatContext, modelParam, apiKey, baseURL);
     } else {
@@ -57,14 +67,25 @@ async function chatWithAgent(personaId, message, imageParams, promptFormat, mess
         const apiKey = await db.getSetting('ollama_api_key', '');
         return await ollamaService.chatWithAgent(personaId, message, imageParams, promptFormat, dbAgent, apiKey, messages, currentTasks, isRealTime);
     } else if (provider === 'openai') {
-        const selectedModel = modelOverride || dbAgent?.model_override || await db.getSetting('default_chat_model', '');
+        let selectedModel = modelOverride || dbAgent?.model_override || await db.getSetting('default_chat_model', '');
+        const nvidiaModels = getNvidiaModels();
+        
+        // Auto-select a vision model if the user provided an image but the selected model is text-only
+        if (imageParams && imageParams.data) {
+            const def = nvidiaModels.getModelDef(selectedModel);
+            if (!def || def.type !== 'vision') {
+                const visionModel = nvidiaModels.getDefaultVisionModel();
+                if (visionModel) selectedModel = visionModel.id;
+            }
+        }
+        
         const apiKey = await resolveNvidiaKey(selectedModel);
         const baseURL = await db.getSetting('openai_base_url', nvidiaModels.NVIDIA_BASE_URL);
         
         // Pass the modelOverride down by merging into a faux dbAgent if needed
         let effectiveAgent = dbAgent;
         if (selectedModel) {
-            const overrideDef = nvidiaModels.getModelDef(selectedModel);
+            const overrideDef = getNvidiaModels().getModelDef(selectedModel);
             // Allow override only if it's a valid chat/vision model
             if (overrideDef && (overrideDef.type === 'text' || overrideDef.type === 'vision')) {
                 if (effectiveAgent) {
@@ -88,8 +109,13 @@ async function chatWithAgent(personaId, message, imageParams, promptFormat, mess
 }
 
 async function generateImage(prompt, aspectRatio, imageParams, editMode, mode, providerOverride = null, imageModelOverride = null) {
-    // Priorité : valeur explicite du body > settings DB
-    const provider   = providerOverride   || await db.getSetting('default_ai_provider', 'gemini');
+    // Priorité pour la génération d'images :
+    //   1. valeur explicite du body (providerOverride)
+    //   2. default_image_provider  (setting dédié à la génération)
+    //   3. default_ai_provider     (fallback global)
+    const imageProviderSetting = await db.getSetting('default_image_provider', '');
+    const globalProvider = await db.getSetting('default_ai_provider', 'gemini');
+    const provider = providerOverride || imageProviderSetting || globalProvider;
     const imageModel = imageModelOverride || await db.getSetting('default_image_model', '');
 
     if (provider === 'openrouter') {
@@ -97,15 +123,42 @@ async function generateImage(prompt, aspectRatio, imageParams, editMode, mode, p
     } else if (provider === 'ollama') {
         return { error: "Erreur : Ollama local ne supporte pas la génération d'images dans cette version." };
     } else if (provider === 'openai') {
-        // Vérifier que le modèle image sélectionné est bien un modèle vision/image-edit
-        const modelDef = nvidiaModels.getModelDef(imageModel);
-        if (!modelDef || modelDef.type === 'text' || modelDef.type === 'vision') {
-            return { error: `Le modèle sélectionné (${modelDef ? modelDef.name : imageModel}) est conçu pour l'analyse de texte/image, pas pour la génération d'images. Veuillez sélectionner un modèle de génération (ex: Stable Diffusion 3).` };
+        // Fallback intelligent vers Gemini si une image source (Virtual Try-on / Édition) est fournie.
+        // Qwen-Image via l'API Together AI utilisée ici est uniquement Text-to-Image.
+        if (imageParams && imageParams.data) {
+            console.warn('[aiController] Image-to-Image requested but Qwen/OpenAI currently supports only Text-to-Image. Falling back to Gemini Image Editing.');
+            return await geminiService.generateImage(prompt, aspectRatio, imageParams, editMode, mode, 'gemini-3.1-flash-image-preview');
         }
-        const baseURL = await db.getSetting('openai_base_url', nvidiaModels.NVIDIA_BASE_URL);
-        const apiKey = await resolveNvidiaKey(imageModel);
+
+        // Vérifier que le modèle image sélectionné est bien un modèle vision/image-edit
+        const modelDef = getNvidiaModels().getModelDef(imageModel);
+        console.log('[generateImage] imageModel=', imageModel);
+        console.log('[generateImage] modelDef=', modelDef);
+        if (!modelDef || modelDef.type === 'text' || modelDef.type === 'vision') {
+            return { error: `Le modèle sélectionné (${modelDef ? modelDef.name : imageModel}) ne supporte pas la génération d'images. Sélectionnez "Qwen Image (Together AI)" dans le menu Modèle de génération.` };
+        }
+
+        // ── Résolution de clé : Together AI pour Qwen-Image ─────────────────
+        // qwen/qwen-image est déployé via Together AI — clé dédiée 'together_api_key'
+        let apiKey;
+        const isQwenModel = imageModel && imageModel.toLowerCase().includes('qwen/qwen-image');
+        if (isQwenModel) {
+            apiKey = await db.getSetting('together_api_key', '');
+            if (!apiKey) {
+                // Fallback sur la clé spécifique au modèle en DB
+                apiKey = await resolveNvidiaKey(imageModel);
+            }
+            console.log('[generateImage] Qwen→Together AI | key present:', !!apiKey);
+        } else {
+            apiKey = await resolveNvidiaKey(imageModel);
+        }
+
+        const baseURL = await db.getSetting('openai_base_url', getNvidiaModels().NVIDIA_BASE_URL);
         return await openaiService.analyzeOrEditImage(prompt, imageParams, apiKey, baseURL, imageModel);
     } else {
+        if (imageModel && imageModel.startsWith('qwen/')) {
+            return { error: `Le modèle ${imageModel} nécessite le fournisseur OpenAI/NVIDIA (default_ai_provider=openai). Vérifiez vos paramètres.` };
+        }
         return await geminiService.generateImage(prompt, aspectRatio, imageParams, editMode, mode, imageModel);
     }
 }
@@ -122,13 +175,19 @@ async function listModels(providerOverride = null, apiKeyOverride = null) {
         const apiKey = apiKeyOverride || await db.getSetting('ollama_api_key', '');
         return await ollamaService.listModels(apiKey);
     } else if (provider === 'openai') {
-        const apiKey = apiKeyOverride || await db.getSetting('openai_api_key', '');
-        const baseURL = await db.getSetting('openai_base_url', 'https://integrate.api.nvidia.com/v1');
-        return await openaiService.listModels(apiKey, baseURL);
+        // Retourner le catalogue statique NVIDIA/Together AI
+        // (évite une requête API qui nécessiterait une clé NVIDIA valide)
+        const nm = getNvidiaModels();
+        const chatModels = nm.getModelsByType('text').concat(nm.getModelsByType('vision'))
+            .map(m => ({ id: m.id, name: m.name }));
+        const imageModels = nm.getModelsByType('image-edit').concat(nm.getModelsByType('image-generate'))
+            .map(m => ({ id: m.id, name: m.name }));
+        return { chat: chatModels, image: imageModels };
     } else {
         return await geminiService.listModels();
     }
 }
+
 
 module.exports = {
     generateProposals,

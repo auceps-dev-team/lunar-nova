@@ -53,6 +53,16 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
     useEffect(() => {
         setHistory([image]);
         setHistoryIndex(0);
+        
+        return () => {
+            // Cleanup blob URLs from history when component unmounts or image changes
+            history.forEach(histImg => {
+                // Don't revoke the initial image URL as it might be used by the workspace
+                if (histImg.id !== image.id && histImg.previewUrl && histImg.previewUrl.startsWith('blob:')) {
+                    URL.revokeObjectURL(histImg.previewUrl);
+                }
+            });
+        };
     }, [image.id]);
 
     const pushToHistory = (newImage) => {

@@ -60,13 +60,27 @@ const MODELS = [
         thinking: false,
     },
 
-    // ─── Modèles Image-Edit (image input → image output / description) ─
+    // ─── Modèles Image-Génération ─────────────────────────────────────
+    // qwen/qwen-image est déployé via Together AI (partenaire NVIDIA Build)
+    // Endpoint : https://api.together.xyz/v1/images/generations
+    // Clé      : Together AI key (together_api_key en DB / TOGETHER_API_KEY en .env)
     {
-        id: 'stabilityai/stable-diffusion-3-medium',
-        name: 'Stable Diffusion 3 Medium',
+        id: 'qwen/qwen-image',
+        name: 'Qwen Image (Together AI)',
+        type: 'image-generate',     // text→image
+        provider: 'together',        // indique le routage Together AI
+        dbKey: 'together_api_key',   // clé primaire : Together AI
+        legacyDbKey: 'nvidia_key_qwen_image',  // fallback : ancienne clé NVIDIA
+        envKey: 'TOGETHER_API_KEY',  // .env fallback
+        legacyEnvKey: 'NVIDIA_KEY_QWEN_IMAGE',
+        thinking: false,
+    },
+    {
+        id: 'qwen/qwen-image-edit',
+        name: 'Qwen Image Edit',
         type: 'image-edit',
-        dbKey: 'nvidia_key_sd3',
-        envKey: 'NVIDIA_KEY_SD3',
+        dbKey: 'nvidia_key_qwen_edit',
+        envKey: 'NVIDIA_KEY_QWEN_EDIT',
         thinking: false,
     },
 ];
@@ -82,12 +96,17 @@ const MODELS = [
  * @returns {Promise<string>} La clé API résolue
  */
 async function resolveKey(modelId, getSetting) {
-    const modelDef = MODELS.find(m => m.id === modelId);
+    // Use getModelDef which handles aliases and dot/underscore variants
+    const modelDef = getModelDef(modelId);
 
     // Niveau 1 : clé spécifique au modèle, configurée par l'utilisateur
     if (modelDef?.dbKey) {
         const userKey = await getSetting(modelDef.dbKey, '');
         if (userKey) return userKey;
+    }
+    if (modelDef?.legacyDbKey) {
+        const legacyKey = await getSetting(modelDef.legacyDbKey, '');
+        if (legacyKey) return legacyKey;
     }
 
     // Niveau 2 : clé globale openai_api_key de l'utilisateur
@@ -98,7 +117,9 @@ async function resolveKey(modelId, getSetting) {
     if (modelDef?.envKey && process.env[modelDef.envKey]) {
         return process.env[modelDef.envKey];
     }
-
+    if (modelDef?.legacyEnvKey && process.env[modelDef.legacyEnvKey]) {
+        return process.env[modelDef.legacyEnvKey];
+    }
     return '';
 }
 
@@ -114,7 +135,21 @@ function getDefaultVisionModel() {
  * Retourne la définition complète d'un modèle par son ID.
  */
 function getModelDef(modelId) {
-    return MODELS.find(m => m.id === modelId) || null;
+    if (!modelId) return null;
+    // Exact match
+    let found = MODELS.find(m => m.id === modelId);
+    if (found) return found;
+    // Aliases
+    found = MODELS.find(m => Array.isArray(m.aliases) && m.aliases.includes(modelId));
+    if (found) return found;
+    // Try underscore/dot variants
+    const dotToUnderscore = modelId.replace(/\./g, '_');
+    const underscoreToDot = modelId.replace(/_/g, '.');
+    found = MODELS.find(m => m.id === dotToUnderscore || m.id === underscoreToDot);
+    if (found) return found;
+    // Check aliases with replacements too
+    found = MODELS.find(m => Array.isArray(m.aliases) && (m.aliases.includes(dotToUnderscore) || m.aliases.includes(underscoreToDot)));
+    return found || null;
 }
 
 /**

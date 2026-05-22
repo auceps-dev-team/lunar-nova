@@ -24,7 +24,8 @@ const Settings = () => {
         nvidia_key_gemma: '',
         nvidia_key_glm: '',
         nvidia_key_llama_vision: '',
-        nvidia_key_sd3: '',
+        nvidia_key_qwen_image: '',
+        nvidia_key_qwen_edit: '',
     });
     const [showNvidiaPerModelKeys, setShowNvidiaPerModelKeys] = useState(false);
     const aiQuota = useAppStore(state => state.aiQuota);
@@ -395,7 +396,8 @@ const Settings = () => {
                                             { key: 'nvidia_key_gemma', label: 'google/gemma-3n-e2b-it', placeholder: 'nvapi-...' },
                                             { key: 'nvidia_key_glm', label: 'z-ai/glm-4.7', placeholder: 'nvapi-...' },
                                             { key: 'nvidia_key_llama_vision', label: 'Llama 3.2 90B Vision', placeholder: 'nvapi-...' },
-                                            { key: 'nvidia_key_sd3', label: 'Stable Diffusion 3 Medium', placeholder: 'nvapi-...' },
+                                            { key: 'nvidia_key_qwen_image', label: 'Qwen Image', placeholder: 'nvapi-...' },
+                                            { key: 'nvidia_key_qwen_edit', label: 'Qwen Image Edit', placeholder: 'nvapi-...' },
                                         ].map(({ key, label, placeholder }) => (
                                             <div key={key} className="flex items-center justify-between gap-4">
                                                 <p className="text-xs font-mono text-gray-600 dark:text-gray-300 w-1/2 truncate" title={label}>{label}</p>

@@ -1,11 +1,11 @@
 {
   "name": "backend",
-  "version": "1.0.0",
+  "version": "1.31.0",
   "description": "WhatsApp AI SaaS Orchestrator",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js"
+    "dev": "node server.js"
   },
   "dependencies": {
     "@google/genai": "^1.43.0",
@@ -23,6 +23,7 @@
     "puppeteer-core": "^24.38.0",
     "redis": "^5.11.0",
     "sqlite": "^5.1.1",
-    "sqlite3": "^5.1.7"
+    "sqlite3": "^5.1.7",
+    "zod": "^4.4.3"
   }
 }
