@@ -26,6 +26,22 @@ const MODELS = [
         thinking: false,
     },
     {
+        id: 'nvidia/ising-calibration-1-35b-a3b',
+        name: 'NVIDIA Ising Calibration 35B',
+        type: 'text',
+        dbKey: 'nvidia_key_ising',
+        envKey: 'NVIDIA_KEY_ISING',
+        thinking: true,
+    },
+    {
+        id: 'qwen/qwen3.5-397b-a17b',
+        name: 'Qwen 3.5 397B',
+        type: 'text',
+        dbKey: 'nvidia_key_qwen',
+        envKey: 'NVIDIA_KEY_QWEN',
+        thinking: true,
+    },
+    {
         id: 'google/gemma-3n-e2b-it',
         name: 'Gemma 3N E2B IT',
         type: 'text',
@@ -59,6 +75,31 @@ const MODELS = [
         envKey: 'NVIDIA_KEY_LLAMA_VISION',
         thinking: false,
     },
+    {
+        id: 'nvidia/nemotron-nano-12b-v2-vl',
+        name: 'Nemotron Nano 12B Vision',
+        type: 'vision',
+        dbKey: 'nvidia_key_nemotron_v2',
+        envKey: 'NVIDIA_KEY_NEMOTRON_V2',
+        thinking: false,
+    },
+    {
+        id: 'nvidia/llama-3.1-nemotron-nano-vl-8b-v1',
+        name: 'Llama 3.1 Nemotron Vision 8B',
+        type: 'vision',
+        dbKey: 'nvidia_key_nemotron_vl',
+        envKey: 'NVIDIA_KEY_NEMOTRON_VL',
+        thinking: false,
+    },
+    {
+        id: 'nim/meta/llama-3.2-11b-vision-instruct',
+        name: 'Llama 3.2 11B Vision (Together AI)',
+        type: 'vision',
+        provider: 'together',
+        dbKey: 'together_api_key',
+        envKey: 'TOGETHER_API_KEY',
+        thinking: false,
+    },
 
     // ─── Modèles Image-Génération ─────────────────────────────────────
     // qwen/qwen-image est déployé via Together AI (partenaire NVIDIA Build)
@@ -81,6 +122,15 @@ const MODELS = [
         type: 'image-edit',
         dbKey: 'nvidia_key_qwen_edit',
         envKey: 'NVIDIA_KEY_QWEN_EDIT',
+        thinking: false,
+    },
+    {
+        id: 'stabilityai/stable-diffusion-3-medium',
+        name: 'Stable Diffusion 3 Medium (Together AI)',
+        type: 'image-generate',
+        provider: 'together',
+        dbKey: 'together_api_key',
+        envKey: 'TOGETHER_API_KEY',
         thinking: false,
     },
 ];

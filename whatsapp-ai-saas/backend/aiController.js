@@ -91,16 +91,22 @@ async function chatWithAgent(personaId, message, imageParams, promptFormat, mess
         const nvidiaModels = getNvidiaModels();
         
         // Auto-select a vision model if the user provided an image but the selected model is text-only
+        let def = nvidiaModels.getModelDef(selectedModel);
         if (imageParams && imageParams.data) {
-            const def = nvidiaModels.getModelDef(selectedModel);
             if (!def || def.type !== 'vision') {
                 const visionModel = nvidiaModels.getDefaultVisionModel();
-                if (visionModel) selectedModel = visionModel.id;
+                if (visionModel) {
+                    selectedModel = visionModel.id;
+                    def = visionModel;
+                }
             }
         }
         
         const apiKey = await resolveNvidiaKey(selectedModel);
-        const baseURL = await db.getSetting('openai_base_url', nvidiaModels.NVIDIA_BASE_URL);
+        let baseURL = await db.getSetting('openai_base_url', nvidiaModels.NVIDIA_BASE_URL);
+        if (def && def.provider === 'together') {
+            baseURL = 'https://api.together.xyz/v1';
+        }
         
         // Pass the modelOverride down by merging into a faux dbAgent if needed
         let effectiveAgent = dbAgent;
@@ -163,30 +169,27 @@ async function generateImage(prompt, aspectRatio, imageParams, editMode, mode, p
             return await geminiService.generateImage(prompt, aspectRatio, imageParams, editMode, mode, 'gemini-3.1-flash-image-preview');
         }
 
-        // Vérifier que le modèle image sélectionné est bien un modèle vision/image-edit
+        // Vérifier que le modèle image sélectionné est bien un modèle vision/image-edit/image-generate
         const modelDef = getNvidiaModels().getModelDef(imageModel);
         console.log('[generateImage] imageModel=', imageModel);
         console.log('[generateImage] modelDef=', modelDef);
         if (!modelDef || modelDef.type === 'text' || modelDef.type === 'vision') {
-            return { error: `Le modèle sélectionné (${modelDef ? modelDef.name : imageModel}) ne supporte pas la génération d'images. Sélectionnez "Qwen Image (Together AI)" dans le menu Modèle de génération.` };
+            return { error: `Le modèle sélectionné (${modelDef ? modelDef.name : imageModel}) ne supporte pas la génération d'images.` };
         }
 
-        // ── Résolution de clé : Together AI pour Qwen-Image ─────────────────
-        // qwen/qwen-image est déployé via Together AI — clé dédiée 'together_api_key'
+        // ── Résolution de clé et baseURL pour Together AI ou NVIDIA ─────────────────
         let apiKey;
-        const isQwenModel = imageModel && imageModel.toLowerCase().includes('qwen/qwen-image');
-        if (isQwenModel) {
+        let baseURL = await db.getSetting('openai_base_url', getNvidiaModels().NVIDIA_BASE_URL);
+        
+        if (modelDef && modelDef.provider === 'together') {
             apiKey = await db.getSetting('together_api_key', '');
-            if (!apiKey) {
-                // Fallback sur la clé spécifique au modèle en DB
-                apiKey = await resolveNvidiaKey(imageModel);
-            }
-            console.log('[generateImage] Qwen→Together AI | key present:', !!apiKey);
+            if (!apiKey) apiKey = await resolveNvidiaKey(imageModel);
+            baseURL = 'https://api.together.xyz/v1';
+            console.log('[generateImage] Routed to Together AI | key present:', !!apiKey);
         } else {
             apiKey = await resolveNvidiaKey(imageModel);
         }
 
-        const baseURL = await db.getSetting('openai_base_url', getNvidiaModels().NVIDIA_BASE_URL);
         return await openaiService.analyzeOrEditImage(prompt, imageParams, apiKey, baseURL, imageModel);
     } else {
         if (imageModel && imageModel.startsWith('qwen/')) {
