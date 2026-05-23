@@ -421,7 +421,7 @@ app.post('/api/ai/copilot', aiLimiter, async (req, res) => {
 
         // Generate via AI Controller
         console.log(`[Cache Miss] Generating new proposals for ${chatContext.contactName}`);
-        const proposalsObj = await aiController.generateProposals(chatContext, model);
+        const proposalsObj = await aiController.generateProposals(chatContext, model, provider);
         const proposals = proposalsObj.proposed_replies || [];
         
         // Obtenir le provider depuis la réponse ou utiliser les valeurs par défaut
@@ -461,17 +461,24 @@ app.post('/api/ai/copilot', aiLimiter, async (req, res) => {
 
 // Schema de validation Zod pour l'agent
 const agentSchema = z.object({
-    persona: z.string().optional(),
-    message: z.string().optional(),
-    messages: z.array(z.any()).optional(),
+    persona: z.string().nullish(),
+    message: z.string().nullish(),
+    messages: z.array(z.any()).nullish(),
     imageParams: z.object({
         data: z.string(),
         mimeType: z.string()
-    }).optional(),
-    promptFormat: z.string().optional(),
-    currentTasks: z.array(z.any()).optional(),
-    isRealTime: z.boolean().optional(),
-    modelOverride: z.string().optional()
+    }).nullish(),
+    attachments: z.array(z.object({
+        data: z.string(),
+        mimeType: z.string(),
+        fileName: z.string().optional()
+    })).nullish(),
+    promptFormat: z.string().nullish(),
+    currentTasks: z.array(z.any()).nullish(),
+    isRealTime: z.boolean().nullish(),
+    modelOverride: z.string().nullish(),
+    provider: z.string().nullish(),
+    model: z.string().nullish()
 }).refine(data => data.message || (data.messages && data.messages.length > 0), {
     message: "Missing message.",
 });
@@ -481,9 +488,13 @@ app.post('/api/ai/agent', aiLimiter, async (req, res) => {
     try {
         // Validation des inputs avec Zod
         const validatedData = agentSchema.parse(req.body);
-        const { persona, message, messages, imageParams, promptFormat, currentTasks, isRealTime, modelOverride } = validatedData;
+        const { persona, message, messages, imageParams, attachments, promptFormat, currentTasks, isRealTime, modelOverride, provider, model } = validatedData;
 
-        const aiResponse = await aiController.chatWithAgent(persona, message, imageParams, promptFormat, messages, currentTasks, isRealTime, modelOverride);
+        // Use provider and model from frontend as overrides
+        const finalProvider = provider || null;
+        const finalModel = modelOverride || model || null;
+
+        const aiResponse = await aiController.chatWithAgent(persona, message, imageParams, attachments, promptFormat, messages, currentTasks, isRealTime, finalModel, finalProvider);
         res.json({
             status: 'success',
             response: aiResponse.response

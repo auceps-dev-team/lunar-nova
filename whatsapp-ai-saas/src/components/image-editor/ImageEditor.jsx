@@ -45,6 +45,8 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
     const { t } = useTranslation();
     const language = useAppStore(state => state.appSettings?.language) || 'en';
 
+    // Image editing always uses Gemini (image-to-image)
+
     // Undo/Redo State
     const [history, setHistory] = useState([]);
     const [historyIndex, setHistoryIndex] = useState(-1);
@@ -187,8 +189,8 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                     mimeType: image.mimeType
                 },
                 mode: 'product',
-                provider: useAppStore.getState().backendSettings?.default_image_provider,
-                imageModel: useAppStore.getState().backendSettings?.default_image_model
+                // Gemini gère exclusivement l'édition d'image (image-to-image)
+                provider: 'gemini',
             };
 
             const resProxy = await fetch('http://localhost:3000/api/ai/generate-image', {
@@ -594,6 +596,16 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                                     <h3 className="text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider flex items-center">
                                         {t('actions')}
                                     </h3>
+                                    {/* Model Info Badge */}
+                                    <div className="mb-4 space-y-1">
+                                        <label className="text-[10px] font-medium text-gray-400 dark:text-zinc-500 uppercase tracking-wider">
+                                            {t('model') || 'Edit Model'}
+                                        </label>
+                                        <div className="flex items-center gap-2 px-3 py-2 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-emerald-500"><path d="M12 2L2 7l10 5 10-5-10-5z"></path><path d="M2 17l10 5 10-5"></path><path d="M2 12l10 5 10-5"></path></svg>
+                                            <span className="text-sm font-medium text-emerald-700 dark:text-emerald-300">Google Gemini (Image-to-Image)</span>
+                                        </div>
+                                    </div>
                                     <div className="grid grid-cols-1 gap-2.5">
                                         <button
                                             onClick={handleQuickDescription}

@@ -116,14 +116,7 @@ const MODELS = [
         legacyEnvKey: 'NVIDIA_KEY_QWEN_IMAGE',
         thinking: false,
     },
-    {
-        id: 'qwen/qwen-image-edit',
-        name: 'Qwen Image Edit',
-        type: 'image-edit',
-        dbKey: 'nvidia_key_qwen_edit',
-        envKey: 'NVIDIA_KEY_QWEN_EDIT',
-        thinking: false,
-    },
+
     {
         id: 'stabilityai/stable-diffusion-3-medium',
         name: 'Stable Diffusion 3 Medium (Together AI)',

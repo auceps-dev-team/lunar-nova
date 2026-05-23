@@ -50,6 +50,7 @@ const DEFAULT_MENU_ITEMS = [
         { id: 'agents', to: '/agents', labelKey: 'productPhoto' },
         { id: 'fashion-photoshoot', to: '/fashion/photoshoot', labelKey: 'photoShoot' },
         { id: 'fashion-edit', to: '/fashion/edit', labelKey: 'editImage' },
+        { id: 'fashion-image-gen', to: '/fashion/image-generation', labelKey: 'imageGeneration' },
     ], icon: <><path d="M20.38 3.46 16 2a8.86 8.86 0 0 1-5 0 8.86 8.86 0 0 1-5 0L1.62 3.46A2 2 0 0 0 0 5.34v.53a3 3 0 0 0 2 2.82v10.3A3 3 0 0 0 5 22h14a3 3 0 0 0 3-3V8.69a3 3 0 0 0 2-2.82v-.53a2 2 0 0 0-1.62-1.88z"></path><path d="M12 2v6"></path><path d="M9 12h6"></path><path d="M9 16h6"></path></> },
     { id: 'ai-chat', to: '/ai-chat', labelKey: 'aiChat', icon: <><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path><circle cx="12" cy="10" r="3"></circle></> },
     { id: 'ai-writer', to: '/ai-writer', labelKey: 'aiWriter', icon: <><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></> },

@@ -168,6 +168,7 @@ async function initDB() {
             VALUES ('default_ai_provider', 'gemini')
         `);
 
+        await client.query(`
             CREATE TABLE IF NOT EXISTS ai_agents (
                 id VARCHAR(255) PRIMARY KEY,
                 name VARCHAR(255) NOT NULL,

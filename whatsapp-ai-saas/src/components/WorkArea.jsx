@@ -3,6 +3,7 @@ import useAppStore from '../store';
 import { useTranslation } from 'react-i18next';
 
 import '../styles/global.css';
+import { Paperclip, X } from 'lucide-react';
 
 const WorkArea = ({ instances, activeId }) => {
     const [orchestratorStatus, setOrchestratorStatus] = useState('Checking...');
@@ -17,8 +18,22 @@ const WorkArea = ({ instances, activeId }) => {
     const [chatHistory, setChatHistory] = useState([
         { role: 'agent', text: t('copilotWelcomeMsg') }
     ]);
+    const [attachments, setAttachments] = useState([]);
+    const chatFileInputRef = React.useRef(null);
     const [copilotWidth, setCopilotWidth] = useState(320);
     const [isResizing, setIsResizing] = useState(false);
+
+    const handleFileUpload = (e) => {
+        const files = Array.from(e.target.files);
+        files.forEach(file => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setAttachments(prev => [...prev, { name: file.name, data: reader.result, mimeType: file.type }]);
+            };
+            reader.readAsDataURL(file);
+        });
+        if (chatFileInputRef.current) chatFileInputRef.current.value = '';
+    };
 
     // Resizer Logic
     const startResizing = (mouseDownEvent) => {
@@ -106,7 +121,7 @@ const WorkArea = ({ instances, activeId }) => {
         if (!activeWebview) return null;
 
         const contextExtractionScript = `
-            (function() {
+            (async function() {
                 try {
                     const result = { contactName: 'Unknown', messages: [] };
                     
@@ -122,22 +137,42 @@ const WorkArea = ({ instances, activeId }) => {
                     }
                     
                     messageNodes = messageNodes.slice(-15);
+                    let imageCount = 0;
 
-                    messageNodes.forEach(node => {
+                    for (const node of messageNodes) {
                         const textNode = node.querySelector('.selectable-text, .copyable-text');
                         const timeNode = node.querySelector('[data-icon="msg-time"], .copyable-text[data-pre-plain-text]');
+                        const imgNode = node.querySelector('img[src^="blob:"]');
                         
                         let text = textNode ? textNode.textContent : (node.innerText || '').trim();
+                        let mediaData = null;
 
-                        if (text && text.length > 0) {
+                        if (imgNode && imageCount < 2) {
+                            try {
+                                const res = await fetch(imgNode.src);
+                                const blob = await res.blob();
+                                mediaData = await new Promise((resolve, reject) => {
+                                    const reader = new FileReader();
+                                    reader.onloadend = () => resolve(reader.result);
+                                    reader.onerror = reject;
+                                    reader.readAsDataURL(blob);
+                                });
+                                imageCount++;
+                            } catch (e) {
+                                console.error('Error fetching image blob', e);
+                            }
+                        }
+
+                        if ((text && text.length > 0) || mediaData) {
                             const isOut = node.classList?.contains('message-out') || (node.getAttribute('data-id') && node.getAttribute('data-id').includes('true_'));
                             result.messages.push({
                                 sender: isOut ? 'You' : result.contactName,
-                                text: text,
+                                text: text || '[Image]',
+                                media: mediaData,
                                 time: timeNode ? (timeNode.parentElement?.textContent || timeNode.textContent || 'Unknown') : 'Unknown'
                             });
                         }
-                    });
+                    }
                     return result;
                 } catch (e) {
                     return { error: e.toString() };
@@ -224,10 +259,19 @@ const WorkArea = ({ instances, activeId }) => {
             }));
 
             let finalMessage = userMsg;
+            let finalAttachments = [...attachments];
+
             if (ctxDataContext && ctxDataContext.messages && ctxDataContext.messages.length > 0) {
                 let formattedChat = `[Contexte Whatsapp Actuel: Chat with ${ctxDataContext.contactName}]\n`;
                 ctxDataContext.messages.slice(-8).forEach(msg => {
                     formattedChat += `[${msg.time}] ${msg.sender}: ${msg.text}\n`;
+                    if (msg.media) {
+                        finalAttachments.push({
+                            name: 'whatsapp_image.jpg',
+                            data: msg.media,
+                            mimeType: 'image/jpeg'
+                        });
+                    }
                 });
                 finalMessage = `${formattedChat}\n\n[USER]: ${userMsg}`;
             }
@@ -238,6 +282,7 @@ const WorkArea = ({ instances, activeId }) => {
                 body: JSON.stringify({
                     persona: 'copilot',
                     message: finalMessage,
+                    attachments: finalAttachments,
                     messages: historyForAgent,
                     promptFormat: 'text',
                     provider: appSettings.provider,
@@ -248,6 +293,7 @@ const WorkArea = ({ instances, activeId }) => {
             const data = await res.json();
             if (data.status === 'success') {
                 setChatHistory(prev => [...prev, { role: 'agent', text: data.response }]);
+                setAttachments([]);
             } else {
                 setChatHistory(prev => [...prev, { role: 'agent', text: t('errorAgentCommunication') }]);
             }
@@ -490,43 +536,76 @@ const WorkArea = ({ instances, activeId }) => {
                             )}
                         </div>
 
-                        <form onSubmit={handleSendMessage} className="shrink-0" style={{ marginTop: 'auto', paddingTop: '12px', borderTop: '1px solid #e2e8f0', position: 'relative' }}>
-                            <input
-                                type="text"
+                        {/* Attachments Preview */}
+                        {attachments.length > 0 && (
+                            <div style={{ padding: '8px 16px', display: 'flex', gap: 8, flexWrap: 'wrap', borderTop: '1px solid #e2e8f0', background: '#f8fafc' }}>
+                                {attachments.map((att, idx) => (
+                                    <div key={idx} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 6, background: 'white', padding: '4px 8px', borderRadius: 6, border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                                        {att.mimeType?.startsWith('image/') ? (
+                                            <img src={att.data} alt="preview" style={{ width: 24, height: 24, objectFit: 'cover', borderRadius: 4 }} />
+                                        ) : (
+                                            <div style={{ width: 24, height: 24, background: '#f1f5f9', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                <Paperclip size={12} color="#64748b" />
+                                            </div>
+                                        )}
+                                        <span style={{ fontSize: 12, color: '#475569', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{att.name}</span>
+                                        <button type="button" onClick={() => setAttachments(prev => prev.filter((_, i) => i !== idx))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: 2 }}>
+                                            <X size={14} />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        <form onSubmit={handleSendMessage} className="shrink-0" style={{ display: 'flex', alignItems: 'flex-end', gap: 10, background: '#fff', padding: '12px', borderTop: '1px solid #e2e8f0' }}>
+                            {/* Attach */}
+                            <input type="file" ref={chatFileInputRef} className="hidden" accept="image/*,application/pdf,audio/*" multiple onChange={handleFileUpload} style={{ display: 'none' }} />
+                            <button type="button" onClick={() => chatFileInputRef.current?.click()} disabled={isCopilotLoading} style={{ background: '#0b9f84', border: 'none', borderRadius: 8, width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: isCopilotLoading ? 'default' : 'pointer', flexShrink: 0, transition: 'background 0.15s', opacity: isCopilotLoading ? 0.6 : 1 }}>
+                                <Paperclip size={16} color="white" />
+                            </button>
+                            <textarea
                                 value={chatInput}
                                 onChange={(e) => setChatInput(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault();
+                                        handleSendMessage(e);
+                                    }
+                                }}
                                 placeholder={t('askCopilot')}
+                                rows={1}
                                 style={{
-                                    width: '100%',
-                                    padding: '10px 40px 10px 12px',
+                                    flex: 1,
+                                    padding: '8px 12px',
                                     borderRadius: '8px',
                                     border: '1px solid #cbd5e1',
                                     fontSize: '13px',
                                     outline: 'none',
-                                    transition: 'border-color 0.2s'
+                                    transition: 'border-color 0.2s',
+                                    resize: 'none',
+                                    maxHeight: '100px',
+                                    fontFamily: 'inherit'
                                 }}
                             />
                             <button
                                 type="submit"
-                                disabled={!chatInput.trim() || isCopilotLoading}
+                                disabled={(!chatInput.trim() && attachments.length === 0) || isCopilotLoading}
                                 style={{
-                                    position: 'absolute',
-                                    right: '6px',
-                                    top: '16px',
-                                    background: chatInput.trim() ? '#10b981' : '#e2e8f0',
-                                    color: chatInput.trim() ? '#fff' : '#94a3b8',
+                                    background: (chatInput.trim() || attachments.length > 0) && !isCopilotLoading ? '#10b981' : '#e2e8f0',
+                                    color: (chatInput.trim() || attachments.length > 0) && !isCopilotLoading ? '#fff' : '#94a3b8',
                                     border: 'none',
-                                    borderRadius: '6px',
-                                    width: '28px',
-                                    height: '28px',
+                                    borderRadius: '8px',
+                                    width: '36px',
+                                    height: '36px',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    cursor: chatInput.trim() ? 'pointer' : 'default',
-                                    transition: 'background 0.2s'
+                                    cursor: (chatInput.trim() || attachments.length > 0) && !isCopilotLoading ? 'pointer' : 'default',
+                                    transition: 'background 0.2s',
+                                    flexShrink: 0
                                 }}
                             >
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
                             </button>
                         </form>
                     </div>

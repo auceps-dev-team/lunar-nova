@@ -186,7 +186,7 @@ async function generateProposals(chatContext, modelParam) {
     }
 }
 
-async function chatWithAgent(personaId, message, imageParams, promptFormat = 'text', dbAgent = null, chatHistory = null, currentTasks = null) {
+async function chatWithAgent(personaId, message, imageParams, attachments, promptFormat = 'text', dbAgent = null, chatHistory = null, currentTasks = null) {
     if (!message && (!chatHistory || chatHistory.length === 0)) return { response: "I didn't catch that. How can I help?" };
 
     let personaInstruction = "";
@@ -214,33 +214,37 @@ async function chatWithAgent(personaId, message, imageParams, promptFormat = 'te
                 parts: [{ text: msg.text }]
             }));
 
-            if (imageParams && imageParams.data && imageParams.mimeType) {
+            // Attach all media to the last user message
+            if (attachments && attachments.length > 0) {
                 const lastMsg = contents[contents.length - 1];
                 if (lastMsg.role === 'user') {
+                    for (const att of attachments) {
+                        const base64Data = att.data.includes(',') ? att.data.split(',')[1] : att.data;
+                        lastMsg.parts.push({
+                            inlineData: { data: base64Data, mimeType: att.mimeType }
+                        });
+                    }
+                }
+            } else if (imageParams && imageParams.data && imageParams.mimeType) {
+                const lastMsg = contents[contents.length - 1];
+                if (lastMsg.role === 'user') {
+                    const base64Data = imageParams.data.includes(',') ? imageParams.data.split(',')[1] : imageParams.data;
                     lastMsg.parts.push({
-                        inlineData: { data: imageParams.data, mimeType: imageParams.mimeType }
+                        inlineData: { data: base64Data, mimeType: imageParams.mimeType }
                     });
                 }
             }
         } else {
-            if (imageParams && imageParams.data && imageParams.mimeType) {
-                contents = [
-                    {
-                        role: 'user',
-                        parts: [
-                            { text: message },
-                            {
-                                inlineData: {
-                                    data: imageParams.data,
-                                    mimeType: imageParams.mimeType
-                                }
-                            }
-                        ]
-                    }
-                ];
-            } else {
-                contents = message;
+            const parts = [{ text: message }];
+            if (attachments && attachments.length > 0) {
+                for (const att of attachments) {
+                    parts.push({ inlineData: { data: att.data, mimeType: att.mimeType } });
+                }
+            } else if (imageParams && imageParams.data && imageParams.mimeType) {
+                parts.push({ inlineData: { data: imageParams.data, mimeType: imageParams.mimeType } });
             }
+            
+            contents = [{ role: 'user', parts }];
         }
 
         const config = {

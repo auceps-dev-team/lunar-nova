@@ -38,8 +38,9 @@ async function getProviderConfig(personaId = null) {
     return { provider, dbAgent };
 }
 
-async function generateProposals(chatContext, modelParam) {
-    const { provider } = await getProviderConfig(null);
+async function generateProposals(chatContext, modelParam, providerOverride = null) {
+    const { provider: defaultProvider } = await getProviderConfig(null);
+    const provider = providerOverride || defaultProvider;
 
     if (provider === 'openrouter') {
         const apiKey = await db.getSetting('openrouter_api_key', '');
@@ -50,15 +51,63 @@ async function generateProposals(chatContext, modelParam) {
     } else if (provider === 'openai') {
         const apiKey = await resolveNvidiaKey(modelParam);
         const nvidiaModels = getNvidiaModels();
-        const baseURL = await db.getSetting('openai_base_url', nvidiaModels.NVIDIA_BASE_URL);
+        let baseURL = await db.getSetting('openai_base_url', nvidiaModels.NVIDIA_BASE_URL);
+        const modelDef = nvidiaModels.getModelDef(modelParam);
+        if (modelDef && modelDef.provider === 'together') {
+            baseURL = 'https://api.together.xyz/v1';
+        }
         return await openaiService.generateProposals(chatContext, modelParam, apiKey, baseURL);
     } else {
         return await geminiService.generateProposals(chatContext, modelParam);
     }
 }
 
-async function chatWithAgent(personaId, message, imageParams, promptFormat, messages = null, currentTasks = null, isRealTime = false, modelOverride = null) {
-    const { provider, dbAgent } = await getProviderConfig(personaId);
+async function chatWithAgent(personaId, message, imageParams, attachments, promptFormat, messages = null, currentTasks = null, isRealTime = false, modelOverride = null, providerOverride = null) {
+    const { provider: dbProvider, dbAgent } = await getProviderConfig(personaId);
+    let provider = providerOverride || dbProvider;
+
+    // Process attachments
+    let processedMessage = message || '';
+    let processedImageParams = imageParams;
+    let hasAudio = false;
+
+    if (attachments && attachments.length > 0) {
+        let pdfText = '';
+        const pdfParse = require('pdf-parse');
+        
+        for (const att of attachments) {
+            if (att.mimeType.startsWith('image/')) {
+                if (!processedImageParams) {
+                    const base64Data = att.data.includes(',') ? att.data.split(',')[1] : att.data;
+                    processedImageParams = { data: base64Data, mimeType: att.mimeType };
+                }
+            } else if (att.mimeType === 'application/pdf') {
+                try {
+                    const base64Data = att.data.includes(',') ? att.data.split(',')[1] : att.data;
+                    const buffer = Buffer.from(base64Data, 'base64');
+                    const pdfData = await pdfParse(buffer);
+                    pdfText += `\n\n--- Content of ${att.fileName || 'document.pdf'} ---\n${pdfData.text}\n`;
+                } catch (e) {
+                    console.error('PDF Parse Error:', e);
+                }
+            } else if (att.mimeType.startsWith('audio/')) {
+                hasAudio = true;
+            }
+        }
+
+        // Only append pdfText if not using Gemini, since Gemini reads PDFs natively when passed as attachments
+        // But for simplicity, we can just append it for all or conditionally.
+        // Wait, if it's Gemini, we pass the attachments array directly to Gemini service.
+        if (pdfText && provider !== 'gemini') {
+            processedMessage += pdfText;
+        }
+
+        // Force fallback to Gemini if audio is present
+        if (hasAudio && provider === 'openai') {
+            provider = 'gemini'; 
+            console.log('[aiController] Audio attachment detected -> falling back to Gemini');
+        }
+    }
 
     if (provider === 'openrouter') {
         const apiKey = await db.getSetting('openrouter_api_key', '');
@@ -72,7 +121,7 @@ async function chatWithAgent(personaId, message, imageParams, promptFormat, mess
                 effectiveAgent = { model_override: modelOverride, system_instruction: p.systemInstruction, response_format: orchestrator.requiresJsonFormat(personaId) ? 'json' : promptFormat };
             }
         }
-        return await openrouterService.chatWithAgent(personaId, message, imageParams, promptFormat, apiKey, effectiveAgent, messages, currentTasks, isRealTime);
+        return await openrouterService.chatWithAgent(personaId, processedMessage, processedImageParams, promptFormat, apiKey, effectiveAgent, messages, currentTasks, isRealTime);
     } else if (provider === 'ollama') {
         const apiKey = await db.getSetting('ollama_api_key', '');
         let effectiveAgent = dbAgent;
@@ -85,14 +134,14 @@ async function chatWithAgent(personaId, message, imageParams, promptFormat, mess
                 effectiveAgent = { model_override: modelOverride, system_instruction: p.systemInstruction, response_format: orchestrator.requiresJsonFormat(personaId) ? 'json' : promptFormat };
             }
         }
-        return await ollamaService.chatWithAgent(personaId, message, imageParams, promptFormat, effectiveAgent, apiKey, messages, currentTasks, isRealTime);
+        return await ollamaService.chatWithAgent(personaId, processedMessage, processedImageParams, promptFormat, effectiveAgent, apiKey, messages, currentTasks, isRealTime);
     } else if (provider === 'openai') {
         let selectedModel = modelOverride || dbAgent?.model_override || await db.getSetting('default_chat_model', '');
         const nvidiaModels = getNvidiaModels();
         
         // Auto-select a vision model if the user provided an image but the selected model is text-only
         let def = nvidiaModels.getModelDef(selectedModel);
-        if (imageParams && imageParams.data) {
+        if (processedImageParams && processedImageParams.data) {
             if (!def || def.type !== 'vision') {
                 const visionModel = nvidiaModels.getDefaultVisionModel();
                 if (visionModel) {
@@ -127,7 +176,7 @@ async function chatWithAgent(personaId, message, imageParams, promptFormat, mess
                 }
             }
         }
-        return await openaiService.chatWithAgent(personaId, message, imageParams, promptFormat, apiKey, baseURL, effectiveAgent);
+        return await openaiService.chatWithAgent(personaId, processedMessage, processedImageParams, promptFormat, apiKey, baseURL, effectiveAgent);
     } else {
         let effectiveAgent = dbAgent;
         if (modelOverride) {
@@ -143,41 +192,51 @@ async function chatWithAgent(personaId, message, imageParams, promptFormat, mess
                 };
             }
         }
-        return await geminiService.chatWithAgent(personaId, message, imageParams, promptFormat, effectiveAgent, messages, currentTasks, isRealTime);
+        return await geminiService.chatWithAgent(personaId, processedMessage, processedImageParams, attachments, promptFormat, effectiveAgent, messages, currentTasks, isRealTime);
     }
 }
 
 async function generateImage(prompt, aspectRatio, imageParams, editMode, mode, providerOverride = null, imageModelOverride = null) {
-    // Priorité pour la génération d'images :
-    //   1. valeur explicite du body (providerOverride)
-    //   2. default_image_provider  (setting dédié à la génération)
-    //   3. default_ai_provider     (fallback global)
+    // ── Logique principale ──
+    // Si une image source est fournie (image-to-image / édition), c'est TOUJOURS Gemini
+    // Les modèles NVIDIA/Together ne supportent que le text-to-image pur
+    const isEditMode = !!(imageParams && imageParams.data);
+    
+    if (isEditMode) {
+        console.log('[aiController] Image-to-Image mode detected → routing to Gemini');
+        const geminiModel = imageModelOverride || 'gemini-3.1-flash-image-preview';
+        return await geminiService.generateImage(prompt, aspectRatio, imageParams, editMode, mode, geminiModel);
+    }
+    
+    // ── Text-to-Image pur ──
+    // Priorité : providerOverride > default_image_provider > default_ai_provider
     const imageProviderSetting = await db.getSetting('default_image_provider', '');
     const globalProvider = await db.getSetting('default_ai_provider', 'gemini');
     const provider = providerOverride || imageProviderSetting || globalProvider;
-    const imageModel = imageModelOverride || await db.getSetting('default_image_model', '');
+    
+    let imageModel = imageModelOverride;
+    if (!imageModel) {
+        if (provider === 'openai') {
+            imageModel = await db.getSetting('default_image_generate_model', '');
+        }
+        if (!imageModel) {
+            imageModel = await db.getSetting('default_image_model', '');
+        }
+    }
 
     if (provider === 'openrouter') {
         return { error: "Erreur : La génération d'images via OpenRouter n'est pas supportée. Utilisez Gemini ou NVIDIA NIM." };
     } else if (provider === 'ollama') {
         return { error: "Erreur : Ollama local ne supporte pas la génération d'images dans cette version." };
     } else if (provider === 'openai') {
-        // Fallback intelligent vers Gemini si une image source (Virtual Try-on / Édition) est fournie.
-        // Qwen-Image via l'API Together AI utilisée ici est uniquement Text-to-Image.
-        if (imageParams && imageParams.data) {
-            console.warn('[aiController] Image-to-Image requested but Qwen/OpenAI currently supports only Text-to-Image. Falling back to Gemini Image Editing.');
-            return await geminiService.generateImage(prompt, aspectRatio, imageParams, editMode, mode, 'gemini-3.1-flash-image-preview');
-        }
-
-        // Vérifier que le modèle image sélectionné est bien un modèle vision/image-edit/image-generate
+        // Text-to-Image via NVIDIA/Together AI
         const modelDef = getNvidiaModels().getModelDef(imageModel);
-        console.log('[generateImage] imageModel=', imageModel);
-        console.log('[generateImage] modelDef=', modelDef);
+        console.log('[generateImage] Text-to-Image | imageModel=', imageModel);
         if (!modelDef || modelDef.type === 'text' || modelDef.type === 'vision') {
             return { error: `Le modèle sélectionné (${modelDef ? modelDef.name : imageModel}) ne supporte pas la génération d'images.` };
         }
 
-        // ── Résolution de clé et baseURL pour Together AI ou NVIDIA ─────────────────
+        // Résolution de clé et baseURL pour Together AI ou NVIDIA
         let apiKey;
         let baseURL = await db.getSetting('openai_base_url', getNvidiaModels().NVIDIA_BASE_URL);
         
@@ -192,12 +251,11 @@ async function generateImage(prompt, aspectRatio, imageParams, editMode, mode, p
 
         return await openaiService.analyzeOrEditImage(prompt, imageParams, apiKey, baseURL, imageModel);
     } else {
-        if (imageModel && imageModel.startsWith('qwen/')) {
-            return { error: `Le modèle ${imageModel} nécessite le fournisseur OpenAI/NVIDIA (default_ai_provider=openai). Vérifiez vos paramètres.` };
-        }
+        // Gemini text-to-image
         return await geminiService.generateImage(prompt, aspectRatio, imageParams, editMode, mode, imageModel);
     }
 }
+
 
 
 
@@ -215,9 +273,9 @@ async function listModels(providerOverride = null, apiKeyOverride = null) {
         // (évite une requête API qui nécessiterait une clé NVIDIA valide)
         const nm = getNvidiaModels();
         const chatModels = nm.getModelsByType('text').concat(nm.getModelsByType('vision'))
-            .map(m => ({ id: m.id, name: m.name }));
+            .map(m => ({ id: m.id, name: m.name, type: m.type }));
         const imageModels = nm.getModelsByType('image-edit').concat(nm.getModelsByType('image-generate'))
-            .map(m => ({ id: m.id, name: m.name }));
+            .map(m => ({ id: m.id, name: m.name, type: m.type }));
         return { chat: chatModels, image: imageModels };
     } else {
         return await geminiService.listModels();

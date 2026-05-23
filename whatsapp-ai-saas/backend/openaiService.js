@@ -68,6 +68,11 @@ async function generateImageWithQwen(prompt, apiKey, options = {}) {
         disable_safety_checker: true,   // Nécessaire pour les prompts fashion/editorial
     };
 
+    if (options.imageParams && options.imageParams.data) {
+        payload.image_url = `data:${options.imageParams.mimeType || 'image/jpeg'};base64,${options.imageParams.data}`;
+        payload.mode = "image-to-image";
+    }
+
     console.log('[Qwen→Together] POST', endpoint, '| model:', payload.model, '| steps:', steps);
     console.log('[Qwen→Together] Prompt (sanitized, first 200 chars):', safePrompt?.slice(0, 200));
 
@@ -233,7 +238,9 @@ async function chatWithAgent(persona, message, imageParams, promptFormat, apiKey
         
         let errorMsg = error.message;
         if (error.response && error.response.data) {
-            if (error.response.data.detail) {
+            if (error.response.data.error && error.response.data.error.message) {
+                errorMsg = error.response.data.error.message;
+            } else if (error.response.data.detail) {
                 errorMsg = error.response.data.detail;
             } else if (typeof error.response.data === 'string') {
                 errorMsg = error.response.data;
@@ -264,6 +271,7 @@ async function analyzeOrEditImage(prompt, imageParams, apiKey, baseURL, modelId)
                 n: 1,
                 steps: 20,
                 disable_safety_checker: false,
+                imageParams: imageParams,
             });
 
             const payload = qwenResponse;
@@ -357,13 +365,20 @@ async function analyzeOrEditImage(prompt, imageParams, apiKey, baseURL, modelId)
                 }
             } else {
                 // Standard OpenAI compatibility
-                const response = await openai.images.generate({
+                const reqPayload = {
                     model: modelId,
                     prompt: prompt || "Generate a fashion photo",
                     n: 1,
                     size: "1024x1024",
                     response_format: "b64_json"
-                });
+                };
+
+                if (imageParams && imageParams.data) {
+                    reqPayload.image_url = `data:${imageParams.mimeType || 'image/jpeg'};base64,${imageParams.data}`;
+                    reqPayload.mode = "image-to-image";
+                }
+
+                const response = await openai.images.generate(reqPayload);
                 return {
                     success: true,
                     imageBytes: response.data[0].b64_json
@@ -405,7 +420,9 @@ async function analyzeOrEditImage(prompt, imageParams, apiKey, baseURL, modelId)
         
         let errorMsg = error.message;
         if (error.response && error.response.data) {
-            if (error.response.data.detail) {
+            if (error.response.data.error && error.response.data.error.message) {
+                errorMsg = error.response.data.error.message;
+            } else if (error.response.data.detail) {
                 errorMsg = error.response.data.detail;
             } else if (typeof error.response.data === 'string') {
                 errorMsg = error.response.data;
@@ -422,14 +439,17 @@ async function listModels(apiKey, baseURL) {
     const openai = getClient(apiKey, baseURL);
 
     // Construire les listes à partir du catalogue centralisé
-    const catalogChatModels = nvidiaModels.getModelsByType('text').map(m => ({
+    const catalogChatModels = [
+        ...nvidiaModels.getModelsByType('text'),
+        ...nvidiaModels.getModelsByType('vision')
+    ].map(m => ({
         id: m.id,
         name: m.name,
         type: m.type
     }));
 
     const catalogImageModels = [
-        ...nvidiaModels.getModelsByType('vision'),
+        ...nvidiaModels.getModelsByType('image-generate'),
         ...nvidiaModels.getModelsByType('image-edit'),
     ].map(m => ({
         id: m.id,
@@ -447,7 +467,7 @@ async function listModels(apiKey, baseURL) {
 
         if (response.data && Array.isArray(response.data)) {
             response.data.forEach(m => {
-                // Ignorer les modèles vision/image-edit qui sont dans catalogImageModels
+                // Ignorer les modèles vision/image-edit/image-generate qui sont dans les listes spécifiques
                 const inCatalog = nvidiaModels.getModelDef(m.id);
                 if (inCatalog && inCatalog.type !== 'text') return;
                 // Éviter les doublons avec les modèles prioritaires

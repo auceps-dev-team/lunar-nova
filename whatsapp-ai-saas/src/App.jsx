@@ -23,6 +23,7 @@ import AiChat from './pages/AiChat';
 
 import AiWriter from './pages/AiWriter';
 import MyDocuments from './pages/MyDocuments';
+import ImageGeneration from './pages/ImageGeneration';
 import { ImageWorkspace } from './components/image-editor/ImageWorkspace';
 
 // WhatsApp Plugin Pages (Phase 13)
@@ -288,6 +289,7 @@ function AppContent() {
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/fashion/photoshoot" element={<PhotoShoot activeId={activeId} />} />
                   <Route path="/fashion/edit" element={<ImageWorkspace />} />
+                  <Route path="/fashion/image-generation" element={<ImageGeneration />} />
 
                   {/* WhatsApp Pages */}
                   <Route path="/wa/contact-lists" element={<ContactLists />} />

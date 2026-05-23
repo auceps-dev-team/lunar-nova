@@ -1,9 +1,15 @@
-WaCopilote v1.32.2 - Support des Modèles Vision et Génération Image (NVIDIA & Together AI)
+WaCopilote v1.33.0 - Support des Modèles Vision, Routage Dynamique et Génération Image (NVIDIA & Together AI)
 
 === Intégration Modèles Vision et Génération ===
 
 feat(ai): Extension du catalogue et routage dynamique pour l'analyse visuelle et la génération d'images
 
 - nvidiaModels.js: Ajout de 4 modèles NVIDIA (Ising Calibration, Qwen 3.5 397B, Nemotron Vision 12B/8B). Ajout de 2 modèles Together AI (Llama 3.2 11B Vision Instruct, Stable Diffusion 3 Medium).
-- aiController.js: Mise à jour du routage dans `generateImage` pour prendre en compte le `provider` configuré au niveau de la définition du modèle, permettant d'adresser dynamiquement l'URL et la clé API Together AI pour les modèles compatibles.
-- task.md: Mise à jour du suivi de l'intégration des modèles Vision et de la configuration Stable Diffusion.
+- aiController.js: Mise à jour du routage dans generateImage pour adresser dynamiquement l'URL et la clé API Together AI (pour SD3).
+- aiController.js & server.js: Mise à jour du routage dans generateProposals pour prendre en compte le providerOverride (NVIDIA, OpenAI, etc.).
+- aiController.js & geminiService.js: Nettoyage des chaînes Base64 (suppression de l'entête data:image/...) pour assurer la stabilité des appels vers les modèles Vision.
+- WorkArea.jsx: 
+  * Refonte du composant askCopilot pour intégrer un outil de gestion des pièces jointes interactif (Images, PDF, Audio).
+  * Refonte de l'extraction de l'analyse WhatsApp pour télécharger dynamiquement et convertir en Base64 les 2 dernières images affichées dans la Webview (support multimodal pour les modèles Vision).
+- package.json: Bump de la version à v1.33.0.
+- task.md & walkthrough.md: Mise à jour du suivi de l'intégration des modèles Vision.

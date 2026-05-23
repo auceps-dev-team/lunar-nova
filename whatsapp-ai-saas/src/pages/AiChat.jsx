@@ -89,7 +89,7 @@ export default function AiChat() {
     const [switchSearch, setSwitchSearch] = useState('');
     const [isRealTime, setIsRealTime] = useState(false);
     const [showSidebar, setShowSidebar] = useState(true);
-    const [attachedImage, setAttachedImage] = useState(null);
+    const [attachments, setAttachments] = useState([]);
     const [sessionSearchQuery, setSessionSearchQuery] = useState('');
 
     const chatEndRef = useRef(null);
@@ -97,15 +97,17 @@ export default function AiChat() {
     const switchRef = useRef(null);
     const chatFileInputRef = useRef(null);
 
-    const handleChatImageUpload = (e) => {
-        const file = e.target.files[0];
-        if (file) {
+    const handleFileUpload = (e) => {
+        const files = Array.from(e.target.files);
+        files.forEach(file => {
             const reader = new FileReader();
             reader.onloadend = () => {
-                setAttachedImage({ name: file.name, data: reader.result, mimeType: file.type });
+                setAttachments(prev => [...prev, { name: file.name, data: reader.result, mimeType: file.type }]);
             };
             reader.readAsDataURL(file);
-        }
+        });
+        // Clear input to allow uploading the same file again if removed
+        if (chatFileInputRef.current) chatFileInputRef.current.value = '';
     };
 
     // ── Charger les agents custom depuis la DB ────────────────────────────
@@ -232,19 +234,23 @@ export default function AiChat() {
     // ── Envoyer un message ────────────────────────────────────────────────
     const sendMessage = async (e) => {
         e?.preventDefault();
-        if ((!input.trim() && !attachedImage) || !selectedAgent || isLoading) return;
+        if ((!input.trim() && attachments.length === 0) || !selectedAgent || isLoading) return;
 
-        const userMsg = { role: 'user', text: input.trim() || t('imageSent'), ts: Date.now(), image: attachedImage };
+        const userMsg = { role: 'user', text: input.trim() || t('imageSent'), ts: Date.now(), attachments: [...attachments] };
         const currentHistory = conversations[selectedAgent.id] || [];
         const fullHistory = [...currentHistory, userMsg];
 
         setConversations(prev => ({ ...prev, [selectedAgent.id]: fullHistory }));
         setInput('');
-        const currentImageParams = attachedImage ? {
-            data: attachedImage.data.split(',')[1],
-            mimeType: attachedImage.mimeType
-        } : null;
-        setAttachedImage(null);
+        
+        // format attachments for backend
+        const currentAttachments = attachments.map(att => ({
+            data: att.data.split(',')[1], // remove data:image/png;base64,
+            mimeType: att.mimeType,
+            fileName: att.name
+        }));
+        
+        setAttachments([]);
         setIsLoading(true);
 
         try {
@@ -252,7 +258,7 @@ export default function AiChat() {
                 persona: selectedAgent.id,
                 message: userMsg.text,
                 messages: fullHistory.map(m => ({ role: m.role, text: m.text })), // clean history for backend
-                imageParams: currentImageParams,
+                attachments: currentAttachments,
                 promptFormat: selectedAgent.response_format || 'text',
                 provider: useAppStore.getState().appSettings?.provider,
                 model: useAppStore.getState().appSettings?.model
@@ -486,15 +492,20 @@ export default function AiChat() {
                                 </div>
                             )}
                             <div style={{ textAlign: 'left' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                    <span style={{ fontWeight: 700, fontSize: 15, color: '#0f172a' }}>{selectedAgent?.name}</span>
-                                    <span style={{ fontSize: 10, fontWeight: 'bold', padding: '2px 6px', borderRadius: 12, background: '#e0e7ff', color: '#4338ca', textTransform: 'uppercase' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, maxWidth: '100%' }}>
+                                    <span style={{ fontWeight: 700, fontSize: 15, color: '#0f172a', whiteSpace: 'nowrap' }}>{selectedAgent?.name}</span>
+                                    <span 
+                                        style={{ fontSize: 10, fontWeight: 'bold', padding: '2px 6px', borderRadius: 12, background: '#e0e7ff', color: '#4338ca', textTransform: 'uppercase', maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'inline-block' }}
+                                        title={`${selectedAgent?.provider_override || appSettings.provider || 'gemini'} ${selectedAgent?.model_override ? ` • ${selectedAgent.model_override}` : (appSettings.model ? ` • ${appSettings.model}` : '')}`}
+                                    >
                                         {selectedAgent?.provider_override || appSettings.provider || 'gemini'} 
                                         {selectedAgent?.model_override ? ` • ${selectedAgent.model_override}` : (appSettings.model ? ` • ${appSettings.model}` : '')}
                                     </span>
-                                    <svg style={{ color: '#94a3b8', transition: 'transform 0.2s', transform: isSwitchOpen ? 'rotate(180deg)' : 'none' }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9" /></svg>
+                                    <svg style={{ color: '#94a3b8', transition: 'transform 0.2s', transform: isSwitchOpen ? 'rotate(180deg)' : 'none', flexShrink: 0 }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9" /></svg>
                                 </div>
-                                <span style={{ fontSize: 12, color: '#94a3b8' }}>{selectedAgent?.description?.slice(0, 40)}{selectedAgent?.description?.length > 40 ? '…' : ''}</span>
+                                <span style={{ fontSize: 12, color: '#94a3b8', display: 'block', maxWidth: '300px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                    {selectedAgent?.description}
+                                </span>
                             </div>
                         </button>
 
@@ -565,6 +576,38 @@ export default function AiChat() {
 
                 {/* Messages */}
                 <div style={{ flex: 1, overflowY: 'auto', padding: '24px 32px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    {currentMessages.length === 0 && selectedAgent && (
+                        <div className="group" style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'flex-end', gap: 10, marginTop: 'auto', marginBottom: 'auto' }}>
+                            {agentColor && (
+                                <div style={{ width: 30, height: 30, borderRadius: '50%', background: agentColor.bg, color: agentColor.text, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, flexShrink: 0 }}>
+                                    {getInitials(selectedAgent.name)}
+                                </div>
+                            )}
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', maxWidth: '70%', position: 'relative' }}>
+                                <div style={{
+                                    padding: '16px 20px',
+                                    borderRadius: '18px 18px 18px 4px',
+                                    background: '#fff',
+                                    color: '#0f172a',
+                                    fontSize: 14,
+                                    lineHeight: 1.6,
+                                    boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+                                    border: '1px solid #e2e8f0',
+                                }}>
+                                    <p style={{ margin: '0 0 8px 0', fontSize: 15 }}>
+                                        Bonjour, je suis <strong style={{ color: agentColor?.text || '#0f172a' }}>{selectedAgent.name}</strong>. 👋
+                                    </p>
+                                    <p style={{ margin: '0 0 12px 0', color: '#475569' }}>
+                                        {selectedAgent.description}
+                                    </p>
+                                    <p style={{ margin: 0, fontWeight: 500, color: '#0b9f84' }}>
+                                        Comment puis-je vous aider aujourd'hui ?
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {currentMessages.map((msg, i) => (
                         <div key={i} className="group" style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start', alignItems: 'flex-end', gap: 10 }}>
                             {msg.role === 'agent' && agentColor && (
@@ -573,9 +616,20 @@ export default function AiChat() {
                                 </div>
                             )}
                             <div style={{ display: 'flex', flexDirection: 'column', alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '70%', position: 'relative' }}>
-                                {msg.image && (
-                                    <div style={{ marginBottom: 8, borderRadius: 12, overflow: 'hidden', border: '2px solid #0b9f84', maxWidth: 200 }}>
-                                        <img src={msg.image.data} alt="attachment" style={{ width: '100%', display: 'block' }} />
+                                {msg.attachments && msg.attachments.length > 0 && (
+                                    <div style={{ marginBottom: 8, display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
+                                        {msg.attachments.map((att, idx) => (
+                                            <div key={idx} style={{ borderRadius: 12, overflow: 'hidden', border: '2px solid #0b9f84', maxWidth: 200, background: '#f1f5f9' }}>
+                                                {att.mimeType.startsWith('image/') ? (
+                                                    <img src={att.data} alt="attachment" style={{ width: '100%', display: 'block' }} />
+                                                ) : (
+                                                    <div style={{ padding: '8px 12px', fontSize: 12, color: '#475569', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                        <Paperclip size={14} />
+                                                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 150 }}>{att.name}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
                                     </div>
                                 )}
                                 <div style={{
@@ -634,18 +688,26 @@ export default function AiChat() {
 
                 {/* Input zone */}
                 <div style={{ background: '#fff', borderTop: '1px solid #f1f5f9', padding: '16px 24px', flexShrink: 0 }}>
-                    {attachedImage && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, padding: '8px 12px', background: '#f1f5f9', borderRadius: 8, width: 'fit-content' }}>
-                            <img src={attachedImage.data} alt="preview" style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 4 }} />
-                            <span style={{ fontSize: 13, color: '#475569', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{attachedImage.name}</span>
-                            <button type="button" onClick={() => setAttachedImage(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: 4 }}>
-                                <X size={14} />
-                            </button>
+                    {attachments.length > 0 && (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 10 }}>
+                            {attachments.map((att, idx) => (
+                                <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: '#f1f5f9', borderRadius: 8, width: 'fit-content' }}>
+                                    {att.mimeType.startsWith('image/') ? (
+                                        <img src={att.data} alt="preview" style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 4 }} />
+                                    ) : (
+                                        <Paperclip size={20} color="#64748b" />
+                                    )}
+                                    <span style={{ fontSize: 13, color: '#475569', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{att.name}</span>
+                                    <button type="button" onClick={() => setAttachments(prev => prev.filter((_, i) => i !== idx))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: 4 }}>
+                                        <X size={14} />
+                                    </button>
+                                </div>
+                            ))}
                         </div>
                     )}
                     <form onSubmit={sendMessage} style={{ display: 'flex', alignItems: 'flex-end', gap: 10, background: '#f8fafc', borderRadius: 14, padding: '10px 12px', border: '1px solid #e2e8f0' }}>
                         {/* Attach */}
-                        <input type="file" ref={chatFileInputRef} className="hidden" accept="image/*" onChange={handleChatImageUpload} style={{ display: 'none' }} />
+                        <input type="file" ref={chatFileInputRef} className="hidden" accept="image/*,application/pdf,audio/*" multiple onChange={handleFileUpload} style={{ display: 'none' }} />
                         <button type="button" onClick={() => chatFileInputRef.current?.click()} style={{ background: '#0b9f84', border: 'none', borderRadius: 8, width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, transition: 'background 0.15s' }}>
                             <Paperclip size={16} color="white" />
                         </button>

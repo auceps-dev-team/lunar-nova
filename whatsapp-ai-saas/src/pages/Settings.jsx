@@ -26,8 +26,13 @@ const Settings = () => {
         nvidia_key_llama_vision: '',
         nvidia_key_qwen_image: '',
         nvidia_key_qwen_edit: '',
+        nvidia_key_ising: '',
+        nvidia_key_qwen: '',
+        nvidia_key_nemotron_v2: '',
+        nvidia_key_nemotron_vl: '',
+        together_api_key: '',
     });
-    const [showNvidiaPerModelKeys, setShowNvidiaPerModelKeys] = useState(false);
+    const [showNvidiaPerModelKeys, setShowNvidiaPerModelKeys] = useState(true);
     const aiQuota = useAppStore(state => state.aiQuota);
     const fetchAiQuota = useAppStore(state => state.fetchAiQuota);
 
@@ -379,6 +384,23 @@ const Settings = () => {
                                 </div>
                             </div>
 
+                            <div className="flex items-center justify-between">
+                                <div className="w-1/2">
+                                    <p className="text-sm font-medium text-gray-800 dark:text-gray-100">Together AI API Key</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Requis pour Stable Diffusion & Llama Vision (Together)</p>
+                                </div>
+                                <div className="w-1/2 flex justify-end">
+                                    <input
+                                        type="password"
+                                        placeholder={t('placeholderApiKey')}
+                                        value={backendSettings.together_api_key || ''}
+                                        onChange={(e) => setBackendSettings(prev => ({ ...prev, together_api_key: e.target.value }))}
+                                        onBlur={() => fetchModels()}
+                                        className="border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none bg-white dark:bg-gray-700 dark:text-white w-full max-w-[300px]"
+                                    />
+                                </div>
+                            </div>
+
                             {/* Per-model keys collapsible */}
                             <div className="border-t border-gray-200 dark:border-gray-600 pt-3">
                                 <button
@@ -392,12 +414,20 @@ const Settings = () => {
                                 {showNvidiaPerModelKeys && (
                                     <div className="mt-3 flex flex-col gap-3">
                                         {[
+                                            { key: 'nvidia_key_nemotron_70b', label: 'Nemotron 70B Instruct', placeholder: 'nvapi-...' },
+                                            { key: 'nvidia_key_gemma2_9b', label: 'Gemma 2 9B Instruct', placeholder: 'nvapi-...' },
+                                            { key: 'nvidia_key_llama3_1_8b', label: 'Llama 3.1 8B Instruct', placeholder: 'nvapi-...' },
+                                            { key: 'nvidia_key_mixtral_8x7b', label: 'Mixtral 8x7B Instruct', placeholder: 'nvapi-...' },
+                                            { key: 'nvidia_key_phi3_mini', label: 'Phi-3 Mini 128k', placeholder: 'nvapi-...' },
                                             { key: 'nvidia_key_llama', label: 'meta/llama-4-maverick-17b-128e-instruct', placeholder: 'nvapi-...' },
                                             { key: 'nvidia_key_gemma', label: 'google/gemma-3n-e2b-it', placeholder: 'nvapi-...' },
                                             { key: 'nvidia_key_glm', label: 'z-ai/glm-4.7', placeholder: 'nvapi-...' },
+                                            { key: 'nvidia_key_ising', label: 'nvidia/ising-calibration-1-35b-a3b', placeholder: 'nvapi-...' },
+                                            { key: 'nvidia_key_qwen', label: 'qwen/qwen3.5-397b-a17b', placeholder: 'nvapi-...' },
                                             { key: 'nvidia_key_llama_vision', label: 'Llama 3.2 90B Vision', placeholder: 'nvapi-...' },
+                                            { key: 'nvidia_key_nemotron_v2', label: 'Nemotron Nano 12B Vision', placeholder: 'nvapi-...' },
+                                            { key: 'nvidia_key_nemotron_vl', label: 'Llama 3.1 Nemotron Vision 8B', placeholder: 'nvapi-...' },
                                             { key: 'nvidia_key_qwen_image', label: 'Qwen Image', placeholder: 'nvapi-...' },
-                                            { key: 'nvidia_key_qwen_edit', label: 'Qwen Image Edit', placeholder: 'nvapi-...' },
                                         ].map(({ key, label, placeholder }) => (
                                             <div key={key} className="flex items-center justify-between gap-4">
                                                 <p className="text-xs font-mono text-gray-600 dark:text-gray-300 w-1/2 truncate" title={label}>{label}</p>
@@ -416,42 +446,116 @@ const Settings = () => {
                         </div>
                     )}
 
-                    <div className="flex items-center justify-between mb-6">
-                        <div>
-                            <p className="text-base font-medium text-gray-800 dark:text-gray-100">{t('llmModel')}</p>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">{t('llmModelDesc')}</p>
-                        </div>
-                        <CustomSelect
-                            value={settings.model}
-                            onChange={(v) => handleChange('model', v)}
-                            width="w-72"
-                            searchable={availableChatModels.length > 4}
-                            disabled={isLoadingModels}
-                            panelWidth="w-72"
-                            placeholder={isLoadingModels ? t('loading') : t('noModelAvailable')}
-                            options={availableChatModels.map(m => ({ value: m.id, label: m.name }))}
-                        />
-                    </div>
+                    {backendSettings.default_ai_provider === 'openai' ? (
+                        <>
+                            <div className="flex items-center justify-between mb-6">
+                                <div>
+                                    <p className="text-base font-medium text-gray-800 dark:text-gray-100">{t('llmModel')} (Text)</p>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">Pour les conversations textuelles</p>
+                                </div>
+                                <CustomSelect
+                                    value={settings.model}
+                                    onChange={(v) => handleChange('model', v)}
+                                    width="w-72"
+                                    searchable={availableChatModels.filter(m => m.type === 'text').length > 4}
+                                    disabled={isLoadingModels}
+                                    panelWidth="w-72"
+                                    placeholder={isLoadingModels ? t('loading') : t('noModelAvailable')}
+                                    options={availableChatModels.filter(m => m.type === 'text').map(m => ({ value: m.id, label: m.name }))}
+                                />
+                            </div>
 
-                    <div className="flex items-center justify-between mb-6">
-                        <div>
-                            <p className="text-base font-medium text-gray-800 dark:text-gray-100">{t('imageGenerationModel')}</p>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">{t('selectModelForVisualCreation')}</p>
-                            <p className="text-xs text-primary/80 mt-1">
-                                Vision ·  Image-Edit &nbsp;—&nbsp; {t('appliedToAllImagePages')}
-                            </p>
-                        </div>
-                        <CustomSelect
-                            value={backendSettings.default_image_model || ''}
-                            onChange={(v) => setBackendSettings(prev => ({ ...prev, default_image_model: v }))}
-                            width="w-72"
-                            searchable={availableImageModels.length > 4}
-                            disabled={isLoadingModels}
-                            panelWidth="w-72"
-                            placeholder={isLoadingModels ? t('loading') : t('imageGenerationNotSupported')}
-                            options={availableImageModels.map(m => ({ value: m.id, label: m.name }))}
-                        />
-                    </div>
+                            <div className="flex items-center justify-between mb-6">
+                                <div>
+                                    <p className="text-base font-medium text-gray-800 dark:text-gray-100">Modèle de Vision (Analyse)</p>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">Pour analyser les images</p>
+                                </div>
+                                <CustomSelect
+                                    value={backendSettings.default_vision_model || ''}
+                                    onChange={(v) => setBackendSettings(prev => ({ ...prev, default_vision_model: v }))}
+                                    width="w-72"
+                                    searchable={availableChatModels.filter(m => m.type === 'vision').length > 4}
+                                    disabled={isLoadingModels}
+                                    panelWidth="w-72"
+                                    placeholder={isLoadingModels ? t('loading') : t('noModelAvailable')}
+                                    options={availableChatModels.filter(m => m.type === 'vision').map(m => ({ value: m.id, label: m.name }))}
+                                />
+                            </div>
+
+                            <div className="flex items-center justify-between mb-6">
+                                <div>
+                                    <p className="text-base font-medium text-gray-800 dark:text-gray-100">Modèle de Génération (Text-to-Image)</p>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">Pour générer de nouvelles images</p>
+                                </div>
+                                <CustomSelect
+                                    value={backendSettings.default_image_generate_model || ''}
+                                    onChange={(v) => setBackendSettings(prev => ({ ...prev, default_image_generate_model: v }))}
+                                    width="w-72"
+                                    searchable={availableImageModels.filter(m => m.type === 'image-generate').length > 4}
+                                    disabled={isLoadingModels}
+                                    panelWidth="w-72"
+                                    placeholder={isLoadingModels ? t('loading') : t('imageGenerationNotSupported')}
+                                    options={availableImageModels.filter(m => m.type === 'image-generate').map(m => ({ value: m.id, label: m.name }))}
+                                />
+                            </div>
+
+                            <div className="flex items-center justify-between mb-6">
+                                <div>
+                                    <p className="text-base font-medium text-gray-800 dark:text-gray-100">Modèle d'Édition (Image-to-Image)</p>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">Pour modifier une image existante</p>
+                                </div>
+                                <CustomSelect
+                                    value={backendSettings.default_image_edit_model || ''}
+                                    onChange={(v) => setBackendSettings(prev => ({ ...prev, default_image_edit_model: v }))}
+                                    width="w-72"
+                                    searchable={availableImageModels.filter(m => m.type === 'image-edit').length > 4}
+                                    disabled={isLoadingModels}
+                                    panelWidth="w-72"
+                                    placeholder={isLoadingModels ? t('loading') : t('imageGenerationNotSupported')}
+                                    options={availableImageModels.filter(m => m.type === 'image-edit').map(m => ({ value: m.id, label: m.name }))}
+                                />
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <div className="flex items-center justify-between mb-6">
+                                <div>
+                                    <p className="text-base font-medium text-gray-800 dark:text-gray-100">{t('llmModel')}</p>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">{t('llmModelDesc')}</p>
+                                </div>
+                                <CustomSelect
+                                    value={settings.model}
+                                    onChange={(v) => handleChange('model', v)}
+                                    width="w-72"
+                                    searchable={availableChatModels.length > 4}
+                                    disabled={isLoadingModels}
+                                    panelWidth="w-72"
+                                    placeholder={isLoadingModels ? t('loading') : t('noModelAvailable')}
+                                    options={availableChatModels.map(m => ({ value: m.id, label: m.name }))}
+                                />
+                            </div>
+
+                            <div className="flex items-center justify-between mb-6">
+                                <div>
+                                    <p className="text-base font-medium text-gray-800 dark:text-gray-100">{t('imageGenerationModel')}</p>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">{t('selectModelForVisualCreation')}</p>
+                                    <p className="text-xs text-primary/80 mt-1">
+                                        Vision ·  Image-Edit &nbsp;—&nbsp; {t('appliedToAllImagePages')}
+                                    </p>
+                                </div>
+                                <CustomSelect
+                                    value={backendSettings.default_image_model || ''}
+                                    onChange={(v) => setBackendSettings(prev => ({ ...prev, default_image_model: v }))}
+                                    width="w-72"
+                                    searchable={availableImageModels.length > 4}
+                                    disabled={isLoadingModels}
+                                    panelWidth="w-72"
+                                    placeholder={isLoadingModels ? t('loading') : t('imageGenerationNotSupported')}
+                                    options={availableImageModels.map(m => ({ value: m.id, label: m.name }))}
+                                />
+                            </div>
+                        </>
+                    )}
 
                     <div className="flex items-center justify-between">
                         <div>
