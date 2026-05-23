@@ -10,5 +10,8 @@ export default defineConfig(({ command }) => ({
     headers: {
       'Cross-Origin-Opener-Policy': 'same-origin-allow-popups'
     }
+  },
+  build: {
+    chunkSizeWarningLimit: 3000
   }
 }))
