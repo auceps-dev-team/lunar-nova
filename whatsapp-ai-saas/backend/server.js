@@ -46,6 +46,10 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 const authGoogleRouter = require('./routes/authGoogle');
 app.use('/api/auth/google', authGoogleRouter);
 
+// --- Prospection (Google Maps API) ---
+const prospectionRouter = require('./routes/prospection');
+app.use('/api/prospection', prospectionRouter);
+
 // --- WordPress Bridge (Phase 30) ---
 const wordpressRouter = require('./routes/wordpress');
 const multer = require('multer');
@@ -58,6 +62,13 @@ app.use('/api/wp', (req, res, next) => {
     next();
 });
 app.use('/api/wp', wordpressRouter);
+
+// API route to get config for frontend
+app.get('/api/config', (req, res) => {
+    res.json({
+        googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || ''
+    });
+});
 
 // API route to get WhatsApp instances status
 app.get('/api/instances', async (req, res) => {
@@ -895,11 +906,11 @@ app.post('/api/wa/contacts/bulk', async (req, res) => {
         await client.query('BEGIN');
 
         for (const contact of contacts) {
-            const { name, phone, segment_name, email, address } = contact;
-            let segment_id = null;
+            const { name, phone, segment_name, email, address, list_id, segment_id: explicit_segment_id } = contact;
+            let segment_id = explicit_segment_id || null;
 
-            // Simple Auto-Resolution: if a segment is typed, find or create it
-            if (segment_name) {
+            // Simple Auto-Resolution: if a segment is typed (and no explicit segment_id), find or create it
+            if (segment_name && !segment_id) {
                 const segCheck = await client.query('SELECT id FROM wa_segments WHERE name = $1', [segment_name]);
                 if (segCheck.rows.length > 0) {
                     segment_id = segCheck.rows[0].id;
@@ -911,8 +922,8 @@ app.post('/api/wa/contacts/bulk', async (req, res) => {
 
             // Insert the contact
             await client.query(
-                'INSERT INTO wa_contacts (name, phone, segment_id, email, address) VALUES ($1, $2, $3, $4, $5)',
-                [name || 'Inconnu', phone, segment_id, email || null, address || null]
+                'INSERT INTO wa_contacts (name, phone, segment_id, list_id, email, address) VALUES ($1, $2, $3, $4, $5, $6)',
+                [name || 'Inconnu', phone, segment_id, list_id || null, email || null, address || null]
             );
         }
 
