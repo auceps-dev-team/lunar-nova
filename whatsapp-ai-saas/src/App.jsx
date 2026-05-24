@@ -28,6 +28,7 @@ import { ImageWorkspace } from './components/image-editor/ImageWorkspace';
 
 // WhatsApp Plugin Pages (Phase 13)
 import ContactLists from './pages/whatsapp/ContactLists';
+import Prospection from './pages/whatsapp/Prospection';
 import Segments from './pages/whatsapp/Segments';
 import Contacts from './pages/whatsapp/Contacts';
 import ContactAdd from './pages/whatsapp/ContactAdd';
@@ -292,6 +293,7 @@ function AppContent() {
                   <Route path="/fashion/image-generation" element={<ImageGeneration />} />
 
                   {/* WhatsApp Pages */}
+                  <Route path="/wa/prospection" element={<Prospection />} />
                   <Route path="/wa/contact-lists" element={<ContactLists />} />
                   <Route path="/wa/segments" element={<Segments />} />
                   <Route path="/wa/contacts" element={<Contacts activeId={activeId} />} />

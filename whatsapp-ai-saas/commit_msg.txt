@@ -1,15 +1,15 @@
-WaCopilote v1.33.0 - Support des Modèles Vision, Routage Dynamique et Génération Image (NVIDIA & Together AI)
+WaCopilote v1.33.1 - Nouveau système de prospection asynchrone (Google Maps, Annuaires CI & Go Africa)
 
-=== Intégration Modèles Vision et Génération ===
+=== Intégration Prospection Intelligente ===
 
-feat(ai): Extension du catalogue et routage dynamique pour l'analyse visuelle et la génération d'images
+feat(prospection): Création du module de prospection dynamique supportant plusieurs sources, pagination et automatisation web
 
-- nvidiaModels.js: Ajout de 4 modèles NVIDIA (Ising Calibration, Qwen 3.5 397B, Nemotron Vision 12B/8B). Ajout de 2 modèles Together AI (Llama 3.2 11B Vision Instruct, Stable Diffusion 3 Medium).
-- aiController.js: Mise à jour du routage dans generateImage pour adresser dynamiquement l'URL et la clé API Together AI (pour SD3).
-- aiController.js & server.js: Mise à jour du routage dans generateProposals pour prendre en compte le providerOverride (NVIDIA, OpenAI, etc.).
-- aiController.js & geminiService.js: Nettoyage des chaînes Base64 (suppression de l'entête data:image/...) pour assurer la stabilité des appels vers les modèles Vision.
-- WorkArea.jsx: 
-  * Refonte du composant askCopilot pour intégrer un outil de gestion des pièces jointes interactif (Images, PDF, Audio).
-  * Refonte de l'extraction de l'analyse WhatsApp pour télécharger dynamiquement et convertir en Base64 les 2 dernières images affichées dans la Webview (support multimodal pour les modèles Vision).
-- package.json: Bump de la version à v1.33.0.
-- task.md & walkthrough.md: Mise à jour du suivi de l'intégration des modèles Vision.
+annuaireCiScraper.js & goAfricaScraper.js: Création de deux scrapers asynchrones robustes utilisant Playwright pour contourner les protections anti-bot. Extraction intelligente des noms, numéros de téléphone (avec filtrage des fixes) et adresses.
+
+prospection.js (backend/routes): Création de la route API unifiée `/api/prospection/search` capable d'orienter dynamiquement les requêtes vers les scrapers Playwright ou le service Google Places en fonction de la source demandée, avec support de la pagination.
+
+Prospection.jsx (Frontend): Refonte de l'interface utilisateur pour intégrer un sélecteur de sources (Google Maps, Annuaire CI, Go Africa), une gestion dynamique de la quantité de pages, et l'affichage en temps réel d'une carte interactive via l'API Google Maps Embed.
+
+server.js & .env: Création de la route de configuration `/api/config` pour exposer de manière sécurisée la clé Google Maps au frontend. Installation de Playwright en dépendance backend.
+
+Support.jsx & package.json: Incrémentation de la version du projet à v1.33.1 et mise à jour du journal des modifications (Changelog) pour refléter le nouveau système de prospection.
