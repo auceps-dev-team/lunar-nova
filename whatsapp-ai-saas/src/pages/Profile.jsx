@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useGoogleLogin } from '@react-oauth/google';
 import useAppStore from '../store';
 import { useTranslation } from 'react-i18next';
+import { API_BASE_URL } from '../config';
+
 
 const Profile = () => {
     const { t } = useTranslation();
@@ -100,7 +102,7 @@ const Profile = () => {
         const stateId = `${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
         // Remplace import.meta pour éviter les erreurs de compilation dans l'environnement
         const clientId = "VITE_GOOGLE_CLIENT_ID_PLACEHOLDER";
-        const redirectUri = 'http://localhost:3000/api/auth/google/callback';
+        const redirectUri = API_BASE_URL + '/api/auth/google/callback';
         const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=email%20profile&state=${stateId}&prompt=select_account`;
 
         setAuthLoading(true);
@@ -110,7 +112,7 @@ const Profile = () => {
         // Poll backend for the OAuth result
         const pollInterval = setInterval(async () => {
             try {
-                const res = await fetch(`http://localhost:3000/api/auth/google/status?session_id=${stateId}`);
+                const res = await fetch(`${API_BASE_URL}/api/auth/google/status?session_id=${stateId}`);
                 if (!res.ok) return;
                 const data = await res.json();
 

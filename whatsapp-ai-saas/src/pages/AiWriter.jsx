@@ -5,6 +5,8 @@ import { Sparkles, Download, Undo, Redo, Copy, Edit3, AlignLeft, AlignCenter, Al
 import html2pdf from 'html2pdf.js';
 import { useTranslation } from 'react-i18next';
 import CustomSelect from '../components/CustomSelect';
+import { API_BASE_URL } from '../config';
+
 
 
 const SYSTEM_AGENTS = [
@@ -68,7 +70,7 @@ export default function AiWriter() {
 
         const fetchCustomAgents = async () => {
             try {
-                const res = await fetch('http://localhost:3000/api/agents');
+                const res = await fetch(API_BASE_URL + '/api/agents');
                 const data = await res.json();
                 const custom = (data.data || []).map(a => ({ ...a, isSystem: false }));
                 setAllAgents([...SYSTEM_AGENTS, ...custom]);
@@ -81,7 +83,7 @@ export default function AiWriter() {
 
     const fetchDocument = async (id) => {
         try {
-            const res = await fetch(`http://localhost:3000/api/documents/${id}`);
+            const res = await fetch(`${API_BASE_URL}/api/documents/${id}`);
             const data = await res.json();
             if (data.status === 'success') {
                 setDocumentTitle(data.data.title);
@@ -121,7 +123,7 @@ export default function AiWriter() {
 
             prompt += "\n\nRenvoie uniquement le texte généré, sans introduction ni conclusion de politesse. Utilise du formatage HTML de base (<b>, <i>, <ul>, <li>, <br/>, <p>, <h1>, <h2>) pour bien structurer le rendu final.";
 
-            const res = await fetch('http://localhost:3000/api/ai/agent', {
+            const res = await fetch(API_BASE_URL + '/api/ai/agent', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -183,7 +185,7 @@ export default function AiWriter() {
 
         try {
             const method = documentId ? 'PUT' : 'POST';
-            const url = documentId ? `http://localhost:3000/api/documents/${documentId}` : 'http://localhost:3000/api/documents';
+            const url = documentId ? `${API_BASE_URL}/api/documents/${documentId}` : API_BASE_URL + '/api/documents';
 
             const res = await fetch(url, {
                 method: method,
@@ -221,7 +223,7 @@ export default function AiWriter() {
         try {
             const prompt = `Réécris le texte suivant pour l'améliorer, le rendre plus professionnel et percutant. Renvoie UNIQUEMENT le texte réécrit, sans aucune introduction, sans guillemets et sans formatage markdown additionnel:\n\n"${selectedText}"`;
 
-            const res = await fetch('http://localhost:3000/api/ai/agent', {
+            const res = await fetch(API_BASE_URL + '/api/ai/agent', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

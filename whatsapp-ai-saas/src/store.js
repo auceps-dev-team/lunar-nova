@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { get, set, del } from 'idb-keyval';
+import { API_BASE_URL } from './config';
+
 
 // IndexedDB storage adapter for Zustand — replaces localStorage (5MB limit → hundreds of MB)
 const idbStorage = {
@@ -131,7 +133,7 @@ const useAppStore = create(
 
             fetchAiQuota: async () => {
                 try {
-                    const res = await fetch('http://localhost:3000/api/settings/quota');
+                    const res = await fetch(API_BASE_URL + '/api/settings/quota');
                     const data = await res.json();
                     if (data.status === 'success') {
                         set({ aiQuota: data.data });
@@ -150,7 +152,7 @@ const useAppStore = create(
 
             fetchAndSyncBackendSettings: async () => {
                 try {
-                    const res = await fetch('http://localhost:3000/api/settings');
+                    const res = await fetch(API_BASE_URL + '/api/settings');
                     const data = await res.json();
                     if (data.status === 'success' && data.settings) {
                         set((state) => ({
@@ -178,7 +180,7 @@ const useAppStore = create(
 
                 try {
                     // 1. Fetch chat models (selon chatProvider)
-                    const chatRes = await fetch(`http://localhost:3000/api/ai/models`, {
+                    const chatRes = await fetch(`${API_BASE_URL}/api/ai/models`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ provider: chatProvider, apiKey, baseURL })
@@ -200,7 +202,7 @@ const useAppStore = create(
                     // 2. Si imageProvider ≠ chatProvider, fetch les modèles image séparément
                     if (imageProvider && imageProvider !== chatProvider) {
                         try {
-                            const imgRes = await fetch(`http://localhost:3000/api/ai/models`, {
+                            const imgRes = await fetch(`${API_BASE_URL}/api/ai/models`, {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ provider: imageProvider })

@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import useAppStore from '../../store';
 import Papa from 'papaparse';
 import { useTranslation } from 'react-i18next';
+import { API_BASE_URL } from '../../config';
+
 
 export default function ContactImport() {
     const navigate = useNavigate();
@@ -111,7 +113,7 @@ export default function ContactImport() {
                 return;
             }
 
-            const res = await fetch('http://localhost:3000/api/wa/contacts/bulk', {
+            const res = await fetch(API_BASE_URL + '/api/wa/contacts/bulk', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ contacts: validPayload })

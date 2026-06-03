@@ -2,6 +2,8 @@ import React, { useMemo, useState, useEffect } from 'react';
 import useAppStore from '../store';
 import { useTranslation } from 'react-i18next';
 import {
+import { API_BASE_URL } from '../config';
+
     AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
     XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
@@ -275,7 +277,7 @@ export default function AdvancedAnalytics() {
     useEffect(() => {
         const fetchAnalytics = async () => {
             try {
-                const res = await fetch('http://localhost:3000/api/wa/analytics');
+                const res = await fetch(API_BASE_URL + '/api/wa/analytics');
                 const data = await res.json();
                 if (data.status === 'success') {
                     setContactAnalytics(data.data);

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { API_BASE_URL } from '../config';
+
 
 const AgentManager = () => {
     const { t } = useTranslation();
@@ -23,7 +25,7 @@ const AgentManager = () => {
 
     const fetchAgents = async () => {
         try {
-            const res = await fetch('http://localhost:3000/api/agents');
+            const res = await fetch(API_BASE_URL + '/api/agents');
             const data = await res.json();
             if (data.status === 'success') {
                 setAgents(data.data);
@@ -37,7 +39,7 @@ const AgentManager = () => {
         e.preventDefault();
         setIsLoading(true);
         try {
-            await fetch('http://localhost:3000/api/agents', {
+            await fetch(API_BASE_URL + '/api/agents', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(currentAgent)
@@ -56,7 +58,7 @@ const AgentManager = () => {
     const handleDelete = async (id) => {
         if (!window.confirm(t('deleteAgentConfirm'))) return;
         try {
-            await fetch(`http://localhost:3000/api/agents/${id}`, { method: 'DELETE' });
+            await fetch(`${API_BASE_URL}/api/agents/${id}`, { method: 'DELETE' });
             await fetchAgents();
         } catch (err) {
             console.error("Failed to delete agent", err);

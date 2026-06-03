@@ -3,6 +3,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import useAppStore from '../store';
 import { FileText, Trash2, Edit, Plus, Clock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { API_BASE_URL } from '../config';
+
 
 export default function MyDocuments() {
     const { t } = useTranslation();
@@ -18,7 +20,7 @@ export default function MyDocuments() {
     const fetchDocuments = async () => {
         setIsLoading(true);
         try {
-            const res = await fetch('http://localhost:3000/api/documents');
+            const res = await fetch(API_BASE_URL + '/api/documents');
             const data = await res.json();
             if (data.status === 'success') {
                 setDocuments(data.data || []);
@@ -37,7 +39,7 @@ export default function MyDocuments() {
         if (!window.confirm(t('confirmDeleteDocument'))) return;
 
         try {
-            const res = await fetch(`http://localhost:3000/api/documents/${id}`, {
+            const res = await fetch(`${API_BASE_URL}/api/documents/${id}`, {
                 method: 'DELETE'
             });
             const data = await res.json();

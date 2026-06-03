@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import useAppStore from '../store';
+import { API_BASE_URL } from '../config';
+
 
 // ─── Design tokens (aligned with WaCopilote branding) ────────────────────────
 const C = {
@@ -277,7 +279,7 @@ export default function WordPressBridge() {
                 intent_data: action.payload,
                 agent_context: userMessage
             };
-            const r = await fetch(`http://localhost:3000/api/wp/${selectedId}/propose`, {
+            const r = await fetch(`${API_BASE_URL}/api/wp/${selectedId}/propose`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -321,7 +323,7 @@ export default function WordPressBridge() {
     // Fetch connections list
     const loadConnections = useCallback(async () => {
         try {
-            const res = await fetch('http://localhost:3000/api/wp/connections');
+            const res = await fetch(API_BASE_URL + '/api/wp/connections');
             const d = await res.json();
             if (d.status === 'success') {
                 setConnections(d.data);
@@ -338,7 +340,7 @@ export default function WordPressBridge() {
         setIsLogsLoading(true);
         try {
             const offset = (filters.page - 1) * filters.per_page;
-            const r = await fetch(`http://localhost:3000/api/wp/${connId}/logs?limit=${filters.per_page}&offset=${offset}&status=${filters.status}`);
+            const r = await fetch(`${API_BASE_URL}/api/wp/${connId}/logs?limit=${filters.per_page}&offset=${offset}&status=${filters.status}`);
             const d = await r.json();
             if (d.status === 'success') {
                 setLogs(d.data || []);
@@ -361,7 +363,7 @@ export default function WordPressBridge() {
             if (filters.type)         params.set('type', filters.type);
             if (filters.stock_status) params.set('stock_status', filters.stock_status);
             if (filters.brand)        params.set('brand', filters.brand);
-            const r = await fetch(`http://localhost:3000/api/wp/${connId}/products?${params.toString()}`);
+            const r = await fetch(`${API_BASE_URL}/api/wp/${connId}/products?${params.toString()}`);
             const d = await r.json();
             if (d.status === 'success') {
                 setProducts(d.data?.data || []);
@@ -396,15 +398,15 @@ export default function WordPressBridge() {
                         d_end = new Date(now.getFullYear(), 11, 31).toISOString().split('T')[0];
                     }
                     const [rStats, rAna] = await Promise.all([
-                        fetch(`http://localhost:3000/api/wp/${selectedId}/stats`),
-                        fetch(`http://localhost:3000/api/wp/${selectedId}/analytics?date_start=${d_start} 00:00:00&date_end=${d_end} 23:59:59`)
+                        fetch(`${API_BASE_URL}/api/wp/${selectedId}/stats`),
+                        fetch(`${API_BASE_URL}/api/wp/${selectedId}/analytics?date_start=${d_start} 00:00:00&date_end=${d_end} 23:59:59`)
                     ]);
                     const dStats = await rStats.json();
                     const dAna = await rAna.json();
                     if (dStats.status === 'success') setStats(dStats.data);
                     if (dAna.status === 'success') setAnalytics(dAna.data);
                 } else if (tab === 'posts') {
-                    const r = await fetch(`http://localhost:3000/api/wp/${selectedId}/posts?limit=20`);
+                    const r = await fetch(`${API_BASE_URL}/api/wp/${selectedId}/posts?limit=20`);
                     const d = await r.json();
                     if (d.status === 'success') setPosts(d.data?.data || []);
                 } else if (tab === 'shop') {
@@ -412,8 +414,8 @@ export default function WordPressBridge() {
                     const resetFilters = { search: '', category: '', type: '', stock_status: '', brand: '', page: 1, per_page: 25 };
                     setProductFilters(resetFilters);
                     const [metaR, orderR] = await Promise.all([
-                        fetch(`http://localhost:3000/api/wp/${selectedId}/products/meta`),
-                        fetch(`http://localhost:3000/api/wp/${selectedId}/orders?limit=15`),
+                        fetch(`${API_BASE_URL}/api/wp/${selectedId}/products/meta`),
+                        fetch(`${API_BASE_URL}/api/wp/${selectedId}/orders?limit=15`),
                     ]);
                     const metaD = await metaR.json();
                     const od = await orderR.json();
@@ -436,7 +438,7 @@ export default function WordPressBridge() {
         e.preventDefault();
         setIsSaving(true);
         try {
-            const res = await fetch('http://localhost:3000/api/wp/connections', {
+            const res = await fetch(API_BASE_URL + '/api/wp/connections', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(form),
             });
@@ -454,7 +456,7 @@ export default function WordPressBridge() {
     const handleTest = async (id) => {
         setIsTesting(id);
         try {
-            const res = await fetch(`http://localhost:3000/api/wp/connections/${id}/test`, { method: 'POST' });
+            const res = await fetch(`${API_BASE_URL}/api/wp/connections/${id}/test`, { method: 'POST' });
             const d = await res.json();
             if (d.status === 'success') showAppNotification(`✅ ${d.site_name} (WP ${d.wp_version})`, 'success');
             else showAppNotification('❌ ' + d.error, 'error');
@@ -465,7 +467,7 @@ export default function WordPressBridge() {
     const handleDelete = async (id) => {
         setIsDeleting(id);
         try {
-            await fetch(`http://localhost:3000/api/wp/connections/${id}`, { method: 'DELETE' });
+            await fetch(`${API_BASE_URL}/api/wp/connections/${id}`, { method: 'DELETE' });
             showAppNotification('Site supprimé.', 'success');
             if (selectedId === id) setSelectedId(null);
             await loadConnections();

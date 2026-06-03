@@ -4,6 +4,8 @@ import useAppStore from '../store';
 import { useTranslation } from 'react-i18next';
 import UpdateManager from '../components/UpdateManager';
 import CustomSelect from '../components/CustomSelect';
+import { API_BASE_URL } from '../config';
+
 const Settings = () => {
     const { t } = useTranslation();
     const settings = useAppStore(state => state.appSettings) || { theme: 'light', language: 'en', model: 'gemini-pro-latest', allowAiRead: true };
@@ -43,7 +45,7 @@ const Settings = () => {
     const showAppNotification = useAppStore(state => state.showAppNotification);
 
     useEffect(() => {
-        fetch('http://localhost:3000/api/settings')
+        fetch(API_BASE_URL + '/api/settings')
             .then(res => res.json())
             .then(data => {
                 if (data.status === 'success' && data.settings) {
@@ -82,7 +84,7 @@ const Settings = () => {
             baseURL = settingsToUse.openai_base_url;
         }
 
-        fetch(`http://localhost:3000/api/ai/models`, {
+        fetch(`${API_BASE_URL}/api/ai/models`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ provider, apiKey, baseURL })
@@ -138,7 +140,7 @@ const Settings = () => {
     const handleSaveAll = async () => {
         setIsSaving(true);
         try {
-            await fetch('http://localhost:3000/api/settings', {
+            await fetch(API_BASE_URL + '/api/settings', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(backendSettings)

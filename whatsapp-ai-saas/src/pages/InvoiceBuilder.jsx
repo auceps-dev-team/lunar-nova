@@ -14,6 +14,8 @@ import {
 } from 'recharts';
 import { useTranslation } from 'react-i18next';
 import CustomSelect from '../components/CustomSelect';
+import { API_BASE_URL } from '../config';
+
 
 
 /* ═══════════════════════════════════════════════════════
@@ -562,7 +564,7 @@ export default function InvoiceBuilder({ activeId }) {
 
     // Fetch contacts for search
     useEffect(() => {
-        fetch('http://localhost:3000/api/wa/contacts')
+        fetch(API_BASE_URL + '/api/wa/contacts')
             .then(r => r.json())
             .then(d => { if (d.status === 'success') setAllContacts(d.data || []); })
             .catch(() => { });
@@ -685,7 +687,7 @@ export default function InvoiceBuilder({ activeId }) {
             }
 
             const rawPhone = (draft.clientPhone || '').replace(/[^0-9]/g, '');
-            const res = await fetch('http://localhost:3000/api/wa/open-chat', {
+            const res = await fetch(API_BASE_URL + '/api/wa/open-chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ instance_id: activeId, phone: rawPhone })

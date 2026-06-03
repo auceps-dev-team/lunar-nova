@@ -4,6 +4,8 @@ import useAppStore from '../../store';
 import { useTranslation } from 'react-i18next';
 import CustomSelect from '../../components/CustomSelect';
 import { COUNTRIES } from '../../constants/countries';
+import { API_BASE_URL } from '../../config';
+
 
 export default function ContactAdd() {
     const navigate = useNavigate();
@@ -29,12 +31,12 @@ export default function ContactAdd() {
 
     // Fetch real lists and segments from API
     useEffect(() => {
-        fetch('http://localhost:3000/api/wa/contact-lists')
+        fetch(API_BASE_URL + '/api/wa/contact-lists')
             .then(res => res.json())
             .then(data => { if (data.status === 'success') setLists(data.data || []); })
             .catch(err => console.error('Failed to fetch lists:', err));
 
-        fetch('http://localhost:3000/api/wa/segments')
+        fetch(API_BASE_URL + '/api/wa/segments')
             .then(res => res.json())
             .then(data => { if (data.status === 'success') setSegments(data.data || []); })
             .catch(err => console.error('Failed to fetch segments:', err));
@@ -43,7 +45,7 @@ export default function ContactAdd() {
     // Load contact data in edit mode
     useEffect(() => {
         if (isEditMode) {
-            fetch(`http://localhost:3000/api/wa/contacts/${id}`)
+            fetch(`${API_BASE_URL}/api/wa/contacts/${id}`)
                 .then(res => res.json())
                 .then(data => {
                     if (data.status === 'success') {
@@ -85,8 +87,8 @@ export default function ContactAdd() {
 
         const method = isEditMode ? 'PUT' : 'POST';
         const url = isEditMode
-            ? `http://localhost:3000/api/wa/contacts/${id}`
-            : 'http://localhost:3000/api/wa/contacts';
+            ? `${API_BASE_URL}/api/wa/contacts/${id}`
+            : API_BASE_URL + '/api/wa/contacts';
 
         try {
             const res = await fetch(url, {

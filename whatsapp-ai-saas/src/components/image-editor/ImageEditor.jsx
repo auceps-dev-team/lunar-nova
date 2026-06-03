@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next';
 
 import piexif from 'piexifjs';
 import useAppStore from '../../store';
+import { API_BASE_URL } from '../../config';
+
 
 const ensureJpeg = (base64) => {
     return new Promise((resolve, reject) => {
@@ -193,7 +195,7 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                 provider: 'gemini',
             };
 
-            const resProxy = await fetch('http://localhost:3000/api/ai/generate-image', {
+            const resProxy = await fetch(API_BASE_URL + '/api/ai/generate-image', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(genBody)
@@ -369,7 +371,7 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
         setError(null);
         try {
             // Connect to our local Express backend agent for image description
-            const agentRes = await fetch('http://localhost:3000/api/ai/agent', {
+            const agentRes = await fetch(API_BASE_URL + '/api/ai/agent', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

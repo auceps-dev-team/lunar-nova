@@ -4,6 +4,8 @@ import useAppStore from '../../store';
 
 import { useTranslation } from 'react-i18next';
 import CustomSelect from '../../components/CustomSelect';
+import { API_BASE_URL } from '../../config';
+
 
 
 export default function Contacts({ activeId }) {
@@ -153,7 +155,7 @@ export default function Contacts({ activeId }) {
 
         try {
             // Note: Currently no backend delete route written, simulating for UI
-            // await fetch(`http://localhost:3000/api/wa/contacts/${id}`, { method: 'DELETE' });
+            // await fetch(`${API_BASE_URL}/api/wa/contacts/${id}`, { method: 'DELETE' });
             setContacts(contacts.filter(c => c.id !== id));
             showAppNotification('Contact deleted locally (Backend route pending)', 'success');
         } catch (error) {
