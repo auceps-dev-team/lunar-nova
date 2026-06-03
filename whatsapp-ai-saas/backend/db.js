@@ -71,12 +71,34 @@ async function initDB() {
             );
         `);
 
+        // Migration version control
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS schema_version (
+                version INTEGER PRIMARY KEY
+            );
+        `);
+        const versionResult = await client.query('SELECT MAX(version) as v FROM schema_version');
+        let currentVersion = versionResult.rows[0].v || 0;
+
+        const migrateTo = async (targetVersion, queries) => {
+            if (currentVersion < targetVersion) {
+                console.log(`[SQLite] Migrating to version ${targetVersion}...`);
+                for (let q of queries) {
+                    try { await client.query(q); } catch (e) { /* Ignore if exists, or log if fatal */ }
+                }
+                await client.query('INSERT INTO schema_version (version) VALUES ($1)', [targetVersion]);
+                currentVersion = targetVersion;
+            }
+        };
+
         // Migrations for Phase 2: Add tracking columns to copilot_logs
-        try { await client.query("ALTER TABLE copilot_logs ADD COLUMN provider VARCHAR(50)"); } catch(e) {}
-        try { await client.query("ALTER TABLE copilot_logs ADD COLUMN model VARCHAR(100)"); } catch(e) {}
-        try { await client.query("ALTER TABLE copilot_logs ADD COLUMN tokens INTEGER DEFAULT 0"); } catch(e) {}
-        try { await client.query("ALTER TABLE copilot_logs ADD COLUMN cost REAL DEFAULT 0.0"); } catch(e) {}
-        try { await client.query("ALTER TABLE copilot_logs ADD COLUMN status VARCHAR(50) DEFAULT 'success'"); } catch(e) {}
+        await migrateTo(1, [
+            "ALTER TABLE copilot_logs ADD COLUMN provider VARCHAR(50)",
+            "ALTER TABLE copilot_logs ADD COLUMN model VARCHAR(100)",
+            "ALTER TABLE copilot_logs ADD COLUMN tokens INTEGER DEFAULT 0",
+            "ALTER TABLE copilot_logs ADD COLUMN cost REAL DEFAULT 0.0",
+            "ALTER TABLE copilot_logs ADD COLUMN status VARCHAR(50) DEFAULT 'success'"
+        ]);
 
         // Phase 13: WhatsApp Contact Management Tables
         await client.query(`
@@ -108,30 +130,20 @@ async function initDB() {
         `);
 
         // Migration for the Phase 14: Add 'status' to existing table if it doesn't exist
-        try {
-            await client.query("ALTER TABLE wa_contacts ADD COLUMN status VARCHAR(50) DEFAULT 'unverified'");
-        } catch (err) {
-            // Ignore error if column already exists (SQLite throws if column exists)
-        }
+        await migrateTo(2, [
+            "ALTER TABLE wa_contacts ADD COLUMN status VARCHAR(50) DEFAULT 'unverified'"
+        ]);
 
         // Migration for Phase 18.3: Add 'email' and 'address' columns
-        try {
-            await client.query("ALTER TABLE wa_contacts ADD COLUMN email TEXT");
-        } catch (err) {
-            // Column already exists
-        }
-        try {
-            await client.query("ALTER TABLE wa_contacts ADD COLUMN address TEXT");
-        } catch (err) {
-            // Column already exists
-        }
+        await migrateTo(3, [
+            "ALTER TABLE wa_contacts ADD COLUMN email TEXT",
+            "ALTER TABLE wa_contacts ADD COLUMN address TEXT"
+        ]);
 
         // Migration for missing list_id
-        try {
-            await client.query("ALTER TABLE wa_contacts ADD COLUMN list_id INTEGER REFERENCES wa_contact_lists(id) ON DELETE SET NULL");
-        } catch (err) {
-            // Column already exists
-        }
+        await migrateTo(4, [
+            "ALTER TABLE wa_contacts ADD COLUMN list_id INTEGER REFERENCES wa_contact_lists(id) ON DELETE SET NULL"
+        ]);
 
         // Phase 19.5: Message Tracking
         await client.query(`
@@ -181,7 +193,9 @@ async function initDB() {
         `);
 
         // Migrations for Phase 2: Add model_override to ai_agents
-        try { await client.query("ALTER TABLE ai_agents ADD COLUMN model_override VARCHAR(100) DEFAULT NULL"); } catch(e) {}
+        await migrateTo(5, [
+            "ALTER TABLE ai_agents ADD COLUMN model_override VARCHAR(100) DEFAULT NULL"
+        ]);
 
         // WordPress Bridge (Phase 30) — v2.0 uses App Passwords
         await client.query(`
@@ -198,8 +212,10 @@ async function initDB() {
         `);
 
         // Migration v2.0: add App Password columns to existing tables
-        try { await client.query("ALTER TABLE wp_connections ADD COLUMN wp_username TEXT NOT NULL DEFAULT ''"); } catch(e) {}
-        try { await client.query("ALTER TABLE wp_connections ADD COLUMN app_password TEXT NOT NULL DEFAULT ''"); } catch(e) {}
+        await migrateTo(6, [
+            "ALTER TABLE wp_connections ADD COLUMN wp_username TEXT NOT NULL DEFAULT ''",
+            "ALTER TABLE wp_connections ADD COLUMN app_password TEXT NOT NULL DEFAULT ''"
+        ]);
 
         client.release();
         isDbConnected = true;

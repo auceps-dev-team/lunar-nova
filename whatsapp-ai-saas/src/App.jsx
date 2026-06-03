@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import { HashRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { useTranslation } from 'react-i18next';
@@ -7,35 +7,35 @@ import Topbar from './components/Topbar';
 import WorkArea from './components/WorkArea';
 import OnboardingModal from './components/OnboardingModal';
 
-import Dashboard from './pages/Dashboard';
-import AdvancedAnalytics from './pages/AdvancedAnalytics';
-import AgentsHub from './pages/AgentsHub';
-import TasksMap from './pages/TasksMap';
+const Dashboard = React.lazy(() => import('./pages/Dashboard'));
+const AdvancedAnalytics = React.lazy(() => import('./pages/AdvancedAnalytics'));
+const AgentsHub = React.lazy(() => import('./pages/AgentsHub'));
+const TasksMap = React.lazy(() => import('./pages/TasksMap'));
 
-import InvoiceBuilder from './pages/InvoiceBuilder';
-import Profile from './pages/Profile';
-import ToolsBox from './pages/ToolsBox';
-import Settings from './pages/Settings';
-import PhotoShoot from './pages/PhotoShoot';
-import AgentManager from './pages/AgentManager';
-import Support from './pages/Support';
-import AiChat from './pages/AiChat';
+const InvoiceBuilder = React.lazy(() => import('./pages/InvoiceBuilder'));
+const Profile = React.lazy(() => import('./pages/Profile'));
+const ToolsBox = React.lazy(() => import('./pages/ToolsBox'));
+const Settings = React.lazy(() => import('./pages/Settings'));
+const PhotoShoot = React.lazy(() => import('./pages/PhotoShoot'));
+const AgentManager = React.lazy(() => import('./pages/AgentManager'));
+const Support = React.lazy(() => import('./pages/Support'));
+const AiChat = React.lazy(() => import('./pages/AiChat'));
 
-import AiWriter from './pages/AiWriter';
-import MyDocuments from './pages/MyDocuments';
-import ImageGeneration from './pages/ImageGeneration';
-import { ImageWorkspace } from './components/image-editor/ImageWorkspace';
+const AiWriter = React.lazy(() => import('./pages/AiWriter'));
+const MyDocuments = React.lazy(() => import('./pages/MyDocuments'));
+const ImageGeneration = React.lazy(() => import('./pages/ImageGeneration'));
+const ImageWorkspace = React.lazy(() => import('./components/image-editor/ImageWorkspace').then(m => ({ default: m.ImageWorkspace })));
 
 // WhatsApp Plugin Pages (Phase 13)
-import ContactLists from './pages/whatsapp/ContactLists';
-import Prospection from './pages/whatsapp/Prospection';
-import Segments from './pages/whatsapp/Segments';
-import Contacts from './pages/whatsapp/Contacts';
-import ContactAdd from './pages/whatsapp/ContactAdd';
-import ContactImport from './pages/whatsapp/ContactImport';
+const ContactLists = React.lazy(() => import('./pages/whatsapp/ContactLists'));
+const Prospection = React.lazy(() => import('./pages/whatsapp/Prospection'));
+const Segments = React.lazy(() => import('./pages/whatsapp/Segments'));
+const Contacts = React.lazy(() => import('./pages/whatsapp/Contacts'));
+const ContactAdd = React.lazy(() => import('./pages/whatsapp/ContactAdd'));
+const ContactImport = React.lazy(() => import('./pages/whatsapp/ContactImport'));
 
 // Placeholder Pages for Phase 2
-import WordPressBridge from './pages/WordPressBridge';
+const WordPressBridge = React.lazy(() => import('./pages/WordPressBridge'));
 
 import useAppStore from './store';
 import './styles/global.css';
@@ -275,7 +275,8 @@ function AppContent() {
             {/* Standard React Routing for text/UI-based pages */}
             {!isWhatsApp && (
               <div className="overflow-y-auto p-6 flex-1 bg-surface dark:bg-gray-900">
-                <Routes>
+                <Suspense fallback={<div className="h-full w-full flex items-center justify-center text-primary/60"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div></div>}>
+                  <Routes>
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/analytics" element={<AdvancedAnalytics />} />
                   <Route path="/profile" element={<Profile />} />
@@ -303,6 +304,7 @@ function AppContent() {
                   <Route path="/support" element={<Support />} />
                   <Route path="/wordpress" element={<WordPressBridge />} />
                 </Routes>
+                </Suspense>
               </div>
             )}
           </main>

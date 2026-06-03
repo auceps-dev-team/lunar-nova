@@ -2,11 +2,10 @@ import React, { useMemo, useState, useEffect } from 'react';
 import useAppStore from '../store';
 import { useTranslation } from 'react-i18next';
 import {
-import { API_BASE_URL } from '../config';
-
     AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
     XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
+import { API_BASE_URL } from '../config';
 
 // ── Palette cohérente avec le projet ──────────────────────────────
 const C = {

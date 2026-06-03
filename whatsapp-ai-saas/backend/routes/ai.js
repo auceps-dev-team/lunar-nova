@@ -1,4 +1,5 @@
 const express = require('express');
+const { z } = require('zod');
 const router = express.Router();
 const rateLimit = require('express-rate-limit');
 const aiController = require('../aiController');

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import useAppStore from '../../store';
 
@@ -164,50 +164,51 @@ export default function Contacts({ activeId }) {
     };
 
     // Derive unique segments for the filter dropdown
-    const uniqueSegments = [...new Set(contacts.map(c => c.segment_name).filter(Boolean))];
-    const uniqueLists = [...new Set(contacts.map(c => c.list_name).filter(Boolean))];
+    const uniqueSegments = useMemo(() => [...new Set(contacts.map(c => c.segment_name).filter(Boolean))], [contacts]);
+    const uniqueLists = useMemo(() => [...new Set(contacts.map(c => c.list_name).filter(Boolean))], [contacts]);
     // Also get segments with IDs for bulk update modal
-    const segments = [...new Map(contacts.filter(c => c.segment_name && c.segment_id).map(item => [item.segment_id, { id: item.segment_id, name: item.segment_name }])).values()];
-    const listsMap = [...new Map(contacts.filter(c => c.list_name && c.list_id).map(item => [item.list_id, { id: item.list_id, name: item.list_name }])).values()];
+    const segments = useMemo(() => [...new Map(contacts.filter(c => c.segment_name && c.segment_id).map(item => [item.segment_id, { id: item.segment_id, name: item.segment_name }])).values()], [contacts]);
+    const listsMap = useMemo(() => [...new Map(contacts.filter(c => c.list_name && c.list_id).map(item => [item.list_id, { id: item.list_id, name: item.list_name }])).values()], [contacts]);
 
 
-    // Apply filtering
-    let processedContacts = contacts.filter(c => {
-        let matchStatus = true;
-        let matchSegment = true;
-        let matchList = true;
+    // Apply filtering and sorting
+    const processedContacts = useMemo(() => {
+        let filtered = contacts.filter(c => {
+            let matchStatus = true;
+            let matchSegment = true;
+            let matchList = true;
 
-        // Status filter: unverified, valid, invalid
-        if (filterStatus !== 'all') {
-            matchStatus = (c.status || 'unverified') === filterStatus;
-        }
+            // Status filter: unverified, valid, invalid
+            if (filterStatus !== 'all') {
+                matchStatus = (c.status || 'unverified') === filterStatus;
+            }
 
-        // Segment filter
-        if (filterSegment !== 'all') {
-            matchSegment = c.segment_name === filterSegment;
-        }
+            // Segment filter
+            if (filterSegment !== 'all') {
+                matchSegment = c.segment_name === filterSegment;
+            }
 
-        // List filter
-        if (filterList !== 'all') {
-            matchList = c.list_name === filterList;
-        }
+            // List filter
+            if (filterList !== 'all') {
+                matchList = c.list_name === filterList;
+            }
 
-        return matchStatus && matchSegment && matchList;
-    });
+            return matchStatus && matchSegment && matchList;
+        });
 
-    // Apply sorting
-    processedContacts.sort((a, b) => {
-        let valA = a[sortField];
-        let valB = b[sortField];
+        return filtered.sort((a, b) => {
+            let valA = a[sortField];
+            let valB = b[sortField];
 
-        if (typeof valA === 'string') valA = valA.toLowerCase();
-        if (typeof valB === 'string') valB = valB.toLowerCase();
+            if (typeof valA === 'string') valA = valA.toLowerCase();
+            if (typeof valB === 'string') valB = valB.toLowerCase();
 
-        let comparison = 0;
-        if (valA < valB) comparison = -1;
-        if (valA > valB) comparison = 1;
-        return sortDirection === 'asc' ? comparison : -comparison;
-    });
+            let comparison = 0;
+            if (valA < valB) comparison = -1;
+            if (valA > valB) comparison = 1;
+            return sortDirection === 'asc' ? comparison : -comparison;
+        });
+    }, [contacts, filterStatus, filterSegment, filterList, sortField, sortDirection]);
 
     const handleSelectAll = (e) => {
         if (e.target.checked) {

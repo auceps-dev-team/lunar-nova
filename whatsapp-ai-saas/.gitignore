@@ -33,3 +33,24 @@ dist-ssr/
 release/
 *.exe
 *.msi
+
+# Debug & Residue
+asar_contents.txt
+eslint_output*.json
+build_output*.log
+*error*.txt
+err.txt
+vite-err.txt
+out.txt
+old_workarea_diff.txt
+commit_msg.txt
+refactor_i18n.mjs
+replace_colors.cjs
+replace_colors.js
+create_license.cjs
+database.sqlite
+backend/geminiService.js.bak
+backend/models*.json
+backend/models*.txt
+backend/check_models.js
+backend/list_models.js
