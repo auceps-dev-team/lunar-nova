@@ -167,16 +167,22 @@ const useAppStore = create(
                 const chatProvider  = state.backendSettings.default_ai_provider  || 'gemini';
                 const imageProvider = state.backendSettings.default_image_provider || chatProvider;
 
-                let apiKeyParam = '';
+                let apiKey = undefined;
+                let baseURL = undefined;
                 if (chatProvider === 'openrouter' && state.backendSettings.openrouter_api_key) {
-                    apiKeyParam = `&apiKey=${encodeURIComponent(state.backendSettings.openrouter_api_key)}`;
+                    apiKey = state.backendSettings.openrouter_api_key;
                 } else if (chatProvider === 'openai' && state.backendSettings.openai_api_key) {
-                    apiKeyParam = `&apiKey=${encodeURIComponent(state.backendSettings.openai_api_key)}&baseURL=${encodeURIComponent(state.backendSettings.openai_base_url || '')}`;
+                    apiKey = state.backendSettings.openai_api_key;
+                    baseURL = state.backendSettings.openai_base_url;
                 }
 
                 try {
                     // 1. Fetch chat models (selon chatProvider)
-                    const chatRes = await fetch(`http://localhost:3000/api/ai/models?provider=${chatProvider}${apiKeyParam}`);
+                    const chatRes = await fetch(`http://localhost:3000/api/ai/models`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ provider: chatProvider, apiKey, baseURL })
+                    });
                     const chatData = await chatRes.json();
 
                     let newChat = [];
@@ -194,7 +200,11 @@ const useAppStore = create(
                     // 2. Si imageProvider ≠ chatProvider, fetch les modèles image séparément
                     if (imageProvider && imageProvider !== chatProvider) {
                         try {
-                            const imgRes = await fetch(`http://localhost:3000/api/ai/models?provider=${imageProvider}`);
+                            const imgRes = await fetch(`http://localhost:3000/api/ai/models`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ provider: imageProvider })
+                            });
                             const imgData = await imgRes.json();
                             if (imgData.status === 'success' && imgData.models?.image) {
                                 newImage = imgData.models.image;

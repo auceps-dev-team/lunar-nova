@@ -73,20 +73,20 @@ const Settings = () => {
         const settingsToUse = currentSettings || backendSettings;
         const provider = providerOverride || settingsToUse.default_ai_provider;
 
-        // Pass the API key/baseURL so we can test it before saving
-        let apiKeyParam = '';
+        let apiKey = undefined;
+        let baseURL = undefined;
         if (provider === 'openrouter' && settingsToUse.openrouter_api_key) {
-            apiKeyParam = `&apiKey=${encodeURIComponent(settingsToUse.openrouter_api_key)}`;
+            apiKey = settingsToUse.openrouter_api_key;
         } else if (provider === 'openai') {
-            if (settingsToUse.openai_api_key) {
-                apiKeyParam += `&apiKey=${encodeURIComponent(settingsToUse.openai_api_key)}`;
-            }
-            if (settingsToUse.openai_base_url) {
-                apiKeyParam += `&baseURL=${encodeURIComponent(settingsToUse.openai_base_url)}`;
-            }
+            apiKey = settingsToUse.openai_api_key;
+            baseURL = settingsToUse.openai_base_url;
         }
 
-        fetch(`http://localhost:3000/api/ai/models?provider=${provider}${apiKeyParam}`)
+        fetch(`http://localhost:3000/api/ai/models`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ provider, apiKey, baseURL })
+        })
             .then(res => res.json())
             .then(data => {
                 if (data.status === 'success') {

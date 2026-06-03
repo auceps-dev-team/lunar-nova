@@ -63,8 +63,14 @@ app.use('/api/wp', (req, res, next) => {
 });
 app.use('/api/wp', wordpressRouter);
 
+const configLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    message: { error: 'Too many requests' }
+});
+
 // API route to get config for frontend
-app.get('/api/config', (req, res) => {
+app.get('/api/config', configLimiter, (req, res) => {
     res.json({
         googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || ''
     });
@@ -361,10 +367,10 @@ const aiLimiter = rateLimit({
     message: { error: 'Too many requests from this IP, please try again after 15 minutes' }
 });
 
-app.get('/api/ai/models', aiLimiter, async (req, res) => {
+app.post('/api/ai/models', aiLimiter, async (req, res) => {
     try {
-        const provider = req.query.provider;
-        const apiKey = req.query.apiKey;
+        const provider = req.body.provider;
+        const apiKey = req.body.apiKey;
         const models = await aiController.listModels(provider, apiKey);
         res.json({ status: 'success', models });
     } catch (err) {
