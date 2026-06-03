@@ -103,39 +103,99 @@ async function search(query, ignoreLandlines, pages) {
                     await companyPage.waitForTimeout(1000);
 
                     const details = await companyPage.evaluate(() => {
-                        const nameEl = document.querySelector('h1, .entry-title, .v2-listing-title, .title-biz');
-                        const phoneEl = document.querySelector('a[href^="tel:"], .phone, .contact-phone');
-                        const addressEl = document.querySelector('.address, .location, [class*="address"], .v2-listing-address');
-                        const websiteEl = document.querySelector('a[href^="http"]:not([href*="annuaireci.com"]):not([href*="facebook.com"]), .website, .v2-listing-website a');
-
-                        let name = nameEl ? nameEl.innerText.trim() : '';
+                        let name = '';
                         let phone = '';
-                        if (phoneEl) {
-                            if (phoneEl.href && phoneEl.href.includes('tel:')) {
-                                phone = phoneEl.href.replace('tel:', '').replace(/\s+/g, '');
-                            } else {
-                                phone = phoneEl.innerText.trim();
-                            }
+                        let address = 'Non précisé';
+                        let website = '';
+                        let email = '';
+
+                        // 1. Try to extract from JSON-LD schema (most reliable)
+                        const scripts = document.querySelectorAll('script[type="application/ld+json"]');
+                        for (const script of scripts) {
+                            try {
+                                const data = JSON.parse(script.innerText);
+                                // Sometime data is an array or object
+                                const processSchema = (obj) => {
+                                    if (obj['@type'] === 'LocalBusiness' || obj['@type'] === 'Pharmacy' || obj.telephone) {
+                                        if (obj.name) name = obj.name;
+                                        if (obj.telephone) phone = obj.telephone;
+                                        if (obj.email) email = obj.email;
+                                        if (obj.url) website = obj.url;
+                                        
+                                        // Handle sameAs which might contain website/social
+                                        if (!website && obj.sameAs) {
+                                            website = Array.isArray(obj.sameAs) ? obj.sameAs[0] : obj.sameAs;
+                                        }
+
+                                        if (obj.address) {
+                                            if (typeof obj.address === 'string') address = obj.address;
+                                            else if (obj.address.streetAddress) address = obj.address.streetAddress + (obj.address.addressLocality ? ', ' + obj.address.addressLocality : '');
+                                        }
+                                        return true;
+                                    }
+                                    return false;
+                                };
+
+                                if (Array.isArray(data)) {
+                                    for (const item of data) {
+                                        if (processSchema(item)) break;
+                                    }
+                                } else if (data['@graph']) {
+                                    for (const item of data['@graph']) {
+                                        if (processSchema(item)) break;
+                                    }
+                                } else {
+                                    processSchema(data);
+                                }
+                            } catch (e) {}
                         }
 
-                        // Si pas de numéro "tel:", chercher dans le texte
-                        if (!phone || phone.length < 8) {
-                            const bodyText = document.body.innerText;
-                            // Match numéros Ivoiriens standards: ex 0707070707 ou +225 0707070707
-                            const phoneMatch = bodyText.match(/(?:\+225)?\s*[0-9]{2}\s*[0-9]{2}\s*[0-9]{2}\s*[0-9]{2}\s*[0-9]{2}/);
-                            if (phoneMatch) {
-                                phone = phoneMatch[0].replace(/\s+/g, '');
-                            }
+                        // 2. Fallback to DOM parsing if missing
+                        if (!name) {
+                            const nameEl = document.querySelector('h1, .entry-title, .v2-listing-title, .title-biz');
+                            name = nameEl ? nameEl.innerText.trim() : '';
                         }
-
-                        let address = addressEl ? addressEl.innerText.trim() : 'Non précisé';
-                        // Clean up generic text from address if needed
                         
+                        if (!phone) {
+                            const phoneEl = document.querySelector('a[href^="tel:"], .phone, .contact-phone');
+                            if (phoneEl) {
+                                if (phoneEl.href && phoneEl.href.includes('tel:')) {
+                                    phone = phoneEl.href.replace('tel:', '').replace(/\s+/g, '');
+                                } else {
+                                    phone = phoneEl.innerText.trim();
+                                }
+                            }
+                            // Si pas de numéro "tel:", chercher dans le texte
+                            if (!phone || phone.length < 8) {
+                                const bodyText = document.body.innerText;
+                                const phoneMatch = bodyText.match(/(?:\+225)?\s*[0-9]{2}\s*[0-9]{2}\s*[0-9]{2}\s*[0-9]{2}\s*[0-9]{2}/);
+                                if (phoneMatch) {
+                                    phone = phoneMatch[0].replace(/\s+/g, '');
+                                }
+                            }
+                        }
+
+                        if (!address || address === 'Non précisé') {
+                            const addressEl = document.querySelector('.address, .location, [class*="address"], .v2-listing-address');
+                            if (addressEl) address = addressEl.innerText.trim();
+                        }
+
+                        if (!website) {
+                            const websiteEl = document.querySelector('a[href^="http"]:not([href*="annuaireci.com"]):not([href*="facebook.com"]), .website, .v2-listing-website a');
+                            if (websiteEl) website = websiteEl.href;
+                        }
+
+                        if (!email) {
+                            const emailEl = document.querySelector('a[href^="mailto:"]');
+                            if (emailEl) email = emailEl.href.replace('mailto:', '');
+                        }
+
                         return {
                             name,
                             phone,
                             address,
-                            website: websiteEl ? websiteEl.href : ''
+                            website,
+                            email
                         };
                     });
 
@@ -164,7 +224,8 @@ async function search(query, ignoreLandlines, pages) {
                             source: 'Annuaire CI',
                             details: {
                                 adresse: details.address,
-                                siteWeb: details.website
+                                siteWeb: details.website,
+                                email: details.email
                             }
                         });
                     }

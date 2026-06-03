@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import CustomSelect from '../../components/CustomSelect';
 import { COUNTRIES } from '../../constants/countries';
 import { API_BASE_URL } from '../../config';
+import { CardSkeleton } from '../../components/ui/SkeletonLoader';
 
 
 export default function ContactAdd() {
@@ -134,7 +135,17 @@ export default function ContactAdd() {
     };
 
     if (isLoading) {
-        return <div className="p-8 text-center text-gray-500">{t('loadingContactData')}</div>;
+        return (
+            <div className="max-w-7xl mx-auto space-y-6">
+                <div className="flex items-center justify-between mb-6">
+                    <div className="h-8 bg-gray-200 dark:bg-zinc-700 rounded w-48 animate-pulse"></div>
+                    <div className="h-10 bg-gray-200 dark:bg-zinc-700 rounded w-24 animate-pulse"></div>
+                </div>
+                <div className="max-w-2xl">
+                    <CardSkeleton />
+                </div>
+            </div>
+        );
     }
 
     return (

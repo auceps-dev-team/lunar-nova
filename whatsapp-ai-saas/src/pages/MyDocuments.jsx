@@ -4,6 +4,7 @@ import useAppStore from '../store';
 import { FileText, Trash2, Edit, Plus, Clock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { API_BASE_URL } from '../config';
+import { TableSkeleton } from '../components/ui/SkeletonLoader';
 
 
 export default function MyDocuments() {
@@ -88,9 +89,13 @@ export default function MyDocuments() {
                 </Link>
             </div>
 
-            <div className="flex-1 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
+            <div className="flex-1 flex flex-col">
+                {isLoading ? (
+                    <div className="mt-4"><TableSkeleton rows={5} columns={3} /></div>
+                ) : (
+                <div className="flex-1 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 text-sm">
                                 <th className="py-3 px-6 font-medium">{t('documentTitle')}</th>
@@ -99,11 +104,7 @@ export default function MyDocuments() {
                             </tr>
                         </thead>
                         <tbody>
-                            {isLoading ? (
-                                <tr>
-                                    <td colSpan="3" className="py-8 text-center text-gray-500">{t('loading')}</td>
-                                </tr>
-                            ) : documents.length === 0 ? (
+                            {documents.length === 0 ? (
                                 <tr>
                                     <td colSpan="3" className="py-12 text-center">
                                         <div className="flex flex-col items-center justify-center text-gray-500">
@@ -150,8 +151,10 @@ export default function MyDocuments() {
                                 ))
                             )}
                         </tbody>
-                    </table>
+                        </table>
+                    </div>
                 </div>
+                )}
             </div>
         </div>
     );

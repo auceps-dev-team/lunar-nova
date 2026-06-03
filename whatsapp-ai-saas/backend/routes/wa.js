@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
+const puppeteer = require('puppeteer-core');
 
 
 // --- Phase 13: WhatsApp Contacts APIs ---

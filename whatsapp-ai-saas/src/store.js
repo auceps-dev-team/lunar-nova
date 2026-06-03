@@ -45,6 +45,12 @@ const useAppStore = create(
             // --- Persistent Data ---
             instances: [],
             copilotRepliesGenerated: 0,
+            
+            // --- Prospecting Data ---
+            prospectLeads: [],
+            prospectSearchQuery: '',
+            setProspectLeads: (leads) => set({ prospectLeads: leads }),
+            setProspectSearchQuery: (query) => set({ prospectSearchQuery: query }),
 
             // --- Transient Context Actions ---
             setInvoiceDraft: (draft) => set({ invoiceDraft: draft }),

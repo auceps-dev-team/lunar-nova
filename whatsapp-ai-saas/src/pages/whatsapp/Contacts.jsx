@@ -5,6 +5,7 @@ import useAppStore from '../../store';
 import { useTranslation } from 'react-i18next';
 import CustomSelect from '../../components/CustomSelect';
 import { API_BASE_URL } from '../../config';
+import { TableSkeleton } from '../../components/ui/SkeletonLoader';
 
 
 
@@ -540,6 +541,9 @@ export default function Contacts({ activeId }) {
                 </div>
             </div>
 
+            {isLoading ? (
+                <div className="mt-4"><TableSkeleton rows={8} columns={9} /></div>
+            ) : (
             <div className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm">
@@ -574,13 +578,7 @@ export default function Contacts({ activeId }) {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100 dark:divide-zinc-800 text-gray-800 dark:text-zinc-200">
-                            {isLoading ? (
-                                <tr>
-                                    <td colSpan="9" className="px-6 py-12 text-center text-gray-500 dark:text-zinc-500">
-                                        {t('loadingContacts')}
-                                    </td>
-                                </tr>
-                            ) : contactsOnPage.length === 0 ? (
+                            {contactsOnPage.length === 0 ? (
                                 <tr>
                                     <td colSpan="9" className="px-6 py-12 text-center text-gray-500 dark:text-zinc-500">
                                         {t('noContactsFound')}
@@ -691,6 +689,7 @@ export default function Contacts({ activeId }) {
                     </div>
                 )}
             </div>
+            )}
 
             {/* Bulk Edit Modal */}
             {isBulkEditModalOpen && (

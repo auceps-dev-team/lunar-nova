@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import useAppStore from '../../store';
 
 import { useTranslation } from 'react-i18next';
+import { TableSkeleton } from '../../components/ui/SkeletonLoader';
 
 export default function ContactLists() {
     const { t } = useTranslation();
@@ -134,6 +135,9 @@ export default function ContactLists() {
                 </button>
             </div>
 
+            {isLoading ? (
+                <div className="mt-4"><TableSkeleton rows={5} columns={3} /></div>
+            ) : (
             <div className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm">
@@ -145,9 +149,7 @@ export default function ContactLists() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100 dark:divide-zinc-800 text-gray-800 dark:text-zinc-200">
-                            {isLoading ? (
-                                <tr><td colSpan="3" className="px-6 py-12 text-center text-gray-500 dark:text-zinc-500">{t('loadingContactLists')}</td></tr>
-                            ) : lists.length === 0 ? (
+                            {lists.length === 0 ? (
                                 <tr><td colSpan="3" className="px-6 py-12 text-center text-gray-500 dark:text-zinc-500">{t('noContactListsFound')}</td></tr>
                             ) : lists.map((list) => (
                                 <tr key={list.id} className="hover:bg-gray-50/50 dark:hover:bg-zinc-800/30 transition-colors">
@@ -169,6 +171,7 @@ export default function ContactLists() {
                     </table>
                 </div>
             </div>
+            )}
 
             {/* Create Contact List Modal */}
             {isModalOpen && (

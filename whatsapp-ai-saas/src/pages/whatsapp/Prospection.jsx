@@ -76,6 +76,7 @@ export default function Prospection() {
                 const formattedLeads = data.leads.map(l => ({
                     name: l.name || l.nom,
                     phone: l.phone || l.numero,
+                    email: l.email || l.details?.email || '',
                     address: l.address || l.details?.adresse || 'Non précisé',
                     website: l.website || l.details?.siteWeb || ''
                 }));
@@ -96,10 +97,10 @@ export default function Prospection() {
     const handleExportCSV = () => {
         if (leads.length === 0) return;
         
-        const headers = ["Nom", "Téléphone", "Adresse", "Site Web"];
+        const headers = ["Nom", "Téléphone", "Email", "Adresse", "Site Web"];
         const csvContent = [
             headers.join(","),
-            ...leads.map(l => `"${l.name.replace(/"/g, '""')}","${l.phone}","${l.address.replace(/"/g, '""')}","${l.website}"`)
+            ...leads.map(l => `"${l.name.replace(/"/g, '""')}","${l.phone}","${l.email}","${l.address.replace(/"/g, '""')}","${l.website}"`)
         ].join("\n");
         
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -123,7 +124,8 @@ export default function Prospection() {
             const contactsToImport = leads.map(l => ({
                 name: l.name,
                 phone: l.phone,
-                address: l.address,
+                email: l.email || null,
+                address: l.address + (l.website ? ` | Web: ${l.website}` : ''),
                 list_id: selectedListId || null,
                 segment_id: selectedSegmentId || null
             }));
@@ -291,8 +293,8 @@ export default function Prospection() {
                                 <tr>
                                     <th className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800">Nom</th>
                                     <th className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800">Téléphone</th>
-                                    <th className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800">Adresse</th>
-                                    <th className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800">Site Web</th>
+                                    <th className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800">Email</th>
+                                    <th className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800">Adresse & Web</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-zinc-800 text-gray-800 dark:text-zinc-200">
@@ -303,19 +305,22 @@ export default function Prospection() {
                                             <Phone className="h-3 w-3" />
                                             {lead.phone}
                                         </td>
+                                        <td className="px-6 py-4 text-gray-500 dark:text-gray-400">
+                                            {lead.email ? (
+                                                <a href={`mailto:${lead.email}`} className="text-emerald-600 hover:underline">{lead.email}</a>
+                                            ) : '-'}
+                                        </td>
                                         <td className="px-6 py-4 text-gray-500 dark:text-gray-400 max-w-[200px] truncate" title={lead.address}>
                                             <div className="flex items-center gap-1">
                                                 <MapPin className="h-3 w-3 flex-shrink-0" />
                                                 <span className="truncate">{lead.address}</span>
                                             </div>
-                                        </td>
-                                        <td className="px-6 py-4 text-gray-500 dark:text-gray-400 max-w-[150px] truncate" title={lead.website}>
-                                            {lead.website ? (
-                                                <a href={lead.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-emerald-600 hover:underline">
+                                            {lead.website && (
+                                                <a href={lead.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-emerald-600 hover:underline mt-1 text-xs">
                                                     <Globe className="h-3 w-3 flex-shrink-0" />
                                                     <span className="truncate">{lead.website.replace('https://', '').replace('http://', '')}</span>
                                                 </a>
-                                            ) : '-'}
+                                            )}
                                         </td>
                                     </tr>
                                 ))}
