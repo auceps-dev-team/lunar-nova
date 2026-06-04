@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const googlePlacesService = require('../googlePlacesService');
+const googleMapScraper = require('../scrapers/googleMapScraper');
 const annuaireCiScraper = require('../scrapers/annuaireCiScraper');
 const goAfricaScraper = require('../scrapers/goAfricaScraper');
 
@@ -12,7 +13,8 @@ router.post('/search', async (req, res) => {
         // ignoreLandlines: boolean
         // source: 'google' | 'annuaireci' | 'goafrica'
         // pages: number (quantité de pages à scraper)
-        const { query, ignoreLandlines, source = 'google', pages = 1 } = req.body;
+        // zone: string, duration: number, quantity: number (pour google)
+        const { query, ignoreLandlines, source = 'google', pages = 1, zone = '', duration = 5, quantity = 20 } = req.body;
 
         if (!query) {
             return res.status(400).json({ error: 'La requête (query) est obligatoire.' });
@@ -23,7 +25,7 @@ router.post('/search', async (req, res) => {
         let leads = [];
 
         if (source === 'google') {
-            leads = await googlePlacesService.searchPlaces(query, ignoreLandlines);
+            leads = await googleMapScraper.search(query, ignoreLandlines, quantity, duration, zone);
         } else if (source === 'annuaireci') {
             leads = await annuaireCiScraper.search(query, ignoreLandlines, pages);
         } else if (source === 'goafrica') {

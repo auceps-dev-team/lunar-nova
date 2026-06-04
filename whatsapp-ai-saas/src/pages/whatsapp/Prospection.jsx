@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, MapPin, Phone, Globe, Download, Database, CheckSquare, Square, Loader2, Building2, Map as MapIcon, Globe2 } from 'lucide-react';
+import { Search, MapPin, Phone, Globe, Download, Database, CheckSquare, Square, Loader2, Building2, Map as MapIcon, Globe2, Trash2, Clock, Target } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import useAppStore from '../../store';
 import { useTranslation } from 'react-i18next';
@@ -8,12 +8,17 @@ export default function Prospection() {
     const { t } = useTranslation();
     const showAppNotification = useAppStore(state => state.showAppNotification);
 
-    const [query, setQuery] = useState('');
+    const query = useAppStore(state => state.prospectSearchQuery);
+    const setQuery = useAppStore(state => state.setProspectSearchQuery);
     const [ignoreLandlines, setIgnoreLandlines] = useState(true);
     const [isSearching, setIsSearching] = useState(false);
-    const [leads, setLeads] = useState([]);
+    const leads = useAppStore(state => state.prospectLeads);
+    const setLeads = useAppStore(state => state.setProspectLeads);
     const [source, setSource] = useState('google');
     const [pages, setPages] = useState(1);
+    const [zone, setZone] = useState('');
+    const [duration, setDuration] = useState(5);
+    const [quantity, setQuantity] = useState(20);
     const [googleApiKey, setGoogleApiKey] = useState('');
     
     // For Import Modal
@@ -61,19 +66,19 @@ export default function Prospection() {
         if (!query.trim()) return;
         
         setIsSearching(true);
-        setLeads([]);
         
         try {
             const res = await fetch('http://127.0.0.1:3000/api/prospection/search', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ query, ignoreLandlines, source, pages })
+                body: JSON.stringify({ query, ignoreLandlines, source, pages, zone, duration, quantity })
             });
             const data = await res.json();
             
             if (data.success) {
                 // Uniformiser le format des leads retournés
                 const formattedLeads = data.leads.map(l => ({
+                    ...l, // Keep all original properties including link and details
                     name: l.name || l.nom,
                     phone: l.phone || l.numero,
                     email: l.email || l.details?.email || '',
@@ -81,7 +86,11 @@ export default function Prospection() {
                     website: l.website || l.details?.siteWeb || ''
                 }));
                 
-                setLeads(formattedLeads);
+                const currentLeads = useAppStore.getState().prospectLeads || [];
+                // Prevent duplicates based on phone or name
+                const existingNames = new Set(currentLeads.map(p => p.name));
+                const newUniqueLeads = formattedLeads.filter(l => !existingNames.has(l.name));
+                setLeads([...currentLeads, ...newUniqueLeads]);
                 showAppNotification(`${data.count} leads trouvés !`, 'success');
             } else {
                 throw new Error(data.error);
@@ -217,9 +226,59 @@ export default function Prospection() {
                                 disabled={source === 'google'}
                                 className={`w-full h-2 mt-4 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-zinc-700 ${source === 'google' ? 'opacity-50 cursor-not-allowed' : 'accent-emerald-600'}`}
                             />
-                            {source === 'google' && <p className="text-xs text-gray-500 mt-1">Non applicable pour Google Maps</p>}
+                            {source === 'google' && <p className="text-xs text-gray-500 mt-1">Géré par les options ci-dessous</p>}
                         </div>
                     </div>
+
+                    {/* Google Maps Specific Settings */}
+                    {source === 'google' && (
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-gray-100 dark:border-zinc-800 mt-2">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    Zone de scraping (Lieu exact)
+                                </label>
+                                <div className="relative">
+                                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />
+                                    <input
+                                        type="text"
+                                        className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 text-gray-900 rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block dark:bg-zinc-800 dark:border-zinc-700 dark:placeholder-gray-400 dark:text-white transition-colors"
+                                        placeholder="Ex: Abidjan, Côte d'Ivoire"
+                                        value={zone}
+                                        onChange={(e) => setZone(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex justify-between">
+                                    <span>Quantité max (Leads)</span>
+                                    <span className="font-bold text-emerald-600">{quantity}</span>
+                                </label>
+                                <input 
+                                    type="range" 
+                                    min="5" 
+                                    max="200" 
+                                    step="5"
+                                    value={quantity} 
+                                    onChange={(e) => setQuantity(parseInt(e.target.value))}
+                                    className="w-full h-2 mt-3 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-zinc-700 accent-emerald-600"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex justify-between">
+                                    <span>Durée max (Minutes)</span>
+                                    <span className="font-bold text-emerald-600">{duration} min</span>
+                                </label>
+                                <input 
+                                    type="range" 
+                                    min="1" 
+                                    max="30" 
+                                    value={duration} 
+                                    onChange={(e) => setDuration(parseInt(e.target.value))}
+                                    className="w-full h-2 mt-3 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-zinc-700 accent-emerald-600"
+                                />
+                            </div>
+                        </div>
+                    )}
 
                     <div className="flex items-center gap-2 cursor-pointer pt-2" onClick={() => setIgnoreLandlines(!ignoreLandlines)}>
                         {ignoreLandlines ? <CheckSquare className="text-emerald-500 h-5 w-5" /> : <Square className="text-gray-400 h-5 w-5" />}
@@ -264,12 +323,38 @@ export default function Prospection() {
                 )}
             </div>
 
+            {/* Loading Skeleton */}
+            {isSearching && (
+                <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm">
+                    <div className="p-4 border-b border-gray-200 dark:border-zinc-800">
+                        <div className="h-6 bg-gray-200 dark:bg-zinc-800 rounded w-48 animate-pulse"></div>
+                    </div>
+                    <div className="p-4 space-y-4">
+                        {[1, 2, 3, 4, 5].map(i => (
+                            <div key={i} className="flex gap-4 animate-pulse">
+                                <div className="h-8 bg-gray-200 dark:bg-zinc-800 rounded w-1/4"></div>
+                                <div className="h-8 bg-gray-200 dark:bg-zinc-800 rounded w-1/4"></div>
+                                <div className="h-8 bg-gray-200 dark:bg-zinc-800 rounded w-1/4"></div>
+                                <div className="h-8 bg-gray-200 dark:bg-zinc-800 rounded w-1/4"></div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             {/* Results Section */}
-            {leads.length > 0 && (
+            {!isSearching && leads.length > 0 && (
                 <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm">
                     <div className="p-4 border-b border-gray-200 dark:border-zinc-800 flex flex-wrap items-center justify-between gap-4">
                         <h3 className="font-semibold text-gray-900 dark:text-white">Résultats ({leads.length} leads trouvés)</h3>
                         <div className="flex items-center gap-3">
+                            <button
+                                onClick={() => setLeads([])}
+                                className="bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-900/20 dark:hover:bg-red-900/40 dark:text-red-400 border border-red-200 dark:border-red-800/30 px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-colors shadow-sm"
+                            >
+                                <Trash2 className="h-4 w-4" />
+                                Vider
+                            </button>
                             <button
                                 onClick={handleExportCSV}
                                 className="bg-white hover:bg-gray-50 text-gray-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-gray-200 border border-gray-200 dark:border-zinc-700 px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-colors shadow-sm"
@@ -310,17 +395,33 @@ export default function Prospection() {
                                                 <a href={`mailto:${lead.email}`} className="text-emerald-600 hover:underline">{lead.email}</a>
                                             ) : '-'}
                                         </td>
-                                        <td className="px-6 py-4 text-gray-500 dark:text-gray-400 max-w-[200px] truncate" title={lead.address}>
-                                            <div className="flex items-center gap-1">
-                                                <MapPin className="h-3 w-3 flex-shrink-0" />
-                                                <span className="truncate">{lead.address}</span>
+                                        <td className="px-6 py-4 text-gray-500 dark:text-gray-400">
+                                            <div className="space-y-1">
+                                                <div className="flex items-start gap-2 text-gray-600 dark:text-gray-300 text-sm">
+                                                    <MapPin className="h-4 w-4 mt-0.5 shrink-0" />
+                                                    <span className="flex items-center flex-wrap gap-1">
+                                                        {(lead.link || lead.details?.link) ? (
+                                                            <a 
+                                                                href={lead.link || lead.details?.link} 
+                                                                target="_blank" 
+                                                                rel="noopener noreferrer" 
+                                                                className="hover:underline text-gray-700 dark:text-gray-200" 
+                                                                title="Voir la source originale"
+                                                            >
+                                                                {lead.details?.adresse || lead.address || '-'}
+                                                            </a>
+                                                        ) : (
+                                                            <span>{lead.details?.adresse || lead.address || '-'}</span>
+                                                        )}
+                                                    </span>
+                                                </div>
+                                                {(lead.details?.siteWeb || lead.website) && (
+                                                    <a href={lead.details?.siteWeb || lead.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-emerald-600 hover:underline mt-1 text-xs">
+                                                        <Globe className="h-3 w-3 flex-shrink-0" />
+                                                        <span className="truncate">{(lead.details?.siteWeb || lead.website).replace('https://', '').replace('http://', '')}</span>
+                                                    </a>
+                                                )}
                                             </div>
-                                            {lead.website && (
-                                                <a href={lead.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-emerald-600 hover:underline mt-1 text-xs">
-                                                    <Globe className="h-3 w-3 flex-shrink-0" />
-                                                    <span className="truncate">{lead.website.replace('https://', '').replace('http://', '')}</span>
-                                                </a>
-                                            )}
                                         </td>
                                     </tr>
                                 ))}

@@ -130,7 +130,7 @@ router.post('/api/wa/contacts/bulk', async (req, res) => {
             // Insert the contact
             await client.query(
                 'INSERT INTO wa_contacts (name, phone, segment_id, list_id, email, address) VALUES ($1, $2, $3, $4, $5, $6)',
-                [name || 'Inconnu', phone, segment_id, list_id || null, email || null, address || null]
+                [name || 'Inconnu', phone || '', segment_id, list_id || null, email || null, address || null]
             );
         }
 
