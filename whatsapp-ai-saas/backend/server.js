@@ -137,9 +137,15 @@ app.get('/api/instances', async (req, res) => {
                             } else {
                                 console.log('[Orchestrator] document.body not available for observation');
                             }
-                        }).catch(err => console.error('Failed to attach observer:', err));
+                        }).catch(err => {
+                            if (err && err.message && !err.message.includes('Execution context was destroyed')) {
+                                console.error('Failed to attach observer:', err);
+                            }
+                        });
                     } catch (err) {
-                        console.error('Error attaching observer to page:', err);
+                        if (err && err.message && !err.message.includes('Execution context was destroyed')) {
+                            console.error('Error attaching observer to page:', err);
+                        }
                     }
                 }
             }

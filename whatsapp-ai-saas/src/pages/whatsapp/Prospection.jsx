@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Search, MapPin, Phone, Globe, Download, Database, CheckSquare, Square, Loader2, Building2, Map as MapIcon, Globe2, Trash2, Clock, Target } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Search, MapPin, Phone, Globe, Download, Database, CheckSquare, Square, Loader2, Building2, Map as MapIcon, Globe2, Trash2, Clock, Target, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import useAppStore from '../../store';
 import { useTranslation } from 'react-i18next';
@@ -21,6 +21,32 @@ export default function Prospection() {
     const [quantity, setQuantity] = useState(20);
     const [googleApiKey, setGoogleApiKey] = useState('');
     
+    // GoAfrica State
+    const [goAfricaMetadata, setGoAfricaMetadata] = useState({ countries: [], categories: [] });
+    const [goAfricaCountry, setGoAfricaCountry] = useState('ci');
+    const [goAfricaCategory, setGoAfricaCategory] = useState('');
+    const [goAfricaSubcategory, setGoAfricaSubcategory] = useState('');
+    const [isRefreshingMetadata, setIsRefreshingMetadata] = useState(false);
+
+    const handleRefreshGoAfricaMetadata = async () => {
+        setIsRefreshingMetadata(true);
+        try {
+            const response = await fetch('http://127.0.0.1:3000/api/prospection/goafrica-update-metadata', {
+                method: 'POST'
+            });
+            const result = await response.json();
+            if (result.success) {
+                showAppNotification('success', 'Mise à jour démarrée', result.message);
+            } else {
+                showAppNotification('error', 'Erreur', result.error || 'Erreur inconnue');
+            }
+        } catch (err) {
+            showAppNotification('error', 'Erreur de connexion', err.message);
+        } finally {
+            setIsRefreshingMetadata(false);
+        }
+    };
+    
     // For Import Modal
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [allLists, setAllLists] = useState([]);
@@ -28,6 +54,46 @@ export default function Prospection() {
     const [selectedListId, setSelectedListId] = useState('');
     const [selectedSegmentId, setSelectedSegmentId] = useState('');
     const [isImporting, setIsImporting] = useState(false);
+
+    // Real-time progress tracking
+    const [progressPhase, setProgressPhase] = useState(''); // 'scroll' | 'extract' | 'done' | 'info'
+    const [progressMessage, setProgressMessage] = useState('');
+    const [progressPercent, setProgressPercent] = useState(0);
+    const abortControllerRef = useRef(null);
+    const [selectedLeadNames, setSelectedLeadNames] = useState(new Set());
+
+    const toggleSelectAll = () => {
+        if (selectedLeadNames.size === leads.length) {
+            setSelectedLeadNames(new Set());
+        } else {
+            setSelectedLeadNames(new Set(leads.map(l => l.name)));
+        }
+    };
+
+    const toggleSelectLead = (name) => {
+        const newSet = new Set(selectedLeadNames);
+        if (newSet.has(name)) {
+            newSet.delete(name);
+        } else {
+            newSet.add(name);
+        }
+        setSelectedLeadNames(newSet);
+    };
+
+    const handleDeleteLead = (name) => {
+        setLeads(leads.filter(l => l.name !== name));
+        if (selectedLeadNames.has(name)) {
+            const newSet = new Set(selectedLeadNames);
+            newSet.delete(name);
+            setSelectedLeadNames(newSet);
+        }
+    };
+
+    const getTargetLeads = () => {
+        return selectedLeadNames.size > 0 
+            ? leads.filter(l => selectedLeadNames.has(l.name)) 
+            : leads;
+    };
 
     useEffect(() => {
         fetchMetadata();
@@ -48,14 +114,22 @@ export default function Prospection() {
 
     const fetchMetadata = async () => {
         try {
-            const [listsRes, segmentsRes] = await Promise.all([
+            const [listsRes, segmentsRes, goAfricaRes] = await Promise.all([
                 fetch('http://127.0.0.1:3000/api/wa/contact-lists'),
-                fetch('http://127.0.0.1:3000/api/wa/segments')
+                fetch('http://127.0.0.1:3000/api/wa/segments'),
+                fetch('http://127.0.0.1:3000/api/prospection/goafrica-metadata').catch(() => null)
             ]);
             const listsData = await listsRes.json();
             const segmentsData = await segmentsRes.json();
             if (listsData.status === 'success') setAllLists(listsData.data);
             if (segmentsData.status === 'success') setAllSegments(segmentsData.data);
+            
+            if (goAfricaRes && goAfricaRes.ok) {
+                const gaData = await goAfricaRes.json();
+                if (gaData.success && gaData.data) {
+                    setGoAfricaMetadata(gaData.data);
+                }
+            }
         } catch (error) {
             console.error('Fetch metadata error:', error);
         }
@@ -63,53 +137,144 @@ export default function Prospection() {
 
     const handleSearch = async (e) => {
         e.preventDefault();
-        if (!query.trim()) return;
+        
+        // Pour GoAfrica, on peut chercher par catégorie seule (sans texte)
+        const hasQuery = query.trim().length > 0;
+        const hasGoAfricaCategory = source === 'goafrica' && (goAfricaCategory || goAfricaSubcategory);
+        
+        if (!hasQuery && !hasGoAfricaCategory) return;
         
         setIsSearching(true);
+        setProgressPhase('scroll');
+        setProgressMessage('Démarrage...');
+        setProgressPercent(0);
+
+        const controller = new AbortController();
+        abortControllerRef.current = controller;
         
         try {
-            const res = await fetch('http://127.0.0.1:3000/api/prospection/search', {
+            const currentLeads = useAppStore.getState().prospectLeads || [];
+            const knownLinks = currentLeads
+                .filter(l => l.link)
+                .map(l => l.link);
+
+            const res = await fetch('http://127.0.0.1:3000/api/prospection/search-stream', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ query, ignoreLandlines, source, pages, zone, duration, quantity })
+                body: JSON.stringify({ 
+                    query, 
+                    ignoreLandlines, 
+                    source, 
+                    pages, 
+                    zone, 
+                    duration, 
+                    quantity, 
+                    knownLinks,
+                    country: source === 'goafrica' ? goAfricaCountry : undefined,
+                    subcategorySlug: source === 'goafrica' ? (goAfricaSubcategory || goAfricaCategory) : undefined
+                }),
+                signal: controller.signal
             });
-            const data = await res.json();
-            
-            if (data.success) {
-                // Uniformiser le format des leads retournés
-                const formattedLeads = data.leads.map(l => ({
-                    ...l, // Keep all original properties including link and details
-                    name: l.name || l.nom,
-                    phone: l.phone || l.numero,
-                    email: l.email || l.details?.email || '',
-                    address: l.address || l.details?.adresse || 'Non précisé',
-                    website: l.website || l.details?.siteWeb || ''
-                }));
-                
-                const currentLeads = useAppStore.getState().prospectLeads || [];
-                // Prevent duplicates based on phone or name
-                const existingNames = new Set(currentLeads.map(p => p.name));
-                const newUniqueLeads = formattedLeads.filter(l => !existingNames.has(l.name));
-                setLeads([...currentLeads, ...newUniqueLeads]);
-                showAppNotification(`${data.count} leads trouvés !`, 'success');
-            } else {
-                throw new Error(data.error);
+
+            const reader = res.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || '';
+
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        try {
+                            const data = JSON.parse(line.slice(6));
+                            console.log("SSE Received:", data);
+                            
+                            // Handle progress events
+                            if (data.phase) {
+                                setProgressPhase(data.phase);
+                                setProgressMessage(data.message || '');
+                                if (data.phase === 'scroll' && data.target > 0) {
+                                    setProgressPercent(Math.min(Math.round((data.newCount / data.target) * 50), 50));
+                                } else if (data.phase === 'extract' && data.total > 0) {
+                                    setProgressPercent(50 + Math.round((data.current / data.total) * 50));
+                                } else if (data.phase === 'done') {
+                                    setProgressPercent(100);
+                                }
+                            }
+                            
+                            // Handle final result
+                            if (data.success !== undefined) {
+                                if (data.success) {
+                                    const formattedLeads = data.leads.map(l => ({
+                                        ...l,
+                                        source: source,
+                                        name: l.name || l.nom,
+                                        phone: l.phone || l.numero,
+                                        email: l.email || l.details?.email || '',
+                                        address: l.address || l.details?.adresse || 'Non précisé',
+                                        website: l.website || l.details?.siteWeb || ''
+                                    }));
+                                    
+                                    const latestLeads = useAppStore.getState().prospectLeads || [];
+                                    const existingNames = new Set(latestLeads.map(p => p.name));
+                                    const newUniqueLeads = formattedLeads.filter(l => !existingNames.has(l.name));
+                                    setLeads([...latestLeads, ...newUniqueLeads]);
+                                    showAppNotification(`${data.count} leads trouvés !`, 'success');
+                                }
+                            }
+                            
+                            // Handle error
+                            if (data.message && !data.phase && !data.success) {
+                                throw new Error(data.message);
+                            }
+                        } catch (parseErr) {
+                            if (parseErr.message && !parseErr.message.includes('JSON')) {
+                                throw parseErr;
+                            }
+                        }
+                    }
+                }
             }
         } catch (error) {
-            console.error('Search error:', error);
-            showAppNotification(error.message || 'Erreur lors de la recherche', 'error');
+            if (error.name !== 'AbortError') {
+                console.error('Search error:', error);
+                showAppNotification(error.message || 'Erreur lors de la recherche', 'error');
+            }
         } finally {
             setIsSearching(false);
+            setProgressPhase('');
+            setProgressMessage('');
+            abortControllerRef.current = null;
         }
+    };
+
+    const handleClearLeads = async () => {
+        setLeads([]);
+        setSelectedLeadNames(new Set());
+        // Also clear the backend session cache so next search starts fresh
+        try {
+            await fetch('http://127.0.0.1:3000/api/prospection/clear-cache', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({}) // Empty = clear all sessions
+            });
+        } catch (_) { /* Non-critical */ }
+        showAppNotification('Liste vidée et cache réinitialisé', 'success');
     };
 
     const handleExportCSV = () => {
         if (leads.length === 0) return;
+        const targetLeads = getTargetLeads();
         
-        const headers = ["Nom", "Téléphone", "Email", "Adresse", "Site Web"];
+        const headers = ["Nom", "Téléphone", "Email", "Adresse", "Site Web", "Source", "Lien"];
         const csvContent = [
             headers.join(","),
-            ...leads.map(l => `"${l.name.replace(/"/g, '""')}","${l.phone}","${l.email}","${l.address.replace(/"/g, '""')}","${l.website}"`)
+            ...targetLeads.map(l => `"${(l.name || '').replace(/"/g, '""')}","${l.phone || ''}","${l.email || ''}","${(l.address || '').replace(/"/g, '""')}","${l.website || ''}","${l.source || 'google'}","${l.link || ''}"`)
         ].join("\n");
         
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -129,8 +294,9 @@ export default function Prospection() {
         setIsImporting(true);
         
         try {
+            const targetLeads = getTargetLeads();
             // Convert leads to WA Contacts format
-            const contactsToImport = leads.map(l => ({
+            const contactsToImport = targetLeads.map(l => ({
                 name: l.name,
                 phone: l.phone,
                 email: l.email || null,
@@ -148,7 +314,7 @@ export default function Prospection() {
             const data = await res.json();
             
             if (data.status === 'success') {
-                showAppNotification(`${data.imported} contacts importés dans le CRM !`, 'success');
+                showAppNotification(data.message || `${data.imported} contacts importés !`, 'success');
                 setIsImportModalOpen(false);
                 setLeads([]); // Clear leads after import
             } else {
@@ -176,7 +342,7 @@ export default function Prospection() {
                 <form onSubmit={handleSearch} className="space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Que recherchez-vous ? (ex: "Plombiers à Paris", "Agences immobilières Abidjan")
+                            {source === 'goafrica' ? 'Que recherchez-vous ? (ex: "Boulangerie" - Optionnel si une catégorie est sélectionnée)' : 'Que recherchez-vous ? (ex: "Plombiers à Paris", "Agences immobilières Abidjan")'}
                         </label>
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />
@@ -186,7 +352,7 @@ export default function Prospection() {
                                 placeholder="Tapez votre recherche..."
                                 value={query}
                                 onChange={(e) => setQuery(e.target.value)}
-                                required
+                                required={source !== 'goafrica' || (!goAfricaCategory && !goAfricaSubcategory && !query)}
                             />
                         </div>
                     </div>
@@ -230,6 +396,66 @@ export default function Prospection() {
                         </div>
                     </div>
 
+                    {/* Go Africa Specific Settings */}
+                    {source === 'goafrica' && (
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-gray-100 dark:border-zinc-800 mt-2">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Pays</label>
+                                <select 
+                                    className="w-full px-4 py-2 bg-gray-50 border border-gray-200 text-gray-900 rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block dark:bg-zinc-800 dark:border-zinc-700 dark:text-white"
+                                    value={goAfricaCountry}
+                                    onChange={(e) => setGoAfricaCountry(e.target.value)}
+                                >
+                                    {(goAfricaMetadata?.countries || []).map(c => (
+                                        <option key={c.code} value={c.code}>{c.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <div className="flex items-center justify-between mb-1">
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Catégorie</label>
+                                    <button 
+                                        type="button"
+                                        onClick={handleRefreshGoAfricaMetadata} 
+                                        disabled={isRefreshingMetadata}
+                                        className="text-xs text-emerald-600 hover:text-emerald-700 dark:text-emerald-500 dark:hover:text-emerald-400 flex items-center gap-1 disabled:opacity-50"
+                                        title="Rafraîchir les catégories depuis Go Africa"
+                                    >
+                                        <RefreshCw className={`w-3 h-3 ${isRefreshingMetadata ? 'animate-spin' : ''}`} />
+                                        <span>Actualiser</span>
+                                    </button>
+                                </div>
+                                <select 
+                                    className="w-full px-4 py-2 bg-gray-50 border border-gray-200 text-gray-900 rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block dark:bg-zinc-800 dark:border-zinc-700 dark:text-white"
+                                    value={goAfricaCategory}
+                                    onChange={(e) => {
+                                        setGoAfricaCategory(e.target.value);
+                                        setGoAfricaSubcategory(''); // Reset subcategory when category changes
+                                    }}
+                                >
+                                    <option value="">-- Toutes les catégories --</option>
+                                    {(goAfricaMetadata?.categories || []).map(c => (
+                                        <option key={c.slug} value={c.slug}>{c.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Sous-catégorie</label>
+                                <select 
+                                    className="w-full px-4 py-2 bg-gray-50 border border-gray-200 text-gray-900 rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block dark:bg-zinc-800 dark:border-zinc-700 dark:text-white"
+                                    value={goAfricaSubcategory}
+                                    onChange={(e) => setGoAfricaSubcategory(e.target.value)}
+                                    disabled={!goAfricaCategory}
+                                >
+                                    <option value="">-- Toutes les sous-catégories --</option>
+                                    {(goAfricaMetadata?.categories?.find(c => c.slug === goAfricaCategory)?.subcategories || []).map(s => (
+                                        <option key={s.slug} value={s.slug}>{s.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Google Maps Specific Settings */}
                     {source === 'google' && (
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-gray-100 dark:border-zinc-800 mt-2">
@@ -270,7 +496,7 @@ export default function Prospection() {
                                 </label>
                                 <input 
                                     type="range" 
-                                    min="1" 
+                                    min="2" 
                                     max="30" 
                                     value={duration} 
                                     onChange={(e) => setDuration(parseInt(e.target.value))}
@@ -294,7 +520,7 @@ export default function Prospection() {
                             className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-lg font-medium text-sm flex items-center justify-center gap-2 w-full md:w-auto transition-colors disabled:opacity-50 shadow-sm"
                         >
                             {isSearching ? <Loader2 className="animate-spin h-5 w-5" /> : <Search className="h-5 w-5" />}
-                            {isSearching ? 'Recherche en cours...' : 'Générer des leads'}
+                            {isSearching ? 'Recherche en cours...' : (leads.length > 0 ? 'Continuer la recherche' : 'Générer des leads')}
                         </button>
                     </div>
                 </form>
@@ -323,21 +549,48 @@ export default function Prospection() {
                 )}
             </div>
 
-            {/* Loading Skeleton */}
+            {/* Live Progress Panel */}
             {isSearching && (
                 <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm">
-                    <div className="p-4 border-b border-gray-200 dark:border-zinc-800">
-                        <div className="h-6 bg-gray-200 dark:bg-zinc-800 rounded w-48 animate-pulse"></div>
-                    </div>
-                    <div className="p-4 space-y-4">
-                        {[1, 2, 3, 4, 5].map(i => (
-                            <div key={i} className="flex gap-4 animate-pulse">
-                                <div className="h-8 bg-gray-200 dark:bg-zinc-800 rounded w-1/4"></div>
-                                <div className="h-8 bg-gray-200 dark:bg-zinc-800 rounded w-1/4"></div>
-                                <div className="h-8 bg-gray-200 dark:bg-zinc-800 rounded w-1/4"></div>
-                                <div className="h-8 bg-gray-200 dark:bg-zinc-800 rounded w-1/4"></div>
+                    <div className="p-5 space-y-4">
+                        {/* Progress header */}
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <Loader2 className="animate-spin h-5 w-5 text-emerald-500" />
+                                <span className="font-semibold text-gray-900 dark:text-white">
+                                    {progressPhase === 'scroll' && 'Phase 1 — Recherche de liens...'}
+                                    {progressPhase === 'extract' && 'Phase 2 — Extraction des données...'}
+                                    {progressPhase === 'done' && 'Terminé !'}
+                                    {progressPhase === 'info' && 'Information'}
+                                    {!progressPhase && 'Démarrage...'}
+                                </span>
                             </div>
-                        ))}
+                            <span className="text-sm font-mono text-emerald-600 dark:text-emerald-400">{progressPercent}%</span>
+                        </div>
+
+                        {/* Progress bar */}
+                        <div className="w-full bg-gray-200 dark:bg-zinc-700 rounded-full h-2.5 overflow-hidden">
+                            <div 
+                                className="bg-gradient-to-r from-emerald-500 to-emerald-400 h-2.5 rounded-full transition-all duration-500 ease-out"
+                                style={{ width: `${progressPercent}%` }}
+                            ></div>
+                        </div>
+
+                        {/* Status message */}
+                        <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                            {progressPhase === 'scroll' && <MapPin className="h-4 w-4 text-blue-500" />}
+                            {progressPhase === 'extract' && <Target className="h-4 w-4 text-amber-500" />}
+                            {progressPhase === 'done' && <CheckSquare className="h-4 w-4 text-emerald-500" />}
+                            {progressMessage || 'Préparation...'}
+                        </p>
+
+                        {/* Abort button */}
+                        <button
+                            onClick={() => { if (abortControllerRef.current) abortControllerRef.current.abort(); }}
+                            className="text-sm text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 transition-colors"
+                        >
+                            Annuler la recherche
+                        </button>
                     </div>
                 </div>
             )}
@@ -346,11 +599,12 @@ export default function Prospection() {
             {!isSearching && leads.length > 0 && (
                 <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm">
                     <div className="p-4 border-b border-gray-200 dark:border-zinc-800 flex flex-wrap items-center justify-between gap-4">
-                        <h3 className="font-semibold text-gray-900 dark:text-white">Résultats ({leads.length} leads trouvés)</h3>
+                        <h3 className="font-semibold text-gray-900 dark:text-white">Résultats ({leads.length} leads trouvés {selectedLeadNames.size > 0 && `, ${selectedLeadNames.size} sélectionnés`})</h3>
                         <div className="flex items-center gap-3">
                             <button
-                                onClick={() => setLeads([])}
-                                className="bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-900/20 dark:hover:bg-red-900/40 dark:text-red-400 border border-red-200 dark:border-red-800/30 px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-colors shadow-sm"
+                                onClick={handleClearLeads}
+                                disabled={isSearching}
+                                className="bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-900/20 dark:hover:bg-red-900/40 dark:text-red-400 border border-red-200 dark:border-red-800/30 px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-colors shadow-sm disabled:opacity-50"
                             >
                                 <Trash2 className="h-4 w-4" />
                                 Vider
@@ -376,15 +630,32 @@ export default function Prospection() {
                         <table className="w-full text-left text-sm">
                             <thead className="bg-gray-50 dark:bg-zinc-800/50 text-gray-500 dark:text-gray-400 font-semibold text-xs tracking-wider uppercase select-none">
                                 <tr>
+                                    <th className="px-4 py-4 border-b border-gray-100 dark:border-zinc-800 w-12 text-center">
+                                        <input 
+                                            type="checkbox" 
+                                            className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                                            checked={leads.length > 0 && selectedLeadNames.size === leads.length}
+                                            onChange={toggleSelectAll}
+                                        />
+                                    </th>
                                     <th className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800">Nom</th>
                                     <th className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800">Téléphone</th>
                                     <th className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800">Email</th>
                                     <th className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800">Adresse & Web</th>
+                                    <th className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800 text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-zinc-800 text-gray-800 dark:text-zinc-200">
                                 {leads.map((lead, idx) => (
-                                    <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-zinc-800/30 transition-colors">
+                                    <tr key={idx} className={`hover:bg-gray-50/50 dark:hover:bg-zinc-800/30 transition-colors ${selectedLeadNames.has(lead.name) ? 'bg-emerald-50/50 dark:bg-emerald-900/10' : ''}`}>
+                                        <td className="px-4 py-4 text-center">
+                                            <input 
+                                                type="checkbox" 
+                                                className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                                                checked={selectedLeadNames.has(lead.name)}
+                                                onChange={() => toggleSelectLead(lead.name)}
+                                            />
+                                        </td>
                                         <td className="px-6 py-4 font-medium">{lead.name}</td>
                                         <td className="px-6 py-4 font-mono text-gray-600 dark:text-gray-400 flex items-center gap-1">
                                             <Phone className="h-3 w-3" />
@@ -423,6 +694,15 @@ export default function Prospection() {
                                                 )}
                                             </div>
                                         </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <button 
+                                                onClick={() => handleDeleteLead(lead.name)}
+                                                className="text-gray-400 hover:text-red-500 transition-colors"
+                                                title="Supprimer ce lead"
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </button>
+                                        </td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -440,7 +720,7 @@ export default function Prospection() {
                                 <div>
                                     <h3 className="text-xl font-bold text-gray-900 dark:text-white">Importer dans le CRM</h3>
                                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                                        Importez ces {leads.length} leads dans votre base de contacts.
+                                        Importez ces {selectedLeadNames.size > 0 ? selectedLeadNames.size : leads.length} leads dans votre base de contacts.
                                     </p>
                                 </div>
                                 <button

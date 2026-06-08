@@ -1,14 +1,58 @@
 const { chromium } = require('playwright');
 
+// Mapping code pays -> nom complet pour les résultats
+const COUNTRY_NAMES = {
+    ci: "Côte d'Ivoire",
+    tg: "Togo",
+    sn: "Sénégal",
+    bj: "Bénin",
+    bf: "Burkina Faso",
+    ml: "Mali",
+    ne: "Niger",
+    cm: "Cameroun",
+    cg: "Congo",
+    cd: "RDC",
+    ga: "Gabon",
+    gn: "Guinée",
+    ma: "Maroc",
+    dz: "Algérie",
+    za: "Afrique du Sud"
+};
+
+// Indicatifs téléphoniques par pays
+const COUNTRY_PHONE_CODES = {
+    ci: '225', tg: '228', sn: '221', bj: '229', bf: '226',
+    ml: '223', ne: '227', cm: '237', cg: '242', cd: '243',
+    ga: '241', gn: '224', ma: '212', dz: '213', za: '27'
+};
+
+// Préfixes de numéros fixes par pays (pour filtrage)
+const LANDLINE_PREFIXES = {
+    ci: ['21', '25', '27'],
+    tg: ['22', '23'],
+    sn: ['33'],
+    bj: ['21'],
+    bf: ['20', '25'],
+    cm: ['22', '23', '24', '33'],
+    cg: ['22'],
+    ga: ['01'],
+    ma: ['05'],
+    dz: ['02', '03', '04']
+};
+
 /**
  * Scraper pour Go Africa Online
  * @param {string} query Terme de recherche
  * @param {boolean} ignoreLandlines Ignorer les numéros fixes
  * @param {number} pages Quantité de pages à scraper
+ * @param {string} country Code pays (ex: 'ci', 'tg')
+ * @param {string} subcategorySlug Slug de la sous-catégorie
+ * @param {Function} onProgress Callback optionnel pour la progression
  */
-async function search(query, ignoreLandlines, pages) {
+async function search(query, ignoreLandlines, pages, country = 'ci', subcategorySlug = '', onProgress = null) {
     let browser;
     const leads = [];
+    const seenPhones = new Set(); // Déduplication par numéro de téléphone entre les pages
     
     try {
         console.log(`[GoAfricaOnline] Lancement du navigateur pour la requête: ${query}`);
@@ -19,35 +63,85 @@ async function search(query, ignoreLandlines, pages) {
         const page = await context.newPage();
 
         for (let p = 1; p <= pages; p++) {
-            // URL de recherche correcte sur Go Africa Online
-            const searchUrl = `https://www.goafricaonline.com/ci/annuaire-resultat?type=company&whatWho=${encodeURIComponent(query)}&page=${p}`;
+            // Si une sous-catégorie est fournie, on cherche dans cette catégorie
+            let searchUrl = '';
+            if (subcategorySlug) {
+                searchUrl = `https://www.goafricaonline.com/${country}/annuaire/${subcategorySlug}?page=${p}`;
+            } else if (query) {
+                // Recherche par mots-clés
+                searchUrl = `https://www.goafricaonline.com/${country || 'ci'}/annuaire-resultat?whatWho=${encodeURIComponent(query)}&page=${p}`;
+            } else {
+                throw new Error("Aucune sous-catégorie ou requête fournie");
+            }
             
-            console.log(`[GoAfricaOnline] Navigation vers la page ${p} : ${searchUrl}`);
-            await page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
-            
-            // GoAfricaOnline a souvent des mécanismes anti-bot. On attend un peu.
-            await page.waitForTimeout(3000);
+            let success = false;
+            for (let attempt = 1; attempt <= 3; attempt++) {
+                try {
+                    console.log(`[GoAfricaOnline] Navigation vers la page ${p} (Essai ${attempt}) : ${searchUrl}`);
+                    if (onProgress) onProgress({ phase: 'scroll', newCount: p, target: pages, message: `Navigation page ${p}/${pages} (Essai ${attempt}/3)...` });
+                    await page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+                    
+                    // GoAfricaOnline a souvent des mécanismes anti-bot. On attend un peu.
+                    await page.waitForTimeout(3000);
+                    success = true;
+                    break;
+                } catch (err) {
+                    console.error(`[GoAfricaOnline] Erreur page ${p}, tentative ${attempt}/3 :`, err.message);
+                    if (attempt === 3) throw err;
+                    await page.waitForTimeout(2000);
+                }
+            }
+            if (!success) continue;
 
             // Extraction des données de base + lien de l'entreprise
-            const currentLeads = await page.evaluate(() => {
+            const phoneCode = COUNTRY_PHONE_CODES[country] || '225';
+            const countryName = COUNTRY_NAMES[country] || country;
+            
+            const currentLeads = await page.evaluate(({ phoneCode, countryName }) => {
                 const results = [];
-                // GoAfricaOnline utilise souvent la balise <article> ou des div spécifiques
-                const items = document.querySelectorAll('article, div.bg-white.rounded-\\[24px\\]');
+                // Sélecteurs robustes avec fallbacks multiples
+                const items = document.querySelectorAll(
+                    'article, ' +
+                    'div.bg-white.rounded-\\[24px\\], ' +
+                    'div[class*="company"], ' +
+                    'div[class*="annuaire"] > div, ' +
+                    'li[class*="result"], ' +
+                    '.search-result-item'
+                );
                 
                 items.forEach(item => {
-                    const nameEl = item.querySelector('h2, h3, a[href*="/societe/"]');
+                    // Sélecteurs de nom renforcés
+                    const nameEl = item.querySelector(
+                        'h2, h3, ' +
+                        'a[href*="/societe/"], ' +
+                        'a[href*="-"][class*="title"], ' +
+                        '[class*="company-name"], ' +
+                        '[class*="nom"]'
+                    );
                     const phoneEls = item.querySelectorAll('a[href^="tel:"]');
-                    const addressEl = item.querySelector('address, [itemprop="address"], span[class*="address"], div[class*="address"]');
+                    // Sélecteurs d'adresse renforcés
+                    const addressEl = item.querySelector(
+                        'address, ' +
+                        '[itemprop="address"], ' +
+                        'span[class*="address"], ' +
+                        'div[class*="address"], ' +
+                        '[class*="location"], ' +
+                        '[class*="adresse"]'
+                    );
                     
                     // Récupérer le lien vers la fiche entreprise
                     let companyLink = '';
-                    const linkEl = item.querySelector('a[href*="-"]'); // Ex: boyoot-promoteur-immobilier
-                    if (linkEl && linkEl.href && !linkEl.href.includes('tel:')) {
-                        companyLink = linkEl.href;
-                    } else if (nameEl && nameEl.tagName === 'A') {
+                    // D'abord chercher un lien dans le titre (h2/h3 ou parent <a>)
+                    if (nameEl && nameEl.tagName === 'A') {
                         companyLink = nameEl.href;
                     } else if (nameEl && nameEl.parentElement && nameEl.parentElement.tagName === 'A') {
                         companyLink = nameEl.parentElement.href;
+                    } else {
+                        // Fallback : chercher un lien avec un chiffre (ID d'entreprise GoAfrica)
+                        const linkEl = item.querySelector('a[href*="/"][href$="-cote-ivoire"], a[href*="/"][href$="-togo"], a[href*="/"][href$="-senegal"]');
+                        if (linkEl && linkEl.href && !linkEl.href.includes('tel:')) {
+                            companyLink = linkEl.href;
+                        }
                     }
 
                     if (nameEl && phoneEls.length > 0) {
@@ -62,15 +156,16 @@ async function search(query, ignoreLandlines, pages) {
                         
                         // Nettoyer le numéro (enlever Gsm:, Tel: etc)
                         phone = phone.replace(/^(Gsm:|Tel:)\s*/i, '').replace(/\s+/g, '').replace(/\D+/g, '');
-                        if (phone.startsWith('225')) {
-                            phone = phone.substring(3);
+                        // Retirer l'indicatif du pays si présent
+                        if (phone.startsWith(phoneCode)) {
+                            phone = phone.substring(phoneCode.length);
                         }
                         
                         if (phone && phone.length >= 8) {
                             results.push({
                                 nom: name,
                                 numero: phone,
-                                pays: 'Côte d\'Ivoire', 
+                                pays: countryName,
                                 source: 'Go Africa Online',
                                 details: {
                                     adresse: addressEl ? addressEl.innerText.trim().replace(/\n/g, ', ') : 'Non précisé',
@@ -84,96 +179,114 @@ async function search(query, ignoreLandlines, pages) {
                     }
                 });
                 return results;
-            });
+            }, { phoneCode, countryName });
 
             console.log(`[GoAfricaOnline] ${currentLeads.length} leads trouvés sur la page ${p}`);
             
-            // Filtrage des numéros fixes ivoiriens et extraction des détails additionnels
+            // Filtrage préalable (fixes et doublons)
+            const landlinePrefixes = LANDLINE_PREFIXES[country] || [];
+            const validLeads = [];
+            
             for (const lead of currentLeads) {
-                const cleanNumber = lead.numero.replace(/\D/g, '');
-                let isLandline = false;
-                
-                if (cleanNumber.length === 10) {
-                    if (cleanNumber.startsWith('21') || cleanNumber.startsWith('25') || cleanNumber.startsWith('27')) {
-                        isLandline = true;
-                    }
-                } else if (cleanNumber.startsWith('22521') || cleanNumber.startsWith('22525') || cleanNumber.startsWith('22527')) {
-                    isLandline = true;
-                }
-
-                if (ignoreLandlines && isLandline) {
+                // --- Déduplication par numéro ---
+                if (seenPhones.has(lead.numero)) {
+                    if (onProgress) onProgress({ phase: 'extract', current: validLeads.length, total: currentLeads.length, message: `Doublon ignoré : ${lead.nom}` });
                     continue;
                 }
                 
-                // Visiter la page de l'entreprise pour extraire le Site Web et l'Email si on a un lien
-                if (lead.details.companyUrl) {
-                    try {
-                        const companyPage = await context.newPage();
-                        await companyPage.goto(lead.details.companyUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
-                        await companyPage.waitForTimeout(1000);
+                // --- Filtrage des numéros fixes ---
+                const cleanNumber = lead.numero.replace(/\D/g, '');
+                let isLandline = false;
+                
+                for (const prefix of landlinePrefixes) {
+                    if (cleanNumber.startsWith(prefix) || cleanNumber.startsWith((COUNTRY_PHONE_CODES[country] || '') + prefix)) {
+                        isLandline = true;
+                        break;
+                    }
+                }
 
-                        const extraDetails = await companyPage.evaluate(() => {
-                            let website = '';
-                            let email = '';
+                if (ignoreLandlines && isLandline) {
+                    if (onProgress) onProgress({ phase: 'extract', current: validLeads.length, total: currentLeads.length, message: `Numéro fixe ignoré : ${lead.nom}` });
+                    continue;
+                }
+                
+                seenPhones.add(lead.numero);
+                validLeads.push(lead);
+            }
+            
+            if (onProgress) onProgress({ phase: 'extract', current: 0, total: validLeads.length, message: `Extraction détaillée de ${validLeads.length} leads (par lots)...` });
+
+            // Traitement par lots (Parallélisme contrôlé) pour optimiser la vitesse
+            const BATCH_SIZE = 5;
+            let processedCount = 0;
+            
+            for (let i = 0; i < validLeads.length; i += BATCH_SIZE) {
+                const batch = validLeads.slice(i, i + BATCH_SIZE);
+                
+                await Promise.all(batch.map(async (lead) => {
+                    if (lead.details.companyUrl) {
+                        try {
+                            const companyPage = await context.newPage();
+                            await companyPage.goto(lead.details.companyUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
                             
-                            // JSON-LD schema
-                            const scripts = document.querySelectorAll('script[type="application/ld+json"]');
-                            for (const script of scripts) {
-                                try {
-                                    const data = JSON.parse(script.innerText);
-                                    const processSchema = (obj) => {
-                                        if (obj['@type'] === 'Organization' || obj['@type'] === 'LocalBusiness') {
-                                            if (obj.email) email = obj.email;
-                                            if (obj.url) website = obj.url;
-                                        }
-                                    };
-                                    if (Array.isArray(data)) data.forEach(processSchema);
-                                    else processSchema(data);
-                                } catch(e) {}
-                            }
-                            
-                            // Fallback extraction
-                            if (!website) {
-                                const links = document.querySelectorAll('a');
-                                for (let a of links) {
-                                    if (a.href && !a.href.includes('goafricaonline') && a.href.includes('http')) {
-                                        website = a.href;
-                                        break;
-                                    }
+                            const extraDetails = await companyPage.evaluate(() => {
+                                let website = '';
+                                let email = '';
+                                
+                                // JSON-LD schema
+                                const scripts = document.querySelectorAll('script[type="application/ld+json"]');
+                                for (const script of scripts) {
+                                    try {
+                                        const data = JSON.parse(script.innerText);
+                                        const processSchema = (obj) => {
+                                            if (obj['@type'] === 'Organization' || obj['@type'] === 'LocalBusiness') {
+                                                if (obj.email) email = obj.email;
+                                                if (obj.url) website = obj.url;
+                                            }
+                                        };
+                                        if (Array.isArray(data)) data.forEach(processSchema);
+                                        else processSchema(data);
+                                    } catch(e) {}
                                 }
+                                
+                                // Fallback extraction sans réseaux sociaux
                                 if (!website) {
-                                    const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
-                                    let node;
-                                    while (node = walk.nextNode()) {
-                                        if (node.nodeValue.includes('www.') || (node.nodeValue.includes('.com') && !node.nodeValue.includes(' '))) {
-                                            let text = node.nodeValue.trim();
-                                            if (text.length < 50 && text.includes('.')) {
-                                                website = text;
+                                    const links = document.querySelectorAll('a');
+                                    const excludeDomains = ['goafricaonline.com', 'facebook.com', 'twitter.com', 'instagram.com', 'linkedin.com', 'google.com', 'youtube.com', 'wa.me', 'api.whatsapp.com'];
+                                    
+                                    for (let a of links) {
+                                        if (a.href && a.href.includes('http')) {
+                                            const isExcluded = excludeDomains.some(domain => a.href.toLowerCase().includes(domain));
+                                            if (!isExcluded) {
+                                                website = a.href;
                                                 break;
                                             }
                                         }
                                     }
                                 }
-                            }
+                                
+                                if (!email) {
+                                    const mail = document.querySelector('a[href^="mailto:"]');
+                                    if (mail) email = mail.href.replace('mailto:', '');
+                                }
+                                
+                                return { website, email };
+                            });
                             
-                            if (!email) {
-                                const mail = document.querySelector('a[href^="mailto:"]');
-                                if (mail) email = mail.href.replace('mailto:', '');
-                            }
+                            if (extraDetails.website) lead.details.siteWeb = extraDetails.website;
+                            if (extraDetails.email) lead.details.email = extraDetails.email;
                             
-                            return { website, email };
-                        });
-                        
-                        if (extraDetails.website) lead.details.siteWeb = extraDetails.website;
-                        if (extraDetails.email) lead.details.email = extraDetails.email;
-                        
-                        await companyPage.close();
-                    } catch (e) {
-                        console.error(`[GoAfricaOnline] Erreur extraction page entreprise pour ${lead.nom}`);
+                            await companyPage.close();
+                        } catch (e) {
+                            console.error(`[GoAfricaOnline] Erreur extraction page entreprise pour ${lead.nom}`);
+                        }
                     }
-                }
+                    
+                    processedCount++;
+                    if (onProgress) onProgress({ phase: 'extract', current: processedCount, total: validLeads.length, message: `Détails récupérés pour ${lead.nom}` });
+                }));
                 
-                leads.push(lead);
+                leads.push(...batch);
             }
 
             if (currentLeads.length === 0) {

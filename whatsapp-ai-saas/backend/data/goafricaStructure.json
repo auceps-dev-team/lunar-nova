@@ -1,0 +1,2262 @@
+{
+  "countries": [
+    {
+      "code": "ci",
+      "name": "Côte d'Ivoire"
+    },
+    {
+      "code": "tg",
+      "name": "Togo"
+    },
+    {
+      "code": "bj",
+      "name": "Bénin"
+    },
+    {
+      "code": "bf",
+      "name": "Burkina Faso"
+    },
+    {
+      "code": "cm",
+      "name": "Cameroun"
+    },
+    {
+      "code": "cg",
+      "name": "Congo"
+    },
+    {
+      "code": "cd",
+      "name": "RD Congo"
+    },
+    {
+      "code": "ga",
+      "name": "Gabon"
+    },
+    {
+      "code": "gn",
+      "name": "Guinée"
+    },
+    {
+      "code": "ml",
+      "name": "Mali"
+    },
+    {
+      "code": "ne",
+      "name": "Niger"
+    },
+    {
+      "code": "sn",
+      "name": "Sénégal"
+    }
+  ],
+  "categories": [
+    {
+      "name": "Communication, publicité",
+      "slug": "communication-publicite",
+      "subcategories": [
+        {
+          "name": "Agences de communication",
+          "slug": "agences-de-communication"
+        },
+        {
+          "name": "Audiovisuel",
+          "slug": "societes-audiovisuel"
+        },
+        {
+          "name": "Centres d'appels",
+          "slug": "centres-appels-call-center"
+        },
+        {
+          "name": "Editeurs",
+          "slug": "editeurs"
+        },
+        {
+          "name": "Enseignes - Gravures",
+          "slug": "enseignes-lumineuses-gravures"
+        },
+        {
+          "name": "Enseignes lumineuses",
+          "slug": "enseignes-lumineuses"
+        },
+        {
+          "name": "Ev�nementiel",
+          "slug": "societes-evenementiel"
+        },
+        {
+          "name": "Graphistes",
+          "slug": "art-graphique"
+        },
+        {
+          "name": "Impression num�rique",
+          "slug": "impression-numerique"
+        },
+        {
+          "name": "Imprimeries",
+          "slug": "imprimeries"
+        },
+        {
+          "name": "Journaux - Presse - Magazine",
+          "slug": "journaux-presse"
+        },
+        {
+          "name": "Magazines",
+          "slug": "magazines-journaux-presse"
+        },
+        {
+          "name": "Marketing & marketing digital",
+          "slug": "societes-marketing"
+        },
+        {
+          "name": "Prestation de service",
+          "slug": "prestataires-services"
+        },
+        {
+          "name": "M�dias",
+          "slug": "medias"
+        },
+        {
+          "name": "Multim�dias",
+          "slug": "multimedias"
+        },
+        {
+          "name": "Objets - Cadeaux publicitaires",
+          "slug": "objets-cadeaux-publicitaires"
+        },
+        {
+          "name": "Publicit�",
+          "slug": "publicite"
+        },
+        {
+          "name": "Radios",
+          "slug": "radios"
+        },
+        {
+          "name": "R�gie publicitaire",
+          "slug": "regie-publicitaire"
+        },
+        {
+          "name": "Salons, foires et festivals",
+          "slug": "salons-foires"
+        },
+        {
+          "name": "S�rigraphie",
+          "slug": "serigraphie"
+        },
+        {
+          "name": "T�l�visions",
+          "slug": "televisions"
+        }
+      ]
+    },
+    {
+      "name": "Bâtiment et construction",
+      "slug": "entreprises-batiment-construction",
+      "subcategories": [
+        {
+          "name": "Adduction d'eau",
+          "slug": "entreprises-adduction-eau"
+        },
+        {
+          "name": "Aluminium",
+          "slug": "societes-specialistes-aluminium"
+        },
+        {
+          "name": "Aménagement foncier",
+          "slug": "amenagement-foncier"
+        },
+        {
+          "name": "Architectes",
+          "slug": "societes-architecture"
+        },
+        {
+          "name": "Ascenseurs",
+          "slug": "ascenseurs"
+        },
+        {
+          "name": "Assainissement / Canalisations",
+          "slug": "assainissement-canalisations"
+        },
+        {
+          "name": "Bâtiment / Travaux publics",
+          "slug": "batiment-travaux-publics"
+        },
+        {
+          "name": "Béton",
+          "slug": "construction-beton"
+        },
+        {
+          "name": "Bois",
+          "slug": "bois"
+        },
+        {
+          "name": "Carrelage",
+          "slug": "entreprises-carrelage"
+        },
+        {
+          "name": "Carrière - Concassage",
+          "slug": "concassage"
+        },
+        {
+          "name": "Chaudronnerie",
+          "slug": "chaudronnerie"
+        },
+        {
+          "name": "Construction",
+          "slug": "construction"
+        },
+        {
+          "name": "Constructions métalliques",
+          "slug": "constructions-metalliques"
+        },
+        {
+          "name": "Eau / Forage",
+          "slug": "eau-forage"
+        },
+        {
+          "name": "Ebénisterie",
+          "slug": "ebenisterie"
+        },
+        {
+          "name": "Engins BTP",
+          "slug": "engins-btp"
+        },
+        {
+          "name": "Entreprises d'échafaudage",
+          "slug": "location-montage-echafaudage"
+        },
+        {
+          "name": "Etanchéité",
+          "slug": "etancheite"
+        },
+        {
+          "name": "Ferronneries",
+          "slug": "ferronneries-fer-forge"
+        },
+        {
+          "name": "Froid / Climatisation",
+          "slug": "froid-climatisation"
+        },
+        {
+          "name": "Génie civil",
+          "slug": "genie-civil"
+        },
+        {
+          "name": "Géomètres",
+          "slug": "geometres"
+        },
+        {
+          "name": "Hydraulique / Irrigation",
+          "slug": "hydraulique-irrigation"
+        },
+        {
+          "name": "Laboratoires BTP",
+          "slug": "laboratoires-btp"
+        },
+        {
+          "name": "Marbrerie",
+          "slug": "marbreries-marbriers"
+        },
+        {
+          "name": "Matériaux de construction",
+          "slug": "materiaux-construction"
+        },
+        {
+          "name": "Matériel topographique",
+          "slug": "materiel-topographique"
+        },
+        {
+          "name": "Matériels de BTP",
+          "slug": "materiels-btp"
+        },
+        {
+          "name": "Menuiserie aluminium",
+          "slug": "menuiserie-aluminium"
+        },
+        {
+          "name": "Menuiserie bois",
+          "slug": "menuiserie-bois"
+        },
+        {
+          "name": "Menuiserie industrielle",
+          "slug": "menuiserie-industrielle"
+        },
+        {
+          "name": "Moteurs et pompes",
+          "slug": "moteurs-pompes"
+        },
+        {
+          "name": "Motorisation & automatismes",
+          "slug": "automatismes"
+        },
+        {
+          "name": "Peinture : vente et fabrication",
+          "slug": "entreprises-peinture"
+        },
+        {
+          "name": "Portes / Fenêtres",
+          "slug": "portes-fenetres"
+        }
+      ]
+    },
+    {
+      "name": "Finances",
+      "slug": "entreprises-finances",
+      "subcategories": [
+        {
+          "name": "Assurances",
+          "slug": "assurances"
+        },
+        {
+          "name": "Assurances - Courtiers",
+          "slug": "courtiers-en-assurance"
+        },
+        {
+          "name": "Actuaires",
+          "slug": "actuaires"
+        },
+        {
+          "name": "Banques",
+          "slug": "banques"
+        },
+        {
+          "name": "Bureaux d'appui financier",
+          "slug": "bureaux-appui-financier"
+        },
+        {
+          "name": "Bureaux de change",
+          "slug": "bureaux-de-change"
+        },
+        {
+          "name": "Epargne",
+          "slug": "epargne"
+        },
+        {
+          "name": "Equipement bancaire",
+          "slug": "equipement-bancaire"
+        },
+        {
+          "name": "Expertise financière",
+          "slug": "expertise-financiere"
+        },
+        {
+          "name": "Fonds d’investissement",
+          "slug": "fond-investissement"
+        },
+        {
+          "name": "Microfinance",
+          "slug": "microfinance"
+        },
+        {
+          "name": "Monétique",
+          "slug": "monetique-informatique"
+        },
+        {
+          "name": "Organismes de crédit",
+          "slug": "organismes-de-credit"
+        },
+        {
+          "name": "Sécurité bancaire",
+          "slug": "securite-bancaire"
+        },
+        {
+          "name": "Sociétés de bourse",
+          "slug": "societes-de-bourse"
+        },
+        {
+          "name": "Sociétés de financement",
+          "slug": "societes-financement"
+        },
+        {
+          "name": "Transferts de fonds",
+          "slug": "transferts-de-fonds"
+        },
+        {
+          "name": "Transport de fonds",
+          "slug": "transport-fonds"
+        }
+      ]
+    },
+    {
+      "name": "Commerces",
+      "slug": "commerces",
+      "subcategories": [
+        {
+          "name": "Supermarchés",
+          "slug": "supermarches"
+        },
+        {
+          "name": "Quincaillerie",
+          "slug": "quincailleries"
+        },
+        {
+          "name": "Appareils électroménagers",
+          "slug": "appareils-electromenagers"
+        },
+        {
+          "name": "Bijouterie - Joaillerie",
+          "slug": "bijouterie-joaillerie"
+        },
+        {
+          "name": "Centres commerciaux",
+          "slug": "centres-commerciaux"
+        },
+        {
+          "name": "Centres d'affaires / Coworking",
+          "slug": "centres-affaires"
+        },
+        {
+          "name": "Commerce général",
+          "slug": "boutiques"
+        },
+        {
+          "name": "Fleuristes",
+          "slug": "fleuristes"
+        },
+        {
+          "name": "Fournitures de bureau",
+          "slug": "fournitures-bureau"
+        },
+        {
+          "name": "Fournitures scolaires",
+          "slug": "fournitures-scolaires"
+        },
+        {
+          "name": "Jeux - Jouets",
+          "slug": "jeux-jouets"
+        },
+        {
+          "name": "Laboratoires photographiques",
+          "slug": "laboratoires-photographiques"
+        },
+        {
+          "name": "Librairie",
+          "slug": "librairie"
+        },
+        {
+          "name": "Loterie",
+          "slug": "loterie"
+        },
+        {
+          "name": "Merceries",
+          "slug": "merceries"
+        },
+        {
+          "name": "Mobilier de bureau",
+          "slug": "mobilier-de-bureau"
+        },
+        {
+          "name": "Papeterie",
+          "slug": "papeterie"
+        },
+        {
+          "name": "Parfumeries",
+          "slug": "parfumerie"
+        },
+        {
+          "name": "Pompes funèbres",
+          "slug": "pompes-funebres"
+        },
+        {
+          "name": "Pressings",
+          "slug": "pressings"
+        },
+        {
+          "name": "Produits cosmétiques",
+          "slug": "vente-produits-cosmetique"
+        },
+        {
+          "name": "Stylismes",
+          "slug": "stylismes"
+        },
+        {
+          "name": "Tabac - Cigarette",
+          "slug": "tabac-cigarette"
+        },
+        {
+          "name": "Vente en ligne",
+          "slug": "sites-vente-en-ligne"
+        }
+      ]
+    },
+    {
+      "name": "Automobile / Moto",
+      "slug": "automobile-moto",
+      "subcategories": [
+        {
+          "name": "Vente de voitures",
+          "slug": "vente-voitures-automobile"
+        },
+        {
+          "name": "Vente de cycles - motos",
+          "slug": "vente-cycles-motos"
+        },
+        {
+          "name": "Auto-écoles",
+          "slug": "auto-ecoles-apprendre-conduire"
+        },
+        {
+          "name": "Bobinage générale",
+          "slug": "bobinage-generale"
+        },
+        {
+          "name": "Carrosserie",
+          "slug": "carrossries-voitures-moto"
+        },
+        {
+          "name": "Chantier Naval / Réparation de navire",
+          "slug": "bateaux-moteurs-vente-location"
+        },
+        {
+          "name": "Concessionnaires automobiles et moto",
+          "slug": "concessionnaires-automobiles-moto"
+        },
+        {
+          "name": "Contrôle technique",
+          "slug": "controle-technique"
+        },
+        {
+          "name": "Diéséliste",
+          "slug": "dieseliste"
+        },
+        {
+          "name": "Garages - Mécanique générale",
+          "slug": "garages-mecanique-generale"
+        },
+        {
+          "name": "Géolocalisation",
+          "slug": "geolocalisation"
+        },
+        {
+          "name": "Lavage automobile",
+          "slug": "lavage-automobile-voiture"
+        },
+        {
+          "name": "Location de voitures",
+          "slug": "location-voitures"
+        },
+        {
+          "name": "Lubrifiants",
+          "slug": "lubrifiants"
+        },
+        {
+          "name": "Parc auto",
+          "slug": "parc-auto"
+        },
+        {
+          "name": "Pièces détachées",
+          "slug": "pieces-detachees-automobile-voiture-moto"
+        },
+        {
+          "name": "Pneumatiques",
+          "slug": "pneumatiques-vente-pneus"
+        },
+        {
+          "name": "Stations essence",
+          "slug": "stations-essence"
+        },
+        {
+          "name": "Véhicules industriels",
+          "slug": "vente-vehicules-industriels"
+        },
+        {
+          "name": "Vente de camions",
+          "slug": "vente-de-camions"
+        }
+      ]
+    },
+    {
+      "name": "Informatique, internet",
+      "slug": "informatique-internet",
+      "subcategories": [
+        {
+          "name": "Cybercafés",
+          "slug": "cybercafes"
+        },
+        {
+          "name": "Hébergement, cloud",
+          "slug": "hebergement-sites-internet-cloud"
+        },
+        {
+          "name": "Agences web, SEO, SEA",
+          "slug": "internet"
+        },
+        {
+          "name": "Archivage numérique et physique - GED",
+          "slug": "archivage-numerique"
+        },
+        {
+          "name": "Assistance technique",
+          "slug": "assistance-technique"
+        },
+        {
+          "name": "Bureautique",
+          "slug": "bureautique"
+        },
+        {
+          "name": "Consommables informatiques",
+          "slug": "consommables-informatiques-reseaux"
+        },
+        {
+          "name": "Consultants informatiques",
+          "slug": "consultants-informatiques"
+        },
+        {
+          "name": "Formation informatique",
+          "slug": "formation-informatique"
+        },
+        {
+          "name": "Fournisseur d'accès internet",
+          "slug": "fournisseurs-acces-internet"
+        },
+        {
+          "name": "Informatique",
+          "slug": "informatique"
+        },
+        {
+          "name": "Ingénierie informatique",
+          "slug": "ingenierie-informatique"
+        },
+        {
+          "name": "Intelligence artificielle",
+          "slug": "intelligence-artificielle-ia"
+        },
+        {
+          "name": "Maintenance informatique",
+          "slug": "maintenance-informatique"
+        },
+        {
+          "name": "Matériel informatique",
+          "slug": "materiels-informatiques-bureautique"
+        },
+        {
+          "name": "Sécurité informatique",
+          "slug": "securite-informatique"
+        },
+        {
+          "name": "Startup",
+          "slug": "startup"
+        },
+        {
+          "name": "Technologie appliquée",
+          "slug": "societes-de-technologie-appliquee"
+        }
+      ]
+    },
+    {
+      "name": "Immobilier",
+      "slug": "professionnels-immobilier",
+      "subcategories": [
+        {
+          "name": "Agences immobilières",
+          "slug": "agences-immobilieres"
+        },
+        {
+          "name": "Promoteurs immobiliers",
+          "slug": "promoteurs-immobiliers"
+        },
+        {
+          "name": "Expertise immobilière",
+          "slug": "expertise-immobiliere"
+        },
+        {
+          "name": "Gestion immobilière",
+          "slug": "gestion-immobiliere"
+        },
+        {
+          "name": "Immobilier",
+          "slug": "immobilier"
+        }
+      ]
+    },
+    {
+      "name": "Comptabilité, juridique et conseil",
+      "slug": "comptabilite-juridique-conseil",
+      "subcategories": [
+        {
+          "name": "Audit - Conseil",
+          "slug": "audit-conseil"
+        },
+        {
+          "name": "Expertise comptable",
+          "slug": "expert-comptable"
+        },
+        {
+          "name": "Bureaux d'études - Conseils - Consultants",
+          "slug": "bureaux-etude-conseils"
+        },
+        {
+          "name": "Bureaux d'expertises",
+          "slug": "bureaux-expertises"
+        },
+        {
+          "name": "Bureaux de contrôles",
+          "slug": "bureaux-controles"
+        },
+        {
+          "name": "Cabinets d'avocats",
+          "slug": "cabinets-avocat"
+        },
+        {
+          "name": "Certification",
+          "slug": "certification"
+        },
+        {
+          "name": "Commissaires aux comptes",
+          "slug": "commissaires-aux-comptes"
+        },
+        {
+          "name": "Commissaires-priseurs",
+          "slug": "commissaires-priseurs"
+        },
+        {
+          "name": "Commissionnaires en douane",
+          "slug": "commissionnaires-en-douane"
+        },
+        {
+          "name": "Conseil juridique - Conseil fiscal",
+          "slug": "conseil-juridique-fiscal"
+        },
+        {
+          "name": "Contrôle et inspection",
+          "slug": "contr%C3%B4le-inspection"
+        },
+        {
+          "name": "Contrôle qualité",
+          "slug": "controle-qualite"
+        },
+        {
+          "name": "Expert maritime",
+          "slug": "expert-maritime"
+        },
+        {
+          "name": "Expertise - Contrôle",
+          "slug": "expertise-controle"
+        },
+        {
+          "name": "Gestion des ressources humaines",
+          "slug": "gestion-ressources-humaines"
+        },
+        {
+          "name": "Huissiers de justice",
+          "slug": "huissiers-de-justice"
+        },
+        {
+          "name": "Ingénieurs conseils",
+          "slug": "ingenieurs-conseils"
+        },
+        {
+          "name": "Management",
+          "slug": "management"
+        },
+        {
+          "name": "Notaires",
+          "slug": "notaires"
+        },
+        {
+          "name": "Projets - Bureaux d'appui",
+          "slug": "projets-bureaux-appui"
+        },
+        {
+          "name": "Propriété intellectuelle",
+          "slug": "propriete-intellectuelle-industrielle-brevets-marques"
+        },
+        {
+          "name": "Sociétés de recouvrement",
+          "slug": "recouvrement"
+        }
+      ]
+    },
+    {
+      "name": "Tourisme et loisirs",
+      "slug": "tourisme-et-loisirs",
+      "subcategories": [
+        {
+          "name": "Agences de voyage",
+          "slug": "agences-de-voyage"
+        },
+        {
+          "name": "Auberges",
+          "slug": "auberges"
+        },
+        {
+          "name": "Agences d'immigration",
+          "slug": "agences-immigration"
+        },
+        {
+          "name": "Casinos",
+          "slug": "casinos"
+        },
+        {
+          "name": "Centre de loisirs",
+          "slug": "centre-loisirs"
+        },
+        {
+          "name": "Centres culturels",
+          "slug": "centres-culturels"
+        },
+        {
+          "name": "Chambres d'hôtes",
+          "slug": "chambres-maison-hotes"
+        },
+        {
+          "name": "Cinémas",
+          "slug": "cinemas"
+        },
+        {
+          "name": "Equipements hôteliers",
+          "slug": "equipements-hoteliers"
+        },
+        {
+          "name": "Foires - Expositions",
+          "slug": "foires-expositions"
+        },
+        {
+          "name": "Hôtels",
+          "slug": "hotels"
+        },
+        {
+          "name": "Location de salles, lieux de réception",
+          "slug": "locatio-salles-reception"
+        },
+        {
+          "name": "Musées",
+          "slug": "musees"
+        },
+        {
+          "name": "Musique",
+          "slug": "musique"
+        },
+        {
+          "name": "Night clubs - Discothèques",
+          "slug": "night-club-discotheques"
+        },
+        {
+          "name": "Offices du tourisme",
+          "slug": "offices-du-tourisme"
+        },
+        {
+          "name": "Parcs d'attraction",
+          "slug": "parcs-attraction"
+        },
+        {
+          "name": "Parcs nationaux",
+          "slug": "parcs-nationaux"
+        },
+        {
+          "name": "Piscine",
+          "slug": "piscines"
+        },
+        {
+          "name": "Résidence",
+          "slug": "residence"
+        },
+        {
+          "name": "Safaris",
+          "slug": "safaris"
+        },
+        {
+          "name": "Sites touristiques",
+          "slug": "sites-touristiques"
+        },
+        {
+          "name": "Sonorisation et éclairage",
+          "slug": "sonorisation-eclairage"
+        },
+        {
+          "name": "Tourisme",
+          "slug": "tourisme"
+        }
+      ]
+    },
+    {
+      "name": "Santé",
+      "slug": "sante",
+      "subcategories": [
+        {
+          "name": "Cardiologues",
+          "slug": "cardiologues"
+        },
+        {
+          "name": "Chirurgiens",
+          "slug": "chirurgiens"
+        },
+        {
+          "name": "Anesthésistes",
+          "slug": "anesthesistes"
+        },
+        {
+          "name": "Audioprothesistes",
+          "slug": "audioprothesistes"
+        },
+        {
+          "name": "Biologistes",
+          "slug": "biologistes"
+        },
+        {
+          "name": "Cabinets médicaux",
+          "slug": "cabinets-medicaux"
+        },
+        {
+          "name": "Centres médicaux sociaux",
+          "slug": "centres-medicaux-sociaux"
+        },
+        {
+          "name": "Chiropracteurs et  Ostéopathes",
+          "slug": "osteopathe-chiropracteur"
+        },
+        {
+          "name": "Cliniques - Polycliniques",
+          "slug": "cliniques-polycliniques"
+        },
+        {
+          "name": "Dentistes - Cabinets dentaires",
+          "slug": "dentistes"
+        },
+        {
+          "name": "Dermatologues",
+          "slug": "dermatologues"
+        },
+        {
+          "name": "Diététiciens",
+          "slug": "dieteticiens"
+        },
+        {
+          "name": "Equipements médicaux",
+          "slug": "equipements-medicaux"
+        },
+        {
+          "name": "Gastro-entérologie",
+          "slug": "gastro-enterologie"
+        },
+        {
+          "name": "Grossistes pharmaceutiques",
+          "slug": "grossistes-pharmaceutiques"
+        },
+        {
+          "name": "Gynécologue",
+          "slug": "gynecologues"
+        },
+        {
+          "name": "Hôpitaux",
+          "slug": "hopitaux"
+        },
+        {
+          "name": "Kinésithérapeutes",
+          "slug": "kinesitherapeutes-physiotherapeutes"
+        },
+        {
+          "name": "Laboratoires d'analyses médicales",
+          "slug": "laboratoires-analyses-medicales"
+        },
+        {
+          "name": "Médecine du travail",
+          "slug": "medecine-travail"
+        },
+        {
+          "name": "Médecine interne",
+          "slug": "medecine-interne"
+        },
+        {
+          "name": "Médecine traditionnelle",
+          "slug": "medecine-traditionnelle"
+        },
+        {
+          "name": "Médecins généralistes",
+          "slug": "medecins-generalistes"
+        },
+        {
+          "name": "Neurologie",
+          "slug": "neurologie"
+        },
+        {
+          "name": "Ophtalmologues",
+          "slug": "ophtalmologues"
+        },
+        {
+          "name": "Opticiens",
+          "slug": "opticiens"
+        },
+        {
+          "name": "ORL",
+          "slug": "medecins-orl"
+        },
+        {
+          "name": "Orthopédie",
+          "slug": "orthopedique"
+        },
+        {
+          "name": "Orthophonistes",
+          "slug": "orthophonistes"
+        },
+        {
+          "name": "Pédiatrie",
+          "slug": "pediatrie"
+        },
+        {
+          "name": "Pharmacies",
+          "slug": "pharmacies"
+        },
+        {
+          "name": "Pneumologie",
+          "slug": "pneumologie"
+        },
+        {
+          "name": "Podologues",
+          "slug": "podologue-pedicure"
+        },
+        {
+          "name": "Produits diététiques",
+          "slug": "produits-dietetiques"
+        },
+        {
+          "name": "Produits pharmaceutiques",
+          "slug": "produits-pharmaceutiques"
+        },
+        {
+          "name": "Psychiatre",
+          "slug": "psychiatre"
+        },
+        {
+          "name": "Psychologues",
+          "slug": "psychologues"
+        },
+        {
+          "name": "Radiologie",
+          "slug": "radiologie"
+        },
+        {
+          "name": "Représentants médicaux",
+          "slug": "representants-medicaux"
+        },
+        {
+          "name": "Santé",
+          "slug": "sante_"
+        },
+        {
+          "name": "Tradithérapeutes",
+          "slug": "traditherapeutes"
+        }
+      ]
+    },
+    {
+      "name": "Administrations",
+      "slug": "administrations",
+      "subcategories": [
+        {
+          "name": "Administrations",
+          "slug": "administration"
+        },
+        {
+          "name": "Agences de développement",
+          "slug": "agence-de-developpement"
+        },
+        {
+          "name": "Ambassades et consulats",
+          "slug": "ambassades-consulats"
+        },
+        {
+          "name": "Aménagement du territoire",
+          "slug": "amenagement"
+        },
+        {
+          "name": "Appui au développement",
+          "slug": "appui-developpement"
+        },
+        {
+          "name": "Assistance sociale",
+          "slug": "assistance-sociale"
+        },
+        {
+          "name": "Associations",
+          "slug": "associations"
+        },
+        {
+          "name": "Cartographie",
+          "slug": "cartographie"
+        },
+        {
+          "name": "Chambres de commerce",
+          "slug": "chambres-commerce"
+        },
+        {
+          "name": "Directions nationales",
+          "slug": "directions-nationales"
+        },
+        {
+          "name": "Douanes",
+          "slug": "douanes"
+        },
+        {
+          "name": "Environnement",
+          "slug": "environnement"
+        },
+        {
+          "name": "Fondations",
+          "slug": "fondations"
+        },
+        {
+          "name": "Ministères",
+          "slug": "ministeres"
+        },
+        {
+          "name": "Offices nationaux",
+          "slug": "offices-nationaux"
+        },
+        {
+          "name": "Organisations non-gouvernementales (ONG)",
+          "slug": "organisations-non-gouvernementales-ong"
+        },
+        {
+          "name": "Organismes internationaux",
+          "slug": "organismes-internationaux"
+        },
+        {
+          "name": "Poste",
+          "slug": "postes"
+        },
+        {
+          "name": "Sécurité sociale",
+          "slug": "securite-sociale"
+        },
+        {
+          "name": "Trésor public",
+          "slug": "tresor-public"
+        },
+        {
+          "name": "Zones franches",
+          "slug": "zones-franche"
+        }
+      ]
+    },
+    {
+      "name": "Alimentation",
+      "slug": "alimentation",
+      "subcategories": [
+        {
+          "name": "Bars",
+          "slug": "bars"
+        },
+        {
+          "name": "Boucheries",
+          "slug": "boucheries"
+        },
+        {
+          "name": "Boulangeries - Pâtisseries",
+          "slug": "boulangeries-patisseries"
+        },
+        {
+          "name": "Caves à vin",
+          "slug": "caves-a-vin"
+        },
+        {
+          "name": "Chocolaterie - Confiserie",
+          "slug": "chocolaterie-confiserie"
+        },
+        {
+          "name": "Crèmerie / Glacier",
+          "slug": "cremerie-glacier"
+        },
+        {
+          "name": "Epiceries et épiceries fines",
+          "slug": "epicerie"
+        },
+        {
+          "name": "Fast food",
+          "slug": "fast-food"
+        },
+        {
+          "name": "Maquis",
+          "slug": "maquis"
+        },
+        {
+          "name": "Pizzeria",
+          "slug": "pizzeria"
+        },
+        {
+          "name": "Poissonnerie",
+          "slug": "poissoneries"
+        },
+        {
+          "name": "Restaurants",
+          "slug": "restaurants"
+        },
+        {
+          "name": "Salon de thé",
+          "slug": "salon-the"
+        },
+        {
+          "name": "Traiteurs",
+          "slug": "traiteurs"
+        }
+      ]
+    },
+    {
+      "name": "Animaux",
+      "slug": "animaux",
+      "subcategories": [
+        {
+          "name": "Alimentation animale",
+          "slug": "alimentation-animale"
+        },
+        {
+          "name": "Animalerie et aquarium",
+          "slug": "animalerie-aquariophilie"
+        },
+        {
+          "name": "Pharmacies vétérinaires",
+          "slug": "pharmacies-veterinaires"
+        },
+        {
+          "name": "Produits et matériel vétérinaires",
+          "slug": "produits-veterinaires"
+        },
+        {
+          "name": "Toilettage",
+          "slug": "toilettage-animaux"
+        },
+        {
+          "name": "Vétérinaires",
+          "slug": "veterinaires"
+        }
+      ]
+    },
+    {
+      "name": "Artisans",
+      "slug": "artisans",
+      "subcategories": [
+        {
+          "name": "Artisanat",
+          "slug": "artisanat"
+        },
+        {
+          "name": "Ateliers de couture",
+          "slug": "ateliers-de-couture"
+        },
+        {
+          "name": "Ateliers de teinture",
+          "slug": "ateliers-teinture"
+        },
+        {
+          "name": "Broderies",
+          "slug": "broderies"
+        },
+        {
+          "name": "Miroiterie / Vitrerie",
+          "slug": "miroiterie-vitrerie"
+        },
+        {
+          "name": "Plomberie",
+          "slug": "plomberie-sanitaires"
+        },
+        {
+          "name": "Salons de coiffure",
+          "slug": "salons-de-coiffure"
+        },
+        {
+          "name": "Serrureries",
+          "slug": "serrureries"
+        },
+        {
+          "name": "Tapisserie",
+          "slug": "tapisserie"
+        }
+      ]
+    },
+    {
+      "name": "Maison et décoration",
+      "slug": "maison-decoration",
+      "subcategories": [
+        {
+          "name": "Ameublement",
+          "slug": "ameublement"
+        },
+        {
+          "name": "Architectes d'intérieur",
+          "slug": "architecte-interieur"
+        },
+        {
+          "name": "Baches et stores",
+          "slug": "baches-stores"
+        },
+        {
+          "name": "Cuisines",
+          "slug": "fabriquant-distribution-vente-cuisine"
+        },
+        {
+          "name": "Décoration d'intérieur",
+          "slug": "decoration-interieur"
+        },
+        {
+          "name": "Galerie d'art",
+          "slug": "galerie-art"
+        },
+        {
+          "name": "Jardinier, espaces verts",
+          "slug": "jardinage"
+        },
+        {
+          "name": "Magasins de luminaires",
+          "slug": "luminaires"
+        },
+        {
+          "name": "Matelas, mousse, literie et accessoires",
+          "slug": "matelas-mousse"
+        }
+      ]
+    },
+    {
+      "name": "Mode, vêtements et textiles",
+      "slug": "mode-vetements-textiles",
+      "subcategories": [
+        {
+          "name": "Accessoires de mode",
+          "slug": "accessoires-mode"
+        },
+        {
+          "name": "Boutiques bébés et enfants",
+          "slug": "boutiques-enfants"
+        },
+        {
+          "name": "Chaussures",
+          "slug": "chaussures"
+        },
+        {
+          "name": "Friperies",
+          "slug": "friperies"
+        },
+        {
+          "name": "Lingeries",
+          "slug": "lingerie"
+        },
+        {
+          "name": "Maroquinerie",
+          "slug": "maroquinerie"
+        },
+        {
+          "name": "Prêt à porter",
+          "slug": "boutiques-pret-a-porter"
+        },
+        {
+          "name": "Tissus et textiles",
+          "slug": "vente-vetements-textiles"
+        }
+      ]
+    },
+    {
+      "name": "Télécommunications",
+      "slug": "telecommunications",
+      "subcategories": [
+        {
+          "name": "Cartes de recharge",
+          "slug": "cartes-recharge"
+        },
+        {
+          "name": "Opérateurs téléphoniques",
+          "slug": "operateurs-telephoniques"
+        },
+        {
+          "name": "Réseaux - Télécommunication",
+          "slug": "reseaux-telecommunication"
+        },
+        {
+          "name": "Télécentres",
+          "slug": "telecentres"
+        },
+        {
+          "name": "Télécommunications",
+          "slug": "telephonie-afrique"
+        },
+        {
+          "name": "Téléphonie mobile",
+          "slug": "telephonie-mobile"
+        }
+      ]
+    },
+    {
+      "name": "Agroalimentaire",
+      "slug": "entreprises-agroalimentaires",
+      "subcategories": [
+        {
+          "name": "Abattoirs / Viande",
+          "slug": "abattoirs-viande"
+        },
+        {
+          "name": "Agriculture",
+          "slug": "agriculture"
+        },
+        {
+          "name": "Agro-industrie",
+          "slug": "entreprises-agro-industrie"
+        },
+        {
+          "name": "Agroalimentaire",
+          "slug": "agroalimentaire"
+        },
+        {
+          "name": "Agrochimie",
+          "slug": "entreprises-agrochimie"
+        },
+        {
+          "name": "Agronomie",
+          "slug": "agronomie"
+        },
+        {
+          "name": "Alimentation générale",
+          "slug": "alimentation-generale"
+        },
+        {
+          "name": "Aquaculture - pisciculture",
+          "slug": "aquaculture-pisciculture"
+        },
+        {
+          "name": "Boissons",
+          "slug": "boissons-fabrication-distribution"
+        },
+        {
+          "name": "Café - Cacao",
+          "slug": "cafe-cacao"
+        },
+        {
+          "name": "Compléments alimentaires",
+          "slug": "complements-alimentaires"
+        },
+        {
+          "name": "Eau (production, distribution)",
+          "slug": "eau-production-distribution"
+        },
+        {
+          "name": "Eau de table",
+          "slug": "eau-de-table"
+        },
+        {
+          "name": "Eau minérale",
+          "slug": "eaux-minerales"
+        },
+        {
+          "name": "Elevage",
+          "slug": "societes-elevage"
+        },
+        {
+          "name": "Engrais",
+          "slug": "engrais-fabrication-distribution"
+        },
+        {
+          "name": "Farine / Minoterie",
+          "slug": "farine-minoteries"
+        },
+        {
+          "name": "Fermes avicoles",
+          "slug": "fermes-avicoles-elevage-volailles"
+        },
+        {
+          "name": "Fruits et légumes",
+          "slug": "fruits-legumes"
+        },
+        {
+          "name": "Grossistes en alimentation",
+          "slug": "grossites-produits-alimentaires"
+        },
+        {
+          "name": "Hévéa / Caoutchouc",
+          "slug": "hevea-caoutchouc"
+        },
+        {
+          "name": "Huile (production, commercialisation)",
+          "slug": "huile-production-commercialisation"
+        },
+        {
+          "name": "Intrants agricoles",
+          "slug": "intrants-agricoles"
+        },
+        {
+          "name": "Matériels et équipements agricoles",
+          "slug": "mat%C3%A9riels-equipements-agricoles"
+        },
+        {
+          "name": "Pêche (commercialisation, exportation)",
+          "slug": "enterprises-peche-commercialisation-exportation"
+        },
+        {
+          "name": "Pêche industrielle",
+          "slug": "peche-industrielle"
+        },
+        {
+          "name": "Phytothérapie",
+          "slug": "phytotherapie"
+        },
+        {
+          "name": "Production agricole biologique",
+          "slug": "production-agricole-biologique"
+        },
+        {
+          "name": "Produits agricoles",
+          "slug": "produits-agricoles"
+        },
+        {
+          "name": "Produits Congelés / Surgelés",
+          "slug": "produits-surgeles-congeles"
+        },
+        {
+          "name": "Produits d’élevage",
+          "slug": "produits-elevage"
+        },
+        {
+          "name": "Produits laitiers",
+          "slug": "production-produits-laitiers"
+        },
+        {
+          "name": "Produits phytosanitaires",
+          "slug": "produits-phytosanitaires"
+        },
+        {
+          "name": "Riz",
+          "slug": "production-distribution-riz"
+        },
+        {
+          "name": "Sucre",
+          "slug": "sucre-production-distribution"
+        },
+        {
+          "name": "Thé",
+          "slug": "the-production-commercialisation"
+        },
+        {
+          "name": "Traitement des eaux",
+          "slug": "traitement-eau"
+        }
+      ]
+    },
+    {
+      "name": "Associations professionnelles",
+      "slug": "associations-professionnelles",
+      "subcategories": [
+        {
+          "name": "Associations professionnelles",
+          "slug": "cat-associations-professionnelles"
+        },
+        {
+          "name": "Confédérations",
+          "slug": "confederations"
+        },
+        {
+          "name": "Ordres",
+          "slug": "ordres-professionnels"
+        },
+        {
+          "name": "Patronat",
+          "slug": "patronat"
+        },
+        {
+          "name": "Syndicats",
+          "slug": "syndicats--professionnels"
+        }
+      ]
+    },
+    {
+      "name": "Autres",
+      "slug": "autres",
+      "subcategories": [
+        {
+          "name": "Moteurs de bateau",
+          "slug": "moteurs-marins"
+        },
+        {
+          "name": "Religion - Lieux de culte",
+          "slug": "religion-lieux-de-culte"
+        }
+      ]
+    },
+    {
+      "name": "Bien être",
+      "slug": "bien-etre",
+      "subcategories": [
+        {
+          "name": "Centres d'amincissement",
+          "slug": "centres-amincissement-maigrir"
+        },
+        {
+          "name": "Salon de beauté et d'esthétique",
+          "slug": "salon-beaute-esthetique"
+        },
+        {
+          "name": "SPA / Saunas",
+          "slug": "spa-sauna"
+        }
+      ]
+    },
+    {
+      "name": "Emploi",
+      "slug": "emploi",
+      "subcategories": [
+        {
+          "name": "Agences de recrutement",
+          "slug": "agence-de-recrutement"
+        },
+        {
+          "name": "Emploi",
+          "slug": "cat-emploi"
+        },
+        {
+          "name": "Travail temporaire - Intérim",
+          "slug": "societes-travail-temporaire-interim"
+        }
+      ]
+    },
+    {
+      "name": "Energie",
+      "slug": "secteur-energie",
+      "subcategories": [
+        {
+          "name": "Batteries et piles",
+          "slug": "batteries-piles"
+        },
+        {
+          "name": "Electricité (production, distribution)",
+          "slug": "electricite-production-distribution"
+        },
+        {
+          "name": "Electromécanique",
+          "slug": "entreprises-electromecanique"
+        },
+        {
+          "name": "Electrotechnique",
+          "slug": "societes-electrotechnique"
+        },
+        {
+          "name": "Energie solaire - renouvelable",
+          "slug": "energie-solaire-renouvelable"
+        },
+        {
+          "name": "Equipements pétroliers",
+          "slug": "equipements-petroliers"
+        },
+        {
+          "name": "Gaz",
+          "slug": "entreprises-gaz"
+        },
+        {
+          "name": "Génie Électrique / Électriciens",
+          "slug": "electriciens"
+        },
+        {
+          "name": "Groupe électrogène",
+          "slug": "vente-groupe-electrogene"
+        },
+        {
+          "name": "Hydrocarbure - Transport",
+          "slug": "hydrocarbure-transport"
+        },
+        {
+          "name": "Hydrocarbure / Pétrole",
+          "slug": "hydrocarbure-petrole"
+        },
+        {
+          "name": "Hydrocarbure stockage",
+          "slug": "hydrocarbure-stockage"
+        },
+        {
+          "name": "Services énergétiques",
+          "slug": "energie"
+        }
+      ]
+    },
+    {
+      "name": "Formations, éducation",
+      "slug": "formations-education",
+      "subcategories": [
+        {
+          "name": "Agences de préinscription et assistance visa d'études",
+          "slug": "agences-preinscription-visa-etudes"
+        },
+        {
+          "name": "Bibliothèque / Médiathèque",
+          "slug": "bibliotheques-mediatheques"
+        },
+        {
+          "name": "Centres de formation",
+          "slug": "centres-de-formation"
+        },
+        {
+          "name": "Centres de recherche",
+          "slug": "centres-de-recherche"
+        },
+        {
+          "name": "Crèche, jardin d'enfants",
+          "slug": "creche-jardin-enfant-garderies"
+        },
+        {
+          "name": "Ecole de langue",
+          "slug": "ecole-langue"
+        },
+        {
+          "name": "Ecole de mode",
+          "slug": "ecole-mode"
+        },
+        {
+          "name": "Ecole maternelle",
+          "slug": "ecole-maternelle"
+        },
+        {
+          "name": "Ecoles primaires",
+          "slug": "ecoles-primaires"
+        },
+        {
+          "name": "Ecoles Secondaires",
+          "slug": "ecoles-secondaires"
+        },
+        {
+          "name": "Ecoles secondaires techniques",
+          "slug": "ecole-secondaire-technique"
+        },
+        {
+          "name": "Enseignement supérieur - Université",
+          "slug": "enseignement-superieur-universite"
+        },
+        {
+          "name": "Formation aux métiers techniques et industriels",
+          "slug": "formation-metiers-techniques-industriels"
+        },
+        {
+          "name": "Formation en vente et marketing",
+          "slug": "formation-vente-marketing"
+        },
+        {
+          "name": "Formation informatique et bureautique",
+          "slug": "formation-informatique-bureautique"
+        },
+        {
+          "name": "Formation management et leadership",
+          "slug": "formation-management"
+        },
+        {
+          "name": "Formation professionnelle",
+          "slug": "formation-professionnelle"
+        }
+      ]
+    },
+    {
+      "name": "Hygiène",
+      "slug": "produits-hygiene",
+      "subcategories": [
+        {
+          "name": "Hygiène corporelle",
+          "slug": "hygiene-corporelle-sante"
+        },
+        {
+          "name": "Produits d'entretien",
+          "slug": "produits-entretien"
+        }
+      ]
+    },
+    {
+      "name": "Import et export",
+      "slug": "commerce-import-export",
+      "subcategories": [
+        {
+          "name": "Centrales d'achats",
+          "slug": "centrales-achat"
+        },
+        {
+          "name": "Distributeurs grossistes",
+          "slug": "distributeur-grossiste"
+        },
+        {
+          "name": "Entreposage",
+          "slug": "entreposage"
+        },
+        {
+          "name": "Import et export",
+          "slug": "societes-import-export"
+        },
+        {
+          "name": "Négoce",
+          "slug": "societes-negoce"
+        }
+      ]
+    },
+    {
+      "name": "Industries",
+      "slug": "industries",
+      "subcategories": [
+        {
+          "name": "Accessoires à air comprimé",
+          "slug": "air-comprime-accessoires"
+        },
+        {
+          "name": "Armes et munitions",
+          "slug": "armes-munitions"
+        },
+        {
+          "name": "Boulonnerie - Robinetterie",
+          "slug": "boulonnerie-robinetterie"
+        },
+        {
+          "name": "Brasserie",
+          "slug": "brasseries"
+        },
+        {
+          "name": "Cartonnerie",
+          "slug": "cartonnerie"
+        },
+        {
+          "name": "Cimenterie",
+          "slug": "cimenterie"
+        },
+        {
+          "name": "Cosmétique",
+          "slug": "cosmetique"
+        },
+        {
+          "name": "Coton (production - exploitation)",
+          "slug": "coton-production-exploitation"
+        },
+        {
+          "name": "Dépannage - Maintenance industrielle",
+          "slug": "depannage-maintenance-industrielle"
+        },
+        {
+          "name": "Diamant - Or",
+          "slug": "industrie-diamant-or"
+        },
+        {
+          "name": "Emballage -Conditionnement",
+          "slug": "emballage-conditionnement"
+        },
+        {
+          "name": "Equipements industriels",
+          "slug": "equipements-industriels"
+        },
+        {
+          "name": "Étiquetage, Marquage, Codage et traçabilité",
+          "slug": "etiquetage-tracabilite"
+        },
+        {
+          "name": "Exploitation forestière",
+          "slug": "exploitation-forestiere"
+        },
+        {
+          "name": "Exploitation minière",
+          "slug": "exploitation-mini%C3%A8re"
+        },
+        {
+          "name": "Exploitation pétrolière",
+          "slug": "exploitation-p%C3%A9troliere"
+        },
+        {
+          "name": "Fabrication de machine",
+          "slug": "fabrication-machine"
+        },
+        {
+          "name": "Fabrication mécanique",
+          "slug": "fabrication-mecanique"
+        },
+        {
+          "name": "Filature du coton",
+          "slug": "filature-coton"
+        },
+        {
+          "name": "Froid industriel",
+          "slug": "entreprises-froid-industriel"
+        },
+        {
+          "name": "Industrie cosmétique",
+          "slug": "industrie-cosmetique"
+        },
+        {
+          "name": "Industrie du papier",
+          "slug": "industrie-du-papier"
+        },
+        {
+          "name": "Industrie matelas mousse",
+          "slug": "industrie-du-matelas-mousse"
+        },
+        {
+          "name": "Industrie métallurgique",
+          "slug": "societes-metallurgie"
+        },
+        {
+          "name": "Industrie pharmaceutique",
+          "slug": "industrie-pharmaceutique"
+        },
+        {
+          "name": "Industrie plastique",
+          "slug": "industrie-plastique"
+        },
+        {
+          "name": "Industrie textile",
+          "slug": "industrie-textile"
+        },
+        {
+          "name": "Industries",
+          "slug": "cat-industries"
+        },
+        {
+          "name": "Ingénierie industrielle",
+          "slug": "ingenierie-industrielle"
+        },
+        {
+          "name": "Matériel et équipement frigorifique",
+          "slug": "materiel-froid"
+        },
+        {
+          "name": "Matériels d'imprimerie",
+          "slug": "materiels-imprimerie"
+        },
+        {
+          "name": "Matériels électriques",
+          "slug": "materiels-electriques"
+        },
+        {
+          "name": "Matériels et équipements industriels",
+          "slug": "materiels-equipements-industriels"
+        },
+        {
+          "name": "Mèches - Perruques (fabrication)",
+          "slug": "fabrication-meches-cheveux-perruques"
+        },
+        {
+          "name": "Mines - Exploitations",
+          "slug": "exploitations-minieres"
+        },
+        {
+          "name": "Pesage industriel",
+          "slug": "pesage-industriel-commercial"
+        },
+        {
+          "name": "Produits chimiques",
+          "slug": "industrie-produits-chimiques"
+        },
+        {
+          "name": "Produits miniers",
+          "slug": "produits-miniers"
+        },
+        {
+          "name": "Savonnerie",
+          "slug": "savonnerie"
+        },
+        {
+          "name": "Sidérurgie",
+          "slug": "siderurgie"
+        },
+        {
+          "name": "Sous-traitants miniers",
+          "slug": "sous-traitants-miniers"
+        },
+        {
+          "name": "Tanneries",
+          "slug": "tanneries-cuirs-peaux"
+        },
+        {
+          "name": "Textiles",
+          "slug": "textiles"
+        },
+        {
+          "name": "Tri, recyclage et collecte de déchets",
+          "slug": "tri-recyclage-collecte-dechets"
+        },
+        {
+          "name": "Tuiles",
+          "slug": "tuiles"
+        },
+        {
+          "name": "Tuyauterie industrielle",
+          "slug": "societes-tuyauterie-industrielle"
+        },
+        {
+          "name": "Usinage",
+          "slug": "usinage"
+        },
+        {
+          "name": "Verrerie",
+          "slug": "verrerie"
+        }
+      ]
+    },
+    {
+      "name": "Sécurité",
+      "slug": "societes-securite",
+      "subcategories": [
+        {
+          "name": "Alarmes - Surveillance",
+          "slug": "entreprises-alarmes-surveillances"
+        },
+        {
+          "name": "Conseil en sécurité",
+          "slug": "conseil-aurit-securite"
+        },
+        {
+          "name": "Gardiennage -Sécurité",
+          "slug": "societes-gardiennage-securite"
+        },
+        {
+          "name": "Matériels et équipements de protection individuelle",
+          "slug": "equipements-protection-individuelle"
+        },
+        {
+          "name": "Matériels et équipements de sécurité",
+          "slug": "equipements-securite"
+        },
+        {
+          "name": "Sécurité aérienne",
+          "slug": "securite-aerienne"
+        },
+        {
+          "name": "Sécurité alimentaire",
+          "slug": "securite-alimentaire"
+        },
+        {
+          "name": "Sécurité électronique",
+          "slug": "securite-electronique"
+        },
+        {
+          "name": "Sécurité incendie",
+          "slug": "securite-incendie"
+        },
+        {
+          "name": "Sécurité routière",
+          "slug": "securite-routiere"
+        }
+      ]
+    },
+    {
+      "name": "Services",
+      "slug": "societes-services",
+      "subcategories": [
+        {
+          "name": "Conciergerie de luxe",
+          "slug": "conciergerie-de-luxe"
+        },
+        {
+          "name": "Copie service",
+          "slug": "photocopie-copie-service"
+        },
+        {
+          "name": "Courrier",
+          "slug": "poste-envoi-courrier"
+        },
+        {
+          "name": "Courrier express",
+          "slug": "courrier-express"
+        },
+        {
+          "name": "Déménagement - Garde meubles",
+          "slug": "demenagement-garde-meuble"
+        },
+        {
+          "name": "Dépannage électronique",
+          "slug": "depannage-electronique"
+        },
+        {
+          "name": "Dératisation - Désinsectisation - Désinfection",
+          "slug": "deratisation-desinsectisation"
+        },
+        {
+          "name": "Equipements de manutention",
+          "slug": "materiel-manutention"
+        },
+        {
+          "name": "Location de matériels pour réception",
+          "slug": "location-mat%C3%A9riels-r%C3%A9ception"
+        },
+        {
+          "name": "Nettoyage industriel",
+          "slug": "societes-nettoyage-industriel"
+        },
+        {
+          "name": "Photographes professionnels",
+          "slug": "photographes"
+        },
+        {
+          "name": "Relocation",
+          "slug": "relocation"
+        },
+        {
+          "name": "Représentation commerciale",
+          "slug": "representants-commerciaux"
+        },
+        {
+          "name": "Studio de production",
+          "slug": "studio-production"
+        },
+        {
+          "name": "Studio photo et vidéo",
+          "slug": "photographe-cameraman"
+        },
+        {
+          "name": "Sûreté aéroportuaire",
+          "slug": "securite-aeroport"
+        },
+        {
+          "name": "Traducteurs / Interprètes",
+          "slug": "traducteurs-interpretes"
+        }
+      ]
+    },
+    {
+      "name": "Sport",
+      "slug": "sport",
+      "subcategories": [
+        {
+          "name": "Centres omnisports - Stades",
+          "slug": "centres-omnisports-stades"
+        },
+        {
+          "name": "Clubs de sport",
+          "slug": "clubs-sport"
+        },
+        {
+          "name": "Magasins de sport",
+          "slug": "vente-articles-sport"
+        },
+        {
+          "name": "Salles de sport, gym et fitness",
+          "slug": "salles-sport-gym-fitness"
+        }
+      ]
+    },
+    {
+      "name": "Transports",
+      "slug": "transports",
+      "subcategories": [
+        {
+          "name": "Aéroports",
+          "slug": "aeroports"
+        },
+        {
+          "name": "Agences en douane",
+          "slug": "agences-en-douane"
+        },
+        {
+          "name": "Agences maritimes",
+          "slug": "agences-maritimes"
+        },
+        {
+          "name": "Assistance aéroportuaire",
+          "slug": "assistance-aeroportuaire"
+        },
+        {
+          "name": "Assistance maritime",
+          "slug": "assistance-maritime"
+        },
+        {
+          "name": "Aviation d'affaires",
+          "slug": "aviation-affaires"
+        },
+        {
+          "name": "Avitaillement maritime",
+          "slug": "avitaillement-maritime"
+        },
+        {
+          "name": "Compagnies aériennes",
+          "slug": "compagnies-aeriennes"
+        },
+        {
+          "name": "Compagnies maritimes",
+          "slug": "compagnies-maritimes"
+        },
+        {
+          "name": "Consignation",
+          "slug": "transit-consignation"
+        },
+        {
+          "name": "Fret",
+          "slug": "entreprises-fret"
+        },
+        {
+          "name": "Intralogistique",
+          "slug": "intralogistique"
+        },
+        {
+          "name": "Location avion",
+          "slug": "location-avion"
+        },
+        {
+          "name": "Logistique",
+          "slug": "logistique"
+        },
+        {
+          "name": "Manutention - Entreposage",
+          "slug": "manutention-entreposage"
+        },
+        {
+          "name": "Ports",
+          "slug": "ports"
+        },
+        {
+          "name": "Routes (signalisation - entretien)",
+          "slug": "routes-signalisation-entretien"
+        },
+        {
+          "name": "Sécurité maritime",
+          "slug": "securite-maritime"
+        },
+        {
+          "name": "Shipping",
+          "slug": "shipping"
+        },
+        {
+          "name": "Transit",
+          "slug": "entreprises-transit"
+        },
+        {
+          "name": "Transit maritime",
+          "slug": "transit-maritime"
+        },
+        {
+          "name": "Transport aérien",
+          "slug": "transport-aerien"
+        },
+        {
+          "name": "Transport maritime / Shipping",
+          "slug": "transport-maritime"
+        },
+        {
+          "name": "Transport routier",
+          "slug": "transport-routier"
+        },
+        {
+          "name": "Transports ferroviaires",
+          "slug": "transports-ferroviaires"
+        },
+        {
+          "name": "Transports hydrocarbures",
+          "slug": "transports-hydrocarbures"
+        },
+        {
+          "name": "Transports internationaux",
+          "slug": "transports-internationaux"
+        },
+        {
+          "name": "Transports logistiques",
+          "slug": "transports-logistiques"
+        },
+        {
+          "name": "Transports urbains",
+          "slug": "transports-urbains"
+        },
+        {
+          "name": "Transports VTC - Taxis",
+          "slug": "taxis-vtc"
+        }
+      ]
+    },
+    {
+      "name": "Urgence",
+      "slug": "urgence",
+      "subcategories": [
+        {
+          "name": "Ambulances",
+          "slug": "ambulances"
+        },
+        {
+          "name": "Police",
+          "slug": "commissariats-police"
+        },
+        {
+          "name": "Pompiers",
+          "slug": "sapeurs-pompiers"
+        }
+      ]
+    }
+  ]
+}

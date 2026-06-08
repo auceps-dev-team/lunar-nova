@@ -23,6 +23,14 @@ export default function Contacts({ activeId }) {
     const isAnalyzing = waAnalysis.isRunning;
     const contactStatus = waAnalysis.contactStatuses;
 
+    const [countryCode, setCountryCode] = useState(() => {
+        return localStorage.getItem('wa_country_code') || '225';
+    });
+
+    useEffect(() => {
+        localStorage.setItem('wa_country_code', countryCode);
+    }, [countryCode]);
+
     const [currentPage, setCurrentPage] = useState(() => {
         const saved = sessionStorage.getItem('wa_contacts_page');
         return saved ? parseInt(saved, 10) : 1;
@@ -349,12 +357,12 @@ export default function Contacts({ activeId }) {
                     }
 
                     const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 25000); // 25s max per contact
+                    const timeoutId = setTimeout(() => controller.abort(), 40000); // 40s max per contact
 
                     const res = await fetch('http://127.0.0.1:3000/api/wa/verify-contact', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ instance_id: activeId, phone: rawPhone }),
+                        body: JSON.stringify({ instance_id: activeId, phone: rawPhone, country_code: countryCode }),
                         signal: controller.signal
                     });
                     clearTimeout(timeoutId);
@@ -399,7 +407,7 @@ export default function Contacts({ activeId }) {
             const res = await fetch('http://127.0.0.1:3000/api/wa/open-chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ instance_id: activeId, phone: rawPhone, contact_id: contactId })
+                body: JSON.stringify({ instance_id: activeId, phone: rawPhone, contact_id: contactId, country_code: countryCode })
             });
             const data = await res.json();
             if (data.status === 'success') {
@@ -504,6 +512,28 @@ export default function Contacts({ activeId }) {
                             { value: 'unverified', label: `⏱️ ${t('unverified')}` },
                         ]}
                     />
+                </div>
+
+                {/* Filtre Indicatif Pays */}
+                <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Pays:</label>
+                    <select
+                        value={countryCode}
+                        onChange={(e) => setCountryCode(e.target.value)}
+                        className="bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 p-2.5 dark:bg-zinc-800 dark:border-zinc-700 dark:text-white"
+                    >
+                        <option value="225">🇨🇮 Côte d'Ivoire (+225)</option>
+                        <option value="221">🇸🇳 Sénégal (+221)</option>
+                        <option value="237">🇨🇲 Cameroun (+237)</option>
+                        <option value="243">🇨🇩 RDC (+243)</option>
+                        <option value="228">🇹🇬 Togo (+228)</option>
+                        <option value="226">🇧🇫 Burkina Faso (+226)</option>
+                        <option value="223">🇲🇱 Mali (+223)</option>
+                        <option value="229">🇧🇯 Bénin (+229)</option>
+                        <option value="241">🇬🇦 Gabon (+241)</option>
+                        <option value="242">🇨🇬 Congo (+242)</option>
+                        <option value="none">Autre (Format libre)</option>
+                    </select>
                 </div>
 
                 {/* Filtre Segment */}

@@ -3,6 +3,29 @@ const router = express.Router();
 const { pool } = require('../db');
 const puppeteer = require('puppeteer-core');
 
+// Mutex global pour sécuriser l'accès concurrentiel à l'instance WhatsApp
+const waMutexQueue = [];
+let isWaMutexLocked = false;
+
+const acquireWaMutex = () => {
+    return new Promise(resolve => {
+        if (!isWaMutexLocked) {
+            isWaMutexLocked = true;
+            resolve();
+        } else {
+            waMutexQueue.push(resolve);
+        }
+    });
+};
+
+const releaseWaMutex = () => {
+    if (waMutexQueue.length > 0) {
+        const next = waMutexQueue.shift();
+        next();
+    } else {
+        isWaMutexLocked = false;
+    }
+};
 
 // --- Phase 13: WhatsApp Contacts APIs ---
 router.get('/api/wa/contact-lists', async (req, res) => {
@@ -112,11 +135,29 @@ router.post('/api/wa/contacts/bulk', async (req, res) => {
     try {
         await client.query('BEGIN');
 
+        // Ensure unique index on phone exists (idempotent)
+        await client.query(`
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_wa_contacts_phone_unique 
+            ON wa_contacts (phone) 
+            WHERE phone IS NOT NULL AND phone != ''
+        `).catch(() => { /* Index may already exist */ });
+
+        let imported = 0;
+        let skipped = 0;
+        let updated = 0;
+
         for (const contact of contacts) {
             const { name, phone, segment_name, email, address, list_id, segment_id: explicit_segment_id } = contact;
+            
+            // Skip contacts without a valid phone number
+            if (!phone || phone.trim() === '') {
+                skipped++;
+                continue;
+            }
+
             let segment_id = explicit_segment_id || null;
 
-            // Simple Auto-Resolution: if a segment is typed (and no explicit segment_id), find or create it
+            // Auto-resolve segment by name
             if (segment_name && !segment_id) {
                 const segCheck = await client.query('SELECT id FROM wa_segments WHERE name = $1', [segment_name]);
                 if (segCheck.rows.length > 0) {
@@ -127,15 +168,38 @@ router.post('/api/wa/contacts/bulk', async (req, res) => {
                 }
             }
 
-            // Insert the contact
-            await client.query(
-                'INSERT INTO wa_contacts (name, phone, segment_id, list_id, email, address) VALUES ($1, $2, $3, $4, $5, $6)',
-                [name || 'Inconnu', phone || '', segment_id, list_id || null, email || null, address || null]
-            );
+            // Check if contact already exists to track import vs update
+            const existing = await client.query('SELECT id FROM wa_contacts WHERE phone = $1', [phone]);
+            const isNew = existing.rows.length === 0;
+
+            // Insert or update on phone conflict
+            await client.query(`
+                INSERT INTO wa_contacts (name, phone, segment_id, list_id, email, address) 
+                VALUES ($1, $2, $3, $4, $5, $6)
+                ON CONFLICT (phone) WHERE phone IS NOT NULL AND phone != ''
+                DO UPDATE SET 
+                    name = COALESCE(NULLIF(EXCLUDED.name, ''), wa_contacts.name),
+                    segment_id = COALESCE(EXCLUDED.segment_id, wa_contacts.segment_id),
+                    list_id = COALESCE(EXCLUDED.list_id, wa_contacts.list_id),
+                    email = COALESCE(NULLIF(EXCLUDED.email, ''), wa_contacts.email),
+                    address = COALESCE(NULLIF(EXCLUDED.address, ''), wa_contacts.address)
+            `, [name || 'Inconnu', phone, segment_id, list_id || null, email || null, address || null]);
+
+            if (isNew) {
+                imported++;
+            } else {
+                updated++;
+            }
         }
 
         await client.query('COMMIT');
-        res.json({ status: 'success', imported: contacts.length });
+        res.json({ 
+            status: 'success', 
+            imported, 
+            updated,
+            skipped,
+            message: `${imported} nouveaux contacts, ${updated} mis à jour, ${skipped} ignorés (sans téléphone)`
+        });
     } catch (err) {
         await client.query('ROLLBACK');
         console.error("Bulk Import Error: ", err);
@@ -284,7 +348,7 @@ router.delete('/api/wa/contacts/:id', async (req, res) => {
 });
 
 router.post('/api/wa/open-chat', async (req, res) => {
-    const { instance_id, phone, contact_id } = req.body;
+    const { instance_id, phone, contact_id, country_code } = req.body;
     if (!instance_id || !phone) return res.status(400).json({ error: 'Missing instance_id or phone' });
 
     let formattedMessage = '';
@@ -320,6 +384,7 @@ router.post('/api/wa/open-chat', async (req, res) => {
 
     let browser;
     try {
+        await acquireWaMutex();
         const cdpUrl = `http://localhost:8315`;
         browser = await puppeteer.connect({
             browserURL: cdpUrl,
@@ -351,7 +416,11 @@ router.post('/api/wa/open-chat', async (req, res) => {
         }
 
         // Clean phone number (e.g. 2250707070707, numbers only)
-        const cleanPhone = phone.replace(/[^0-9]/g, '');
+        const hasInternationalPrefix = /^\s*\+/.test(phone);
+        let cleanPhone = phone.replace(/[^0-9]/g, '');
+        if (!hasInternationalPrefix && country_code && country_code !== 'none' && !cleanPhone.startsWith(country_code)) {
+            cleanPhone = country_code + cleanPhone;
+        }
         const url = `https://web.whatsapp.com/send?phone=${cleanPhone}`;
         await targetPage.goto(url);
 
@@ -361,20 +430,26 @@ router.post('/api/wa/open-chat', async (req, res) => {
         res.status(500).json({ error: err.message });
     } finally {
         if (browser) browser.disconnect();
+        releaseWaMutex();
     }
 });
 
 router.post('/api/wa/verify-contact', async (req, res) => {
-    const { instance_id, phone } = req.body;
+    const { instance_id, phone, country_code } = req.body;
 
     if (!instance_id || !phone) {
         return res.status(400).json({ error: 'Missing required fields (instance_id, phone).' });
     }
 
+    const startTime = Date.now();
+    const logTime = (msg) => console.log(`[Verifier] [${((Date.now() - startTime) / 1000).toFixed(1)}s] ${msg}`);
+
     let browser;
     try {
+        logTime(`Waiting for Mutex...`);
+        await acquireWaMutex();
+        logTime(`Mutex acquired. Connecting to CDP...`);
         const cdpUrl = `http://localhost:8315`;
-        console.log(`[Verifier] Trying to connect to Electron CDP for whatsapp instance...`);
         browser = await puppeteer.connect({
             browserURL: cdpUrl,
             defaultViewport: null
@@ -401,11 +476,17 @@ router.post('/api/wa/verify-contact', async (req, res) => {
 
         if (!targetPage) {
             browser.disconnect();
+            logTime(`Not Found: Could not find WhatsApp Web tab.`);
             return res.status(404).json({ error: `Not Found: Could not find WhatsApp Web tab for instance_id: ${instance_id}` });
         }
 
-        console.log(`[Verifier] Navigating to WhatsApp send URL for phone: ${phone}`);
-        const cleanPhone = phone.replace(/[^0-9]/g, '');
+        const hasInternationalPrefix = /^\s*\+/.test(phone);
+        let cleanPhone = phone.replace(/[^0-9]/g, '');
+        if (!hasInternationalPrefix && country_code && country_code !== 'none' && !cleanPhone.startsWith(country_code)) {
+            cleanPhone = country_code + cleanPhone;
+        }
+        
+        logTime(`Navigating to URL for ${cleanPhone}...`);
         const verifyUrl = `https://web.whatsapp.com/send/?phone=${cleanPhone}`;
 
         // First, dismiss any lingering OK modal from a previous contact check
@@ -420,9 +501,15 @@ router.post('/api/wa/verify-contact', async (req, res) => {
             await new Promise(r => setTimeout(r, 300));
         } catch (_) { }
 
-        await targetPage.goto(verifyUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
+        try {
+            logTime(`Starting targetPage.goto...`);
+            await targetPage.goto(verifyUrl, { waitUntil: 'domcontentloaded', timeout: 10000 });
+            logTime(`targetPage.goto OK.`);
+        } catch (gotoErr) {
+            logTime(`Navigation lente ou erreur goto (${gotoErr.message}), mais on continue...`);
+        }
 
-        console.log(`[Verifier] Racing chatbox vs error modal...`);
+        logTime(`Racing chatbox vs error modal...`);
 
         let result = 'TIMEOUT';
         const deadline = Date.now() + 18000; // 18s max
@@ -461,27 +548,34 @@ router.post('/api/wa/verify-contact', async (req, res) => {
                 await new Promise(r => setTimeout(r, 800));
             }
         }
+        
+        logTime(`Loop finished. Result: ${result}`);
 
         if (result === 'VALIDE') {
-            console.log(`✅ [Verifier] Le numéro ${cleanPhone} est valide.`);
+            logTime(`✅ Le numéro ${cleanPhone} est valide.`);
             try {
-                // Try to update DB. Using LIKE handles cases where DB has + prefix
-                await pool.query('UPDATE wa_contacts SET status = ? WHERE phone LIKE ?', ['valid', `%${cleanPhone}%`]);
+                await pool.query('UPDATE wa_contacts SET status = ? WHERE phone LIKE ?', ['valid', `%${cleanPhone.slice(-9)}%`]);
             } catch (dbErr) { console.error('DB Update Error:', dbErr); }
             res.json({ status: 'success', is_valid: true, message: `The number ${cleanPhone} is registered on WhatsApp.` });
-        } else {
-            console.log(`❌ [Verifier] Le numéro ${cleanPhone} n'est pas sur WhatsApp. (${result})`);
+        } else if (result === 'INVALIDE') {
+            logTime(`❌ Le numéro ${cleanPhone} n'est pas sur WhatsApp.`);
             try {
-                await pool.query('UPDATE wa_contacts SET status = ? WHERE phone LIKE ?', ['invalid', `%${cleanPhone}%`]);
+                await pool.query('UPDATE wa_contacts SET status = ? WHERE phone LIKE ?', ['invalid', `%${cleanPhone.slice(-9)}%`]);
             } catch (dbErr) { console.error('DB Update Error:', dbErr); }
             res.json({ status: 'success', is_valid: false, message: `The number ${cleanPhone} is NOT registered on WhatsApp.` });
+        } else if (result === 'TIMEOUT') {
+            logTime(`❌ Timeout vérification.`);
+            res.json({ status: 'success', is_valid: false, message: `Timeout vérification pour ${cleanPhone}` });
         }
 
     } catch (error) {
-        console.error(`[Verifier] Erreur globale de vérification: ${error.message}`);
+        logTime(`Erreur globale: ${error.message}`);
         res.status(500).json({ error: 'System error during WhatsApp validation.', details: error.message });
     } finally {
+        logTime(`Cleaning up (browser disconnect, mutex release)...`);
         if (browser) browser.disconnect();
+        releaseWaMutex();
+        logTime(`Done.`);
     }
 });
 
