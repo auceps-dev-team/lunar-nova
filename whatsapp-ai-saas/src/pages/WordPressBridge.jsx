@@ -198,6 +198,14 @@ export default function WordPressBridge() {
                 @keyframes spin { to { transform: rotate(360deg); } }
                 @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
                 @keyframes bounce { 0%, 100% { transform: translateY(0); opacity: 0.4; } 50% { transform: translateY(-6px); opacity: 1; } }
+                
+                .dark {
+                    --text-primary: #f8fafc;
+                    --text-secondary: #a1a1aa;
+                    --panel-bg: #27272a;
+                    --border-color: #3f3f46;
+                    --input-bg: #18181b;
+                }
             `}</style>
 
             <div style={{ maxWidth: 1060, margin: '0 auto', animation: 'fadeUp 0.3s ease' }}>

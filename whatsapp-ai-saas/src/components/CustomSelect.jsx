@@ -24,6 +24,7 @@ export default function CustomSelect({
     panelWidth = 'w-56',
     width = 'w-full',
     disabled = false,
+    icon = null,
 }) {
     const [open, setOpen] = useState(false);
     const [search, setSearch] = useState('');
@@ -64,7 +65,8 @@ export default function CustomSelect({
                 type="button"
                 onClick={() => setOpen(v => !v)}
                 className={[
-                    'flex items-center gap-2 px-3 py-2 rounded-lg',
+                    'flex items-center gap-2 py-2 rounded-lg',
+                    icon ? 'pl-3 pr-3' : 'px-3',
                     'bg-gray-50 dark:bg-zinc-800',
                     'border border-gray-200 dark:border-zinc-700',
                     'text-sm text-gray-800 dark:text-gray-200',
@@ -76,6 +78,7 @@ export default function CustomSelect({
                     className,
                 ].join(' ')}
             >
+                {icon && <span className="flex-shrink-0 text-gray-400">{icon}</span>}
                 <span className="flex-1 text-left truncate">
                     {selected?.label ?? placeholder}
                 </span>

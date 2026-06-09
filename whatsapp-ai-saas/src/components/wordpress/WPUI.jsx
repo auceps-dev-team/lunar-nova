@@ -2,17 +2,17 @@ import React from 'react';
 
 // ─── Design tokens (aligned with WaCopilote branding) ────────────────────────
 export const C = {
-    primary:     '#0b9f84',
-    primary2:    '#10b981',
-    primaryDark: '#047857',
-    accent:      '#6366f1',
+    primary:     '#059669', // emerald-600
+    primary2:    '#10b981', // emerald-500
+    primaryDark: '#047857', // emerald-700
+    accent:      '#3b82f6', // blue-500
     blue:        '#3b82f6',
     purple:      '#8b5cf6',
     amber:       '#f59e0b',
     red:         '#ef4444',
     text:        'var(--text-primary, #0f172a)',
     textSub:     'var(--text-secondary, #64748b)',
-    panel:       'var(--panel-bg, #fff)',
+    panel:       'var(--panel-bg, #ffffff)',
     border:      'var(--border-color, #e2e8f0)',
 };
 

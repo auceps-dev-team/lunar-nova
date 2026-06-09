@@ -3,6 +3,7 @@ import { Search, MapPin, Phone, Globe, Download, Database, CheckSquare, Square, 
 import { Link } from 'react-router-dom';
 import useAppStore from '../../store';
 import { useTranslation } from 'react-i18next';
+import CustomSelect from '../../components/CustomSelect';
 
 export default function Prospection() {
     const { t } = useTranslation();
@@ -363,18 +364,21 @@ export default function Prospection() {
                                 Source de prospection
                             </label>
                             <div className="relative">
-                                <select 
-                                    className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 text-gray-900 rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block dark:bg-zinc-800 dark:border-zinc-700 dark:text-white transition-colors appearance-none"
+                                <CustomSelect 
                                     value={source}
-                                    onChange={(e) => setSource(e.target.value)}
-                                >
-                                    <option value="google">Google Maps</option>
-                                    <option value="annuaireci">Annuaire CI</option>
-                                    <option value="goafrica">Go Africa Online</option>
-                                </select>
-                                {source === 'google' && <MapIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />}
-                                {source === 'annuaireci' && <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />}
-                                {source === 'goafrica' && <Globe2 className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />}
+                                    onChange={setSource}
+                                    className="py-3"
+                                    icon={
+                                        source === 'google' ? <MapIcon className="h-5 w-5 pointer-events-none" /> :
+                                        source === 'annuaireci' ? <Building2 className="h-5 w-5 pointer-events-none" /> :
+                                        source === 'goafrica' ? <Globe2 className="h-5 w-5 pointer-events-none" /> : null
+                                    }
+                                    options={[
+                                        { value: 'google', label: 'Google Maps' },
+                                        { value: 'annuaireci', label: 'Annuaire CI' },
+                                        { value: 'goafrica', label: 'Go Africa Online' }
+                                    ]}
+                                />
                             </div>
                         </div>
 
@@ -401,15 +405,15 @@ export default function Prospection() {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-gray-100 dark:border-zinc-800 mt-2">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Pays</label>
-                                <select 
-                                    className="w-full px-4 py-2 bg-gray-50 border border-gray-200 text-gray-900 rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block dark:bg-zinc-800 dark:border-zinc-700 dark:text-white"
+                                <CustomSelect 
                                     value={goAfricaCountry}
-                                    onChange={(e) => setGoAfricaCountry(e.target.value)}
-                                >
-                                    {(goAfricaMetadata?.countries || []).map(c => (
-                                        <option key={c.code} value={c.code}>{c.name}</option>
-                                    ))}
-                                </select>
+                                    onChange={setGoAfricaCountry}
+                                    options={(goAfricaMetadata?.countries || []).map(c => ({
+                                        value: c.code, label: c.name
+                                    }))}
+                                    searchable
+                                    className="py-2.5"
+                                />
                             </div>
                             <div>
                                 <div className="flex items-center justify-between mb-1">
@@ -425,33 +429,33 @@ export default function Prospection() {
                                         <span>Actualiser</span>
                                     </button>
                                 </div>
-                                <select 
-                                    className="w-full px-4 py-2 bg-gray-50 border border-gray-200 text-gray-900 rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block dark:bg-zinc-800 dark:border-zinc-700 dark:text-white"
+                                <CustomSelect 
                                     value={goAfricaCategory}
-                                    onChange={(e) => {
-                                        setGoAfricaCategory(e.target.value);
-                                        setGoAfricaSubcategory(''); // Reset subcategory when category changes
+                                    onChange={(val) => {
+                                        setGoAfricaCategory(val);
+                                        setGoAfricaSubcategory('');
                                     }}
-                                >
-                                    <option value="">-- Toutes les catégories --</option>
-                                    {(goAfricaMetadata?.categories || []).map(c => (
-                                        <option key={c.slug} value={c.slug}>{c.name}</option>
-                                    ))}
-                                </select>
+                                    placeholder="-- Toutes les catégories --"
+                                    searchable
+                                    className="py-2.5"
+                                    options={(goAfricaMetadata?.categories || []).map(c => ({
+                                        value: c.slug, label: c.name
+                                    }))}
+                                />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Sous-catégorie</label>
-                                <select 
-                                    className="w-full px-4 py-2 bg-gray-50 border border-gray-200 text-gray-900 rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block dark:bg-zinc-800 dark:border-zinc-700 dark:text-white"
+                                <CustomSelect 
                                     value={goAfricaSubcategory}
-                                    onChange={(e) => setGoAfricaSubcategory(e.target.value)}
+                                    onChange={setGoAfricaSubcategory}
                                     disabled={!goAfricaCategory}
-                                >
-                                    <option value="">-- Toutes les sous-catégories --</option>
-                                    {(goAfricaMetadata?.categories?.find(c => c.slug === goAfricaCategory)?.subcategories || []).map(s => (
-                                        <option key={s.slug} value={s.slug}>{s.name}</option>
-                                    ))}
-                                </select>
+                                    placeholder="-- Toutes les sous-catégories --"
+                                    searchable
+                                    className="py-2.5"
+                                    options={(goAfricaMetadata?.categories?.find(c => c.slug === goAfricaCategory)?.subcategories || []).map(s => ({
+                                        value: s.slug, label: s.name
+                                    }))}
+                                />
                             </div>
                         </div>
                     )}
@@ -516,7 +520,7 @@ export default function Prospection() {
                     <div className="pt-4 flex flex-col md:flex-row gap-4 items-start md:items-end">
                         <button
                             type="submit"
-                            disabled={isSearching || !query.trim()}
+                            disabled={isSearching || (!query.trim() && !(source === 'goafrica' && (goAfricaCategory || goAfricaSubcategory)))}
                             className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-lg font-medium text-sm flex items-center justify-center gap-2 w-full md:w-auto transition-colors disabled:opacity-50 shadow-sm"
                         >
                             {isSearching ? <Loader2 className="animate-spin h-5 w-5" /> : <Search className="h-5 w-5" />}
@@ -734,30 +738,28 @@ export default function Prospection() {
                             <form onSubmit={handleImportCRM} className="space-y-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Associer à une Liste (Optionnel)</label>
-                                    <select
-                                        className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block p-2.5 dark:bg-zinc-800 dark:border-zinc-700 dark:placeholder-gray-400 dark:text-white transition-colors"
+                                    <CustomSelect
                                         value={selectedListId}
-                                        onChange={(e) => setSelectedListId(e.target.value)}
-                                    >
-                                        <option value="">-- Aucune Liste --</option>
-                                        {allLists.map(l => (
-                                            <option key={l.id} value={l.id}>{l.name}</option>
-                                        ))}
-                                    </select>
+                                        onChange={setSelectedListId}
+                                        placeholder="-- Aucune Liste --"
+                                        options={allLists.map(l => ({
+                                            value: l.id, label: l.name
+                                        }))}
+                                        className="py-2.5"
+                                    />
                                 </div>
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Associer à un Segment (Optionnel)</label>
-                                    <select
-                                        className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block p-2.5 dark:bg-zinc-800 dark:border-zinc-700 dark:placeholder-gray-400 dark:text-white transition-colors"
+                                    <CustomSelect
                                         value={selectedSegmentId}
-                                        onChange={(e) => setSelectedSegmentId(e.target.value)}
-                                    >
-                                        <option value="">-- Aucun Segment --</option>
-                                        {allSegments.map(s => (
-                                            <option key={s.id} value={s.id}>{s.name}</option>
-                                        ))}
-                                    </select>
+                                        onChange={setSelectedSegmentId}
+                                        placeholder="-- Aucun Segment --"
+                                        options={allSegments.map(s => ({
+                                            value: s.id, label: s.name
+                                        }))}
+                                        className="py-2.5"
+                                    />
                                 </div>
 
                                 <div className="pt-2 flex gap-3">

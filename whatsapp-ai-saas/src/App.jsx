@@ -6,6 +6,7 @@ import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
 import WorkArea from './components/WorkArea';
 import OnboardingModal from './components/OnboardingModal';
+import ErrorBoundary from './components/ErrorBoundary';
 
 const Dashboard = React.lazy(() => import('./pages/Dashboard'));
 const AdvancedAnalytics = React.lazy(() => import('./pages/AdvancedAnalytics'));
@@ -275,8 +276,9 @@ function AppContent() {
             {/* Standard React Routing for text/UI-based pages */}
             {!isWhatsApp && (
               <div className="overflow-y-auto p-6 flex-1 bg-surface dark:bg-gray-900">
-                <Suspense fallback={<div className="h-full w-full flex items-center justify-center text-primary/60"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div></div>}>
-                  <Routes>
+                <ErrorBoundary>
+                  <Suspense fallback={<div className="h-full w-full flex items-center justify-center text-primary/60"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div></div>}>
+                    <Routes>
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/analytics" element={<AdvancedAnalytics />} />
                   <Route path="/profile" element={<Profile />} />
@@ -303,8 +305,9 @@ function AppContent() {
                   <Route path="/wa/contacts/import" element={<ContactImport />} />
                   <Route path="/support" element={<Support />} />
                   <Route path="/wordpress" element={<WordPressBridge />} />
-                </Routes>
-                </Suspense>
+                    </Routes>
+                  </Suspense>
+                </ErrorBoundary>
               </div>
             )}
           </main>

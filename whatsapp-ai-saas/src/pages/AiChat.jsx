@@ -732,8 +732,8 @@ export default function AiChat() {
                             </button>
                             <button
                                 type="submit"
-                                disabled={(!input.trim() && !attachedImage) || isLoading}
-                                style={{ width: 36, height: 36, borderRadius: 8, background: (input.trim() || attachedImage) && !isLoading ? '#0b9f84' : '#e2e8f0', border: 'none', cursor: (input.trim() || attachedImage) && !isLoading ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.15s' }}
+                                disabled={(!input.trim() && attachments.length === 0) || isLoading}
+                                style={{ width: 36, height: 36, borderRadius: 8, background: (input.trim() || attachments.length > 0) && !isLoading ? '#0b9f84' : '#e2e8f0', border: 'none', cursor: (input.trim() || attachments.length > 0) && !isLoading ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.15s' }}
                             >
                                 <Send size={15} color="white" strokeWidth={2.5} />
                             </button>
