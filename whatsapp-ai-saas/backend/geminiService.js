@@ -497,9 +497,39 @@ async function listModels() {
     }
 }
 
+/**
+ * classifyOrderIntent — classification structurée à un seul message (Order Radar).
+ * Utilise le client Gemini résolu normalement (clé utilisateur > clé système),
+ * contrairement à l'ancien classifyWithGemini() de orderListener.js qui
+ * appelait GoogleGenAI directement avec process.env.GEMINI_API_KEY.
+ */
+async function classifyOrderIntent(text, contactName, modelParam) {
+    const fallback = { is_order: false, confidence: 0, order_type: 'not_an_order', summary: '' };
+    try {
+        const targetModel = modelParam || 'gemini-2.5-flash';
+        const orderRadarPersona = orchestrator.getPersona('order_radar');
+        const { client } = await getGeminiClient('text', targetModel);
+
+        const response = await client.models.generateContent({
+            model: targetModel,
+            contents: `Contact: ${contactName}\nMessage: "${text}"`,
+            config: {
+                systemInstruction: orderRadarPersona ? orderRadarPersona.systemInstruction : '',
+                responseMimeType: "application/json",
+            }
+        });
+
+        return { ...fallback, ...JSON.parse(response.text) };
+    } catch (error) {
+        console.error("[OrderRadar] Gemini classification error:", error.message);
+        return fallback;
+    }
+}
+
 module.exports = {
     generateProposals,
     chatWithAgent,
     generateImage,
-    listModels
+    listModels,
+    classifyOrderIntent
 };

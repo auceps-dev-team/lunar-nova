@@ -487,9 +487,48 @@ async function listModels(apiKey, baseURL) {
 }
 
 
+/**
+ * classifyOrderIntent — classification structurée à un seul message (Order Radar),
+ * routée via le catalogue NVIDIA/Together comme le reste de l'app (au lieu de
+ * l'ancien appel Gemini brut de orderListener.js). Par défaut sur un petit modèle
+ * rapide/peu coûteux, adapté à une classification à faible latence.
+ */
+async function classifyOrderIntent(text, contactName, apiKey, baseURL, modelParam) {
+    const fallback = { is_order: false, confidence: 0, order_type: 'not_an_order', summary: '' };
+    const openai = getClient(apiKey, baseURL);
+    if (!openai) return fallback;
+
+    const targetModel = modelParam || 'meta/llama-3.1-8b-instruct';
+    const orderRadarPersona = orchestrator.getPersona('order_radar');
+    const systemInstruction = orderRadarPersona ? orderRadarPersona.systemInstruction : '';
+
+    try {
+        const completionArgs = {
+            model: targetModel,
+            messages: [
+                { role: "system", content: systemInstruction },
+                { role: "user", content: `Contact: ${contactName}\nMessage: "${text}"` }
+            ],
+            response_format: { type: "json_object" },
+            stream: false
+        };
+        Object.assign(completionArgs, nvidiaModels.buildGenerationParams(nvidiaModels.getModelDef(targetModel)));
+
+        const response = await openai.chat.completions.create(completionArgs);
+        let jsonText = response.choices[0].message.content;
+        jsonText = jsonText.replace(/```json/g, '').replace(/```/g, '').trim();
+
+        return { ...fallback, ...JSON.parse(jsonText) };
+    } catch (error) {
+        console.error("[OrderRadar] NVIDIA classification error:", error.message);
+        return fallback;
+    }
+}
+
 module.exports = {
     generateProposals,
     chatWithAgent,
     analyzeOrEditImage,
-    listModels
+    listModels,
+    classifyOrderIntent
 };

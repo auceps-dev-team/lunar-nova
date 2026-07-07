@@ -215,8 +215,54 @@ async function listModels(apiKey) {
     }
 }
 
+/**
+ * classifyOrderIntent — classification structurée à un seul message (Order Radar).
+ */
+async function classifyOrderIntent(text, contactName, apiKey, modelParam) {
+    const fallback = { is_order: false, confidence: 0, order_type: 'not_an_order', summary: '' };
+    if (!apiKey) return fallback;
+
+    const targetModel = modelParam || 'anthropic/claude-3.5-sonnet';
+    const orderRadarPersona = orchestrator.getPersona('order_radar');
+    const systemInstruction = orderRadarPersona ? orderRadarPersona.systemInstruction : '';
+
+    try {
+        const _fetch = typeof fetch !== 'undefined' ? fetch : (await import('node-fetch')).default;
+        const response = await _fetch(OPENROUTER_URL, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'HTTP-Referer': 'http://localhost:3000',
+                'X-Title': 'WaCopilote',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                model: targetModel,
+                messages: [
+                    { role: "system", content: systemInstruction },
+                    { role: "user", content: `Contact: ${contactName}\nMessage: "${text}"` }
+                ],
+                response_format: { type: "json_object" },
+                max_tokens: 512
+            })
+        });
+
+        const data = await response.json();
+        if (data.error) throw new Error(data.error.message || 'OpenRouter Error');
+
+        let jsonText = data.choices[0].message.content;
+        jsonText = jsonText.replace(/```json/g, '').replace(/```/g, '').trim();
+
+        return { ...fallback, ...JSON.parse(jsonText) };
+    } catch (error) {
+        console.error("[OrderRadar] OpenRouter classification error:", error.message);
+        return fallback;
+    }
+}
+
 module.exports = {
     generateProposals,
     chatWithAgent,
-    listModels
+    listModels,
+    classifyOrderIntent
 };

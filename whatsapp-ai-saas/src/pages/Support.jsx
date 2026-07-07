@@ -22,7 +22,8 @@ const Support = () => {
     ];
 
     const changelog = [
-        { version: 'v1.33.2', date: 'Aujourd\'hui', changes: ['Amélioration du scraping Annuaire CI (Emails & Sites Web)', 'Ajout des colonnes Email et Site Web dans la Prospection', 'Correction du bug d\'initialisation Puppeteer', 'Mise en place de Skeletons de chargement (UI)'] },
+        { version: 'v1.34.0', date: 'Aujourd\'hui', changes: ['Live Message & Order Radar : détection IA en temps réel des intentions d\'achat dans les conversations WhatsApp', 'Nouvel agent dédié "Order Radar" pour une classification structurée des commandes', 'Catalogue étendu à 56 modèles NVIDIA NIM avec clé API par défaut unique pour tout le système', 'Refonte des réglages IA : séparation claire du provider Chat/Image et sélecteur rapide de modèle dans le chat', 'Simplification des clés API NVIDIA dans les réglages (un seul champ au lieu de 14)'] },
+        { version: 'v1.33.2', date: '2026-06-03', changes: ['Amélioration du scraping Annuaire CI (Emails & Sites Web)', 'Ajout des colonnes Email et Site Web dans la Prospection', 'Correction du bug d\'initialisation Puppeteer', 'Mise en place de Skeletons de chargement (UI)'] },
         { version: 'v1.33.1', date: '2026-06-02', changes: ['Nouveau système de prospection (Annuaires CI & Go Africa)', 'Recherche sur Google Maps en temps réel', 'Extraction asynchrone et intelligente de numéros et adresses'] },
         { version: 'v1.33.0', date: '2026-05-23', changes: ['Support des Modèles Vision (NVIDIA & Together AI)', 'Extraction multimodale WhatsApp dynamique', 'Génération d\'images avec Stable Diffusion 3'] },
         { version: 'v1.29.1', date: '2026-05-22', changes: ['Correctif notification de mise à jour persistante', 'Exclusion de l\'état updateAvailable de la persistance IndexedDB', 'Garde de version côté client (double vérification sémantique)'] },

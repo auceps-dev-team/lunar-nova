@@ -62,6 +62,36 @@ async function generateProposals(chatContext, modelParam, providerOverride = nul
     }
 }
 
+/**
+ * classifyOrderIntent — classification structurée à un seul message pour
+ * l'agent "Order Radar" (détection d'intention d'achat / commande directe).
+ * Même branchement par provider que generateProposals, pour que le classificateur
+ * respecte le provider/clé réellement configurés au lieu d'appeler un SDK en dur.
+ */
+async function classifyOrderIntent(text, contactName, modelParam = null, providerOverride = null) {
+    const { provider: defaultProvider } = await getProviderConfig(null);
+    const provider = providerOverride || defaultProvider;
+
+    if (provider === 'openrouter') {
+        const apiKey = await db.getSetting('openrouter_api_key', '');
+        return await openrouterService.classifyOrderIntent(text, contactName, apiKey, modelParam);
+    } else if (provider === 'ollama') {
+        const apiKey = await db.getSetting('ollama_api_key', '');
+        return await ollamaService.classifyOrderIntent(text, contactName, apiKey, modelParam);
+    } else if (provider === 'openai') {
+        const apiKey = await resolveNvidiaKey(modelParam);
+        const nvidiaModels = getNvidiaModels();
+        let baseURL = await db.getSetting('openai_base_url', nvidiaModels.NVIDIA_BASE_URL);
+        const modelDef = nvidiaModels.getModelDef(modelParam);
+        if (modelDef && modelDef.provider === 'together') {
+            baseURL = 'https://api.together.xyz/v1';
+        }
+        return await openaiService.classifyOrderIntent(text, contactName, apiKey, baseURL, modelParam);
+    } else {
+        return await geminiService.classifyOrderIntent(text, contactName, modelParam);
+    }
+}
+
 async function chatWithAgent(personaId, message, imageParams, attachments, promptFormat, messages = null, currentTasks = null, isRealTime = false, modelOverride = null, providerOverride = null) {
     const { provider: dbProvider, dbAgent } = await getProviderConfig(personaId);
     let provider = providerOverride || dbProvider;
@@ -287,5 +317,6 @@ module.exports = {
     generateProposals,
     chatWithAgent,
     generateImage,
-    listModels
+    listModels,
+    classifyOrderIntent
 };

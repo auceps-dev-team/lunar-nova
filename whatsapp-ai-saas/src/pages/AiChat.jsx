@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Sparkles, Copy, Trash2, Search, Plus, Menu, ArrowLeft, Send, Paperclip, Type, Mic, X } from 'lucide-react';
 import useAppStore from '../store';
 import { useTranslation } from 'react-i18next';
+import CustomSelect from '../components/CustomSelect';
 
 
 // ─── Couleurs pastel générées déterministement par nom ────────────────────
@@ -30,6 +31,8 @@ export default function AiChat() {
     const { t } = useTranslation();
     const showAppNotification = useAppStore(state => state.showAppNotification);
     const appSettings = useAppStore(state => state.appSettings) || {};
+    const updateSettings = useAppStore(state => state.updateSettings);
+    const availableModels = useAppStore(state => state.availableModels);
     const language = appSettings.language || 'en';
 
     // ── Agents système (définis à l'intérieur pour utiliser t()) ───────────
@@ -494,13 +497,23 @@ export default function AiChat() {
                             <div style={{ textAlign: 'left' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, maxWidth: '100%' }}>
                                     <span style={{ fontWeight: 700, fontSize: 15, color: '#0f172a', whiteSpace: 'nowrap' }}>{selectedAgent?.name}</span>
-                                    <span 
-                                        style={{ fontSize: 10, fontWeight: 'bold', padding: '2px 6px', borderRadius: 12, background: '#e0e7ff', color: '#4338ca', textTransform: 'uppercase', maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'inline-block' }}
-                                        title={`${selectedAgent?.provider_override || appSettings.provider || 'gemini'} ${selectedAgent?.model_override ? ` • ${selectedAgent.model_override}` : (appSettings.model ? ` • ${appSettings.model}` : '')}`}
-                                    >
-                                        {selectedAgent?.provider_override || appSettings.provider || 'gemini'} 
-                                        {selectedAgent?.model_override ? ` • ${selectedAgent.model_override}` : (appSettings.model ? ` • ${appSettings.model}` : '')}
-                                    </span>
+                                    {!selectedAgent?.model_override && (appSettings.provider || 'gemini') !== 'openai' && (
+                                        <span
+                                            style={{ fontSize: 10, fontWeight: 'bold', padding: '2px 6px', borderRadius: 12, background: '#e0e7ff', color: '#4338ca', textTransform: 'uppercase', maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'inline-block' }}
+                                            title={`${selectedAgent?.provider_override || appSettings.provider || 'gemini'}${appSettings.model ? ` • ${appSettings.model}` : ''}`}
+                                        >
+                                            {selectedAgent?.provider_override || appSettings.provider || 'gemini'}
+                                            {appSettings.model ? ` • ${appSettings.model}` : ''}
+                                        </span>
+                                    )}
+                                    {selectedAgent?.model_override && (
+                                        <span
+                                            style={{ fontSize: 10, fontWeight: 'bold', padding: '2px 6px', borderRadius: 12, background: '#e0e7ff', color: '#4338ca', textTransform: 'uppercase', maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'inline-block' }}
+                                            title={`${selectedAgent.provider_override || 'gemini'} • ${selectedAgent.model_override}`}
+                                        >
+                                            {selectedAgent.provider_override || 'gemini'} • {selectedAgent.model_override}
+                                        </span>
+                                    )}
                                     <svg style={{ color: '#94a3b8', transition: 'transform 0.2s', transform: isSwitchOpen ? 'rotate(180deg)' : 'none', flexShrink: 0 }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9" /></svg>
                                 </div>
                                 <span style={{ fontSize: 12, color: '#94a3b8', display: 'block', maxWidth: '300px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -508,6 +521,24 @@ export default function AiChat() {
                                 </span>
                             </div>
                         </button>
+
+                        {/* Sélecteur rapide de modèle NVIDIA — uniquement quand le provider global
+                            est NVIDIA et que la persona n'a pas de modèle propre imposé (agent custom) */}
+                        {(appSettings.provider || 'gemini') === 'openai' && !selectedAgent?.model_override && (
+                            <div style={{ marginTop: 2 }} onClick={(e) => e.stopPropagation()}>
+                                <CustomSelect
+                                    value={appSettings.model || ''}
+                                    onChange={(v) => updateSettings({ model: v })}
+                                    width="w-56"
+                                    panelWidth="w-72"
+                                    searchable={availableModels.chat.length > 6}
+                                    placeholder={t('noModelAvailable')}
+                                    options={availableModels.chat
+                                        .filter(m => m.type === 'text' || m.type === 'vision')
+                                        .map(m => ({ value: m.id, label: m.name }))}
+                                />
+                            </div>
+                        )}
 
                         {isSwitchOpen && (
                             <div style={{ position: 'absolute', top: '110%', left: 0, width: 340, background: '#fff', borderRadius: 14, boxShadow: '0 12px 40px rgba(0,0,0,0.12)', border: '1px solid #f1f5f9', zIndex: 100, overflow: 'hidden' }}>

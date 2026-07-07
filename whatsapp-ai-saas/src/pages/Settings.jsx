@@ -15,31 +15,23 @@ const Settings = () => {
 
     const [backendSettings, setBackendSettings] = useState({
         default_ai_provider: 'gemini',
+        default_image_provider: 'openai',
         gemini_api_key: '',
         openrouter_api_key: '',
         ollama_api_key: '',
         openai_api_key: '',
         openai_base_url: 'https://integrate.api.nvidia.com/v1',
         default_image_model: '',
-        // Per-model NVIDIA API keys
-        nvidia_key_llama: '',
-        nvidia_key_gemma: '',
-        nvidia_key_glm: '',
-        nvidia_key_llama_vision: '',
-        nvidia_key_qwen_image: '',
-        nvidia_key_qwen_edit: '',
-        nvidia_key_ising: '',
-        nvidia_key_qwen: '',
-        nvidia_key_nemotron_v2: '',
-        nvidia_key_nemotron_vl: '',
         together_api_key: '',
     });
-    const [showNvidiaPerModelKeys, setShowNvidiaPerModelKeys] = useState(true);
     const aiQuota = useAppStore(state => state.aiQuota);
     const fetchAiQuota = useAppStore(state => state.fetchAiQuota);
 
-    const [availableChatModels, setAvailableChatModels] = useState([]);
-    const [availableImageModels, setAvailableImageModels] = useState([]);
+    // Liste des modèles disponibles — gérée par le store (fetchGlobalModels gère déjà
+    // la résolution séparée chat-provider / image-provider), plus de duplication locale.
+    const availableModels = useAppStore(state => state.availableModels);
+    const availableChatModels = availableModels.chat;
+    const availableImageModels = availableModels.image;
     const [isLoadingModels, setIsLoadingModels] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const showAppNotification = useAppStore(state => state.showAppNotification);
@@ -50,78 +42,43 @@ const Settings = () => {
             .then(data => {
                 if (data.status === 'success' && data.settings) {
                     setBackendSettings(prev => ({ ...prev, ...data.settings }));
-                    // Pass the newly fetched settings directly to fetchModels
-                    fetchModels(data.settings.default_ai_provider, data.settings);
+                    refreshModels(data.settings);
                 } else {
-                    fetchModels();
+                    refreshModels();
                 }
             })
             .catch(err => {
                 console.error(err);
-                fetchModels();
+                refreshModels();
             })
             .finally(() => {
                 fetchAiQuota();
             });
     }, []);
 
-
-    const fetchModels = (providerOverride, currentSettings) => {
+    // Pousse les réglages courants (y compris les changements pas encore sauvegardés)
+    // dans le store Zustand, puis relance fetchGlobalModels() — qui gère déjà la
+    // résolution séparée chat-provider / image-provider (src/store.js).
+    const refreshModels = (overrides = {}) => {
         setIsLoadingModels(true);
-        // Clear models so we don't show stale ones if fetch fails
-        setAvailableChatModels([]);
-        setAvailableImageModels([]);
-
-        const settingsToUse = currentSettings || backendSettings;
-        const provider = providerOverride || settingsToUse.default_ai_provider;
-
-        let apiKey = undefined;
-        let baseURL = undefined;
-        if (provider === 'openrouter' && settingsToUse.openrouter_api_key) {
-            apiKey = settingsToUse.openrouter_api_key;
-        } else if (provider === 'openai') {
-            apiKey = settingsToUse.openai_api_key;
-            baseURL = settingsToUse.openai_base_url;
-        }
-
-        fetch(`${API_BASE_URL}/api/ai/models`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ provider, apiKey, baseURL })
-        })
-            .then(res => res.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    let newChat = [];
-                    let newImage = [];
-                    if (data.models && data.models.chat) {
-                        newChat = data.models.chat;
-                        newImage = data.models.image;
-                    } else if (Array.isArray(data.models)) {
-                        newChat = data.models;
-                    }
-
-                    setAvailableChatModels(newChat);
-                    setAvailableImageModels(newImage);
-
-                    // Auto-select first model if current is invalid
-                    if (newChat.length > 0 && !newChat.some(m => m.id === settings.model)) {
-                        handleChange('model', newChat[0].id);
-                    }
-
-                    setBackendSettings(prev => {
-                        let updatedImageModel = prev.default_image_model;
-                        if (newImage.length > 0 && !newImage.some(m => m.id === prev.default_image_model)) {
-                            updatedImageModel = newImage[0].id;
-                        } else if (newImage.length === 0) {
-                            updatedImageModel = '';
-                        }
-                        return { ...prev, default_image_model: updatedImageModel };
-                    });
-                } else {
-                    // Fetch didn't succeed (e.g. invalid API key)
-                    showAppNotification(data.error || t('noModelAvailable'), 'error');
+        const merged = { ...backendSettings, ...overrides };
+        setZustandBackendSettings(merged);
+        fetchGlobalModels()
+            .then(() => {
+                const { chat, image } = useAppStore.getState().availableModels;
+                // Auto-sélectionne un modèle valide si celui en cours n'existe plus pour ce provider
+                if (chat.length > 0 && !chat.some(m => m.id === settings.model)) {
+                    handleChange('model', chat[0].id);
                 }
+                setBackendSettings(prev => {
+                    if (image.length > 0 && !image.some(m => m.id === prev.default_image_model)) {
+                        return { ...prev, default_image_model: image[0].id };
+                    }
+                    if (image.length === 0 && prev.default_image_model) {
+                        return { ...prev, default_image_model: '' };
+                    }
+                    return prev;
+                });
             })
             .catch(err => {
                 console.error(err);
@@ -132,8 +89,8 @@ const Settings = () => {
 
     const handleBackendChange = (key, value) => {
         setBackendSettings(prev => ({ ...prev, [key]: value }));
-        if (key === 'default_ai_provider') {
-            fetchModels(value);
+        if (key === 'default_ai_provider' || key === 'default_image_provider') {
+            refreshModels({ [key]: value });
         }
     };
 
@@ -148,11 +105,9 @@ const Settings = () => {
             // Sync the saved settings into Zustand so all pages (PhotoShoot, AgentsHub, etc.)
             // immediately see the new provider/model without a full app restart.
             setZustandBackendSettings(backendSettings);
-            // Also fetch global models so other pages have the updated model list
             fetchGlobalModels();
 
             showAppNotification(t('successSettingsSaved'), "success");
-            fetchModels();
         } catch (err) {
             console.error(err);
             showAppNotification(t('errorSave'), "error");
@@ -268,6 +223,23 @@ const Settings = () => {
                         />
                     </div>
 
+                    <div className="flex items-center justify-between mb-6">
+                        <div>
+                            <p className="text-base font-medium text-gray-800 dark:text-gray-100">{t('defaultImageProvider')}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">{t('defaultImageProviderDesc')}</p>
+                        </div>
+                        <CustomSelect
+                            value={backendSettings.default_image_provider || 'openai'}
+                            onChange={(v) => handleBackendChange('default_image_provider', v)}
+                            width="w-64"
+                            panelWidth="w-64"
+                            options={[
+                                { value: 'gemini', label: t('googleGeminiDefault'), description: 'Imagen · Free tier' },
+                                { value: 'openai', label: t('openAiCompatibleNvidia'), description: 'NVIDIA / Together AI' },
+                            ]}
+                        />
+                    </div>
+
                     <div className="flex flex-col gap-6 mb-8 bg-gray-50 dark:bg-gray-750 p-5 rounded-xl border border-gray-100 dark:border-gray-700">
                         <div className="flex items-center justify-between">
                             <div className="w-1/2">
@@ -280,7 +252,7 @@ const Settings = () => {
                                     placeholder={t('placeholderApiKey')}
                                     value={backendSettings.gemini_api_key || ''}
                                     onChange={(e) => setBackendSettings(prev => ({ ...prev, gemini_api_key: e.target.value }))}
-                                    onBlur={() => fetchModels()}
+                                    onBlur={() => refreshModels()}
                                     className="border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none bg-white dark:bg-gray-700 dark:text-white w-full max-w-[300px]"
                                 />
                             </div>
@@ -324,7 +296,7 @@ const Settings = () => {
                                     placeholder={t('placeholderOpenRouterKey')}
                                     value={backendSettings.openrouter_api_key || ''}
                                     onChange={(e) => setBackendSettings(prev => ({ ...prev, openrouter_api_key: e.target.value }))}
-                                    onBlur={() => fetchModels()}
+                                    onBlur={() => refreshModels()}
                                     className="border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none bg-white dark:bg-gray-700 dark:text-white w-full max-w-[300px]"
                                 />
                             </div>
@@ -343,7 +315,7 @@ const Settings = () => {
                                     placeholder={t('placeholderApiKey')}
                                     value={backendSettings.ollama_api_key || ''}
                                     onChange={(e) => setBackendSettings(prev => ({ ...prev, ollama_api_key: e.target.value }))}
-                                    onBlur={() => fetchModels()}
+                                    onBlur={() => refreshModels()}
                                     className="border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none bg-white dark:bg-gray-700 dark:text-white w-full max-w-[300px]"
                                 />
                             </div>
@@ -356,7 +328,7 @@ const Settings = () => {
                             <div className="flex items-center justify-between">
                                 <div className="w-1/2">
                                     <p className="text-sm font-medium text-gray-800 dark:text-gray-100">{t('openaiApiKey')}</p>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Clé par défaut (ex: moonshotai, openai...)</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('nvidiaSingleKeyDesc')}</p>
                                 </div>
                                 <div className="w-1/2 flex justify-end">
                                     <input
@@ -364,7 +336,7 @@ const Settings = () => {
                                         placeholder={t('placeholderApiKey')}
                                         value={backendSettings.openai_api_key || ''}
                                         onChange={(e) => setBackendSettings(prev => ({ ...prev, openai_api_key: e.target.value }))}
-                                        onBlur={() => fetchModels()}
+                                        onBlur={() => refreshModels()}
                                         className="border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none bg-white dark:bg-gray-700 dark:text-white w-full max-w-[300px]"
                                     />
                                 </div>
@@ -380,7 +352,7 @@ const Settings = () => {
                                         placeholder={t('placeholderOpenAiBaseUrl')}
                                         value={backendSettings.openai_base_url || 'https://integrate.api.nvidia.com/v1'}
                                         onChange={(e) => setBackendSettings(prev => ({ ...prev, openai_base_url: e.target.value }))}
-                                        onBlur={() => fetchModels()}
+                                        onBlur={() => refreshModels()}
                                         className="border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none bg-white dark:bg-gray-700 dark:text-white w-full max-w-[300px]"
                                     />
                                 </div>
@@ -397,54 +369,12 @@ const Settings = () => {
                                         placeholder={t('placeholderApiKey')}
                                         value={backendSettings.together_api_key || ''}
                                         onChange={(e) => setBackendSettings(prev => ({ ...prev, together_api_key: e.target.value }))}
-                                        onBlur={() => fetchModels()}
+                                        onBlur={() => refreshModels()}
                                         className="border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none bg-white dark:bg-gray-700 dark:text-white w-full max-w-[300px]"
                                     />
                                 </div>
                             </div>
 
-                            {/* Per-model keys collapsible */}
-                            <div className="border-t border-gray-200 dark:border-gray-600 pt-3">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowNvidiaPerModelKeys(v => !v)}
-                                    className="flex items-center gap-2 text-xs font-semibold text-primary hover:text-primary/80 transition"
-                                >
-                                    <span>{showNvidiaPerModelKeys ? '▼' : '▶'}</span>
-                                    {t('nvidiaPerModelKeys')}
-                                </button>
-                                {showNvidiaPerModelKeys && (
-                                    <div className="mt-3 flex flex-col gap-3">
-                                        {[
-                                            { key: 'nvidia_key_nemotron_70b', label: 'Nemotron 70B Instruct', placeholder: 'nvapi-...' },
-                                            { key: 'nvidia_key_gemma2_9b', label: 'Gemma 2 9B Instruct', placeholder: 'nvapi-...' },
-                                            { key: 'nvidia_key_llama3_1_8b', label: 'Llama 3.1 8B Instruct', placeholder: 'nvapi-...' },
-                                            { key: 'nvidia_key_mixtral_8x7b', label: 'Mixtral 8x7B Instruct', placeholder: 'nvapi-...' },
-                                            { key: 'nvidia_key_phi3_mini', label: 'Phi-3 Mini 128k', placeholder: 'nvapi-...' },
-                                            { key: 'nvidia_key_llama', label: 'meta/llama-4-maverick-17b-128e-instruct', placeholder: 'nvapi-...' },
-                                            { key: 'nvidia_key_gemma', label: 'google/gemma-3n-e2b-it', placeholder: 'nvapi-...' },
-                                            { key: 'nvidia_key_glm', label: 'z-ai/glm-4.7', placeholder: 'nvapi-...' },
-                                            { key: 'nvidia_key_ising', label: 'nvidia/ising-calibration-1-35b-a3b', placeholder: 'nvapi-...' },
-                                            { key: 'nvidia_key_qwen', label: 'qwen/qwen3.5-397b-a17b', placeholder: 'nvapi-...' },
-                                            { key: 'nvidia_key_llama_vision', label: 'Llama 3.2 90B Vision', placeholder: 'nvapi-...' },
-                                            { key: 'nvidia_key_nemotron_v2', label: 'Nemotron Nano 12B Vision', placeholder: 'nvapi-...' },
-                                            { key: 'nvidia_key_nemotron_vl', label: 'Llama 3.1 Nemotron Vision 8B', placeholder: 'nvapi-...' },
-                                            { key: 'nvidia_key_qwen_image', label: 'Qwen Image', placeholder: 'nvapi-...' },
-                                        ].map(({ key, label, placeholder }) => (
-                                            <div key={key} className="flex items-center justify-between gap-4">
-                                                <p className="text-xs font-mono text-gray-600 dark:text-gray-300 w-1/2 truncate" title={label}>{label}</p>
-                                                <input
-                                                    type="password"
-                                                    placeholder={placeholder}
-                                                    value={backendSettings[key] || ''}
-                                                    onChange={(e) => setBackendSettings(prev => ({ ...prev, [key]: e.target.value }))}
-                                                    className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none bg-white dark:bg-gray-700 dark:text-white w-1/2"
-                                                />
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
                         </div>
                     )}
 

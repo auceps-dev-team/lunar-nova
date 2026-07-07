@@ -2,7 +2,6 @@ const express = require('express');
 const puppeteer = require('puppeteer-core');
 const db = require('./db');
 const aiController = require('./aiController');
-const { GoogleGenAI } = require('@google/genai');
 
 const sseClients = new Map();
 const activeObservers = new Set();
@@ -21,47 +20,6 @@ function quickKeywordCheck(text) {
     if (!text) return false;
     const lower = text.toLowerCase();
     return KEYWORDS.some(kw => lower.includes(kw));
-}
-
-async function classifyWithGemini(text, contactName) {
-    try {
-        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-        const prompt = `Analyze this WhatsApp message from "${contactName}".
-        Message: "${text}"
-        
-        Is this an order, a product inquiry, or a price request?
-        Return EXACTLY this JSON structure, nothing else:
-        {
-          "is_order": true or false,
-          "confidence": number (0.0 to 1.0),
-          "order_type": "product_inquiry" | "price_request" | "purchase_intent" | "delivery_question" | "not_an_order",
-          "summary": "Short abstract of what they want in French"
-        }`;
-        
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: { responseMimeType: 'application/json' }
-        });
-        
-        return JSON.parse(response.text);
-    } catch (e) {
-        console.error('[IOL] Gemini classification error:', e.message);
-        return { is_order: false, confidence: 0 };
-    }
-}
-
-async function logOrderToDb(instanceId, contact, text, classif) {
-    try {
-        const res = await db.pool.query(
-            `INSERT INTO detected_orders (instance_id, contact_name, message_text, order_type, confidence, summary)
-             VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-            [instanceId, contact, text, classif.order_type, classif.confidence, classif.summary]
-        );
-        return res.rows[0];
-    } catch (e) {
-        console.error('[IOL] DB Log error:', e.message);
-    }
 }
 
 async function transferToAgent(contact, text) {
@@ -107,8 +65,9 @@ async function processMessage(instanceId, contact, text) {
     }
     
     console.log(`[IOL Pipeline] ✅ [${contact}] Potentielle commande détectée. Analyse IA en cours...`);
-    const classif = await classifyWithGemini(text, contact);
-    
+    const orderRadarModel = await db.getSetting('order_radar_model', '');
+    const classif = await aiController.classifyOrderIntent(text, contact, orderRadarModel || null);
+
     if (!classif || !classif.is_order || classif.confidence < 0.5) {
         console.log(`[IOL Pipeline] ❌ Rejeté par l'IA (Pas une commande ou confiance trop faible).`);
         return;

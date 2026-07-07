@@ -155,8 +155,41 @@ async function listModels(apiKey) {
     }
 }
 
+/**
+ * classifyOrderIntent — classification structurée à un seul message (Order Radar).
+ */
+async function classifyOrderIntent(text, contactName, apiKey, modelParam) {
+    const fallback = { is_order: false, confidence: 0, order_type: 'not_an_order', summary: '' };
+    const targetModel = modelParam || 'llama3';
+    const orderRadarPersona = orchestrator.getPersona('order_radar');
+    const systemInstruction = orderRadarPersona ? orderRadarPersona.systemInstruction : '';
+
+    try {
+        const ollama = getClient(apiKey);
+        const response = await ollama.chat({
+            model: targetModel,
+            messages: [
+                { role: "system", content: systemInstruction },
+                { role: "user", content: `Contact: ${contactName}\nMessage: "${text}"` }
+            ],
+            format: "json",
+            stream: false,
+            options: { num_predict: 512 }
+        });
+
+        let jsonText = response.message.content;
+        jsonText = jsonText.replace(/```json/g, '').replace(/```/g, '').trim();
+
+        return { ...fallback, ...JSON.parse(jsonText) };
+    } catch (error) {
+        console.error("[OrderRadar] Ollama classification error:", error.message);
+        return fallback;
+    }
+}
+
 module.exports = {
     generateProposals,
     chatWithAgent,
-    listModels
+    listModels,
+    classifyOrderIntent
 };
