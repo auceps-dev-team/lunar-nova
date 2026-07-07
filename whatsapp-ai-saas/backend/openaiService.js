@@ -203,16 +203,9 @@ async function chatWithAgent(persona, message, imageParams, promptFormat, apiKey
             stream: false
         };
 
-        // Specialized logic for GLM-4.7 (Thinking mode)
-        if (targetModel === 'z-ai/glm-4.7' || targetModel === 'z-ai/glm4.7') {
-            completionArgs.extra_body = {
-                "chat_template_kwargs": {
-                    "enable_thinking": true,
-                    "clear_thinking": false
-                }
-            };
-            completionArgs.max_tokens = 16384;
-        }
+        // Chaque modèle du catalogue déclare ses propres défauts de génération
+        // (max_tokens, reasoning_effort/budget, chat_template_kwargs, ...)
+        Object.assign(completionArgs, nvidiaModels.buildGenerationParams(nvidiaModels.getModelDef(targetModel)));
 
         if (finalPromptFormat === 'json') {
              completionArgs.response_format = { type: "json_object" };
@@ -223,9 +216,10 @@ async function chatWithAgent(persona, message, imageParams, promptFormat, apiKey
         const choice = response.choices[0];
         let resultText = choice.message.content;
 
-        // Handle reasoning_content for models that provide it (like GLM-4.7)
-        if (choice.message.reasoning_content) {
-            resultText = `*Thinking:* ${choice.message.reasoning_content}\n\n${resultText}`;
+        // Handle reasoning output for thinking models (key varies: reasoning_content vs reasoning)
+        const reasoningText = choice.message.reasoning_content || choice.message.reasoning;
+        if (reasoningText) {
+            resultText = `*Thinking:* ${reasoningText}\n\n${resultText}`;
         }
 
         if (finalPromptFormat === 'json') {
