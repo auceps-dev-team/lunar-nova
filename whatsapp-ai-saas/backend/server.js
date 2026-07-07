@@ -7,6 +7,7 @@ const fs = require('fs');
 const { z } = require('zod');
 const path = require('path');
 const aiController = require('./aiController');
+const orderListener = require('./orderListener');
 const { logCopilotInteraction, pool, getSetting, setSetting } = require('./db');
 const { getCachedProposals, setCachedProposals } = require('./redisClient');
 
@@ -250,6 +251,9 @@ app.get('/api/context/:instance_id', async (req, res) => {
         if (browser) browser.disconnect();
     }
 });
+
+// Phase 21: Intelligent Order Listener
+orderListener.registerRoutes(app);
 
 const server = app.listen(PORT, () => {
     console.log(`[Orchestrator] Running on http://localhost:${PORT}`);

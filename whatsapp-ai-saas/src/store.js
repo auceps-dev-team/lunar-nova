@@ -19,6 +19,23 @@ const useAppStore = create(
             activeWhatsAppContext: null,
             catalogDraft: null,
             invoiceDraft: null,
+
+            // Phase 21: Global Intelligent Order Listener (IOL) State
+            iolInstanceId: null,
+            isIolActive: false,
+            iolOrders: [],
+            iolMessages: [],
+            setIolInstanceId: (id) => set({ iolInstanceId: id }),
+            setIsIolActive: (active) => set({ isIolActive: active }),
+            addIolOrder: (order) => set((state) => ({ iolOrders: [order, ...state.iolOrders].slice(0, 100) })),
+            addIolMessage: (msg) => set((state) => ({ iolMessages: [msg, ...state.iolMessages].slice(0, 200) })),
+            removeIolOrder: (id) => set((state) => ({ iolOrders: state.iolOrders.filter(o => o.id !== id) })),
+            removeIolMessages: (ids) => set((state) => ({
+                iolMessages: state.iolMessages.filter(m => !ids.includes(m.id)),
+                iolOrders: state.iolOrders.filter(o => !ids.includes(o.id))
+            })),
+            setIolOrders: (orders) => set({ iolOrders: orders }),
+            setIolMessages: (msgs) => set({ iolMessages: msgs }),
             copilotNotification: null,
             appNotification: null,
             updateAvailable: null, // Stores update object if available
@@ -54,6 +71,7 @@ const useAppStore = create(
 
             // --- Transient Context Actions ---
             setInvoiceDraft: (draft) => set({ invoiceDraft: draft }),
+            clearInvoiceDraft: () => set({ invoiceDraft: null }),
 
             tasks: [],
 

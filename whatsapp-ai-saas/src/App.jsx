@@ -32,8 +32,10 @@ const ContactLists = React.lazy(() => import('./pages/whatsapp/ContactLists'));
 const Prospection = React.lazy(() => import('./pages/whatsapp/Prospection'));
 const Segments = React.lazy(() => import('./pages/whatsapp/Segments'));
 const Contacts = React.lazy(() => import('./pages/whatsapp/Contacts'));
+const Orders = React.lazy(() => import('./pages/whatsapp/Orders'));
 const ContactAdd = React.lazy(() => import('./pages/whatsapp/ContactAdd'));
 const ContactImport = React.lazy(() => import('./pages/whatsapp/ContactImport'));
+import { useGlobalOrderListener } from './hooks/useGlobalOrderListener';
 
 // Placeholder Pages for Phase 2
 const WordPressBridge = React.lazy(() => import('./pages/WordPressBridge'));
@@ -44,6 +46,9 @@ import './styles/global.css';
 function AppContent() {
   const instances = useAppStore(state => state.instances);
   const setInstances = useAppStore(state => state.setInstances);
+
+  // Mount the Global Order Listener so IOL stays alive regardless of current page
+  useGlobalOrderListener(true);
 
   const [activeId, setActiveId] = useState(null);
   const location = useLocation();
@@ -300,6 +305,7 @@ function AppContent() {
                   <Route path="/wa/contact-lists" element={<ContactLists />} />
                   <Route path="/wa/segments" element={<Segments />} />
                   <Route path="/wa/contacts" element={<Contacts activeId={activeId} />} />
+                  <Route path="/wa/orders" element={<Orders />} />
                   <Route path="/wa/contacts/add" element={<ContactAdd />} />
                   <Route path="/wa/contacts/edit/:id" element={<ContactAdd />} />
                   <Route path="/wa/contacts/import" element={<ContactImport />} />

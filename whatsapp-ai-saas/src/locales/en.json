@@ -707,6 +707,7 @@
   "prospection": "Lead Generation",
   "segment": "Segment",
   "segments": "Segments",
+  "orders": "Orders",
   "clientCompany": "Client / Company",
   "contactsAddedSuccess": "Your contacts have been added and can now be analyzed.",
   "selectContactFileToImport": "Select a file containing your contacts to import.",
