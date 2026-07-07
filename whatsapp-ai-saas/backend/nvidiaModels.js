@@ -12,11 +12,13 @@
  *
  * Paramètres de génération optionnels (lus par buildGenerationParams, voir plus bas) :
  *  - maxTokens          : override de max_tokens
- *  - temperature, topP  : overrides de sampling
+ *  - temperature, topP, topK : overrides de sampling
+ *  - presencePenalty, frequencyPenalty, repetitionPenalty : overrides de pénalité
  *  - reasoningEffort    : envoyé tel quel comme `reasoning_effort` (ex: mistral, "high")
  *  - reasoningBudget    : envoyé tel quel comme `reasoning_budget` (ex: nemotron reasoning)
  *  - chatTemplateKwargs : objet fusionné dans `extra_body.chat_template_kwargs`
- *  - extraBody          : objet fusionné directement dans `extra_body` (échappatoire libre)
+ *  - extraBody          : objet fusionné directement dans `extra_body` (échappatoire libre,
+ *                         ex: `thinking_budget`, `min_thinking_tokens` selon le modèle)
  */
 
 require('dotenv').config();
@@ -51,6 +53,12 @@ const MODELS = [
         dbKey: 'nvidia_key_qwen',
         envKey: 'NVIDIA_KEY_QWEN',
         thinking: true,
+        maxTokens: 16384,
+        temperature: 0.6,
+        topP: 0.95,
+        topK: 20,
+        presencePenalty: 0,
+        repetitionPenalty: 1,
     },
     {
         id: 'google/gemma-3n-e2b-it',
@@ -59,6 +67,11 @@ const MODELS = [
         dbKey: 'nvidia_key_gemma',
         envKey: 'NVIDIA_KEY_GEMMA',
         thinking: false,
+        maxTokens: 512,
+        temperature: 0.2,
+        topP: 0.7,
+        frequencyPenalty: 0,
+        presencePenalty: 0,
     },
     {
         id: 'z-ai/glm-4.7',
@@ -213,6 +226,166 @@ const MODELS = [
         chatTemplateKwargs: { enable_thinking: true },
     },
 
+    // ─── Nouveaux modèles (batch 2/N — 77 annoncés) ─────────────────────
+    {
+        id: 'stepfun-ai/step-3.5-flash',
+        name: 'Step 3.5 Flash (Thinking)',
+        type: 'text',
+        dbKey: null,
+        envKey: null,
+        thinking: true,
+        maxTokens: 16384,
+        temperature: 1,
+        topP: 0.9,
+    },
+    {
+        id: 'nvidia/nemotron-3-nano-30b-a3b',
+        name: 'Nemotron 3 Nano 30B (Reasoning)',
+        type: 'text',
+        dbKey: null,
+        envKey: null,
+        thinking: true,
+        maxTokens: 16384,
+        temperature: 1,
+        topP: 1,
+        reasoningBudget: 16384,
+    },
+    {
+        id: 'mistralai/mistral-large-3-675b-instruct-2512',
+        name: 'Mistral Large 3 675B Instruct',
+        type: 'text',
+        dbKey: null,
+        envKey: null,
+        thinking: false,
+        maxTokens: 2048,
+        temperature: 0.15,
+        topP: 1,
+        frequencyPenalty: 0,
+        presencePenalty: 0,
+    },
+    {
+        id: 'mistralai/ministral-14b-instruct-2512',
+        name: 'Ministral 14B Instruct',
+        type: 'text',
+        dbKey: null,
+        envKey: null,
+        thinking: false,
+        maxTokens: 2048,
+        temperature: 0.15,
+        topP: 1,
+        frequencyPenalty: 0,
+        presencePenalty: 0,
+    },
+    {
+        id: 'stockmark/stockmark-2-100b-instruct',
+        name: 'Stockmark 2 100B Instruct',
+        type: 'text',
+        dbKey: null,
+        envKey: null,
+        thinking: false,
+        maxTokens: 1024,
+        temperature: 0.7,
+        topP: 0.95,
+    },
+    {
+        id: 'qwen/qwen3-next-80b-a3b-instruct',
+        name: 'Qwen3 Next 80B Instruct',
+        type: 'text',
+        dbKey: null,
+        envKey: null,
+        thinking: false,
+        maxTokens: 4096,
+        temperature: 0.6,
+        topP: 0.7,
+    },
+    {
+        id: 'bytedance/seed-oss-36b-instruct',
+        name: 'Seed OSS 36B Instruct (Thinking)',
+        type: 'text',
+        dbKey: null,
+        envKey: null,
+        thinking: true,
+        maxTokens: 4096,
+        temperature: 1.1,
+        topP: 0.95,
+        frequencyPenalty: 0,
+        presencePenalty: 0,
+        extraBody: { thinking_budget: -1 },
+    },
+    {
+        id: 'nvidia/nvidia-nemotron-nano-9b-v2',
+        name: 'Nemotron Nano 9B v2 (Thinking)',
+        type: 'text',
+        dbKey: null,
+        envKey: null,
+        thinking: true,
+        maxTokens: 2048,
+        temperature: 0.6,
+        topP: 0.95,
+        frequencyPenalty: 0,
+        presencePenalty: 0,
+        extraBody: { min_thinking_tokens: 1024, max_thinking_tokens: 2048 },
+    },
+    {
+        id: 'openai/gpt-oss-20b',
+        name: 'GPT-OSS 20B (Thinking)',
+        type: 'text',
+        dbKey: null,
+        envKey: null,
+        thinking: true,
+        maxTokens: 4096,
+        temperature: 1,
+        topP: 1,
+    },
+    {
+        id: 'openai/gpt-oss-120b',
+        name: 'GPT-OSS 120B (Thinking)',
+        type: 'text',
+        dbKey: null,
+        envKey: null,
+        thinking: true,
+        maxTokens: 4096,
+        temperature: 1,
+        topP: 1,
+    },
+    {
+        id: 'nvidia/llama-3.3-nemotron-super-49b-v1.5',
+        name: 'Llama 3.3 Nemotron Super 49B v1.5',
+        type: 'text',
+        dbKey: null,
+        envKey: null,
+        thinking: false,
+        maxTokens: 65536,
+        temperature: 0.6,
+        topP: 0.95,
+        frequencyPenalty: 0,
+        presencePenalty: 0,
+    },
+    {
+        id: 'sarvamai/sarvam-m',
+        name: 'Sarvam-M',
+        type: 'text',
+        dbKey: null,
+        envKey: null,
+        thinking: false,
+        maxTokens: 16384,
+        temperature: 0.5,
+        topP: 1,
+    },
+    {
+        id: 'google/gemma-3n-e4b-it',
+        name: 'Gemma 3N E4B IT',
+        type: 'text',
+        dbKey: null,
+        envKey: null,
+        thinking: false,
+        maxTokens: 512,
+        temperature: 0.2,
+        topP: 0.7,
+        frequencyPenalty: 0,
+        presencePenalty: 0,
+    },
+
     // ─── Modèles Moderation / Content Safety (exclus des sélecteurs de chat) ──
     {
         id: 'nvidia/nemotron-3-content-safety',
@@ -238,6 +411,36 @@ const MODELS = [
         topP: 0.7,
         chatTemplateKwargs: { request_categories: '/categories', enable_thinking: true },
     },
+    {
+        id: 'nvidia/nemotron-content-safety-reasoning-4b',
+        name: 'Nemotron Content Safety Reasoning 4B',
+        type: 'moderation',
+        dbKey: null,
+        envKey: null,
+        thinking: true,
+        maxTokens: 16384,
+        temperature: 1,
+        topP: 1,
+    },
+    {
+        id: 'nvidia/llama-3.1-nemotron-safety-guard-8b-v3',
+        name: 'Llama 3.1 Nemotron Safety Guard 8B v3',
+        type: 'moderation',
+        dbKey: null,
+        envKey: null,
+        thinking: false,
+    },
+    {
+        id: 'meta/llama-guard-4-12b',
+        name: 'Llama Guard 4 12B',
+        type: 'moderation',
+        dbKey: null,
+        envKey: null,
+        thinking: false,
+        maxTokens: 5,
+        temperature: 0.2,
+        topP: 0.7,
+    },
 
     // ─── Modèles Vision (image input → text output) ────────────────────
     {
@@ -255,6 +458,11 @@ const MODELS = [
         dbKey: 'nvidia_key_nemotron_v2',
         envKey: 'NVIDIA_KEY_NEMOTRON_V2',
         thinking: false,
+        maxTokens: 4096,
+        temperature: 1,
+        topP: 1,
+        frequencyPenalty: 0,
+        presencePenalty: 0,
     },
     {
         id: 'nvidia/llama-3.1-nemotron-nano-vl-8b-v1',
@@ -412,6 +620,10 @@ function buildGenerationParams(modelDef) {
     if (modelDef.maxTokens) params.max_tokens = modelDef.maxTokens;
     if (modelDef.temperature !== undefined) params.temperature = modelDef.temperature;
     if (modelDef.topP !== undefined) params.top_p = modelDef.topP;
+    if (modelDef.topK !== undefined) params.top_k = modelDef.topK;
+    if (modelDef.presencePenalty !== undefined) params.presence_penalty = modelDef.presencePenalty;
+    if (modelDef.frequencyPenalty !== undefined) params.frequency_penalty = modelDef.frequencyPenalty;
+    if (modelDef.repetitionPenalty !== undefined) params.repetition_penalty = modelDef.repetitionPenalty;
     if (modelDef.reasoningEffort) params.reasoning_effort = modelDef.reasoningEffort;
     if (modelDef.reasoningBudget) params.reasoning_budget = modelDef.reasoningBudget;
     if (modelDef.chatTemplateKwargs || modelDef.extraBody) {
