@@ -1,11 +1,16 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
+import { Skeleton } from '../ui/SkeletonLoader';
 
-// ─── Design tokens (aligned with WaCopilote branding) ────────────────────────
+// ─── Design tokens (aligned with tailwind.config.js) ─────────────────────────
+// primary/primaryDark mirror the app's Tailwind "primary"/"primary-dark" colors
+// exactly, so components below stay visually consistent whether they use these
+// tokens directly (dynamic per-instance colors) or the Tailwind classes.
 export const C = {
-    primary:     '#059669', // emerald-600
-    primary2:    '#10b981', // emerald-500
-    primaryDark: '#047857', // emerald-700
-    accent:      '#3b82f6', // blue-500
+    primary:     '#10B981', // Tailwind "primary"
+    primary2:    '#10B981',
+    primaryDark: '#059669', // Tailwind "primary-dark"
+    accent:      '#3b82f6',
     blue:        '#3b82f6',
     purple:      '#8b5cf6',
     amber:       '#f59e0b',
@@ -28,45 +33,48 @@ export const Ico = {
     globe: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>,
     plug:  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>,
     eye:   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>,
+    shield: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2 4 5v6c0 5.25 3.4 10.16 8 11.5 4.6-1.34 8-6.25 8-11.5V5z"/></svg>,
 };
 
 // ─── KPI Card (matched to Dashboard.jsx pattern) ─────────────────────────────
+// `color` is a per-instance runtime hex, so it stays inline (Tailwind can't
+// generate classes for arbitrary runtime values); everything structural is Tailwind.
 export function KPICard({ icon, label, value, sub, color }) {
     return (
-        <div style={{
-            background: C.panel, border: `1px solid ${C.border}`, borderRadius: 16,
-            padding: '20px 22px', display: 'flex', flexDirection: 'column',
-            gap: 10, position: 'relative', overflow: 'hidden',
-        }}>
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: color, borderRadius: '16px 16px 0 0' }} />
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ width: 38, height: 38, borderRadius: 10, background: color + '18', color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {icon}
-                </div>
+        <div className="relative flex flex-col gap-2.5 overflow-hidden rounded-lg border border-gray-200 bg-surface p-5 dark:border-zinc-800 dark:bg-zinc-900">
+            <div className="absolute top-0 left-0 right-0 h-[3px] rounded-t-lg" style={{ background: color }} />
+            <div className="flex h-9 w-9 items-center justify-center rounded-md" style={{ background: color + '18', color }}>
+                {icon}
             </div>
             <div>
-                <div style={{ fontSize: 24, fontWeight: 800, color: C.text, letterSpacing: '-0.5px', lineHeight: 1.2 }}>{value ?? '—'}</div>
-                <div style={{ fontSize: 12, fontWeight: 600, color: C.textSub, marginTop: 4 }}>{label}</div>
-                {sub && <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>{sub}</div>}
+                <div className="text-2xl font-extrabold leading-tight tracking-tight text-text-main dark:text-zinc-100">{value ?? '—'}</div>
+                <div className="mt-1 text-xs font-semibold text-text-muted dark:text-zinc-400">{label}</div>
+                {sub && <div className="mt-0.5 text-[11px] text-gray-400 dark:text-zinc-500">{sub}</div>}
             </div>
         </div>
     );
 }
 
 // ─── Status Badge ─────────────────────────────────────────────────────────────
+const STATUS_CLASSES = {
+    publish:    'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300',
+    completed:  'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300',
+    draft:      'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
+    pending:    'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
+    processing: 'bg-sky-100 text-sky-900 dark:bg-sky-900/40 dark:text-sky-300',
+    cancelled:  'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
+};
+const STATUS_KEYS = {
+    publish: 'wpStatusPublish', draft: 'wpStatusDraft', completed: 'wpStatusCompleted',
+    processing: 'wpStatusProcessing', pending: 'wpStatusPending', cancelled: 'wpStatusCancelled',
+};
 export function StatusBadge({ status }) {
-    const map = {
-        publish:    { label: 'Publié',     bg: '#d1fae5', color: '#065f46' },
-        draft:      { label: 'Brouillon',  bg: '#fef9c3', color: '#78350f' },
-        completed:  { label: 'Complétée', bg: '#d1fae5', color: '#065f46' },
-        processing: { label: 'En cours',   bg: '#dbeafe', color: '#1e3a8a' },
-        pending:    { label: 'En attente', bg: '#fef9c3', color: '#78350f' },
-        cancelled:  { label: 'Annulée',   bg: '#fee2e2', color: '#7f1d1d' },
-    };
-    const s = map[status] || { label: status, bg: '#f1f5f9', color: '#334155' };
+    const { t } = useTranslation();
+    const cls = STATUS_CLASSES[status] || 'bg-gray-100 text-gray-700 dark:bg-zinc-800 dark:text-zinc-300';
+    const label = STATUS_KEYS[status] ? t(STATUS_KEYS[status]) : status;
     return (
-        <span style={{ background: s.bg, color: s.color, fontSize: 11, fontWeight: 600, padding: '2px 10px', borderRadius: 999 }}>
-            {s.label}
+        <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${cls}`}>
+            {label}
         </span>
     );
 }
@@ -74,15 +82,14 @@ export function StatusBadge({ status }) {
 // ─── Tab Button ───────────────────────────────────────────────────────────────
 export function TabBtn({ active, icon, label, onClick }) {
     return (
-        <button onClick={onClick} style={{
-            display: 'flex', alignItems: 'center', gap: 7,
-            padding: '8px 16px', borderRadius: 10,
-            border: active ? `1px solid ${C.primary}30` : '1px solid transparent',
-            background: active ? C.primary + '18' : 'transparent',
-            color: active ? C.primary : C.textSub,
-            fontSize: 13, fontWeight: active ? 700 : 500,
-            cursor: 'pointer', transition: 'all 0.18s',
-        }}>
+        <button
+            onClick={onClick}
+            className={`flex items-center gap-1.5 rounded-md border px-4 py-2 text-[13px] transition-colors ${
+                active
+                    ? 'border-primary/30 bg-primary/10 font-bold text-primary'
+                    : 'border-transparent font-medium text-text-muted hover:text-text-main dark:hover:text-zinc-200'
+            }`}
+        >
             {icon}{label}
         </button>
     );
@@ -91,10 +98,7 @@ export function TabBtn({ active, icon, label, onClick }) {
 // ─── Section Card ─────────────────────────────────────────────────────────────
 export function Card({ children, style = {} }) {
     return (
-        <div style={{
-            background: C.panel, border: `1px solid ${C.border}`,
-            borderRadius: 16, overflow: 'hidden', ...style,
-        }}>
+        <div className="overflow-hidden rounded-lg border border-gray-200 bg-surface dark:border-zinc-800 dark:bg-zinc-900" style={style}>
             {children}
         </div>
     );
@@ -102,9 +106,9 @@ export function Card({ children, style = {} }) {
 
 export function CardHeader({ title, sub }) {
     return (
-        <div style={{ padding: '18px 22px', borderBottom: `1px solid ${C.border}` }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{title}</div>
-            {sub && <div style={{ fontSize: 12, color: C.textSub, marginTop: 2 }}>{sub}</div>}
+        <div className="border-b border-gray-200 px-5 py-4 dark:border-zinc-800">
+            <div className="text-sm font-bold text-text-main dark:text-zinc-100">{title}</div>
+            {sub && <div className="mt-0.5 text-xs text-text-muted dark:text-zinc-400">{sub}</div>}
         </div>
     );
 }
@@ -112,27 +116,19 @@ export function CardHeader({ title, sub }) {
 // ─── Field Input ─────────────────────────────────────────────────────────────
 export function Field({ label, children, hint }) {
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, color: C.textSub }}>{label}</label>
+        <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold text-text-muted dark:text-zinc-400">{label}</label>
             {children}
-            {hint && <span style={{ fontSize: 11, color: '#94a3b8' }}>{hint}</span>}
+            {hint && <span className="text-[11px] text-gray-400 dark:text-zinc-500">{hint}</span>}
         </div>
     );
 }
 
-export function Input({ mono, ...props }) {
+export function Input({ mono, className = '', ...props }) {
     return (
-        <input {...props} style={{
-            width: '100%', padding: '9px 12px',
-            border: `1px solid ${C.border}`, borderRadius: 10,
-            background: 'var(--input-bg, #f8fafc)',
-            color: C.text, fontSize: 13,
-            fontFamily: mono ? 'monospace' : 'inherit',
-            outline: 'none', transition: 'border-color 0.18s',
-            boxSizing: 'border-box',
-        }}
-            onFocus={e => e.target.style.borderColor = C.primary}
-            onBlur={e => e.target.style.borderColor = C.border}
+        <input
+            {...props}
+            className={`box-border w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-2.5 text-[13px] text-text-main outline-none transition-colors focus:border-primary dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 ${mono ? 'font-mono' : ''} ${className}`}
         />
     );
 }
@@ -140,22 +136,19 @@ export function Input({ mono, ...props }) {
 // ─── Empty State ──────────────────────────────────────────────────────────────
 export function EmptyState({ icon, title, sub }) {
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 24px', gap: 10 }}>
-            <div style={{ width: 48, height: 48, borderRadius: 14, background: C.primary + '18', color: C.primary, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="flex flex-col items-center justify-center gap-2.5 px-6 py-12">
+            <div className="flex h-12 w-12 items-center justify-center rounded-md bg-primary/10 text-primary">
                 {icon}
             </div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: C.text }}>{title}</div>
-            {sub && <div style={{ fontSize: 12, color: C.textSub, textAlign: 'center', maxWidth: 240 }}>{sub}</div>}
+            <div className="text-sm font-semibold text-text-main dark:text-zinc-100">{title}</div>
+            {sub && <div className="max-w-[240px] text-center text-xs text-text-muted dark:text-zinc-400">{sub}</div>}
         </div>
     );
 }
 
-// ─── Loading Skeleton ─────────────────────────────────────────────────────────
-export function Skeleton({ h = 16, w = '100%', r = 8 }) {
-    return <div style={{ height: h, width: w, borderRadius: r, background: 'linear-gradient(90deg,#e2e8f0 25%,#f1f5f9 50%,#e2e8f0 75%)', backgroundSize: '200% 100%', animation: 'shimmer 1.5s infinite' }} />;
-}
+export { Skeleton };
 
 // ─── Spinner ──────────────────────────────────────────────────────────────────
 export function Spin() {
-    return <span style={{ display: 'inline-block', width: 14, height: 14, border: `2px solid rgba(255,255,255,0.3)`, borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} />;
+    return <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />;
 }

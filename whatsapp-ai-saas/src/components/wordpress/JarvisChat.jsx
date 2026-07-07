@@ -1,14 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { API_BASE_URL } from '../../config';
 import { C } from './WPUI';
 
 export default function JarvisChat({ selectedId, selected }) {
+    const { t } = useTranslation();
     const [isJarvisOpen, setIsJarvisOpen] = useState(false);
     const [jarvisInput, setJarvisInput] = useState('');
     const [isJarvisLoading, setIsJarvisLoading] = useState(false);
     const jarvisBottomRef = useRef(null);
     const [jarvisHistory, setJarvisHistory] = useState([
-        { sender: 'agent', text: '👋 Bonjour ! Je suis Jarvis WP, votre agent WordPress.\n\nJe peux créer des produits WooCommerce et des articles de blog directement sur vos sites connectés.\n\nDites-moi simplement ce que vous souhaitez créer ! Par exemple :\n• "Crée un produit Tournevis Électrique à 29€"\n• "Écris un article de blog sur les outils de bricolage"' }
+        { sender: 'agent', text: t('wpJarvisWelcome') }
     ]);
 
     useEffect(() => {
@@ -28,7 +30,7 @@ export default function JarvisChat({ selectedId, selected }) {
         e.preventDefault();
         if (!jarvisInput.trim()) return;
         if (!selectedId) {
-            setJarvisHistory(prev => [...prev, { sender: 'agent', text: `⚠️ Veuillez d'abord sélectionner un site WordPress connecté dans les paramètres avant d'utiliser l'agent.` }]);
+            setJarvisHistory(prev => [...prev, { sender: 'agent', text: t('wpJarvisNoSiteSelected') }]);
             return;
         }
 
@@ -48,7 +50,7 @@ export default function JarvisChat({ selectedId, selected }) {
             });
             const data = await res.json();
 
-            let replyText = data.response || `Désolé, je n'ai pas pu traiter votre demande.`;
+            let replyText = data.response || t('wpJarvisNoResponse');
             const parsed = extractJSON(replyText);
 
             if (parsed) {
@@ -67,7 +69,7 @@ export default function JarvisChat({ selectedId, selected }) {
 
             setJarvisHistory(prev => [...prev, { sender: 'agent', text: replyText }]);
         } catch (err) {
-            setJarvisHistory(prev => [...prev, { sender: 'agent', text: `❌ Erreur de connexion à l'agent. Vérifiez que le backend WaCopilote est bien démarré.` }]);
+            setJarvisHistory(prev => [...prev, { sender: 'agent', text: t('wpJarvisConnectionError') }]);
         } finally {
             setIsJarvisLoading(false);
         }
@@ -101,7 +103,7 @@ export default function JarvisChat({ selectedId, selected }) {
                 next[msgIndex].isProposing = false;
                 if (d.status === 'success') {
                     next[msgIndex].isProposed = true;
-                    next[msgIndex].text += `\n\n✅ Action proposée avec succès ! (ID d'action WordPress : ${d.data?.action_id || 'N/A'})\nElle est en attente de validation dans l'administration WordPress.`;
+                    next[msgIndex].text += t('wpJarvisProposalSuccess', { id: d.data?.action_id || 'N/A' });
                 } else {
                     next[msgIndex].error = d.error;
                 }
@@ -121,7 +123,7 @@ export default function JarvisChat({ selectedId, selected }) {
         setJarvisHistory(prev => {
             const next = [...prev];
             next[msgIndex] = { ...next[msgIndex], isCancelled: true };
-            next[msgIndex].text += `\n\n❌ Proposition annulée.`;
+            next[msgIndex].text += t('wpJarvisProposalCancelled');
             return next;
         });
     };
@@ -131,7 +133,7 @@ export default function JarvisChat({ selectedId, selected }) {
             {/* ── Jarvis WP Floating Button ── */}
             <button
                 onClick={() => setIsJarvisOpen(true)}
-                title="Ouvrir Jarvis WP - Agent IA"
+                title={t('wpJarvisOpenTitle')}
                 style={{
                     position: 'fixed', bottom: 24, right: 24,
                     width: 56, height: 56,
@@ -174,8 +176,8 @@ export default function JarvisChat({ selectedId, selected }) {
                             fontSize: 18, color: '#fff',
                         }}>🤖</div>
                         <div>
-                            <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>Jarvis WP</div>
-                            <div style={{ fontSize: 11, color: C.primary, fontWeight: 600 }}>Agent WordPress IA</div>
+                            <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{t('wpJarvisName')}</div>
+                            <div style={{ fontSize: 11, color: C.primary, fontWeight: 600 }}>{t('wpJarvisSubtitle')}</div>
                         </div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -212,7 +214,7 @@ export default function JarvisChat({ selectedId, selected }) {
                                 {msg.proposal && !msg.isProposed && !msg.isCancelled && (
                                     <div style={{ marginTop: 12, padding: 12, background: '#fff', border: `1px solid ${C.border}`, borderRadius: 10, color: C.text }}>
                                         <div style={{ fontSize: 12, fontWeight: 700, color: C.primary, marginBottom: 8, textTransform: 'uppercase' }}>
-                                            Action proposée : {msg.proposal.action.type.replace('_', ' ')}
+                                            {t('wpJarvisProposedAction', { type: msg.proposal.action.type.replace('_', ' ') })}
                                         </div>
                                         <pre style={{ margin: 0, padding: 8, background: '#f1f5f9', borderRadius: 6, fontSize: 11, overflowX: 'auto', maxHeight: 150 }}>
                                             {JSON.stringify(msg.proposal.action.payload, null, 2)}
@@ -230,14 +232,14 @@ export default function JarvisChat({ selectedId, selected }) {
                                                 disabled={msg.isProposing}
                                                 style={{ flex: 1, padding: '6px', background: C.primary, color: '#fff', border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: msg.isProposing ? 'not-allowed' : 'pointer', opacity: msg.isProposing ? 0.7 : 1 }}
                                             >
-                                                {msg.isProposing ? 'Envoi...' : 'Confirmer'}
+                                                {msg.isProposing ? t('wpJarvisSending') : t('wpJarvisConfirm')}
                                             </button>
                                             <button 
                                                 onClick={() => handleCancelProposal(i)} 
                                                 disabled={msg.isProposing}
                                                 style={{ flex: 1, padding: '6px', background: '#e2e8f0', color: C.textSub, border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: msg.isProposing ? 'not-allowed' : 'pointer' }}
                                             >
-                                                Annuler
+                                                {t('cancel')}
                                             </button>
                                         </div>
                                     </div>
@@ -260,9 +262,9 @@ export default function JarvisChat({ selectedId, selected }) {
                 {/* Quick Actions */}
                 <div style={{ padding: '8px 16px', borderTop: `1px solid ${C.border}`, display: 'flex', gap: 6, flexWrap: 'wrap', background: 'var(--bg-color, #f8fafc)' }}>
                     {[
-                        '🛒 Créer un produit',
-                        '📝 Créer un article',
-                        '📦 Publier directement',
+                        t('wpQuickCreateProduct'),
+                        t('wpQuickCreateArticle'),
+                        t('wpQuickPublishDirect'),
                     ].map(s => (
                         <button key={s} onClick={() => setJarvisInput(s)} style={{
                             fontSize: 11, padding: '4px 10px', borderRadius: 20,
@@ -282,7 +284,7 @@ export default function JarvisChat({ selectedId, selected }) {
                             type="text"
                             value={jarvisInput}
                             onChange={e => setJarvisInput(e.target.value)}
-                            placeholder="Ex: Crée un produit Tournevis à 29.99€…"
+                            placeholder={t('wpJarvisInputPlaceholder')}
                             disabled={isJarvisLoading}
                             style={{
                                 width: '100%', boxSizing: 'border-box',

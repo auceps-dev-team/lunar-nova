@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import useAppStore from '../store';
 import { API_BASE_URL } from '../config';
@@ -7,6 +8,7 @@ import JarvisChat from '../components/wordpress/JarvisChat';
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function WordPressBridge() {
+    const { t } = useTranslation();
     const showAppNotification = useAppStore(s => s.showAppNotification);
 
     const [tab, setTab] = useState('connection');
@@ -159,12 +161,12 @@ export default function WordPressBridge() {
             });
             const d = await res.json();
             if (d.status === 'success') {
-                showAppNotification('Site WordPress connecté !', 'success');
+                showAppNotification(t('wpSiteConnectedSuccess'), 'success');
                 setForm({ name: '', site_url: '', wp_username: '', app_password: '' });
                 await loadConnections();
                 setSelectedId(d.data.id);
             } else throw new Error(d.error);
-        } catch (e) { showAppNotification('Erreur : ' + e.message, 'error'); }
+        } catch (e) { showAppNotification(t('wpErrorPrefix') + e.message, 'error'); }
         setIsSaving(false);
     };
 
@@ -175,7 +177,7 @@ export default function WordPressBridge() {
             const d = await res.json();
             if (d.status === 'success') showAppNotification(`✅ ${d.site_name} (WP ${d.wp_version})`, 'success');
             else showAppNotification('❌ ' + d.error, 'error');
-        } catch (e) { showAppNotification('Erreur : ' + e.message, 'error'); }
+        } catch (e) { showAppNotification(t('wpErrorPrefix') + e.message, 'error'); }
         setIsTesting(null);
     };
 
@@ -183,10 +185,10 @@ export default function WordPressBridge() {
         setIsDeleting(id);
         try {
             await fetch(`${API_BASE_URL}/api/wp/connections/${id}`, { method: 'DELETE' });
-            showAppNotification('Site supprimé.', 'success');
+            showAppNotification(t('wpSiteDeletedSuccess'), 'success');
             if (selectedId === id) setSelectedId(null);
             await loadConnections();
-        } catch (e) { showAppNotification('Erreur : ' + e.message, 'error'); }
+        } catch (e) { showAppNotification(t('wpErrorPrefix') + e.message, 'error'); }
         setIsDeleting(null);
     };
 
@@ -222,15 +224,15 @@ export default function WordPressBridge() {
                             {Ico.wp}
                         </div>
                         <div>
-                            <h1 style={{ fontSize: 24, fontWeight: 800, color: C.text, margin: 0, letterSpacing: '-0.5px' }}>WordPress Bridge</h1>
-                            <p style={{ fontSize: 13, color: C.textSub, margin: '3px 0 0' }}>Gérez vos sites WordPress directement depuis WaCopilote</p>
+                            <h1 style={{ fontSize: 24, fontWeight: 800, color: C.text, margin: 0, letterSpacing: '-0.5px' }}>{t('wordpressBridge')}</h1>
+                            <p style={{ fontSize: 13, color: C.textSub, margin: '3px 0 0' }}>{t('wpHeaderSubtitle')}</p>
                         </div>
                     </div>
 
                     {/* Site Selector */}
                     {connections.length > 0 && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <span style={{ fontSize: 12, color: C.textSub, fontWeight: 600 }}>Site actif :</span>
+                            <span style={{ fontSize: 12, color: C.textSub, fontWeight: 600 }}>{t('wpActiveSite')}</span>
                             <select
                                 value={selectedId || ''}
                                 onChange={e => setSelectedId(Number(e.target.value))}
@@ -249,11 +251,11 @@ export default function WordPressBridge() {
 
                 {/* ── Tabs ── */}
                 <div style={{ display: 'flex', gap: 4, marginBottom: 24, padding: '4px', background: C.border + '50', borderRadius: 14, width: 'fit-content' }}>
-                    <TabBtn active={tab === 'connection'} icon={Ico.plug}  label="Connexion"      onClick={() => setTab('connection')} />
-                    <TabBtn active={tab === 'overview'}   icon={Ico.chart} label="Vue d'ensemble" onClick={() => setTab('overview')} />
-                    <TabBtn active={tab === 'posts'}      icon={Ico.file}  label="Articles"        onClick={() => setTab('posts')} />
-                    <TabBtn active={tab === 'shop'}       icon={Ico.bag}   label="Boutique"        onClick={() => setTab('shop')} />
-                    <TabBtn active={tab === 'logs'}       icon={Ico.shield} label="Logs d'audit"    onClick={() => setTab('logs')} />
+                    <TabBtn active={tab === 'connection'} icon={Ico.plug}  label={t('wpTabConnection')} onClick={() => setTab('connection')} />
+                    <TabBtn active={tab === 'overview'}   icon={Ico.chart} label={t('wpTabOverview')}   onClick={() => setTab('overview')} />
+                    <TabBtn active={tab === 'posts'}      icon={Ico.file}  label={t('wpTabPosts')}      onClick={() => setTab('posts')} />
+                    <TabBtn active={tab === 'shop'}       icon={Ico.bag}   label={t('wpTabShop')}       onClick={() => setTab('shop')} />
+                    <TabBtn active={tab === 'logs'}       icon={Ico.shield} label={t('wpTabLogs')}      onClick={() => setTab('logs')} />
                 </div>
 
                 {/* ══ TAB: CONNEXION ══════════════════════════════════════════ */}
@@ -263,20 +265,20 @@ export default function WordPressBridge() {
                         {/* Add form */}
                         <Card>
                             <CardHeader
-                                title="Ajouter un site WordPress"
-                                sub="Installez le plugin WaCopilote Bridge, puis copiez les informations depuis Réglages > WaCopilote Bridge"
+                                title={t('wpAddSiteTitle')}
+                                sub={t('wpAddSiteSub')}
                             />
                             <form onSubmit={handleAdd} style={{ padding: 22, display: 'flex', flexDirection: 'column', gap: 16 }}>
-                                <Field label="NOM DU SITE">
-                                    <Input required type="text" placeholder="ex: Boutique Abidjan" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+                                <Field label={t('wpFieldSiteName')}>
+                                    <Input required type="text" placeholder={t('wpPlaceholderSiteName')} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
                                 </Field>
-                                <Field label="URL DU SITE">
+                                <Field label={t('wpFieldSiteUrl')}>
                                     <Input required type="url" placeholder="https://ma-boutique.com" value={form.site_url} onChange={e => setForm({ ...form, site_url: e.target.value })} />
                                 </Field>
-                                <Field label="LOGIN WORDPRESS" hint="Le nom d'utilisateur du compte WordPress (pas l'email)">
+                                <Field label={t('wpFieldWpUsername')} hint={t('wpHintWpUsername')}>
                                     <Input required mono type="text" placeholder="admin" value={form.wp_username} onChange={e => setForm({ ...form, wp_username: e.target.value })} />
                                 </Field>
-                                <Field label="MOT DE PASSE D'APPLICATION" hint="WordPress Admin → Profil → Mots de passe d'application → Ajouter">
+                                <Field label={t('wpFieldAppPassword')} hint={t('wpHintAppPassword')}>
                                     <Input required mono type="password" placeholder="xxxx xxxx xxxx xxxx xxxx xxxx" value={form.app_password} onChange={e => setForm({ ...form, app_password: e.target.value })} />
                                 </Field>
                                 <button type="submit" disabled={isSaving} style={{
@@ -287,28 +289,28 @@ export default function WordPressBridge() {
                                     boxShadow: `0 2px 12px ${C.primary}50`,
                                     opacity: isSaving ? 0.7 : 1, transition: 'all 0.18s',
                                 }}>
-                                    {isSaving ? <><Spin /> Connexion en cours...</> : '+ Connecter le site'}
+                                    {isSaving ? <><Spin /> {t('wpConnecting')}</> : t('wpConnectSite')}
                                 </button>
                             </form>
 
                             {/* App Password hint */}
                             <div style={{ margin: '0 22px 22px', padding: '12px 16px', background: C.primary + '0d', border: `1px solid ${C.primary}25`, borderRadius: 10 }}>
-                                <div style={{ fontSize: 12, fontWeight: 700, color: C.primary, marginBottom: 6 }}>🔑 Générer un mot de passe d'application</div>
+                                <div style={{ fontSize: 12, fontWeight: 700, color: C.primary, marginBottom: 6 }}>{t('wpGenAppPasswordTitle')}</div>
                                 <div style={{ fontSize: 12, color: C.textSub, lineHeight: 1.7 }}>
-                                    <strong>1.</strong> WordPress Admin → <strong>Utilisateurs → Votre profil</strong><br/>
-                                    <strong>2.</strong> Faites défiler jusqu'à <strong>Mots de passe d'application</strong><br/>
-                                    <strong>3.</strong> Saisissez <em>WaCopilote</em> → cliquez <strong>Ajouter</strong><br/>
-                                    <strong>4.</strong> Copiez le mot de passe généré dans le champ ci-dessus
+                                    <strong>1.</strong> {t('wpGenStep1')}<br/>
+                                    <strong>2.</strong> {t('wpGenStep2')}<br/>
+                                    <strong>3.</strong> {t('wpGenStep3')}<br/>
+                                    <strong>4.</strong> {t('wpGenStep4')}
                                 </div>
                             </div>
                         </Card>
 
                         {/* Connected sites */}
                         <Card>
-                            <CardHeader title={`Sites connectés (${connections.length})`} sub="Sélectionnez un site pour explorer ses données" />
+                            <CardHeader title={t('wpConnectedSitesTitle', { count: connections.length })} sub={t('wpConnectedSitesSub')} />
                             <div style={{ padding: connections.length === 0 ? 0 : '12px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
                                 {connections.length === 0 ? (
-                                    <EmptyState icon={Ico.wp} title="Aucun site connecté" sub="Ajoutez votre premier site WordPress à l'aide du formulaire." />
+                                    <EmptyState icon={Ico.wp} title={t('wpNoSiteTitle')} sub={t('wpNoSiteSub')} />
                                 ) : connections.map(conn => {
                                     const isSelected = selectedId === conn.id;
                                     return (
@@ -336,7 +338,7 @@ export default function WordPressBridge() {
                                                 <button
                                                     onClick={e => { e.stopPropagation(); handleTest(conn.id); }}
                                                     disabled={isTesting === conn.id}
-                                                    title="Tester la connexion"
+                                                    title={t('wpTestConnection')}
                                                     style={{ padding: '5px 8px', borderRadius: 8, border: 'none', background: 'transparent', cursor: 'pointer', color: C.textSub, display: 'flex', alignItems: 'center' }}
                                                 >
                                                     {isTesting === conn.id ? <Spin /> : Ico.link}
@@ -344,7 +346,7 @@ export default function WordPressBridge() {
                                                 <button
                                                     onClick={e => { e.stopPropagation(); handleDelete(conn.id); }}
                                                     disabled={isDeleting === conn.id}
-                                                    title="Supprimer"
+                                                    title={t('delete')}
                                                     style={{ padding: '5px 8px', borderRadius: 8, border: 'none', background: 'transparent', cursor: 'pointer', color: '#ef4444', display: 'flex', alignItems: 'center' }}
                                                 >
                                                     {Ico.trash}
@@ -361,7 +363,7 @@ export default function WordPressBridge() {
                 {/* ══ TAB: OVERVIEW ══════════════════════════════════════════ */}
                 {tab === 'overview' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                        {!selected && <EmptyState icon={Ico.wp} title="Aucun site sélectionné" sub="Ajoutez et sélectionnez un site dans l'onglet Connexion." />}
+                        {!selected && <EmptyState icon={Ico.wp} title={t('wpNoSiteSelectedTitle')} sub={t('wpNoSiteSelectedSub')} />}
                         {selected && isLoading && (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
@@ -390,11 +392,11 @@ export default function WordPressBridge() {
 
                                 {/* KPI Grid */}
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16 }}>
-                                    <KPICard icon={Ico.file} label="Articles publiés"  value={stats.total_posts}    sub="Post status: publish" color={C.primary2} />
-                                    <KPICard icon={Ico.globe} label="Pages"            value={stats.total_pages}    sub="Pages WordPress"   color={C.blue} />
-                                    <KPICard icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>} label="Commentaires" value={stats.total_comments} sub="Approuvés" color={C.accent} />
-                                    {stats.woocommerce && <KPICard icon={Ico.bag} label="Produits" value={stats.woocommerce.total_products} sub="WooCommerce" color={C.purple} />}
-                                    {stats.woocommerce && <KPICard icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>} label="Commandes" value={stats.woocommerce.total_orders} sub="Toutes périodes" color={C.amber} />}
+                                    <KPICard icon={Ico.file} label={t('wpKpiPosts')}  value={stats.total_posts}    sub={t('wpKpiPostsSub')} color={C.primary2} />
+                                    <KPICard icon={Ico.globe} label={t('wpKpiPages')}            value={stats.total_pages}    sub={t('wpKpiPagesSub')}   color={C.blue} />
+                                    <KPICard icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>} label={t('wpKpiComments')} value={stats.total_comments} sub={t('wpKpiCommentsSub')} color={C.accent} />
+                                    {stats.woocommerce && <KPICard icon={Ico.bag} label={t('products')} value={stats.woocommerce.total_products} sub="WooCommerce" color={C.purple} />}
+                                    {stats.woocommerce && <KPICard icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>} label={t('wpKpiOrders')} value={stats.woocommerce.total_orders} sub={t('wpKpiOrdersSub')} color={C.amber} />}
                                 </div>
 
                                 {/* Performances (WooCommerce Analytics) */}
@@ -404,38 +406,38 @@ export default function WordPressBridge() {
                                         <Card>
                                             <div style={{ padding: '18px 22px', borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                 <div>
-                                                    <div style={{ fontSize: 16, fontWeight: 700, color: C.text }}>Performances</div>
+                                                    <div style={{ fontSize: 16, fontWeight: 700, color: C.text }}>{t('wpPerformances')}</div>
                                                 </div>
                                                 <select value={analyticsPeriod} onChange={e => setAnalyticsPeriod(e.target.value)} style={{ padding: '6px 12px', borderRadius: 8, border: `1px solid ${C.border}`, outline: 'none', cursor: 'pointer', background: '#f8fafc', fontWeight: 600 }}>
-                                                    <option value="this_month">Mois en cours</option>
-                                                    <option value="last_month">Mois précédent</option>
-                                                    <option value="this_year">Cette année</option>
+                                                    <option value="this_month">{t('wpPeriodThisMonth')}</option>
+                                                    <option value="last_month">{t('wpPeriodLastMonth')}</option>
+                                                    <option value="this_year">{t('wpPeriodThisYear')}</option>
                                                 </select>
                                             </div>
                                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)' }}>
                                                 {/* Total des ventes */}
                                                 <div style={{ padding: '24px 22px', borderRight: `1px solid ${C.border}` }}>
-                                                    <div style={{ fontSize: 13, color: C.textSub, marginBottom: 8, fontWeight: 500 }}>Total des ventes</div>
+                                                    <div style={{ fontSize: 13, color: C.textSub, marginBottom: 8, fontWeight: 500 }}>{t('wpTotalSales')}</div>
                                                     <div style={{ fontSize: 24, fontWeight: 700, color: C.text }}>{analytics.currency}{(analytics.total_sales||0).toLocaleString('fr-FR')}</div>
                                                 </div>
                                                 {/* Ventes nettes */}
                                                 <div style={{ padding: '24px 22px', borderRight: `1px solid ${C.border}` }}>
-                                                    <div style={{ fontSize: 13, color: C.textSub, marginBottom: 8, fontWeight: 500 }}>Ventes nettes</div>
+                                                    <div style={{ fontSize: 13, color: C.textSub, marginBottom: 8, fontWeight: 500 }}>{t('wpNetSales')}</div>
                                                     <div style={{ fontSize: 24, fontWeight: 700, color: C.text }}>{analytics.currency}{(analytics.net_sales||0).toLocaleString('fr-FR')}</div>
                                                 </div>
                                                 {/* Commandes */}
                                                 <div style={{ padding: '24px 22px', borderRight: `1px solid ${C.border}` }}>
-                                                    <div style={{ fontSize: 13, color: C.textSub, marginBottom: 8, fontWeight: 500 }}>Commandes</div>
+                                                    <div style={{ fontSize: 13, color: C.textSub, marginBottom: 8, fontWeight: 500 }}>{t('wpKpiOrders')}</div>
                                                     <div style={{ fontSize: 24, fontWeight: 700, color: C.text }}>{analytics.orders_count || 0}</div>
                                                 </div>
                                                 {/* Produits vendus */}
                                                 <div style={{ padding: '24px 22px', borderRight: `1px solid ${C.border}` }}>
-                                                    <div style={{ fontSize: 13, color: C.textSub, marginBottom: 8, fontWeight: 500 }}>Produits vendus</div>
+                                                    <div style={{ fontSize: 13, color: C.textSub, marginBottom: 8, fontWeight: 500 }}>{t('wpProductsSold')}</div>
                                                     <div style={{ fontSize: 24, fontWeight: 700, color: C.text }}>{analytics.products_sold || 0}</div>
                                                 </div>
                                                 {/* Taxes (Replaces variations) */}
                                                 <div style={{ padding: '24px 22px' }}>
-                                                    <div style={{ fontSize: 13, color: C.textSub, marginBottom: 8, fontWeight: 500 }}>Taxes perçues</div>
+                                                    <div style={{ fontSize: 13, color: C.textSub, marginBottom: 8, fontWeight: 500 }}>{t('wpTaxesCollected')}</div>
                                                     <div style={{ fontSize: 24, fontWeight: 700, color: C.text }}>{analytics.currency}{(analytics.taxes||0).toLocaleString('fr-FR')}</div>
                                                 </div>
                                             </div>
@@ -443,13 +445,13 @@ export default function WordPressBridge() {
 
                                         {/* ── TABLEAUX (Side by Side Charts) ── */}
                                         <div>
-                                            <div style={{ fontSize: 16, fontWeight: 700, color: C.text, marginBottom: 12 }}>Tableaux</div>
+                                            <div style={{ fontSize: 16, fontWeight: 700, color: C.text, marginBottom: 12 }}>{t('wpTablesTitle')}</div>
                                             <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 20 }}>
                                                 
                                                 {/* Ventes Nettes Chart */}
                                                 <Card>
                                                     <div style={{ padding: '16px 20px', borderBottom: `1px solid ${C.border}`, fontWeight: 600, fontSize: 14 }}>
-                                                        Ventes nettes
+                                                        {t('wpNetSales')}
                                                     </div>
                                                     <div style={{ padding: 20, height: 280, width: '100%' }}>
                                                         {analytics.chart_data && analytics.chart_data.length > 0 ? (
@@ -458,18 +460,18 @@ export default function WordPressBridge() {
                                                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={C.border} />
                                                                     <XAxis dataKey="date" tickFormatter={str => str.substring(8, 10)} tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: C.textSub }} dy={10} />
                                                                     <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: C.textSub }} dx={-10} tickFormatter={val => `${val}`} />
-                                                                    <Tooltip 
-                                                                        contentStyle={{ borderRadius: 8, border: 'none', boxShadow: '0 4px 15px rgba(0,0,0,0.08)' }} 
+                                                                    <Tooltip
+                                                                        contentStyle={{ borderRadius: 8, border: 'none', boxShadow: '0 4px 15px rgba(0,0,0,0.08)' }}
                                                                         labelStyle={{ color: C.textSub, marginBottom: 4 }}
-                                                                        formatter={(value) => [`${analytics.currency}${value.toLocaleString('fr-FR')}`, 'Ventes nettes']}
-                                                                        labelFormatter={label => `Jour: ${label}`}
+                                                                        formatter={(value) => [`${analytics.currency}${value.toLocaleString('fr-FR')}`, t('wpNetSales')]}
+                                                                        labelFormatter={label => t('wpDayLabel', { day: label })}
                                                                     />
                                                                     <Line type="monotone" dataKey="net_sales" stroke={C.primary} strokeWidth={3} dot={{ r: 3, fill: C.primary, strokeWidth: 0 }} activeDot={{ r: 6, fill: C.primary }} />
                                                                 </LineChart>
                                                             </ResponsiveContainer>
                                                         ) : (
                                                             <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.textSub, fontSize: 13 }}>
-                                                                Aucune donnée pour la plage de dates sélectionnée
+                                                                {t('wpNoChartData')}
                                                             </div>
                                                         )}
                                                     </div>
@@ -478,7 +480,7 @@ export default function WordPressBridge() {
                                                 {/* Commandes Chart */}
                                                 <Card>
                                                     <div style={{ padding: '16px 20px', borderBottom: `1px solid ${C.border}`, fontWeight: 600, fontSize: 14 }}>
-                                                        Commandes
+                                                        {t('wpKpiOrders')}
                                                     </div>
                                                     <div style={{ padding: 20, height: 280, width: '100%' }}>
                                                         {analytics.chart_data && analytics.chart_data.length > 0 ? (
@@ -487,18 +489,18 @@ export default function WordPressBridge() {
                                                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={C.border} />
                                                                     <XAxis dataKey="date" tickFormatter={str => str.substring(8, 10)} tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: C.textSub }} dy={10} />
                                                                     <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: C.textSub }} dx={-10} allowDecimals={false} />
-                                                                    <Tooltip 
-                                                                        contentStyle={{ borderRadius: 8, border: 'none', boxShadow: '0 4px 15px rgba(0,0,0,0.08)' }} 
+                                                                    <Tooltip
+                                                                        contentStyle={{ borderRadius: 8, border: 'none', boxShadow: '0 4px 15px rgba(0,0,0,0.08)' }}
                                                                         labelStyle={{ color: C.textSub, marginBottom: 4 }}
-                                                                        formatter={(value) => [value, 'Commandes']}
-                                                                        labelFormatter={label => `Jour: ${label}`}
+                                                                        formatter={(value) => [value, t('wpKpiOrders')]}
+                                                                        labelFormatter={label => t('wpDayLabel', { day: label })}
                                                                     />
                                                                     <Line type="monotone" dataKey="orders" stroke={C.blue} strokeWidth={3} dot={{ r: 3, fill: C.blue, strokeWidth: 0 }} activeDot={{ r: 6, fill: C.blue }} />
                                                                 </LineChart>
                                                             </ResponsiveContainer>
                                                         ) : (
                                                             <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.textSub, fontSize: 13 }}>
-                                                                Aucune donnée pour la plage de dates sélectionnée
+                                                                {t('wpNoChartData')}
                                                             </div>
                                                         )}
                                                     </div>
@@ -516,13 +518,13 @@ export default function WordPressBridge() {
                 {/* ══ TAB: POSTS ══════════════════════════════════════════════ */}
                 {tab === 'posts' && (
                     <div>
-                        {!selected && <EmptyState icon={Ico.file} title="Aucun site sélectionné" sub="Sélectionnez un site dans l'onglet Connexion." />}
+                        {!selected && <EmptyState icon={Ico.file} title={t('wpNoSiteSelectedTitle')} sub={t('wpSelectSiteSub')} />}
                         {selected && isLoading && <Card><div style={{ padding: 22, display: 'flex', flexDirection: 'column', gap: 12 }}>{[1,2,3,4,5].map(k => <Skeleton key={k} h={60} />)}</div></Card>}
                         {selected && !isLoading && (
                             <Card>
-                                <CardHeader title={`Articles — ${selected.name}`} sub={`${posts.length} articles chargés`} />
+                                <CardHeader title={t('wpPostsTitle', { site: selected.name })} sub={t('wpPostsLoadedCount', { count: posts.length })} />
                                 <div>
-                                    {posts.length === 0 && <EmptyState icon={Ico.file} title="Aucun article" sub="Aucun article trouvé sur ce site." />}
+                                    {posts.length === 0 && <EmptyState icon={Ico.file} title={t('wpNoPostsTitle')} sub={t('wpNoPostsSub')} />}
                                     {posts.map((post, i) => (
                                         <div key={post.id} style={{
                                             display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px',
@@ -564,7 +566,7 @@ export default function WordPressBridge() {
                 {/* ══ TAB: SHOP ═══════════════════════════════════════════════ */}
                 {tab === 'shop' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                        {!selected && <EmptyState icon={Ico.bag} title="Aucun site sélectionné" sub="Sélectionnez un site dans l'onglet Connexion." />}
+                        {!selected && <EmptyState icon={Ico.bag} title={t('wpNoSiteSelectedTitle')} sub={t('wpSelectSiteSub')} />}
                         {selected && isLoading && <Card><div style={{ padding: 22, display: 'flex', flexDirection: 'column', gap: 12 }}>{[1,2,3].map(k => <Skeleton key={k} h={60} />)}</div></Card>}
                         {selected && !isLoading && (
                             <>
@@ -584,7 +586,7 @@ export default function WordPressBridge() {
                                                     value={productFilters.search}
                                                     onChange={e => setProductFilters(f => ({ ...f, search: e.target.value, page: 1 }))}
                                                     onKeyDown={e => e.key === 'Enter' && loadProducts({ ...productFilters, page: 1 }, selectedId)}
-                                                    placeholder="Rechercher un produit..."
+                                                    placeholder={t('wpSearchProductPlaceholder')}
                                                     style={{ width: '100%', border: `1px solid ${C.border}`, borderRadius: 8, padding: '8px 10px 8px 32px', fontSize: 13, outline: 'none', background: '#f8fafc', color: C.text, boxSizing: 'border-box' }}
                                                 />
                                             </div>
@@ -594,7 +596,7 @@ export default function WordPressBridge() {
                                                 <select id="wp-filter-cat" value={productFilters.category}
                                                     onChange={e => setProductFilters(f => ({ ...f, category: e.target.value, page: 1 }))}
                                                     style={{ border: `1px solid ${C.border}`, borderRadius: 8, padding: '8px 10px', fontSize: 13, background: '#f8fafc', color: C.text, cursor: 'pointer', minWidth: 170 }}>
-                                                    <option value="">Sélectionner une catégorie</option>
+                                                    <option value="">{t('wpSelectCategory')}</option>
                                                     {productsMeta.categories.map(c => <option key={c.slug} value={c.slug}>{c.name} ({c.count})</option>)}
                                                 </select>
                                             )}
@@ -604,8 +606,8 @@ export default function WordPressBridge() {
                                                 <select id="wp-filter-type" value={productFilters.type}
                                                     onChange={e => setProductFilters(f => ({ ...f, type: e.target.value, page: 1 }))}
                                                     style={{ border: `1px solid ${C.border}`, borderRadius: 8, padding: '8px 10px', fontSize: 13, background: '#f8fafc', color: C.text, cursor: 'pointer', minWidth: 170 }}>
-                                                    <option value="">Filtrer par type de produit</option>
-                                                    {productsMeta.types.map(t => <option key={t.slug} value={t.slug}>{t.name} ({t.count})</option>)}
+                                                    <option value="">{t('wpFilterType')}</option>
+                                                    {productsMeta.types.map(pt => <option key={pt.slug} value={pt.slug}>{pt.name} ({pt.count})</option>)}
                                                 </select>
                                             )}
 
@@ -613,10 +615,10 @@ export default function WordPressBridge() {
                                             <select id="wp-filter-stock" value={productFilters.stock_status}
                                                 onChange={e => setProductFilters(f => ({ ...f, stock_status: e.target.value, page: 1 }))}
                                                 style={{ border: `1px solid ${C.border}`, borderRadius: 8, padding: '8px 10px', fontSize: 13, background: '#f8fafc', color: C.text, cursor: 'pointer', minWidth: 190 }}>
-                                                <option value="">Filtrer par état du stock</option>
-                                                <option value="instock">En stock</option>
-                                                <option value="outofstock">Rupture de stock</option>
-                                                <option value="onbackorder">En réapprovisionnement</option>
+                                                <option value="">{t('wpFilterStock')}</option>
+                                                <option value="instock">{t('wpStockIn')}</option>
+                                                <option value="outofstock">{t('wpStockOut')}</option>
+                                                <option value="onbackorder">{t('wpStockBackorder')}</option>
                                             </select>
 
                                             {/* Brand */}
@@ -624,7 +626,7 @@ export default function WordPressBridge() {
                                                 <select id="wp-filter-brand" value={productFilters.brand}
                                                     onChange={e => setProductFilters(f => ({ ...f, brand: e.target.value, page: 1 }))}
                                                     style={{ border: `1px solid ${C.border}`, borderRadius: 8, padding: '8px 10px', fontSize: 13, background: '#f8fafc', color: C.text, cursor: 'pointer', minWidth: 150 }}>
-                                                    <option value="">Filtrer par marque</option>
+                                                    <option value="">{t('wpFilterBrand')}</option>
                                                     {productsMeta.brands.map(b => <option key={b.slug} value={b.slug}>{b.name} ({b.count})</option>)}
                                                 </select>
                                             )}
@@ -635,7 +637,7 @@ export default function WordPressBridge() {
                                                 style={{ background: C.primary, color: '#fff', border: 'none', borderRadius: 8, padding: '8px 18px', fontSize: 13, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'opacity 0.15s' }}
                                                 onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
                                                 onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
-                                                Filtrer
+                                                {t('wpApplyFilter')}
                                             </button>
                                             {(productFilters.search || productFilters.category || productFilters.type || productFilters.stock_status || productFilters.brand) && (
                                                 <button id="wp-filter-reset"
@@ -645,7 +647,7 @@ export default function WordPressBridge() {
                                                         loadProducts(reset, selectedId);
                                                     }}
                                                     style={{ background: 'transparent', color: C.textSub, border: `1px solid ${C.border}`, borderRadius: 8, padding: '8px 14px', fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                                                    ✕ Réinitialiser
+                                                    {t('wpResetFilter')}
                                                 </button>
                                             )}
                                         </div>
@@ -653,10 +655,10 @@ export default function WordPressBridge() {
                                         {/* Row 2: total + per page selector */}
                                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
                                             <span style={{ fontSize: 12, color: C.textSub, fontWeight: 500 }}>
-                                                {isProductsLoading ? 'Chargement…' : `${productsPagination.total} élément${productsPagination.total !== 1 ? 's' : ''} trouvé${productsPagination.total !== 1 ? 's' : ''}`}
+                                                {isProductsLoading ? t('loading') : t('wpItemsFound', { count: productsPagination.total })}
                                             </span>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                                <span style={{ fontSize: 12, color: C.textSub }}>Afficher :</span>
+                                                <span style={{ fontSize: 12, color: C.textSub }}>{t('wpShowPerPage')}</span>
                                                 {[25, 50, 100].map(n => (
                                                     <button key={n} onClick={() => {
                                                         const f = { ...productFilters, per_page: n, page: 1 };
@@ -682,13 +684,13 @@ export default function WordPressBridge() {
                                                 {[1,2,3,4,5].map(k => <Skeleton key={k} h={52} />)}
                                             </div>
                                         ) : products.length === 0 ? (
-                                            <EmptyState icon={Ico.bag} title="Aucun produit" sub="Aucun produit ne correspond aux filtres sélectionnés." />
+                                            <EmptyState icon={Ico.bag} title={t('wpNoProductsTitle')} sub={t('wpNoProductsSub')} />
                                         ) : (
                                             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                                                 <thead>
                                                     <tr style={{ background: '#f8fafc', color: C.textSub }}>
                                                         <th style={{ width: 44, padding: '10px 14px' }}></th>
-                                                        {['Nom', 'UGS', 'Type', 'Stock', 'Prix', 'Catégories', 'Marques', 'Statut', ''].map(h => (
+                                                        {[t('name'), t('wpColSku'), t('wpColType'), t('wpColStock'), t('price'), t('wpColCategories'), t('wpColBrands'), t('status'), ''].map(h => (
                                                             <th key={h} style={{ padding: '10px 14px', fontWeight: 700, fontSize: 11, textAlign: 'left', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{h}</th>
                                                         ))}
                                                     </tr>
@@ -714,7 +716,7 @@ export default function WordPressBridge() {
                                                             {/* Type */}
                                                             <td style={{ padding: '10px 14px' }}>
                                                                 <span style={{ background: '#e0e7ff', color: '#3730a3', fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 999 }}>
-                                                                    {{ simple: 'Simple', variable: 'Variable', grouped: 'Groupé', external: 'Externe' }[p.type] || p.type}
+                                                                    {{ simple: t('wpTypeSimple'), variable: t('wpTypeVariable'), grouped: t('wpTypeGrouped'), external: t('wpTypeExternal') }[p.type] || p.type}
                                                                 </span>
                                                             </td>
                                                             {/* Stock */}
@@ -724,9 +726,9 @@ export default function WordPressBridge() {
                                                                         fontSize: 11, fontWeight: 700,
                                                                         color: p.stock_status === 'instock' ? '#16a34a' : p.stock_status === 'outofstock' ? '#dc2626' : '#d97706',
                                                                     }}>
-                                                                        {{ instock: '● En stock', outofstock: '● Rupture', onbackorder: '● Réappro.' }[p.stock_status] || p.stock_status}
+                                                                        {{ instock: t('wpStockInShort'), outofstock: t('wpStockOutShort'), onbackorder: t('wpStockBackorderShort') }[p.stock_status] || p.stock_status}
                                                                     </span>
-                                                                    {p.stock_quantity != null && <span style={{ fontSize: 11, color: C.textSub }}>Qté: {p.stock_quantity}</span>}
+                                                                    {p.stock_quantity != null && <span style={{ fontSize: 11, color: C.textSub }}>{t('wpQtyLabel', { qty: p.stock_quantity })}</span>}
                                                                 </div>
                                                             </td>
                                                             {/* Price */}
@@ -761,13 +763,13 @@ export default function WordPressBridge() {
                                                             {/* Actions */}
                                                             <td style={{ padding: '10px 14px' }}>
                                                                 <div style={{ display: 'flex', gap: 6 }}>
-                                                                    <button onClick={() => setProductModal(p)} title="Voir description"
+                                                                    <button onClick={() => setProductModal(p)} title={t('wpViewDescription')}
                                                                         style={{ background: 'transparent', border: `1px solid ${C.border}`, borderRadius: 7, padding: '5px 8px', cursor: 'pointer', display: 'flex', alignItems: 'center', color: C.textSub, transition: 'color 0.15s, border-color 0.15s' }}
                                                                         onMouseEnter={e => { e.currentTarget.style.color = C.primary; e.currentTarget.style.borderColor = C.primary; }}
                                                                         onMouseLeave={e => { e.currentTarget.style.color = C.textSub; e.currentTarget.style.borderColor = C.border; }}>
                                                                         {Ico.eye}
                                                                     </button>
-                                                                    <a href={p.url} target="_blank" rel="noreferrer" title="Voir sur le site"
+                                                                    <a href={p.url} target="_blank" rel="noreferrer" title={t('wpViewOnSite')}
                                                                         style={{ background: 'transparent', border: `1px solid ${C.border}`, borderRadius: 7, padding: '5px 8px', cursor: 'pointer', display: 'flex', alignItems: 'center', color: C.textSub, textDecoration: 'none', transition: 'color 0.15s, border-color 0.15s' }}
                                                                         onMouseEnter={e => { e.currentTarget.style.color = C.primary; e.currentTarget.style.borderColor = C.primary; }}
                                                                         onMouseLeave={e => { e.currentTarget.style.color = C.textSub; e.currentTarget.style.borderColor = C.border; }}>
@@ -786,8 +788,7 @@ export default function WordPressBridge() {
                                     {!isProductsLoading && productsPagination.pages > 1 && (
                                         <div style={{ padding: '12px 18px', borderTop: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
                                             <span style={{ fontSize: 12, color: C.textSub }}>
-                                                Page {productsPagination.current_page} sur {productsPagination.pages}
-                                                &nbsp;·&nbsp;{productsPagination.total} produits
+                                                {t('wpProductsPageInfo', { current: productsPagination.current_page, total: productsPagination.pages, count: productsPagination.total })}
                                             </span>
                                             <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexWrap: 'wrap' }}>
                                                 {/* Prev */}
@@ -837,14 +838,14 @@ export default function WordPressBridge() {
 
                                 {/* Orders */}
                                 <Card>
-                                    <CardHeader title="📦 Dernières Commandes" sub={`${orders.length} commandes chargées`} />
-                                    {orders.length === 0 && <EmptyState icon={Ico.bag} title="Aucune commande" sub="Aucune commande WooCommerce trouvée." />}
+                                    <CardHeader title={t('wpRecentOrdersTitle')} sub={t('wpOrdersLoadedCount', { count: orders.length })} />
+                                    {orders.length === 0 && <EmptyState icon={Ico.bag} title={t('wpNoOrdersTitle')} sub={t('wpNoOrdersSub')} />}
                                     <div style={{ overflowX: 'auto' }}>
                                         {orders.length > 0 && (
                                             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                                                 <thead>
                                                     <tr style={{ background: '#f8fafc', color: C.textSub }}>
-                                                        {['N°', 'Client', 'Statut', 'Total', 'Date'].map(h => (
+                                                        {[t('wpColNumber'), t('client'), t('status'), t('wpColTotal'), t('date')].map(h => (
                                                             <th key={h} style={{ padding: '10px 18px', fontWeight: 700, fontSize: 11, textAlign: 'left', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{h}</th>
                                                         ))}
                                                     </tr>
@@ -876,14 +877,14 @@ export default function WordPressBridge() {
                 {/* ══ TAB: LOGS ══════════════════════════════════════════ */}
                 {tab === 'logs' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                        {!selected && <EmptyState icon={Ico.file} title="Aucun site sélectionné" sub="Sélectionnez un site dans l'onglet Connexion." />}
+                        {!selected && <EmptyState icon={Ico.file} title={t('wpNoSiteSelectedTitle')} sub={t('wpSelectSiteSub')} />}
                         {selected && (
                             <div style={{ background: '#fff', padding: 24, borderRadius: 16, border: `1px solid ${C.border}`, boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                                    <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}><Ico.shield /> Journal d'audit (WaCopilote)</h3>
+                                    <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}><Ico.shield /> {t('wpAuditLogTitle')}</h3>
                                     <div style={{ display: 'flex', gap: 10 }}>
-                                        <select 
-                                            value={logsFilters.status} 
+                                        <select
+                                            value={logsFilters.status}
                                             onChange={e => {
                                                 const f = { ...logsFilters, status: e.target.value, page: 1 };
                                                 setLogsFilters(f);
@@ -891,27 +892,27 @@ export default function WordPressBridge() {
                                             }}
                                             style={{ padding: '6px 12px', borderRadius: 8, border: `1px solid ${C.border}`, outline: 'none', background: '#f8fafc', fontSize: 13, color: C.text }}
                                         >
-                                            <option value="">Tous les statuts</option>
-                                            <option value="EXECUTED">Exécuté</option>
-                                            <option value="REJECTED">Rejeté</option>
-                                            <option value="PENDING">En attente</option>
+                                            <option value="">{t('wpAllStatuses')}</option>
+                                            <option value="EXECUTED">{t('wpStatusExecuted')}</option>
+                                            <option value="REJECTED">{t('wpStatusRejected')}</option>
+                                            <option value="PENDING">{t('pending')}</option>
                                         </select>
                                     </div>
                                 </div>
-                                {isLoading ? <div style={{ padding: 40, textAlign: 'center', color: C.textSub }}>Chargement des logs...</div> : (
+                                {isLoading ? <div style={{ padding: 40, textAlign: 'center', color: C.textSub }}>{t('wpLoadingLogs')}</div> : (
                                     <div style={{ overflowX: 'auto' }}>
                                         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, textAlign: 'left' }}>
                                             <thead>
                                                 <tr style={{ background: '#f8fafc', borderBottom: `1px solid ${C.border}` }}>
-                                                    <th style={{ padding: '12px 16px', fontWeight: 600, color: C.textSub }}>Date</th>
-                                                    <th style={{ padding: '12px 16px', fontWeight: 600, color: C.textSub }}>Action</th>
-                                                    <th style={{ padding: '12px 16px', fontWeight: 600, color: C.textSub }}>Statut</th>
-                                                    <th style={{ padding: '12px 16px', fontWeight: 600, color: C.textSub }}>Détails</th>
+                                                    <th style={{ padding: '12px 16px', fontWeight: 600, color: C.textSub }}>{t('date')}</th>
+                                                    <th style={{ padding: '12px 16px', fontWeight: 600, color: C.textSub }}>{t('wpColAction')}</th>
+                                                    <th style={{ padding: '12px 16px', fontWeight: 600, color: C.textSub }}>{t('status')}</th>
+                                                    <th style={{ padding: '12px 16px', fontWeight: 600, color: C.textSub }}>{t('wpColDetails')}</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 {logs.length === 0 ? (
-                                                    <tr><td colSpan="4" style={{ padding: 20, textAlign: 'center', color: C.textSub }}>Aucun log trouvé.</td></tr>
+                                                    <tr><td colSpan="4" style={{ padding: 20, textAlign: 'center', color: C.textSub }}>{t('wpNoLogsFound')}</td></tr>
                                                 ) : logs.map(l => (
                                                     <tr key={l.id} style={{ borderBottom: `1px solid ${C.border}` }}>
                                                         <td style={{ padding: '12px 16px' }}>{new Date(l.created_at).toLocaleString()}</td>
@@ -939,7 +940,7 @@ export default function WordPressBridge() {
                                         {logsPagination.pages > 1 && (
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, borderTop: `1px solid ${C.border}`, paddingTop: 16 }}>
                                             <div style={{ fontSize: 13, color: C.textSub }}>
-                                                Total : <strong style={{ color: C.text }}>{logsPagination.total}</strong> logs
+                                                {t('wpTotalLogsCount', { count: logsPagination.total })}
                                             </div>
                                             <div style={{ display: 'flex', gap: 6 }}>
                                                 {/* Prev */}
@@ -1001,13 +1002,13 @@ export default function WordPressBridge() {
                                     <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                                         <StatusBadge status={productModal.status} />
                                         <span style={{ fontSize: 14, fontWeight: 700 }}>{productModal.price}</span>
-                                        {productModal.sku && <span style={{ fontSize: 11, background: C.border+'60', padding: '2px 6px', borderRadius: 4, fontFamily: 'monospace' }}>UGS: {productModal.sku}</span>}
+                                        {productModal.sku && <span style={{ fontSize: 11, background: C.border+'60', padding: '2px 6px', borderRadius: 4, fontFamily: 'monospace' }}>{t('wpSkuLabel', { sku: productModal.sku })}</span>}
                                     </div>
                                 </div>
                                 <button onClick={() => setProductModal(null)} style={{ background: '#f1f5f9', border: 'none', borderRadius: 8, width: 32, height: 32, cursor: 'pointer', fontSize: 18, color: C.textSub, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
                             </div>
                             <div style={{ padding: '24px', overflowY: 'auto' }}>
-                                <div style={{ fontSize: 14, color: C.text, lineHeight: 1.6, fontFamily: 'system-ui, sans-serif' }} dangerouslySetInnerHTML={{ __html: productModal.description || productModal.short_description || '<div style="color: #94a3b8; font-style: italic;">Aucune description disponible pour ce produit.</div>' }} />
+                                <div style={{ fontSize: 14, color: C.text, lineHeight: 1.6, fontFamily: 'system-ui, sans-serif' }} dangerouslySetInnerHTML={{ __html: productModal.description || productModal.short_description || `<div style="color: #94a3b8; font-style: italic;">${t('wpNoDescriptionAvailable')}</div>` }} />
                             </div>
                         </div>
                     </div>

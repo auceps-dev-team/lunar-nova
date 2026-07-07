@@ -54,3 +54,6 @@ backend/models*.json
 backend/models*.txt
 backend/check_models.js
 backend/list_models.js
+
+# graphify generated output
+graphify-out/

@@ -35,6 +35,15 @@ export function TableSkeleton({ rows = 5, columns = 4 }) {
     );
 }
 
+export function Skeleton({ h = 16, w = '100%', r = 'rounded-md' }) {
+    return (
+        <div
+            className={`bg-gray-200 dark:bg-zinc-700 animate-pulse ${r}`}
+            style={{ height: h, width: w }}
+        />
+    );
+}
+
 export function CardSkeleton() {
     return (
         <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl p-6 shadow-sm animate-pulse">
