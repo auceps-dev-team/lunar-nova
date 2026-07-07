@@ -104,7 +104,7 @@ async function generateProposals(chatContext, modelParam, apiKey, baseURL) {
         formattedChat += `[${msg.time}] ${msg.sender}: ${msg.text}\n`;
     });
 
-    const targetModel = modelParam || 'moonshotai/kimi-k2-instruct';
+    const targetModel = modelParam || 'meta/llama-3.1-8b-instruct';
     const copilotPersona = orchestrator.getPersona('copilot');
     const systemInstruction = copilotPersona ? copilotPersona.systemInstruction : "You are an assistive copilot.";
 
@@ -168,7 +168,7 @@ async function chatWithAgent(persona, message, imageParams, promptFormat, apiKey
     // Fallback if no specific model is set in agent/persona
     if (!targetModel) {
         // We could fetch default_chat_model here, but aiController usually handles routing.
-        targetModel = 'moonshotai/kimi-k2-instruct';
+        targetModel = 'meta/llama-3.1-8b-instruct';
     }
 
     try {

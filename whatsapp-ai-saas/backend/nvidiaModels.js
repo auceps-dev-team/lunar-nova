@@ -66,19 +66,6 @@ const MODELS = [
         repetitionPenalty: 1,
     },
     {
-        id: 'google/gemma-3n-e2b-it',
-        name: 'Gemma 3N E2B IT',
-        type: 'text',
-        dbKey: 'nvidia_key_gemma',
-        envKey: 'NVIDIA_KEY_GEMMA',
-        thinking: false,
-        maxTokens: 512,
-        temperature: 0.2,
-        topP: 0.7,
-        frequencyPenalty: 0,
-        presencePenalty: 0,
-    },
-    {
         id: 'z-ai/glm-4.7',
         name: 'GLM 4.7 (Thinking)',
         type: 'text',
@@ -88,15 +75,6 @@ const MODELS = [
         maxTokens: 16384,
         chatTemplateKwargs: { enable_thinking: true, clear_thinking: false },
     },
-    {
-        id: 'moonshotai/kimi-k2-instruct',
-        name: 'Kimi K2 Instruct',
-        type: 'text',
-        dbKey: null,         // pas de clé système dédiée — couvert par NVIDIA_DEFAULT_API_KEY
-        envKey: null,
-        thinking: false,
-    },
-
     // ─── Nouveaux modèles (batch 1/N — 77 annoncés) ─────────────────────
     {
         id: 'z-ai/glm-5.2',
@@ -377,20 +355,6 @@ const MODELS = [
         temperature: 0.5,
         topP: 1,
     },
-    {
-        id: 'google/gemma-3n-e4b-it',
-        name: 'Gemma 3N E4B IT',
-        type: 'text',
-        dbKey: null,
-        envKey: null,
-        thinking: false,
-        maxTokens: 512,
-        temperature: 0.2,
-        topP: 0.7,
-        frequencyPenalty: 0,
-        presencePenalty: 0,
-    },
-
     // ─── Nouveaux modèles (batch 3/N — 77 annoncés) ─────────────────────
     {
         id: 'mistralai/mistral-nemotron',
