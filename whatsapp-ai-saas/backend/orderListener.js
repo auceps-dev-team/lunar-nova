@@ -175,20 +175,28 @@ async function attachObserver(instanceId) {
             // 1. Polling for Left Panel (Global incoming messages across all chats!)
             if (!window.__iol_poller) {
                 window.__iol_poller = setInterval(() => {
-                    // Safe search starting from contact names
-                    const contactNodes = document.querySelectorAll('#pane-side span[title][dir="auto"]');
-                    const recentChats = Array.from(contactNodes).slice(0, 15).map(node => node.closest('div[role="row"], div[role="listitem"], div[style*="transform"]'));
-                    
+                    // WhatsApp's atomic CSS classes (x78zum5, x6s0dn4, ...) are regenerated on every
+                    // redesign, but the data-testid anchors it ships for its own QA are stable across
+                    // rebuilds, so prefer those; fall back to the older generic-attribute scraping only
+                    // if the testids are absent (older client build).
+                    let recentChats = Array.from(document.querySelectorAll('[data-testid="cell-frame-container"]')).slice(0, 15);
+                    if (recentChats.length === 0) {
+                        const contactNodes = document.querySelectorAll('#pane-side span[title][dir="auto"]');
+                        recentChats = Array.from(contactNodes).slice(0, 15).map(node => node.closest('div[role="row"], div[role="listitem"], div[style*="transform"]'));
+                    }
+
                     for (const chatItem of recentChats) {
                         if (!chatItem) continue;
 
                         let contact = 'Client (Liste)';
-                        const nameNode = chatItem.querySelector('span[title][dir="auto"]');
+                        const nameNode = chatItem.querySelector('[data-testid="cell-frame-title"] span[title][dir="auto"]') || chatItem.querySelector('span[title][dir="auto"]');
                         if (nameNode) contact = nameNode.getAttribute('title') || nameNode.innerText;
-                        
-                        // Try to get message preview
+
+                        // Try to get message preview, scoped to the preview area when available to avoid
+                        // picking up unrelated dir="ltr" spans (e.g. group sender-name prefixes).
                         let text = '';
-                        const spans = chatItem.querySelectorAll('span[dir="ltr"]');
+                        const previewScope = chatItem.querySelector('[data-testid="cell-frame-secondary"]') || chatItem;
+                        const spans = previewScope.querySelectorAll('span[dir="ltr"]');
                         for (const node of spans) {
                             const t = node.innerText || node.textContent || '';
                             if (t && t.length > 2 && t !== contact) text = t;
@@ -206,19 +214,41 @@ async function attachObserver(instanceId) {
                 }, 3000);
             }
 
+            // WhatsApp's atomic CSS class names get regenerated on every redesign, so
+            // '.copyable-text[data-pre-plain-text]' can silently stop matching anything. The
+            // 'data-id' on a message row (prefixed 'true_'/'false_' for outgoing/incoming) is
+            // WhatsApp's own internal store key, not a style artifact, so it survives UI overhauls
+            // and is used here as the primary anchor; the legacy class-based anchor is kept as a
+            // fallback for older client builds.
+            const isMessageDataId = (id) => !!id && (id.startsWith('true_') || id.startsWith('false_'));
+            const getMsgRoot = (el) => {
+                if (!el || !el.closest) return null;
+                const legacy = el.closest('.copyable-text[data-pre-plain-text]');
+                if (legacy) return legacy;
+                const modern = el.closest('[data-id]');
+                if (modern && isMessageDataId(modern.getAttribute('data-id'))) return modern;
+                // Last resort: the chat list in this build uses role="row" grid items and the message
+                // list likely shares the same virtualization pattern; excluding #pane-side keeps this
+                // from double-processing sidebar rows already covered by the poller above.
+                const ariaRow = el.closest('div[role="row"]');
+                if (ariaRow && !ariaRow.closest('#pane-side')) return ariaRow;
+                return null;
+            };
+
             // 2. Specialized Mutation Observer for Active Chat
             window.__iol_observer = new MutationObserver((mutations) => {
                 const processMessageNode = (msg) => {
                     if (!msg) return;
                     try {
-                        const preText = msg.getAttribute('data-pre-plain-text') || '';
+                        const preTextNode = msg.hasAttribute('data-pre-plain-text') ? msg : msg.querySelector('[data-pre-plain-text]');
+                        const preText = preTextNode ? (preTextNode.getAttribute('data-pre-plain-text') || '') : '';
                         let contact = 'Client (Actif)';
                         const match = preText.match(/\]\s([^:]+):/);
                         if (match && match[1]) {
                             contact = match[1].trim();
                         }
 
-                        const textNode = msg.querySelector('span.selectable-text, span.copyable-text');
+                        const textNode = msg.querySelector('span.selectable-text, span.copyable-text, span[dir="ltr"]');
                         const text = textNode ? (textNode.innerText || textNode.textContent || '').trim() : msg.innerText.trim();
 
                         if (text && text.length > 5) {
@@ -234,7 +264,7 @@ async function attachObserver(instanceId) {
 
                 for (const m of mutations) {
                     if (m.type === 'characterData' && m.target && m.target.parentElement) {
-                        const parentMsg = m.target.parentElement.closest('.copyable-text[data-pre-plain-text]');
+                        const parentMsg = getMsgRoot(m.target.parentElement);
                         if (parentMsg) processMessageNode(parentMsg);
                         continue;
                     }
@@ -242,20 +272,39 @@ async function attachObserver(instanceId) {
                 for (const node of m.addedNodes) {
                     if (node.nodeType !== 1) {
                         if (node.parentElement) {
-                            const pMsg = node.parentElement.closest('.copyable-text[data-pre-plain-text]');
+                            const pMsg = getMsgRoot(node.parentElement);
                             if (pMsg) processMessageNode(pMsg);
                         }
                         continue;
                     }
-                    
-                    // Specific research-backed selector
+
                     const msgDivs = Array.from(node.querySelectorAll ? node.querySelectorAll('.copyable-text[data-pre-plain-text]') : []);
                     if (node.matches && node.matches('.copyable-text[data-pre-plain-text]')) {
                         msgDivs.push(node);
                     }
-                    
+                    if (node.querySelectorAll) {
+                        Array.from(node.querySelectorAll('[data-id]')).forEach(el => {
+                            if (isMessageDataId(el.getAttribute('data-id')) && !msgDivs.includes(el)) msgDivs.push(el);
+                        });
+                    }
+                    if (node.matches) {
+                        const id = node.getAttribute && node.getAttribute('data-id');
+                        if (isMessageDataId(id) && !msgDivs.includes(node)) msgDivs.push(node);
+                    }
+
+                    if (msgDivs.length === 0) {
+                        if (node.querySelectorAll) {
+                            Array.from(node.querySelectorAll('div[role="row"]')).forEach(el => {
+                                if (!el.closest('#pane-side') && !msgDivs.includes(el)) msgDivs.push(el);
+                            });
+                        }
+                        if (node.matches && node.matches('div[role="row"]') && !node.closest('#pane-side') && !msgDivs.includes(node)) {
+                            msgDivs.push(node);
+                        }
+                    }
+
                     // If the node we're adding is INSIDE an existing message container
-                    const parentMsg = node.closest && node.closest('.copyable-text[data-pre-plain-text]');
+                    const parentMsg = getMsgRoot(node);
                     if (parentMsg && !msgDivs.includes(parentMsg)) {
                         msgDivs.push(parentMsg);
                     }
