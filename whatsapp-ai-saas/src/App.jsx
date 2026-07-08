@@ -11,6 +11,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 const Dashboard = React.lazy(() => import('./pages/Dashboard'));
 const AdvancedAnalytics = React.lazy(() => import('./pages/AdvancedAnalytics'));
 const AgentsHub = React.lazy(() => import('./pages/AgentsHub'));
+const AgentPipeline = React.lazy(() => import('./pages/AgentPipeline'));
 const TasksMap = React.lazy(() => import('./pages/TasksMap'));
 
 const InvoiceBuilder = React.lazy(() => import('./pages/InvoiceBuilder'));
@@ -288,6 +289,7 @@ function AppContent() {
                   <Route path="/analytics" element={<AdvancedAnalytics />} />
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/agents" element={<AgentsHub activeId={activeId} />} />
+                  <Route path="/agent-pipeline" element={<AgentPipeline activeId={activeId} />} />
                   <Route path="/agents-manager" element={<AgentManager />} />
                   <Route path="/ai-chat" element={<AiChat />} />
                   <Route path="/ai-writer" element={<AiWriter />} />

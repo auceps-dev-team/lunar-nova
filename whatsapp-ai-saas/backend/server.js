@@ -51,6 +51,10 @@ app.use('/api/auth/google', authGoogleRouter);
 const prospectionRouter = require('./routes/prospection');
 app.use('/api/prospection', prospectionRouter);
 
+// --- Agentic Pipeline (Prospection -> Contacts -> Antoine -> Clarisse/Kanban) ---
+const pipelineRouter = require('./routes/pipeline');
+app.use('/api/pipeline', pipelineRouter);
+
 // --- WordPress Bridge (Phase 30) ---
 const wordpressRouter = require('./routes/wordpress');
 const multer = require('multer');

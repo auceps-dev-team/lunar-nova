@@ -348,23 +348,28 @@ router.delete('/api/wa/contacts/:id', async (req, res) => {
 });
 
 router.post('/api/wa/open-chat', async (req, res) => {
-    const { instance_id, phone, contact_id, country_code } = req.body;
+    const { instance_id, phone, contact_id, country_code, text } = req.body;
     if (!instance_id || !phone) return res.status(400).json({ error: 'Missing instance_id or phone' });
 
-    let formattedMessage = '';
+    let formattedMessage = text || '';
 
     try {
         if (contact_id) {
-            const contactRes = await pool.query('SELECT * FROM wa_contacts WHERE id = $1', [contact_id]);
-            const settingsRes = await pool.query("SELECT setting_value FROM app_settings WHERE setting_key = 'dynamic_message_template'");
-            if (contactRes.rows.length > 0 && settingsRes.rows.length > 0) {
-                const contact = contactRes.rows[0];
-                const template = settingsRes.rows[0].setting_value;
-                if (template) {
-                    formattedMessage = template
-                        .replace(/\[Nom\]/gi, contact.name || '')
-                        .replace(/\[Email\]/gi, contact.email || '')
-                        .replace(/\[Adresse\]/gi, contact.address || '');
+            // An explicit `text` (e.g. an already-drafted pipeline message) always wins over
+            // the auto-generated template below - the template is only a fallback for callers
+            // that didn't pass their own message.
+            if (!text) {
+                const contactRes = await pool.query('SELECT * FROM wa_contacts WHERE id = $1', [contact_id]);
+                const settingsRes = await pool.query("SELECT setting_value FROM app_settings WHERE setting_key = 'dynamic_message_template'");
+                if (contactRes.rows.length > 0 && settingsRes.rows.length > 0) {
+                    const contact = contactRes.rows[0];
+                    const template = settingsRes.rows[0].setting_value;
+                    if (template) {
+                        formattedMessage = template
+                            .replace(/\[Nom\]/gi, contact.name || '')
+                            .replace(/\[Email\]/gi, contact.email || '')
+                            .replace(/\[Adresse\]/gi, contact.address || '');
+                    }
                 }
             }
 
@@ -421,7 +426,10 @@ router.post('/api/wa/open-chat', async (req, res) => {
         if (!hasInternationalPrefix && country_code && country_code !== 'none' && !cleanPhone.startsWith(country_code)) {
             cleanPhone = country_code + cleanPhone;
         }
-        const url = `https://web.whatsapp.com/send?phone=${cleanPhone}`;
+        let url = `https://web.whatsapp.com/send?phone=${cleanPhone}`;
+        if (formattedMessage) {
+            url += `&text=${encodeURIComponent(formattedMessage)}`;
+        }
         await targetPage.goto(url);
 
         res.json({ status: 'success', message: 'Chat opened', formattedMessage });

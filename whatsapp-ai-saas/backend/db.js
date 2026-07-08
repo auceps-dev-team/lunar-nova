@@ -231,6 +231,34 @@ async function initDB() {
             "ALTER TABLE wp_connections ADD COLUMN app_password TEXT NOT NULL DEFAULT ''"
         ]);
 
+        // Phase 32: Agentic Pipeline (Prospection -> Contacts -> Antoine -> Clarisse/Kanban)
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS pipeline_runs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name VARCHAR(255),
+                brief TEXT NOT NULL,
+                status VARCHAR(50) DEFAULT 'draft',
+                current_stage VARCHAR(50) DEFAULT 'prospecting',
+                search_params JSONB,
+                provider_override VARCHAR(50) DEFAULT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        `);
+
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS pipeline_cards (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                run_id INTEGER REFERENCES pipeline_runs(id) ON DELETE CASCADE,
+                contact_id INTEGER REFERENCES wa_contacts(id) ON DELETE SET NULL,
+                stage VARCHAR(50) DEFAULT 'new',
+                draft_message TEXT,
+                notes TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        `);
+
         client.release();
         isDbConnected = true;
         console.log('[SQLite] Connected and tables verified.');
