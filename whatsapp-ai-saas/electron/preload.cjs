@@ -12,6 +12,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     // Config Store
     storeGet: (key) => ipcRenderer.invoke('store-get', key),
     storeSet: (key, value) => ipcRenderer.invoke('store-set', key, value),
+    // Token d'authentification pour les appels au backend local
+    getApiToken: () => ipcRenderer.invoke('get-api-token'),
 });
 
 // NOUVEAU : Exposer le pont Updater

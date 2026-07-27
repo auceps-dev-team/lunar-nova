@@ -192,7 +192,6 @@
   "pendingState": "قيد الانتظار",
   "overdueState": "متأخرة",
   "draftState": "مسودة",
-
   "wpHeaderSubtitle": "أدر مواقع ووردبريس الخاصة بك مباشرة من WaCopilote",
   "wpActiveSite": "الموقع النشط:",
   "wpTabConnection": "الاتصال",
@@ -303,7 +302,6 @@
   "wpStatusProcessing": "قيد المعالجة",
   "wpStatusPending": "قيد الانتظار",
   "wpStatusCancelled": "ملغى",
-
   "wpJarvisWelcome": "👋 مرحبًا! أنا Jarvis WP، وكيل ووردبريس الخاص بك.\n\nيمكنني إنشاء منتجات ووكومرس ومقالات مدونة مباشرة على مواقعك المتصلة.\n\nفقط أخبرني بما تريد إنشاءه! على سبيل المثال:\n• \"أنشئ منتجًا مفك كهربائي بسعر 29€\"\n• \"اكتب مقالة مدونة عن أدوات الإصلاح المنزلي\"",
   "wpJarvisNoSiteSelected": "⚠️ يرجى أولاً اختيار موقع ووردبريس متصل في الإعدادات قبل استخدام الوكيل.",
   "wpJarvisNoResponse": "عذرًا، لم أتمكن من معالجة طلبك.",
@@ -319,5 +317,6 @@
   "wpQuickCreateProduct": "🛒 إنشاء منتج",
   "wpQuickCreateArticle": "📝 إنشاء مقالة",
   "wpQuickPublishDirect": "📦 نشر مباشر",
-  "wpJarvisInputPlaceholder": "مثال: أنشئ منتج مفك بسعر 29.99$…"
+  "wpJarvisInputPlaceholder": "مثال: أنشئ منتج مفك بسعر 29.99$…",
+  "apiKeyConfigured": "المفتاح محفوظ بالفعل — اتركه فارغًا للإبقاء عليه"
 }

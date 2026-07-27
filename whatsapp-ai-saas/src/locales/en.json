@@ -969,7 +969,6 @@
   "ellaGreeting": "Hello! I'm Ella, your Life Architect. Tell me what's on your mind, and I'll structure it into your schedule.",
   "errorEllaUnderstand": "Sorry, I didn't catch that.",
   "errorEllaConnection": "Sorry, I'm having connection issues. Check if the backend is active.",
-
   "wpHeaderSubtitle": "Manage your WordPress sites directly from WaCopilote",
   "wpActiveSite": "Active site:",
   "wpTabConnection": "Connection",
@@ -1080,7 +1079,6 @@
   "wpStatusProcessing": "Processing",
   "wpStatusPending": "Pending",
   "wpStatusCancelled": "Cancelled",
-
   "wpJarvisWelcome": "👋 Hello! I'm Jarvis WP, your WordPress agent.\n\nI can create WooCommerce products and blog posts directly on your connected sites.\n\nJust tell me what you'd like to create! For example:\n• \"Create a product Electric Screwdriver at €29\"\n• \"Write a blog post about DIY tools\"",
   "wpJarvisNoSiteSelected": "⚠️ Please select a connected WordPress site in the settings before using the agent.",
   "wpJarvisNoResponse": "Sorry, I couldn't process your request.",
@@ -1096,5 +1094,6 @@
   "wpQuickCreateProduct": "🛒 Create a product",
   "wpQuickCreateArticle": "📝 Create a post",
   "wpQuickPublishDirect": "📦 Publish directly",
-  "wpJarvisInputPlaceholder": "E.g: Create a product Screwdriver at $29.99…"
+  "wpJarvisInputPlaceholder": "E.g: Create a product Screwdriver at $29.99…",
+  "apiKeyConfigured": "Key already saved — leave blank to keep it"
 }

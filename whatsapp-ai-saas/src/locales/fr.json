@@ -969,7 +969,6 @@
   "ellaGreeting": "Bonjour ! Je suis Ella, votre Life Architect. Dites-moi ce que vous avez en tête, je m'occupe de structurer tout ça dans votre planning.",
   "errorEllaUnderstand": "Désolé, je ne comprends pas.",
   "errorEllaConnection": "Désolé, je rencontre un problème de connexion. Vérifiez que le backend est actif.",
-
   "wpHeaderSubtitle": "Gérez vos sites WordPress directement depuis WaCopilote",
   "wpActiveSite": "Site actif :",
   "wpTabConnection": "Connexion",
@@ -1080,7 +1079,6 @@
   "wpStatusProcessing": "En cours",
   "wpStatusPending": "En attente",
   "wpStatusCancelled": "Annulée",
-
   "wpJarvisWelcome": "👋 Bonjour ! Je suis Jarvis WP, votre agent WordPress.\n\nJe peux créer des produits WooCommerce et des articles de blog directement sur vos sites connectés.\n\nDites-moi simplement ce que vous souhaitez créer ! Par exemple :\n• \"Crée un produit Tournevis Électrique à 29€\"\n• \"Écris un article de blog sur les outils de bricolage\"",
   "wpJarvisNoSiteSelected": "⚠️ Veuillez d'abord sélectionner un site WordPress connecté dans les paramètres avant d'utiliser l'agent.",
   "wpJarvisNoResponse": "Désolé, je n'ai pas pu traiter votre demande.",
@@ -1096,5 +1094,6 @@
   "wpQuickCreateProduct": "🛒 Créer un produit",
   "wpQuickCreateArticle": "📝 Créer un article",
   "wpQuickPublishDirect": "📦 Publier directement",
-  "wpJarvisInputPlaceholder": "Ex: Crée un produit Tournevis à 29.99€…"
+  "wpJarvisInputPlaceholder": "Ex: Crée un produit Tournevis à 29.99€…",
+  "apiKeyConfigured": "Clé déjà enregistrée — laisser vide pour la conserver"
 }

@@ -10,9 +10,13 @@ const aiController = require('./aiController');
 const orderListener = require('./orderListener');
 const { logCopilotInteraction, pool, getSetting, setSetting } = require('./db');
 const { getCachedProposals, setCachedProposals } = require('./redisClient');
+const { requireApiToken } = require('./apiAuth');
 
 const app = express();
 const PORT = process.env.PORT || process.env.BACKEND_PORT || 3000;
+// Boucle locale uniquement : sans cet hôte explicite, Node écoute sur 0.0.0.0 et
+// expose toute l'API (clés LLM, contacts, identifiants WordPress) au réseau local.
+const HOST = process.env.BACKEND_HOST || '127.0.0.1';
 
 // Update process.env if main process sends new secrets (electron-store)
 function handleMessage(msg) {
@@ -26,13 +30,14 @@ if (process.parentPort) {
     process.parentPort.on('message', (e) => handleMessage(e.data));
 }
 
-// Security: Restrict CORS to specific origins
-const isDev = process.env.NODE_ENV === 'development';
+// Security: Restrict CORS to specific origins.
+// `!origin` couvre le renderer Electron en production (chargé en file://, donc sans
+// Origin) et les clients non-navigateur ; ceux-là restent filtrés par le token.
 const allowedOrigins = ['http://localhost:5173', 'file://'];
 
 app.use(cors({
     origin: function (origin, callback) {
-        if (!origin || allowedOrigins.includes(origin) || isDev) {
+        if (!origin || allowedOrigins.includes(origin)) {
             callback(null, true);
         } else {
             callback(new Error('Not allowed by CORS'));
@@ -42,6 +47,12 @@ app.use(cors({
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+// Toute l'API est authentifiée. Enregistré avant les routers pour couvrir aussi
+// ceux montés plus bas (y compris orderListener.registerRoutes en fin de fichier).
+// Le preflight CORS est traité et terminé par le middleware cors ci-dessus, il
+// n'atteint donc jamais cette vérification.
+app.use(requireApiToken);
 
 // --- Google Auth Loopback ---
 const authGoogleRouter = require('./routes/authGoogle');
@@ -259,8 +270,8 @@ app.get('/api/context/:instance_id', async (req, res) => {
 // Phase 21: Intelligent Order Listener
 orderListener.registerRoutes(app);
 
-const server = app.listen(PORT, () => {
-    console.log(`[Orchestrator] Running on http://localhost:${PORT}`);
+const server = app.listen(PORT, HOST, () => {
+    console.log(`[Orchestrator] Running on http://${HOST}:${PORT}`);
     console.log(`[Orchestrator] Ready to connect to Electron CDP at port 8315`);
 });
 

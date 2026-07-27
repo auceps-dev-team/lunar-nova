@@ -1,9 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
-const { pool } = require('../db');
+const puppeteer = require('puppeteer-core');
 
 
 // Endpoint to automatically push an item to WhatsApp Business Catalog via Playwright
@@ -232,11 +231,20 @@ router.post('/api/catalog/upload', async (req, res) => {
         });
 
     } catch (error) {
-        if (tempImagePath && fs.existsSync(tempImagePath)) {
-            fs.unlinkSync(tempImagePath); // Cleanup on fail
-        }
         console.error('Catalog Automation Error:', error);
         res.status(500).json({ error: 'Failed to automate WhatsApp Catalog. Exception: ' + error.message });
+    } finally {
+        // Le nettoyage doit aussi couvrir le chemin nominal : tant qu'il ne vivait
+        // que dans les blocs d'erreur, chaque publication réussie laissait un PNG
+        // derrière elle (d'où les fichiers accumulés dans backend/.temp).
+        if (tempImagePath && fs.existsSync(tempImagePath)) {
+            try {
+                fs.unlinkSync(tempImagePath);
+            } catch (cleanupErr) {
+                console.error('[Catalog] Temp file cleanup failed:', cleanupErr.message);
+            }
+        }
+        if (browser) browser.disconnect();
     }
 });
 module.exports = router;

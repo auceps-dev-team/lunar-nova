@@ -2,16 +2,37 @@ const express = require('express');
 const router = express.Router();
 const { pool, getSetting, setSetting } = require('../db');
 
+// --- Masquage des secrets ---
+// Les clés d'API ne sortent jamais du backend : le GET renvoie une chaîne vide et
+// signale séparément, via `secretsSet`, lesquelles sont renseignées (pour que l'UI
+// puisse afficher « configurée »).
+//
+// Côté PUT, une valeur vide sur une clé secrète signifie « champ non modifié » et
+// n'écrase rien. Une première implémentation renvoyait un masque « ••••1234 » servant
+// de sentinelle ; test à l'appui, le préfixe Unicode ne survit pas systématiquement au
+// transit et la vraie clé se faisait écraser par le masque. Une sentinelle vide, elle,
+// ne peut pas être corrompue en route.
+//
+// Contrepartie assumée : effacer une clé ne peut plus se faire en vidant le champ.
+// L'UI n'offre de toute façon pas cette action aujourd'hui ; il faudra un bouton
+// « Supprimer la clé » dédié le jour où le besoin se pose.
+const isSecretKey = (key) => key.endsWith('_api_key');
 
 // --- Phase 15: Modularity APIs ---
 router.get('/api/settings', async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM app_settings');
         const settings = {};
+        const secretsSet = {};
         result.rows.forEach(row => {
-            settings[row.setting_key] = row.setting_value;
+            if (isSecretKey(row.setting_key)) {
+                settings[row.setting_key] = '';
+                secretsSet[row.setting_key] = !!row.setting_value;
+            } else {
+                settings[row.setting_key] = row.setting_value;
+            }
         });
-        res.json({ status: 'success', settings });
+        res.json({ status: 'success', settings, secretsSet });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -20,6 +41,9 @@ router.get('/api/settings', async (req, res) => {
 router.put('/api/settings', async (req, res) => {
     try {
         for (const [key, value] of Object.entries(req.body)) {
+            if (isSecretKey(key) && (value === '' || value === null || value === undefined)) {
+                continue; // Champ laissé tel quel par l'utilisateur.
+            }
             await setSetting(key, value);
         }
         res.json({ status: 'success' });

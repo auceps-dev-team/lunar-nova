@@ -362,7 +362,7 @@ export default function Contacts({ activeId }) {
                     const res = await fetch('http://127.0.0.1:3000/api/wa/verify-contact', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ instance_id: activeId, phone: rawPhone, country_code: countryCode }),
+                        body: JSON.stringify({ instance_id: activeId, contact_id: contact.id, phone: rawPhone, country_code: countryCode }),
                         signal: controller.signal
                     });
                     clearTimeout(timeoutId);
