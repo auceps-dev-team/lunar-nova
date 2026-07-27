@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>WaCopilote — Copilote IA & automatisation WhatsApp, open source</title>
+  <meta name="description"
+    content="Application desktop open source (AGPL-3.0) qui automatise WhatsApp, génère des visuels produits et pilote des agents IA multi-fournisseurs. Conçue à Abidjan." />
+  <link rel="icon" type="image/png" href="logo.png" />
+
+  <meta property="og:title" content="WaCopilote — Copilote IA & automatisation WhatsApp" />
+  <meta property="og:description"
+    content="Application desktop open source (AGPL-3.0) pour automatiser WhatsApp et piloter des agents IA. Conçue à Abidjan." />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="logo.png" />
+
+  <style>
+    :root {
+      --primary: #10B981;
+      --primary-dark: #059669;
+      --bg: #ffffff;
+      --bg-alt: #F3F4F6;
+      --surface: #ffffff;
+      --text: #111827;
+      --muted: #6B7280;
+      --border: #E5E7EB;
+      --code-bg: #0f2e27;
+      --code-text: #D1FAE5;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0b1220;
+        --bg-alt: #111827;
+        --surface: #161f2e;
+        --text: #F3F4F6;
+        --muted: #9CA3AF;
+        --border: #253044;
+        --code-bg: #060d0b;
+        --code-text: #A7F3D0;
+      }
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .wrap { max-width: 960px; margin: 0 auto; padding: 0 24px; }
+
+    a { color: var(--primary-dark); }
+    @media (prefers-color-scheme: dark) { a { color: var(--primary); } }
+
+    /* ---------- Hero ---------- */
+    header.hero {
+      text-align: center;
+      padding: 72px 0 56px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(16, 185, 129, .07), transparent);
+    }
+
+    .hero img { width: 260px; max-width: 70%; height: auto; }
+
+    .hero h1 {
+      font-size: clamp(1.9rem, 5vw, 2.75rem);
+      line-height: 1.15;
+      margin: 20px 0 12px;
+      letter-spacing: -.02em;
+    }
+
+    .hero p.tagline {
+      font-size: clamp(1rem, 2.4vw, 1.2rem);
+      color: var(--muted);
+      max-width: 640px;
+      margin: 0 auto 28px;
+    }
+
+    .badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 28px;
+    }
+
+    .badge {
+      font-size: .78rem;
+      font-weight: 600;
+      padding: 5px 11px;
+      border-radius: 999px;
+      background: var(--bg-alt);
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+
+    .badge.accent { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+    .cta { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+
+    .btn {
+      display: inline-block;
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-weight: 600;
+      text-decoration: none;
+      border: 1px solid var(--primary);
+      transition: transform .12s ease, opacity .12s ease;
+    }
+
+    .btn:hover { transform: translateY(-1px); opacity: .92; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-ghost { background: transparent; color: var(--primary-dark); }
+    @media (prefers-color-scheme: dark) { .btn-ghost { color: var(--primary); } }
+
+    /* ---------- Sections ---------- */
+    section { padding: 56px 0; border-bottom: 1px solid var(--border); }
+    section:last-of-type { border-bottom: none; }
+
+    h2 {
+      font-size: clamp(1.35rem, 3.2vw, 1.7rem);
+      letter-spacing: -.015em;
+      margin: 0 0 8px;
+    }
+
+    .section-intro { color: var(--muted); margin: 0 0 28px; max-width: 720px; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 18px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 22px;
+    }
+
+    .card h3 { margin: 0 0 8px; font-size: 1.02rem; }
+    .card p { margin: 0; color: var(--muted); font-size: .93rem; }
+
+    /* ---------- Table ---------- */
+    .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+    table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: .9rem; }
+
+    th, td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--border); }
+    th { font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+    td:first-child { font-weight: 600; white-space: nowrap; }
+
+    /* ---------- Code ---------- */
+    pre {
+      background: var(--code-bg);
+      color: var(--code-text);
+      padding: 20px;
+      border-radius: 12px;
+      overflow-x: auto;
+      font-size: .87rem;
+      line-height: 1.6;
+    }
+
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    p code, li code { background: var(--bg-alt); padding: 1px 6px; border-radius: 5px; font-size: .88em; }
+
+    /* ---------- Callouts ---------- */
+    .callout {
+      border-left: 3px solid var(--primary);
+      background: var(--bg-alt);
+      border-radius: 0 10px 10px 0;
+      padding: 18px 22px;
+    }
+
+    .callout p { margin: 0 0 10px; }
+    .callout p:last-child { margin-bottom: 0; }
+
+    .honest { border-left-color: #F59E0B; }
+
+    ul.clean { padding-left: 20px; margin: 0; }
+    ul.clean li { margin-bottom: 9px; }
+
+    footer {
+      background: var(--bg-alt);
+      border-top: 1px solid var(--border);
+      padding: 40px 0;
+      text-align: center;
+      color: var(--muted);
+      font-size: .9rem;
+    }
+
+    footer a { font-weight: 600; }
+    .footer-links { display: flex; flex-wrap: wrap; gap: 18px; justify-content: center; margin-bottom: 18px; }
+  </style>
+</head>
+
+<body>
+
+  <header class="hero">
+    <div class="wrap">
+      <img src="logo.png" alt="Logo WaCopilote" />
+      <h1>Le copilote IA de vos conversations WhatsApp</h1>
+      <p class="tagline">
+        Application desktop qui automatise WhatsApp, génère vos visuels produits et pilote des agents IA
+        multi&#8209;fournisseurs. Vos données restent sur votre machine.
+      </p>
+
+      <div class="badges">
+        <span class="badge accent">Open source — AGPL-3.0</span>
+        <span class="badge">Version 1.36.1</span>
+        <span class="badge">Windows · macOS · Linux</span>
+        <span class="badge">🇨🇮 Conçu à Abidjan</span>
+      </div>
+
+      <div class="cta">
+        <a class="btn btn-primary" href="https://github.com/auceps-dev-team/lunar-nova">Voir le code sur GitHub</a>
+        <a class="btn btn-ghost" href="#demarrage">Démarrer en 3 minutes</a>
+      </div>
+    </div>
+  </header>
+
+  <section>
+    <div class="wrap">
+      <h2>🔓 Pourquoi c'est open source</h2>
+      <p class="section-intro">
+        Un logiciel qui lit vos conversations WhatsApp et manipule vos clés d'API n'a aucune raison d'être
+        une boîte noire. Vous ne devriez pas avoir à nous croire sur parole — vous devriez pouvoir vérifier.
+      </p>
+
+      <div class="callout">
+        <p>
+          <strong>Le code publié est celui qui tourne chez nos utilisateurs.</strong> Il n'y a pas d'édition
+          « communautaire » amputée d'un côté et d'édition propriétaire de l'autre : c'est le même dépôt.
+        </p>
+        <p>
+          Installez-le sur autant de postes que vous voulez, sans licence à acheter. Auditez-le, forkez-le,
+          adaptez-le. L'<strong>AGPL-3.0</strong> demande une seule contrepartie : si vous redistribuez une version
+          modifiée ou l'exposez comme service en ligne, publiez son code. L'usage interne, même commercial,
+          reste libre.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>✨ Ce que fait WaCopilote</h2>
+      <p class="section-intro">Une suite complète, pas un chatbot de plus.</p>
+
+      <div class="grid">
+        <div class="card">
+          <h3>🤖 Agents IA multi-fournisseurs</h3>
+          <p>Basculez entre Google Gemini, NVIDIA NIM, OpenRouter, Together AI et des modèles locaux via Ollama —
+            sans changer d'outil.</p>
+        </div>
+        <div class="card">
+          <h3>📱 Automatisation WhatsApp</h3>
+          <p>Détection des intentions d'achat et suivi des commandes en temps réel sur WhatsApp Web, via un moteur
+            Playwright&nbsp;/&nbsp;Puppeteer.</p>
+        </div>
+        <div class="card">
+          <h3>📷 Studio photo produit</h3>
+          <p>Détourage, remplacement d'arrière-plan, retouche par prompt et composition de catalogues à partir de
+            simples photos.</p>
+        </div>
+        <div class="card">
+          <h3>🔍 Prospection B2B</h3>
+          <p>Extraction de leads depuis Google Places, Annuaire CI et GoAfrica, convertis en contacts en un clic.</p>
+        </div>
+        <div class="card">
+          <h3>🌐 Pont WordPress &amp; WooCommerce</h3>
+          <p>Publication de produits et d'articles, avec approbation humaine obligatoire : l'IA propose, un
+            administrateur valide.</p>
+        </div>
+        <div class="card">
+          <h3>📊 Observabilité des coûts</h3>
+          <p>Suivi des tokens consommés, du coût estimé par modèle et de la latence, fournisseur par fournisseur.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>🧠 Le moteur multi-LLM</h2>
+      <p class="section-intro">
+        Une passerelle unifiée : vous choisissez le modèle par agent, et vos clés restent les vôtres.
+      </p>
+
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Fournisseur</th>
+              <th>Modèles</th>
+              <th>Usage recommandé</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Google Gemini</td>
+              <td>Gemini Flash / Pro / Vision</td>
+              <td>Multimodal, vision produit, réponses rapides</td>
+            </tr>
+            <tr>
+              <td>NVIDIA NIM</td>
+              <td>Llama 3.3, Qwen 2.5, Nemotron</td>
+              <td>Raisonnement complexe, pipelines d'agents</td>
+            </tr>
+            <tr>
+              <td>OpenRouter</td>
+              <td>Catalogue multi-fournisseurs</td>
+              <td>Rédaction experte, code, raisonnement avancé</td>
+            </tr>
+            <tr>
+              <td>Ollama</td>
+              <td>Llama 3, Mistral, Phi-3</td>
+              <td>Confidentialité totale, 100&nbsp;% hors-ligne</td>
+            </tr>
+            <tr>
+              <td>Together AI</td>
+              <td>Qwen-Image, Flux.1</td>
+              <td>Génération d'images produits</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section id="demarrage">
+    <div class="wrap">
+      <h2>⚡ Démarrage rapide</h2>
+      <p class="section-intro">Node.js 20+, npm 9+ et une instance Redis locale.</p>
+
+      <pre><code># 1. Cloner le dépôt
+git clone https://github.com/auceps-dev-team/lunar-nova.git
+cd lunar-nova/whatsapp-ai-saas
+
+# 2. Installer les dépendances (racine + backend)
+npm install
+cd backend &amp;&amp; npm install &amp;&amp; cd ..
+
+# 3. Configurer l'environnement backend
+cp backend/.env.example backend/.env
+
+# 4. Lancer Redis (cache et limitation de débit)
+docker run -d -p 6379:6379 --name wacopilote-redis redis:alpine
+
+# 5. Démarrer l'application complète
+npm run start:all</code></pre>
+
+      <p style="color:var(--muted);font-size:.92rem">
+        Les clés d'API se saisissent ensuite directement dans les réglages de l'application — aucune n'est
+        obligatoire pour démarrer.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>🔒 Vos données restent chez vous</h2>
+      <p class="section-intro">
+        Il n'existe aucun serveur WaCopilote qui collecte vos conversations. Tout est local — et voici
+        précisément ce qui le protège.
+      </p>
+
+      <ul class="clean">
+        <li>Le serveur applicatif n'écoute que sur <code>127.0.0.1</code> et exige un token d'authentification
+          généré à l'installation.</li>
+        <li>Les clés d'API ne sont jamais renvoyées par l'API de configuration, seulement leur état
+          « configurée / non configurée ».</li>
+        <li>Le renderer Electron est isolé (<code>contextIsolation</code> activé, <code>nodeIntegration</code>
+          désactivé) et n'expose qu'une liste explicite de fonctions.</li>
+        <li>Sur WordPress, l'agent IA ne peut que <em>proposer</em> : toute écriture exige l'approbation d'un
+          administrateur.</li>
+      </ul>
+
+      <div class="callout honest" style="margin-top:24px">
+        <p><strong>Ce qui n'est pas encore fait.</strong> Les clés d'API et les mots de passe d'application
+          WordPress sont encore stockés en clair dans la base SQLite locale. Le chiffrement au repos est la
+          prochaine priorité, et c'est écrit noir sur blanc dans le README plutôt que passé sous silence.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>🤝 Contribuer</h2>
+      <p class="section-intro">
+        WaCopilote est né comme un produit interne et en porte encore les traces.
+      </p>
+
+      <div class="callout honest">
+        <p>
+          La couverture de tests est aujourd'hui quasi nulle, plusieurs pages dépassent 800 lignes et certains
+          modules méritent une refonte. Nous ouvrons le code avec ces défauts visibles plutôt que de retarder la
+          publication le temps de faire le ménage.
+        </p>
+        <p>
+          C'est aussi ce qui rend la contribution utile tout de suite : les zones prioritaires sont les parseurs de
+          scraping, les adaptateurs LLM et les migrations de schéma — précisément ce qui casse en production.
+        </p>
+      </div>
+
+      <p style="margin-top:24px">
+        <a class="btn btn-primary" href="https://github.com/auceps-dev-team/lunar-nova/issues">Parcourir les issues
+          ouvertes</a>
+      </p>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap">
+      <div class="footer-links">
+        <a href="https://github.com/auceps-dev-team/lunar-nova">GitHub</a>
+        <a href="https://github.com/auceps-dev-team/lunar-nova/blob/main/whatsapp-ai-saas/LICENSE">Licence AGPL-3.0</a>
+        <a href="https://auceps.com">Auceps Digital</a>
+        <a href="mailto:dev.team@auceps-digital.agency">Nous écrire</a>
+      </div>
+      <p style="margin:0 0 6px">
+        Distribué sous GNU Affero General Public License v3.0. Une licence commerciale est disponible pour les
+        intégrations propriétaires.
+      </p>
+      <p style="margin:0">Conçu avec ❤ et 🤖 à Abidjan, Côte d'Ivoire.</p>
+    </div>
+  </footer>
+
+</body>
+
+</html>

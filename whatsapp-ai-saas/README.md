@@ -7,10 +7,9 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/auceps-dev-team/lunar-nova"><img src="https://img.shields.io/badge/version-1.35.0-blue.svg" alt="Version 1.35.0" /></a>
-  <a href="https://github.com/auceps-dev-team/lunar-nova/actions"><img src="https://img.shields.io/badge/build-passing-brightgreen.svg" alt="Build Status" /></a>
-  <a href="#-tests--analyse-statique"><img src="https://img.shields.io/badge/coverage-92%25-success.svg" alt="Test Coverage" /></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Proprietary-red.svg" alt="License Proprietary" /></a>
+  <a href="https://github.com/auceps-dev-team/lunar-nova"><img src="https://img.shields.io/badge/version-1.36.1-blue.svg" alt="Version 1.36.1" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue.svg" alt="License AGPL-3.0" /></a>
+  <a href="#-open-source"><img src="https://img.shields.io/badge/open%20source-oui-brightgreen.svg" alt="Open Source" /></a>
   <a href="#-pourquoi-wacopilote-"><img src="https://img.shields.io/badge/Made%20in-%F0%9F%87%A8%F0%9F%87%BE%20C%C3%B4te%20d'Ivoire-orange.svg" alt="Made in Côte d'Ivoire" /></a>
   <a href="#-routage-multi-llm--fournisseurs-dia"><img src="https://img.shields.io/badge/AI--Engine-Gemini_%7C_NVIDIA_NIM_%7C_OpenRouter_%7C_Ollama-purple.svg" alt="Multi-LLM Engine" /></a>
 </p>
@@ -19,6 +18,7 @@
 
 ## 📋 Sommaire
 
+- [Open Source](#-open-source)
 - [Pourquoi WaCopilote ?](#-pourquoi-wacopilote-)
 - [À qui s'adresse WaCopilote ?](#-à-qui-sadresse-wacopilote-)
 - [Présentation du Produit](#-présentation-du-produit)
@@ -40,6 +40,25 @@
 - [Foire Aux Questions](#-foire-aux-questions)
 - [Contribution](#-contribution)
 - [Licence & Contact](#-licence--contact)
+
+---
+
+## 🔓 Open Source
+
+**Depuis la version 1.36.0, WaCopilote est un logiciel libre, publié sous licence [AGPL-3.0](LICENSE).**
+
+Le code que vous lisez est celui qui tourne chez nos utilisateurs. Il n'y a pas d'édition « communautaire » amputée d'un côté et d'édition propriétaire de l'autre : c'est le même dépôt.
+
+**Ce que cela vous autorise :**
+- Lire, auditer et modifier l'intégralité du code, y compris ce qui touche à vos conversations WhatsApp et à vos clés d'API.
+- L'installer sur autant de postes que vous voulez, en entreprise comme chez un client, sans licence à acheter.
+- Le forker et l'adapter à votre métier.
+
+**Ce que l'AGPL exige en retour :** si vous distribuez une version modifiée, ou si vous la proposez comme service accessible par le réseau, vous devez publier le code de cette version sous la même licence. C'est la seule contrepartie, et elle ne s'applique qu'à ceux qui redistribuent — pas à l'usage interne, même commercial.
+
+Si ce cadre ne convient pas à votre contexte (intégration dans un produit propriétaire, revente en marque blanche), une **licence commerciale alternative** est disponible : `dev.team@auceps-digital.agency`.
+
+> **Sur l'état du projet.** WaCopilote est né comme un produit interne et en porte encore les traces : la couverture de tests est aujourd'hui quasi nulle, plusieurs pages dépassent 800 lignes et certains modules méritent une refonte. Nous ouvrons le code avec ces défauts visibles plutôt que de retarder la publication le temps de faire le ménage. La [feuille de route](#-feuille-de-route-2026) et les issues ouvertes reflètent cet état réel.
 
 ---
 
@@ -92,7 +111,7 @@ Lancez WaCopilote en environnement de développement local en **moins de 3 minut
 ```bash
 # 1. Cloner le dépôt
 git clone https://github.com/auceps-dev-team/lunar-nova.git
-cd whatsapp-ai-saas
+cd lunar-nova/whatsapp-ai-saas
 
 # 2. Installer toutes les dépendances (Racine + Backend)
 npm install
@@ -204,7 +223,8 @@ Le dossier `wordpress-plugin/wacopilote-bridge` contient l'extension officielle 
 - **Export de Produits** : Transférez les produits créés dans WaCopilote directement dans votre catalogue WooCommerce.
 - **Mise à Jour des Stocks & Prix** : Synchronisez les états de stocks et les tarifs depuis le bureau WaCopilote.
 - **Publication d'Articles de Blog** : Rédigez des articles optimisés SEO avec l'IA et publiez-les directement sur WordPress.
-- **Authentification Sécurisée par Clé d'API** : Communication chiffrée entre le serveur local Express.js et l'API REST WordPress.
+- **Authentification par Application Passwords** : le pont s'authentifie via le mécanisme natif WordPress (WP 5.6+) en HTTPS, sans token maison ni clé partagée.
+- **Gouvernance humaine (HITL)** : l'agent IA ne fait que soumettre des propositions ; toute écriture en base exige l'approbation d'un administrateur depuis le back-office WordPress.
 
 ---
 
@@ -220,32 +240,47 @@ Alimentez votre canal commercial grâce au module de prospection intégré (`bac
 
 ## 🔒 Sécurité & Audit de Protection
 
-WaCopilote est conçu selon les principes de défense en profondeur pour garantir la protection de vos données d'entreprise et clés d'API.
+Vos conversations, vos contacts et vos clés d'API ne quittent jamais votre machine : il n'y a pas de serveur WaCopilote qui les collecte. Voici précisément ce qui les protège — et ce qui ne les protège pas encore.
 
-1. **Isolation des Clés d'API** : Vos clés API (Gemini, NVIDIA, OpenRouter) sont stockées localement via `electron-store` ou dans des variables d'environnement chiffrées. Elles ne sont **jamais** transmits à des tiers.
-2. **Sécurisation CORS & IPC** : Le serveur Express embarqué valide strictly les origines autorisées (`http://localhost:5173`) et filtre les appels système.
-3. **Limitation de Débit (Rate-Limiting)** : Intégration d'Express Rate Limit et de Redis pour prévenir tout abus ou surconsommation d'API LLM.
-4. **Validation des Schémas de Données** : Sanitization stricte des entrées utilisateurs et des paramètres API via la bibliothèque `Zod`.
+**En place depuis la v1.36.0**
+
+1. **Serveur local, jamais exposé au réseau** : le backend Express n'écoute que sur `127.0.0.1`. Jusqu'à la v1.35.0 il écoutait sur toutes les interfaces, ce qui exposait l'API à n'importe quelle machine du réseau local — corrigé.
+2. **Authentification de l'API locale** : toutes les routes exigent un token généré à l'installation et partagé entre le processus Electron et le backend. Un autre programme de la machine ne peut pas interroger l'API.
+3. **Les clés d'API ne sortent pas du backend** : l'endpoint de configuration ne renvoie jamais leur valeur, seulement l'information « configurée / non configurée ».
+4. **Isolation du renderer Electron** : `contextIsolation` activé, `nodeIntegration` désactivé, passerelle IPC réduite à une liste explicite de fonctions.
+5. **CORS restreint** et **limitation de débit** (`express-rate-limit`) sur les routes d'inférence LLM.
+6. **Validation des entrées** par `Zod` sur les routes d'agents.
+7. **Gouvernance humaine du pont WordPress** : l'agent IA ne peut que *proposer* des modifications ; leur exécution exige une approbation explicite d'un administrateur du site.
+
+**Limites connues, à corriger**
+
+- Les clés d'API et les mots de passe d'application WordPress sont stockés **en clair** dans la base SQLite locale. Le chiffrement au repos est la prochaine étape prioritaire.
+- Toutes les routes ne sont pas encore soumises au rate-limiting.
+
+Une revue de sécurité complète est ouverte publiquement dans les issues. Si vous trouvez une faille, écrivez à `dev.team@auceps-digital.agency` plutôt que d'ouvrir une issue publique.
 
 ---
 
 ## 🧪 Tests & Analyse Statique
 
-Le projet inclut une suite de tests automatisés et de contrôles de qualité de code :
-
 ```bash
-# Exécuter la suite de tests unitaires et d'intégration (Vitest)
+# Suite de tests Vitest
 npm run test
 
-# Exécuter les tests avec rapport de couverture
-npm run test:coverage
-
-# Vérifier la conformité ESLint (Flat Config)
+# Analyse statique ESLint 9 (Flat Config)
 npm run lint
 
-# Contrôle de type TypeScript
-npm run typecheck
+# Build de production Vite
+npm run build
 ```
+
+**État réel de la couverture.** Soyons directs : le projet ne compte aujourd'hui qu'un test de fumée. C'est la dette la plus importante du dépôt, et c'est aussi la contribution la plus utile qu'on puisse y apporter. Les zones prioritaires, celles qui cassent en production :
+
+- les parseurs de scraping (`backend/scrapers/`), dépendants de la structure HTML de sites tiers ;
+- les adaptateurs LLM (`backend/*Service.js`), dont les formats de réponse varient d'un fournisseur à l'autre ;
+- les migrations de schéma (`backend/db.js`).
+
+La configuration ESLint remonte actuellement du bruit sur le code backend et Electron, faute de déclarer les globales Node — un correctif est en cours.
 
 ---
 
@@ -255,8 +290,8 @@ npm run typecheck
 | --- | --- |
 | **Application Desktop** | Electron 40, Electron Builder 26 |
 | **Frontend Framework** | React 19, Vite 7, React Router 7, Zustand 5 |
-| **Styling & UI** | Tailwind CSS 3, Radix UI, Lucide React, Recharts |
-| **Serveur Backend** | Node.js 20, Express.js 5 |
+| **Styling & UI** | Tailwind CSS 3, Lucide React, Recharts, dnd-kit |
+| **Serveur Backend** | Node.js 20, Express.js 4 |
 | **Base de Données & Cache** | SQLite 3 (`sqlite3` / `sqlite`), Redis 5 (`redis`) |
 | **Automation Web** | Playwright, Puppeteer Core |
 | **Moteurs d'IA (LLMs)** | `@google/genai`, NVIDIA NIM API, OpenRouter API, Ollama SDK |
@@ -279,7 +314,7 @@ npm run typecheck
 1. **Cloner le dépôt officiel** :
    ```bash
    git clone https://github.com/auceps-dev-team/lunar-nova.git
-   cd whatsapp-ai-saas
+   cd lunar-nova/whatsapp-ai-saas
    ```
 
 2. **Installer les dépendances frontend et racine** :
@@ -344,28 +379,32 @@ npm run typecheck
 
 ```text
 whatsapp-ai-saas/
-├── .github/                → Workflows GitHub Actions (CI/CD, Build, Release)
 ├── backend/                → Serveur backend Express.js & Services d'IA
 │   ├── agents/             → Moteurs et prompts des agents IA autonomes
+│   │   └── personas/       → Définitions des 27 personas d'agents
 │   ├── routes/             → Routes API Express (AI, WA, Catalog, Prospection, WP)
 │   ├── scrapers/           → Modules de scraping (Annuaire CI, GoAfrica, Google Places)
-│   ├── services/           → Connecteurs API LLM (Gemini, NVIDIA, Ollama, OpenRouter)
 │   ├── aiController.js     → Contrôleur centralisé des requêtes IA
+│   ├── apiAuth.js          → Token d'authentification de l'API locale
 │   ├── db.js               → Connexion & schéma de base de données SQLite3
-│   ├── orderListener.js    → Automated WhatsApp order detection engine
-│   ├── redisClient.js      → Client de mise en cache Redis & Rate limiter
+│   ├── geminiService.js    → Connecteurs LLM (+ openai/openrouter/ollamaService.js)
+│   ├── orderListener.js    → Moteur de détection des commandes WhatsApp
+│   ├── redisClient.js      → Client de mise en cache Redis
 │   └── server.js           → Point d'entrée de l'application Express
+├── build/                  → Ressources d'empaquetage (licence installeur, script NSIS)
 ├── docs/                   → Documentation d'architecture & ponts d'intégration
-├── electron/               → Processus principal Electron & IPC (main.cjs, preload.js)
+├── electron/               → Processus principal Electron & IPC (main.cjs, preload.cjs)
 ├── memory-bank/            → Système de mémoire projet & suivi contextuel
-├── public/                 → Asset statiques (Logos, icônes `.ico`, `.svg`, `.png`)
+├── public/                 → Assets statiques (Logos, icônes .ico/.svg/.png, poses, fonds)
 ├── src/                    → Application Frontend React 19 (Vite)
-│   ├── components/         → Composants UI (Sidebar, Header, Canvas, Modales)
-│   ├── pages/              → Vues principales (Dashboard, AiChat, PhotoStudio, Prospection...)
-│   │   └── whatsapp/       → Sub-pages dédiées aux flux WhatsApp (Contacts, Ordres, Segments)
-│   ├── services/           → Requêtes API et adaptateurs côté client
-│   └── store/              → State management Zustand (useAppStore, useAgentStore...)
-├── wordpress-plugin/       → Plugin d'extension officiel WaCopilote Bridge v2.0.0 (.zip)
+│   ├── components/         → Composants UI (Sidebar, Topbar, éditeur d'images, kanban)
+│   ├── locales/            → Traductions i18next (fr, en, es, ar)
+│   ├── pages/              → Vues principales (Dashboard, AiChat, PhotoShoot, Prospection...)
+│   │   └── whatsapp/       → Sous-pages dédiées aux flux WhatsApp (Contacts, Orders, Segments)
+│   ├── services/           → Client API et authentification côté renderer
+│   └── store.js            → State management Zustand (store unique persisté)
+├── wordpress-plugin/       → Plugin WaCopilote Bridge (source + archives .zip)
+├── LICENSE                 → GNU AGPL-3.0
 ├── package.json            → Configuration du workspace racine & scripts npm
 ├── vite.config.js          → Configuration du bundler Vite 7
 └── vitest.config.js        → Configuration du framework de test Vitest 4
@@ -377,8 +416,10 @@ whatsapp-ai-saas/
 
 - [x] **Q1 2026** : Publication de WaCopilote v1.35.0 (Electron Desktop + Multi-LLM Gemini / NVIDIA NIM / Ollama).
 - [x] **Q2 2026** : Intégration du Studio Photo IA (Remplacement de fond produit) & Prospection Annuaire CI / GoAfrica.
-- [ ] **Q3 2026** : Support de WhatsApp Multi-Appareils Cloud API & Baileys fallback direct sans navigateur.
-- [ ] **Q4 2026** : Assistant IA vocal WhatsApp (Transcription & Réponse Vocale en temps réel) et version Web SaaS synchronisée.
+- [x] **Q3 2026** : **Passage en open source sous AGPL-3.0** (v1.36.0) et durcissement de la sécurité du backend local.
+- [ ] **Q3 2026** : Chiffrement au repos des clés d'API et des identifiants WordPress ; couverture de tests sur les scrapers et les adaptateurs LLM.
+- [ ] **Q4 2026** : Support de WhatsApp Multi-Appareils Cloud API & fallback Baileys direct sans navigateur.
+- [ ] **2027** : Assistant IA vocal WhatsApp (transcription & réponse vocale temps réel) et version Web SaaS synchronisée.
 
 ---
 
@@ -400,24 +441,44 @@ R : Oui, la gestion des contacts et des segments permet d'organiser vos listes d
 
 ## 🤝 Contribution
 
-Les contributions de la communauté de développeurs sont les bienvenues ! Pour contribuer :
+Les contributions sont les bienvenues. Pour contribuer :
 
 1. **Forkez** le projet sur GitHub.
-2. **Créez une branche de fonctionnalité** : `git checkout -b feature/ma-nouvelle-fonctionnalite`
-3. **Committez vos modifications** : `git commit -m 'feat: Ajout d'une nouvelle fonctionnalité'`
+2. **Créez une branche** : `git checkout -b feature/ma-nouvelle-fonctionnalite`
+3. **Committez vos modifications** : `git commit -m "feat: ajout d'une nouvelle fonctionnalité"`
 4. **Poussez votre branche** : `git push origin feature/ma-nouvelle-fonctionnalite`
-5. **Ouvrez une Pull Request**.
+5. **Ouvrez une Pull Request** en décrivant le problème résolu.
 
-Veuillez consulter notre guide de contribution et respecter les normes ESLint/TypeScript avant de soumettre une PR.
+Faites passer `npm run lint` et `npm run test` avant de soumettre. Le projet est en JavaScript, pas en TypeScript — pas de contrôle de types à exécuter.
+
+**Par où commencer ?** Les issues étiquetées `good first issue` couvrent surtout l'ajout de tests et le nettoyage de la configuration ESLint. C'est là que l'aide a le plus de valeur immédiate.
+
+**Sur les droits.** En contribuant, vous acceptez que votre contribution soit distribuée sous AGPL-3.0. Nous proposant par ailleurs une licence commerciale, un accord de contribution (CLA) sera mis en place pour les contributions substantielles — il n'est pas encore rédigé, nous l'annoncerons dans les issues avant de l'appliquer.
 
 ---
 
 ## 📄 Licence & Contact
 
-Ce projet est sous licence **Propriétaire / MIT** — Développé et maintenu par **Auceps Digital Dev Team**.
+WaCopilote est distribué sous **GNU Affero General Public License v3.0** — voir le fichier [LICENSE](LICENSE) pour le texte intégral.
+
+```
+Copyright (C) 2026  Auceps Digital
+
+Ce programme est un logiciel libre : vous pouvez le redistribuer et/ou le modifier
+selon les termes de la GNU Affero General Public License telle que publiée par la
+Free Software Foundation, en version 3 de la licence.
+
+Ce programme est distribué dans l'espoir qu'il sera utile, mais SANS AUCUNE
+GARANTIE ; sans même la garantie implicite de QUALITÉ MARCHANDE ou d'ADÉQUATION
+À UN USAGE PARTICULIER. Voir la GNU Affero General Public License pour plus de détails.
+```
+
+**Exception :** le plugin `wordpress-plugin/wacopilote-bridge/` reste sous **GPL-2.0-or-later**, comme l'exige l'écosystème WordPress. La clause « or later » le rend compatible avec l'AGPL-3.0 du reste du dépôt.
+
+**Licence commerciale.** L'AGPL impose de publier le code de toute version modifiée que vous redistribuez ou exposez comme service. Si votre contexte l'interdit — intégration dans une solution propriétaire, revente en marque blanche — écrivez-nous pour une licence commerciale.
 
 - 🌐 **Site Web** : [auceps.com](https://auceps.com)
-- 📧 **Support & Contact Développeurs** : `dev.team@auceps-digital.agency`
+- 📧 **Contact & licences commerciales** : `dev.team@auceps-digital.agency`
 - 💬 **GitHub Issues & Discussions** : [auceps-dev-team/lunar-nova/issues](https://github.com/auceps-dev-team/lunar-nova/issues)
 
 ---
