@@ -42,6 +42,17 @@ async function wpFetch(siteUrl, wpUsername, appPassword, endpoint, params = '', 
     return response.json();
 }
 
+/** Charge une connexion WordPress, ou lève si l'id est inconnu. */
+async function getSite(id) {
+    const result = await pool.query('SELECT * FROM wp_connections WHERE id = $1', [id]);
+    if (result.rows.length === 0) {
+        const err = new Error('Connection not found.');
+        err.statusCode = 404;
+        throw err;
+    }
+    return result.rows[0];
+}
+
 // ─── CRUD Connexions ────────────────────────────────────────────
 
 // GET /api/wp/connections — List all saved WordPress sites
@@ -297,9 +308,12 @@ router.post('/:id/media/upload', async (req, res) => {
         if (req.body.title)   form.append('title',   req.body.title);
 
         const url = `${conn.site_url.replace(/\/$/, '')}/wp-json/wacopilote/v1/media/upload`;
+        // Comme wpFetch : Basic Auth via Application Password. `conn.token` est une
+        // colonne héritée de la v1, vide depuis la migration v2.0.
+        const credentials = Buffer.from(`${conn.wp_username}:${conn.app_password}`).toString('base64');
         const response = await fetch(url, {
             method: 'POST',
-            headers: { 'Authorization': `Bearer ${conn.token}`, ...form.getHeaders() },
+            headers: { 'Authorization': `Basic ${credentials}`, ...form.getHeaders() },
             body: form,
             timeout: 60000,
         });
@@ -327,7 +341,7 @@ router.get('/:id/logs', async (req, res) => {
         const data = await wpFetch(site.site_url, site.wp_username, site.app_password, '/logs', `?limit=${limit}&offset=${offset}&status=${status}`);
         res.json(data);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(err.statusCode || 500).json({ error: err.message });
     }
 });
 

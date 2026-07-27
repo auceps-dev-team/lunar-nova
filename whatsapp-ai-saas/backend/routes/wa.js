@@ -443,11 +443,35 @@ router.post('/api/wa/open-chat', async (req, res) => {
 });
 
 router.post('/api/wa/verify-contact', async (req, res) => {
-    const { instance_id, phone, country_code } = req.body;
+    const { instance_id, contact_id, phone, country_code } = req.body;
 
     if (!instance_id || !phone) {
         return res.status(400).json({ error: 'Missing required fields (instance_id, phone).' });
     }
+
+    /**
+     * Écrit le statut de vérification sur le contact concerné.
+     *
+     * Avec `contact_id` la cible est exacte. Sans lui, on retombe sur un
+     * rapprochement par suffixe de numéro — mais borné à UNE ligne : la version
+     * précédente faisait un UPDATE ... WHERE phone LIKE '%<9 chiffres>%' sans
+     * limite, qui réécrivait le statut de tous les contacts partageant ces
+     * chiffres (numéros avec/sans indicatif, doublons de listes importées).
+     */
+    const markContactStatus = async (status, cleanPhone) => {
+        try {
+            if (contact_id) {
+                await pool.query('UPDATE wa_contacts SET status = $1 WHERE id = $2', [status, contact_id]);
+            } else {
+                await pool.query(
+                    'UPDATE wa_contacts SET status = $1 WHERE id = (SELECT id FROM wa_contacts WHERE phone LIKE $2 LIMIT 1)',
+                    [status, `%${cleanPhone.slice(-9)}`]
+                );
+            }
+        } catch (dbErr) {
+            console.error('DB Update Error:', dbErr);
+        }
+    };
 
     const startTime = Date.now();
     const logTime = (msg) => console.log(`[Verifier] [${((Date.now() - startTime) / 1000).toFixed(1)}s] ${msg}`);
@@ -561,15 +585,11 @@ router.post('/api/wa/verify-contact', async (req, res) => {
 
         if (result === 'VALIDE') {
             logTime(`✅ Le numéro ${cleanPhone} est valide.`);
-            try {
-                await pool.query('UPDATE wa_contacts SET status = ? WHERE phone LIKE ?', ['valid', `%${cleanPhone.slice(-9)}%`]);
-            } catch (dbErr) { console.error('DB Update Error:', dbErr); }
+            await markContactStatus('valid', cleanPhone);
             res.json({ status: 'success', is_valid: true, message: `The number ${cleanPhone} is registered on WhatsApp.` });
         } else if (result === 'INVALIDE') {
             logTime(`❌ Le numéro ${cleanPhone} n'est pas sur WhatsApp.`);
-            try {
-                await pool.query('UPDATE wa_contacts SET status = ? WHERE phone LIKE ?', ['invalid', `%${cleanPhone.slice(-9)}%`]);
-            } catch (dbErr) { console.error('DB Update Error:', dbErr); }
+            await markContactStatus('invalid', cleanPhone);
             res.json({ status: 'success', is_valid: false, message: `The number ${cleanPhone} is NOT registered on WhatsApp.` });
         } else if (result === 'TIMEOUT') {
             logTime(`❌ Timeout vérification.`);

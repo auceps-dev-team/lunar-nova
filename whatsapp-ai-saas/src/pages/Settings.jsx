@@ -36,12 +36,19 @@ const Settings = () => {
     const [isSaving, setIsSaving] = useState(false);
     const showAppNotification = useAppStore(state => state.showAppNotification);
 
+    // Le backend ne renvoie jamais les clés d'API : il indique seulement lesquelles
+    // sont déjà enregistrées, pour que le champ vide ne passe pas pour « non configuré ».
+    const [secretsSet, setSecretsSet] = useState({});
+    const secretPlaceholder = (key, emptyHint = 'placeholderApiKey') =>
+        (secretsSet[key] ? t('apiKeyConfigured') : t(emptyHint));
+
     useEffect(() => {
         fetch(API_BASE_URL + '/api/settings')
             .then(res => res.json())
             .then(data => {
                 if (data.status === 'success' && data.settings) {
                     setBackendSettings(prev => ({ ...prev, ...data.settings }));
+                    setSecretsSet(data.secretsSet || {});
                     refreshModels(data.settings);
                 } else {
                     refreshModels();
@@ -249,7 +256,7 @@ const Settings = () => {
                             <div className="w-1/2 flex justify-end">
                                 <input
                                     type="password"
-                                    placeholder={t('placeholderApiKey')}
+                                    placeholder={secretPlaceholder('gemini_api_key')}
                                     value={backendSettings.gemini_api_key || ''}
                                     onChange={(e) => setBackendSettings(prev => ({ ...prev, gemini_api_key: e.target.value }))}
                                     onBlur={() => refreshModels()}
@@ -293,7 +300,7 @@ const Settings = () => {
                             <div className="w-1/2 flex justify-end">
                                 <input
                                     type="password"
-                                    placeholder={t('placeholderOpenRouterKey')}
+                                    placeholder={secretPlaceholder('openrouter_api_key', 'placeholderOpenRouterKey')}
                                     value={backendSettings.openrouter_api_key || ''}
                                     onChange={(e) => setBackendSettings(prev => ({ ...prev, openrouter_api_key: e.target.value }))}
                                     onBlur={() => refreshModels()}
@@ -312,7 +319,7 @@ const Settings = () => {
                             <div className="w-1/2 flex justify-end">
                                 <input
                                     type="password"
-                                    placeholder={t('placeholderApiKey')}
+                                    placeholder={secretPlaceholder('ollama_api_key')}
                                     value={backendSettings.ollama_api_key || ''}
                                     onChange={(e) => setBackendSettings(prev => ({ ...prev, ollama_api_key: e.target.value }))}
                                     onBlur={() => refreshModels()}
@@ -333,7 +340,7 @@ const Settings = () => {
                                 <div className="w-1/2 flex justify-end">
                                     <input
                                         type="password"
-                                        placeholder={t('placeholderApiKey')}
+                                        placeholder={secretPlaceholder('openai_api_key')}
                                         value={backendSettings.openai_api_key || ''}
                                         onChange={(e) => setBackendSettings(prev => ({ ...prev, openai_api_key: e.target.value }))}
                                         onBlur={() => refreshModels()}
@@ -366,7 +373,7 @@ const Settings = () => {
                                 <div className="w-1/2 flex justify-end">
                                     <input
                                         type="password"
-                                        placeholder={t('placeholderApiKey')}
+                                        placeholder={secretPlaceholder('together_api_key')}
                                         value={backendSettings.together_api_key || ''}
                                         onChange={(e) => setBackendSettings(prev => ({ ...prev, together_api_key: e.target.value }))}
                                         onBlur={() => refreshModels()}

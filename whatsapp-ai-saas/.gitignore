@@ -51,6 +51,8 @@ replace_colors.cjs
 replace_colors.js
 create_license.cjs
 database.sqlite
+api-token
+sse-debug.log
 backend/geminiService.js.bak
 backend/models*.json
 backend/models*.txt

@@ -1,10 +1,32 @@
 const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const { utilityProcess } = require('electron');
 const setupUpdater = require('./updater.cjs');
 
 let store;
+
+/**
+ * Token partagé avec le backend. Doit rester strictement aligné sur
+ * backend/apiAuth.js : même emplacement de fichier, même création exclusive ('wx')
+ * pour que le process qui démarre en second relise la valeur du premier au lieu
+ * de l'écraser.
+ */
+function loadOrCreateApiToken(baseDir) {
+    const tokenFilePath = path.join(baseDir, 'api-token');
+    const token = crypto.randomBytes(32).toString('hex');
+    try {
+        fs.mkdirSync(baseDir, { recursive: true });
+        fs.writeFileSync(tokenFilePath, token, { encoding: 'utf8', flag: 'wx', mode: 0o600 });
+        return token;
+    } catch (err) {
+        if (err.code !== 'EEXIST') throw err;
+        return fs.readFileSync(tokenFilePath, 'utf8').trim();
+    }
+}
+
+let apiToken = null;
 
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -69,6 +91,15 @@ app.whenReady().then(async () => {
         console.error('[Main] Failed to load electron-store:', err);
     }
 
+    // Token d'API : créé avant le fork du backend en production (le backend relira
+    // le fichier), lu depuis la racine du projet en développement (le backend est
+    // alors lancé séparément par `npm run start:backend`).
+    try {
+        apiToken = loadOrCreateApiToken(isDev ? path.join(__dirname, '..') : app.getPath('userData'));
+    } catch (err) {
+        console.error('[Main] Failed to initialise API token:', err);
+    }
+
     // Lancement du backend en production
     if (!isDev) {
         const backendPath = path.join(__dirname, '../backend/server.js');
@@ -114,6 +145,9 @@ app.whenReady().then(async () => {
 
     // Auto Updater (Setup Manual GitHub Releases)
     setupUpdater(mainWindow);
+
+    // Le renderer récupère le token ici pour authentifier ses appels au backend.
+    ipcMain.handle('get-api-token', () => apiToken);
 
     // IPC pour electron-store
     ipcMain.handle('store-get', (event, key) => {

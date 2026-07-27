@@ -116,11 +116,13 @@ router.post('/search-stream', (req, res) => {
     }
 
     // Set SSE headers
+    // Pas d'Access-Control-Allow-Origin ici : le middleware cors de server.js pose
+    // déjà l'en-tête pour les origines autorisées, et le forcer à '*' rouvrait la
+    // route à n'importe quelle page web.
     res.writeHead(200, {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
-        'Access-Control-Allow-Origin': '*'
+        'Connection': 'keep-alive'
     });
     res.flushHeaders();
 
@@ -134,7 +136,6 @@ router.post('/search-stream', (req, res) => {
 
     // Listen to scraper progress events
     const onProgress = (data) => {
-        require('fs').appendFileSync('sse-debug.log', new Date().toISOString() + ' [SSE] Sending: ' + data.phase + '\\n');
         console.log('[Prospection/SSE] Sending progress:', data.phase);
         sendEvent('progress', data);
     };

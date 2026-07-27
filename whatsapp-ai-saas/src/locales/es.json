@@ -192,7 +192,6 @@
   "pendingState": "PENDIENTE",
   "overdueState": "ATRASADA",
   "draftState": "BORRADOR",
-
   "wpHeaderSubtitle": "Gestiona tus sitios WordPress directamente desde WaCopilote",
   "wpActiveSite": "Sitio activo:",
   "wpTabConnection": "Conexión",
@@ -303,7 +302,6 @@
   "wpStatusProcessing": "En proceso",
   "wpStatusPending": "Pendiente",
   "wpStatusCancelled": "Cancelado",
-
   "wpJarvisWelcome": "👋 ¡Hola! Soy Jarvis WP, tu agente de WordPress.\n\nPuedo crear productos de WooCommerce y artículos de blog directamente en tus sitios conectados.\n\n¡Solo dime qué quieres crear! Por ejemplo:\n• \"Crea un producto Destornillador Eléctrico a 29€\"\n• \"Escribe un artículo de blog sobre herramientas de bricolaje\"",
   "wpJarvisNoSiteSelected": "⚠️ Por favor selecciona primero un sitio WordPress conectado en los ajustes antes de usar el agente.",
   "wpJarvisNoResponse": "Lo siento, no pude procesar tu solicitud.",
@@ -319,5 +317,6 @@
   "wpQuickCreateProduct": "🛒 Crear un producto",
   "wpQuickCreateArticle": "📝 Crear un artículo",
   "wpQuickPublishDirect": "📦 Publicar directamente",
-  "wpJarvisInputPlaceholder": "Ej: Crea un producto Destornillador a 29.99€…"
+  "wpJarvisInputPlaceholder": "Ej: Crea un producto Destornillador a 29.99€…",
+  "apiKeyConfigured": "Clave ya guardada — déjalo vacío para conservarla"
 }
