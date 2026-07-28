@@ -169,7 +169,29 @@ async function attachObserver(instanceId) {
             if (!document.body || window.__iol_observer) return;
             
             window.onIolDebug('🚀 Order Observer attaché (V3: Strict Structural Scraping) !');
-            if (!window.__iol_processed_texts) window.__iol_processed_texts = new Set();
+
+            // Déduplication des messages déjà traités.
+            //
+            // C'était un Set sans borne, alimenté toutes les 3 secondes par le
+            // poller : sur une session WhatsApp laissée ouverte plusieurs jours,
+            // il grossissait indéfiniment dans l'onglet. La fenêtre glissante
+            // conserve les N dernières empreintes, ce qui suffit largement à
+            // éviter les doublons — un message identique réapparaissant après
+            // des milliers d'autres est de toute façon un nouvel événement.
+            if (!window.__iol_seen) {
+                const MAX_SEEN = 500;
+                const order = [];
+                const set = new Set();
+                window.__iol_seen = {
+                    has: (k) => set.has(k),
+                    add: (k) => {
+                        if (set.has(k)) return;
+                        set.add(k);
+                        order.push(k);
+                        if (order.length > MAX_SEEN) set.delete(order.shift());
+                    }
+                };
+            }
             
             // 1. Polling for Left Panel (Global incoming messages across all chats!)
             if (!window.__iol_poller) {
@@ -203,8 +225,8 @@ async function attachObserver(instanceId) {
 
                         if (text && text.trim().length > 0) {
                             const hash = contact + '|' + text.trim();
-                            if (!window.__iol_processed_texts.has(hash)) {
-                                window.__iol_processed_texts.add(hash);
+                            if (!window.__iol_seen.has(hash)) {
+                                window.__iol_seen.add(hash);
                                 window.onIolDebug(`[Poller] Nv msg Liste: "${text.substring(0, 30)}..."`);
                                 window.onNewWaMessage(contact, text.trim());
                             }
@@ -252,8 +274,8 @@ async function attachObserver(instanceId) {
 
                         if (text && text.length > 5) {
                             const hash = contact + '|' + text;
-                            if (!window.__iol_processed_texts.has(hash)) {
-                                window.__iol_processed_texts.add(hash);
+                            if (!window.__iol_seen.has(hash)) {
+                                window.__iol_seen.add(hash);
                                 window.onIolDebug(`[Observer] Nv msg Actif: "${text.substring(0, 30)}..."`);
                                 window.onNewWaMessage(contact, text);
                             }
@@ -340,6 +362,16 @@ async function detachObserver(instanceId) {
                         if (window.__iol_observer) {
                             window.__iol_observer.disconnect();
                             window.__iol_observer = null;
+                        }
+                        // Le poller survivait à l'arrêt de l'écoute : seul
+                        // l'observateur était détaché, l'intervalle continuait de
+                        // parcourir le panneau toutes les 3 secondes jusqu'à la
+                        // fermeture de l'onglet, et un nouveau démarrage n'en
+                        // recréait pas (garde `if (!window.__iol_poller)`) mais
+                        // laissait l'ancien tourner à vide.
+                        if (window.__iol_poller) {
+                            clearInterval(window.__iol_poller);
+                            window.__iol_poller = null;
                         }
                     });
                 }

@@ -277,10 +277,24 @@ async function initDB() {
     }
 }
 
-// Fire and forget initialization
-initDB();
+/**
+ * Initialisation retenue sous forme de promesse, et non plus lancée sans suite.
+ *
+ * L'initialisation crée les tables puis chiffre les secrets hérités ; elle prend
+ * de l'ordre de la seconde. Tant qu'elle n'était pas terminée, `isDbConnected`
+ * restait faux et getSetting renvoyait sa valeur par défaut : une requête d'IA
+ * arrivant dans cette fenêtre partait sans clé d'API ni persona, et échouait
+ * pour une raison sans rapport avec sa cause réelle. On observait la trace au
+ * démarrage — « Aucune clé API, synchronisation ignorée » émis avant
+ * « SQLite Connected ».
+ *
+ * Les accesseurs attendent désormais cette promesse plutôt que de répondre à
+ * vide.
+ */
+const ready = initDB();
 
 async function logCopilotInteraction(instance_id, contact_name, context, proposals, provider = 'gemini', model = 'gemini-1.5-pro', tokens = 0, cost = 0.0, status = 'success') {
+    await ready;
     if (!isDbConnected) {
         console.log(`[DB Mock] Logged interaction for ${instance_id} with ${contact_name}`);
         return;
@@ -311,6 +325,7 @@ async function logCopilotInteraction(instance_id, contact_name, context, proposa
 
 // --- Phase 15 Helpers ---
 async function getSetting(key, defaultValue = null) {
+    await ready;
     if (!isDbConnected) return defaultValue;
     try {
         const result = await pool.query('SELECT setting_value FROM app_settings WHERE setting_key = $1', [key]);
@@ -325,6 +340,7 @@ async function getSetting(key, defaultValue = null) {
 }
 
 async function setSetting(key, value) {
+    await ready;
     if (!isDbConnected) return;
     try {
         const stored = isSecretSetting(key) ? encrypt(value) : value;
@@ -379,6 +395,7 @@ async function encryptLegacySecrets(client) {
 }
 
 async function getAgent(id) {
+    await ready;
     if (!isDbConnected) return null;
     try {
         const result = await pool.query('SELECT * FROM ai_agents WHERE id = $1', [id]);
