@@ -1,8 +1,13 @@
 const sqlite3 = require('sqlite3').verbose();
 const { open } = require('sqlite');
 const path = require('path');
+const { encrypt, decrypt, isEncrypted } = require('./secretStore');
 
 let isDbConnected = false;
+
+// Réglages dont la valeur est chiffrée au repos. Même prédicat que côté route
+// settings_and_agents.js, qui décide ce qui ne doit jamais sortir du backend.
+const isSecretSetting = (key) => typeof key === 'string' && key.endsWith('_api_key');
 
 // Determiner le chemin de la base de données
 const dbFileName = 'database.sqlite';
@@ -259,6 +264,10 @@ async function initDB() {
             );
         `);
 
+        // Doit tourner après la création de toutes les tables, et avant que la
+        // moindre route ne lise un secret.
+        await encryptLegacySecrets(client);
+
         client.release();
         isDbConnected = true;
         console.log('[SQLite] Connected and tables verified.');
@@ -305,7 +314,10 @@ async function getSetting(key, defaultValue = null) {
     if (!isDbConnected) return defaultValue;
     try {
         const result = await pool.query('SELECT setting_value FROM app_settings WHERE setting_key = $1', [key]);
-        if (result.rows.length > 0) return result.rows[0].setting_value;
+        if (result.rows.length > 0) {
+            const stored = result.rows[0].setting_value;
+            return isSecretSetting(key) ? decrypt(stored) : stored;
+        }
     } catch (e) {
         console.error('[DB] getSetting Error:', e.message);
     }
@@ -315,14 +327,54 @@ async function getSetting(key, defaultValue = null) {
 async function setSetting(key, value) {
     if (!isDbConnected) return;
     try {
+        const stored = isSecretSetting(key) ? encrypt(value) : value;
         const existing = await pool.query('SELECT id FROM app_settings WHERE setting_key = $1', [key]);
         if (existing.rows.length > 0) {
-            await pool.query('UPDATE app_settings SET setting_value = $1 WHERE setting_key = $2', [value, key]);
+            await pool.query('UPDATE app_settings SET setting_value = $1 WHERE setting_key = $2', [stored, key]);
         } else {
-            await pool.query('INSERT INTO app_settings (setting_key, setting_value) VALUES ($1, $2)', [key, value]);
+            await pool.query('INSERT INTO app_settings (setting_key, setting_value) VALUES ($1, $2)', [key, stored]);
         }
     } catch (e) {
         console.error('[DB] setSetting Error:', e.message);
+    }
+}
+
+/**
+ * Chiffre les secrets encore en clair, hérités des versions antérieures à
+ * la 1.37.0. Idempotent : une valeur déjà préfixée est ignorée, donc le passage
+ * répété au démarrage ne re-chiffre rien.
+ */
+async function encryptLegacySecrets(client) {
+    let migrated = 0;
+
+    const settings = await client.query(
+        "SELECT setting_key, setting_value FROM app_settings WHERE setting_key LIKE '%_api_key'"
+    );
+    for (const row of settings.rows) {
+        if (!row.setting_value || isEncrypted(row.setting_value)) continue;
+        await client.query('UPDATE app_settings SET setting_value = $1 WHERE setting_key = $2', [
+            encrypt(row.setting_value),
+            row.setting_key
+        ]);
+        migrated++;
+    }
+
+    try {
+        const connections = await client.query('SELECT id, app_password FROM wp_connections');
+        for (const row of connections.rows) {
+            if (!row.app_password || isEncrypted(row.app_password)) continue;
+            await client.query('UPDATE wp_connections SET app_password = $1 WHERE id = $2', [
+                encrypt(row.app_password),
+                row.id
+            ]);
+            migrated++;
+        }
+    } catch (e) {
+        // Table absente sur une base très ancienne : rien à migrer.
+    }
+
+    if (migrated > 0) {
+        console.log(`[SecretStore] ${migrated} secret(s) chiffré(s) au repos.`);
     }
 }
 
