@@ -289,11 +289,13 @@ const AgentsHub = ({ activeId }) => {
             const descMatch = cleanText.match(/[Dd]escription\s*:\s*([\s\S]*)/);
             const productDescription = descMatch ? descMatch[1].trim() : marketingText;
 
+            // L'endpoint n'injecte que l'image dans le formulaire WhatsApp ; le nom,
+            // le prix et la description sont affichés plus bas par le copilote pour
+            // que l'utilisateur les colle lui-même. Les envoyer au backend laissait
+            // croire qu'il en faisait quelque chose.
             const body = {
                 instance_id: activeId,
                 productName: productName,
-                productDescription: productDescription,
-                productPrice: productPrice,
                 imageBase64: currentGeneratedImage
             };
 
