@@ -37,6 +37,15 @@ release/
 *.msi
 
 # Debug & Residue
+# Ces motifs empêchent le retour des résidus supprimés en v1.38.1 : images
+# temporaires du catalogue, captures de scrapers et dumps HTML de pages scrapées.
+# Ces derniers contenaient des coordonnées réelles d'entreprises.
+backend/.temp/
+backend/backend/
+debug_*.png
+temp_page.html
+*_dump.html
+tmp/
 asar_contents.txt
 eslint_output*.json
 build_output*.log
