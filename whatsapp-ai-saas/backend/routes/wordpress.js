@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
+const { encrypt, decrypt } = require('../secretStore');
 
 // Helper: proxy a call to the WordPress plugin (Phase 2 — Basic Auth via App Passwords)
 /**
@@ -42,15 +43,29 @@ async function wpFetch(siteUrl, wpUsername, appPassword, endpoint, params = '', 
     return response.json();
 }
 
-/** Charge une connexion WordPress, ou lève si l'id est inconnu. */
-async function getSite(id) {
+/**
+ * Charge une connexion WordPress et déchiffre son mot de passe d'application.
+ *
+ * Unique point de déchiffrement du fichier : toutes les routes passent par ici,
+ * ce qui évite qu'une nouvelle route réintroduise une lecture directe de la
+ * colonne chiffrée. Renvoie `undefined` si l'id est inconnu.
+ */
+async function loadConnection(id) {
     const result = await pool.query('SELECT * FROM wp_connections WHERE id = $1', [id]);
-    if (result.rows.length === 0) {
+    const row = result.rows[0];
+    if (!row) return undefined;
+    return { ...row, app_password: decrypt(row.app_password) };
+}
+
+/** Variante levant une erreur 404 quand l'id est inconnu. */
+async function getSite(id) {
+    const site = await loadConnection(id);
+    if (!site) {
         const err = new Error('Connection not found.');
         err.statusCode = 404;
         throw err;
     }
-    return result.rows[0];
+    return site;
 }
 
 // ─── CRUD Connexions ────────────────────────────────────────────
@@ -74,7 +89,7 @@ router.post('/connections', async (req, res) => {
     try {
         const result = await pool.query(
             'INSERT INTO wp_connections (name, site_url, wp_username, app_password) VALUES ($1, $2, $3, $4) RETURNING id, name, site_url, is_active, created_at',
-            [name, site_url.trim().replace(/\/$/, ''), wp_username.trim(), app_password.trim()]
+            [name, site_url.trim().replace(/\/$/, ''), wp_username.trim(), encrypt(app_password.trim())]
         );
         res.json({ status: 'success', data: result.rows[0] });
     } catch (err) {
@@ -95,10 +110,9 @@ router.delete('/connections/:id', async (req, res) => {
 // POST /api/wp/connections/:id/test — Test connectivity with the plugin
 router.post('/connections/:id/test', async (req, res) => {
     try {
-        const result = await pool.query('SELECT * FROM wp_connections WHERE id = $1', [req.params.id]);
-        if (result.rows.length === 0) return res.status(404).json({ error: 'Connection not found.' });
+        const conn = await loadConnection(req.params.id);
+        if (!conn) return res.status(404).json({ error: 'Connection not found.' });
 
-        const conn = result.rows[0];
         const stats = await wpFetch(conn.site_url, conn.wp_username, conn.app_password, '/stats');
 
         res.json({ status: 'success', site_name: stats.site_name, wp_version: stats.wp_version, plugins: stats.plugins });
@@ -112,7 +126,7 @@ router.post('/connections/:id/test', async (req, res) => {
 // GET /api/wp/:id/stats
 router.get('/:id/stats', async (req, res) => {
     try {
-        const conn = (await pool.query('SELECT * FROM wp_connections WHERE id = $1', [req.params.id])).rows[0];
+        const conn = await loadConnection(req.params.id);
         if (!conn) return res.status(404).json({ error: 'Connection not found.' });
         const data = await wpFetch(conn.site_url, conn.wp_username, conn.app_password, '/stats');
         res.json({ status: 'success', data });
@@ -124,7 +138,7 @@ router.get('/:id/stats', async (req, res) => {
 // GET /api/wp/:id/posts?limit=15&page=1
 router.get('/:id/posts', async (req, res) => {
     try {
-        const conn = (await pool.query('SELECT * FROM wp_connections WHERE id = $1', [req.params.id])).rows[0];
+        const conn = await loadConnection(req.params.id);
         if (!conn) return res.status(404).json({ error: 'Connection not found.' });
         const { limit = 15, page = 1 } = req.query;
         const data = await wpFetch(conn.site_url, conn.wp_username, conn.app_password, '/posts', `?limit=${limit}&page=${page}`);
@@ -137,7 +151,7 @@ router.get('/:id/posts', async (req, res) => {
 // GET /api/wp/:id/products/meta
 router.get('/:id/products/meta', async (req, res) => {
     try {
-        const conn = (await pool.query('SELECT * FROM wp_connections WHERE id = $1', [req.params.id])).rows[0];
+        const conn = await loadConnection(req.params.id);
         if (!conn) return res.status(404).json({ error: 'Connection not found.' });
         const data = await wpFetch(conn.site_url, conn.wp_username, conn.app_password, '/products/meta');
         res.json({ status: 'success', data });
@@ -149,7 +163,7 @@ router.get('/:id/products/meta', async (req, res) => {
 // GET /api/wp/:id/products
 router.get('/:id/products', async (req, res) => {
     try {
-        const conn = (await pool.query('SELECT * FROM wp_connections WHERE id = $1', [req.params.id])).rows[0];
+        const conn = await loadConnection(req.params.id);
         if (!conn) return res.status(404).json({ error: 'Connection not found.' });
         const { per_page = 25, page = 1, category = '', type = '', stock_status = '', brand = '', search = '' } = req.query;
         const params = new URLSearchParams();
@@ -170,7 +184,7 @@ router.get('/:id/products', async (req, res) => {
 // GET /api/wp/:id/orders
 router.get('/:id/orders', async (req, res) => {
     try {
-        const conn = (await pool.query('SELECT * FROM wp_connections WHERE id = $1', [req.params.id])).rows[0];
+        const conn = await loadConnection(req.params.id);
         if (!conn) return res.status(404).json({ error: 'Connection not found.' });
         const { limit = 15 } = req.query;
         const data = await wpFetch(conn.site_url, conn.wp_username, conn.app_password, '/orders', `?limit=${limit}`);
@@ -183,7 +197,7 @@ router.get('/:id/orders', async (req, res) => {
 // GET /api/wp/:id/seo-meta
 router.get('/:id/seo-meta', async (req, res) => {
     try {
-        const conn = (await pool.query('SELECT * FROM wp_connections WHERE id = $1', [req.params.id])).rows[0];
+        const conn = await loadConnection(req.params.id);
         if (!conn) return res.status(404).json({ error: 'Connection not found.' });
         const data = await wpFetch(conn.site_url, conn.wp_username, conn.app_password, '/seo-meta');
         res.json({ status: 'success', data });
@@ -195,7 +209,7 @@ router.get('/:id/seo-meta', async (req, res) => {
 // GET /api/wp/:id/analytics
 router.get('/:id/analytics', async (req, res) => {
     try {
-        const conn = (await pool.query('SELECT * FROM wp_connections WHERE id = $1', [req.params.id])).rows[0];
+        const conn = await loadConnection(req.params.id);
         if (!conn) return res.status(404).json({ error: 'Connection not found.' });
         
         let params = '';
@@ -216,7 +230,7 @@ router.get('/:id/analytics', async (req, res) => {
 // POST /api/wp/:id/posts
 router.post('/:id/posts', async (req, res) => {
     try {
-        const conn = (await pool.query('SELECT * FROM wp_connections WHERE id = $1', [req.params.id])).rows[0];
+        const conn = await loadConnection(req.params.id);
         if (!conn) return res.status(404).json({ error: 'Connection not found.' });
         const data = await wpFetch(conn.site_url, conn.wp_username, conn.app_password, '/posts', '', 'POST', req.body);
         res.json({ status: 'success', data });
@@ -228,7 +242,7 @@ router.post('/:id/posts', async (req, res) => {
 // POST /api/wp/:id/products
 router.post('/:id/products', async (req, res) => {
     try {
-        const conn = (await pool.query('SELECT * FROM wp_connections WHERE id = $1', [req.params.id])).rows[0];
+        const conn = await loadConnection(req.params.id);
         if (!conn) return res.status(404).json({ error: 'Connection not found.' });
         const data = await wpFetch(conn.site_url, conn.wp_username, conn.app_password, '/products', '', 'POST', req.body);
         res.json({ status: 'success', data });
@@ -242,7 +256,7 @@ router.post('/:id/products', async (req, res) => {
 // GET /api/wp/:id/actions — List AI proposals (pending by default)
 router.get('/:id/actions', async (req, res) => {
     try {
-        const conn = (await pool.query('SELECT * FROM wp_connections WHERE id = $1', [req.params.id])).rows[0];
+        const conn = await loadConnection(req.params.id);
         if (!conn) return res.status(404).json({ error: 'Connection not found.' });
         const status = req.query.status || 'pending_review';
         const data = await wpFetch(conn.site_url, conn.wp_username, conn.app_password, '/actions', `?status=${status}`);
@@ -255,7 +269,7 @@ router.get('/:id/actions', async (req, res) => {
 // POST /api/wp/:id/propose — Agent submits a proposal (stored, not executed)
 router.post('/:id/propose', async (req, res) => {
     try {
-        const conn = (await pool.query('SELECT * FROM wp_connections WHERE id = $1', [req.params.id])).rows[0];
+        const conn = await loadConnection(req.params.id);
         if (!conn) return res.status(404).json({ error: 'Connection not found.' });
         const data = await wpFetch(conn.site_url, conn.wp_username, conn.app_password, '/propose', '', 'POST', req.body);
         res.status(201).json({ status: 'success', data });
@@ -267,7 +281,7 @@ router.post('/:id/propose', async (req, res) => {
 // POST /api/wp/:id/execute/:actionId — Admin approves a proposal
 router.post('/:id/execute/:actionId', async (req, res) => {
     try {
-        const conn = (await pool.query('SELECT * FROM wp_connections WHERE id = $1', [req.params.id])).rows[0];
+        const conn = await loadConnection(req.params.id);
         if (!conn) return res.status(404).json({ error: 'Connection not found.' });
         const data = await wpFetch(conn.site_url, conn.wp_username, conn.app_password, `/execute/${req.params.actionId}`, '', 'POST', {});
         res.json({ status: 'success', data });
@@ -279,7 +293,7 @@ router.post('/:id/execute/:actionId', async (req, res) => {
 // DELETE /api/wp/:id/execute/:actionId — Admin rejects a proposal
 router.delete('/:id/execute/:actionId', async (req, res) => {
     try {
-        const conn = (await pool.query('SELECT * FROM wp_connections WHERE id = $1', [req.params.id])).rows[0];
+        const conn = await loadConnection(req.params.id);
         if (!conn) return res.status(404).json({ error: 'Connection not found.' });
         const data = await wpFetch(conn.site_url, conn.wp_username, conn.app_password, `/execute/${req.params.actionId}`, '', 'DELETE');
         res.json({ status: 'success', data });
@@ -293,7 +307,7 @@ router.post('/:id/media/upload', async (req, res) => {
     try {
         const fetch = (await import('node-fetch')).default;
         const FormData = (await import('form-data')).default;
-        const conn = (await pool.query('SELECT * FROM wp_connections WHERE id = $1', [req.params.id])).rows[0];
+        const conn = await loadConnection(req.params.id);
         if (!conn) return res.status(404).json({ error: 'Connection not found.' });
 
         // req must be pre-processed by multer (memory storage) — attach in server.js

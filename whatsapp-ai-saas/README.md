@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/auceps-dev-team/lunar-nova"><img src="https://img.shields.io/badge/version-1.36.1-blue.svg" alt="Version 1.36.1" /></a>
+  <a href="https://github.com/auceps-dev-team/lunar-nova"><img src="https://img.shields.io/badge/version-1.37.0-blue.svg" alt="Version 1.37.0" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue.svg" alt="License AGPL-3.0" /></a>
   <a href="#-open-source"><img src="https://img.shields.io/badge/open%20source-oui-brightgreen.svg" alt="Open Source" /></a>
   <a href="#-pourquoi-wacopilote-"><img src="https://img.shields.io/badge/Made%20in-%F0%9F%87%A8%F0%9F%87%BE%20C%C3%B4te%20d'Ivoire-orange.svg" alt="Made in Côte d'Ivoire" /></a>
@@ -252,9 +252,11 @@ Vos conversations, vos contacts et vos clés d'API ne quittent jamais votre mach
 6. **Validation des entrées** par `Zod` sur les routes d'agents.
 7. **Gouvernance humaine du pont WordPress** : l'agent IA ne peut que *proposer* des modifications ; leur exécution exige une approbation explicite d'un administrateur du site.
 
+8. **Chiffrement des secrets au repos** *(v1.37.0)* : les clés d'API et les mots de passe d'application WordPress sont chiffrés en **AES-256-GCM** dans la base SQLite. La clé maître ne réside jamais dans la base qu'elle protège : elle est scellée par le magasin de secrets du système d'exploitation via `safeStorage` (DPAPI sous Windows, Trousseau sous macOS, libsecret sous Linux) et n'est transmise au backend qu'au démarrage. Copier `database.sqlite` sur une autre machine ne suffit donc pas à en extraire les secrets. Les bases antérieures sont migrées automatiquement au premier lancement.
+
 **Limites connues, à corriger**
 
-- Les clés d'API et les mots de passe d'application WordPress sont stockés **en clair** dans la base SQLite locale. Le chiffrement au repos est la prochaine étape prioritaire.
+- Si le magasin de secrets du système est indisponible (typiquement Linux sans keyring), la clé maître retombe sur un fichier local en permissions `600`. Le chiffrement protège alors les sauvegardes et les dossiers synchronisés, mais plus un attaquant ayant déjà accès au disque sous votre compte.
 - Toutes les routes ne sont pas encore soumises au rate-limiting.
 
 Une revue de sécurité complète est ouverte publiquement dans les issues. Si vous trouvez une faille, écrivez à `dev.team@auceps-digital.agency` plutôt que d'ouvrir une issue publique.
@@ -417,7 +419,8 @@ whatsapp-ai-saas/
 - [x] **Q1 2026** : Publication de WaCopilote v1.35.0 (Electron Desktop + Multi-LLM Gemini / NVIDIA NIM / Ollama).
 - [x] **Q2 2026** : Intégration du Studio Photo IA (Remplacement de fond produit) & Prospection Annuaire CI / GoAfrica.
 - [x] **Q3 2026** : **Passage en open source sous AGPL-3.0** (v1.36.0) et durcissement de la sécurité du backend local.
-- [ ] **Q3 2026** : Chiffrement au repos des clés d'API et des identifiants WordPress ; couverture de tests sur les scrapers et les adaptateurs LLM.
+- [x] **Q3 2026** : Chiffrement au repos des clés d'API et des identifiants WordPress (v1.37.0).
+- [ ] **Q3 2026** : Couverture de tests sur les scrapers, les adaptateurs LLM et les migrations de schéma.
 - [ ] **Q4 2026** : Support de WhatsApp Multi-Appareils Cloud API & fallback Baileys direct sans navigateur.
 - [ ] **2027** : Assistant IA vocal WhatsApp (transcription & réponse vocale temps réel) et version Web SaaS synchronisée.
 

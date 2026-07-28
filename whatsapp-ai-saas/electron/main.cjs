@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell, safeStorage } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
@@ -27,6 +27,52 @@ function loadOrCreateApiToken(baseDir) {
 }
 
 let apiToken = null;
+
+/**
+ * Clé maître servant à chiffrer les secrets stockés en base (clés d'API, mots de
+ * passe d'application WordPress).
+ *
+ * Elle est scellée par safeStorage, qui s'appuie sur le magasin de secrets du
+ * système : DPAPI sous Windows, Trousseau sous macOS, libsecret sous Linux. La
+ * clé est ainsi liée au compte utilisateur de la machine — copier
+ * database.sqlite et master-key.enc ailleurs ne suffit pas à lire les secrets.
+ *
+ * Si le magasin système est indisponible (Linux sans keyring, par exemple), on
+ * retombe sur un fichier en clair : le chiffrement protège alors les
+ * sauvegardes et les dossiers synchronisés, mais plus un accès disque local.
+ */
+function loadOrCreateMasterKey(baseDir) {
+    const sealedPath = path.join(baseDir, 'master-key.enc');
+    const plainPath = path.join(baseDir, 'master-key');
+
+    try {
+        if (safeStorage.isEncryptionAvailable()) {
+            if (fs.existsSync(sealedPath)) {
+                return safeStorage.decryptString(fs.readFileSync(sealedPath));
+            }
+            // Une clé en clair issue d'une installation précédente est reprise
+            // puis scellée, pour ne pas rendre illisibles les secrets existants.
+            const key = fs.existsSync(plainPath)
+                ? fs.readFileSync(plainPath, 'utf8').trim()
+                : crypto.randomBytes(32).toString('hex');
+
+            fs.mkdirSync(baseDir, { recursive: true });
+            fs.writeFileSync(sealedPath, safeStorage.encryptString(key), { mode: 0o600 });
+            if (fs.existsSync(plainPath)) fs.rmSync(plainPath);
+            return key;
+        }
+    } catch (err) {
+        console.error('[Main] safeStorage indisponible, repli sur un fichier en clair:', err.message);
+    }
+
+    if (fs.existsSync(plainPath)) {
+        return fs.readFileSync(plainPath, 'utf8').trim();
+    }
+    const key = crypto.randomBytes(32).toString('hex');
+    fs.mkdirSync(baseDir, { recursive: true });
+    fs.writeFileSync(plainPath, key, { encoding: 'utf8', mode: 0o600 });
+    return key;
+}
 
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -105,6 +151,15 @@ app.whenReady().then(async () => {
         const backendPath = path.join(__dirname, '../backend/server.js');
         const userDataPath = app.getPath('userData');
 
+        // La clé maître n'est résolue qu'en production : en développement le
+        // backend est lancé séparément et gère lui-même son fichier de clé.
+        let masterKey = null;
+        try {
+            masterKey = loadOrCreateMasterKey(userDataPath);
+        } catch (err) {
+            console.error('[Main] Failed to initialise master key:', err);
+        }
+
         try {
             const backendLogStream = fs.createWriteStream(path.join(userDataPath, 'backend_out.log'), { flags: 'a' });
 
@@ -112,7 +167,8 @@ app.whenReady().then(async () => {
                 env: {
                     ...process.env,
                     NODE_ENV: 'production',
-                    USER_DATA_PATH: userDataPath
+                    USER_DATA_PATH: userDataPath,
+                    ...(masterKey ? { WACOPILOTE_MASTER_KEY: masterKey } : {})
                 },
                 stdio: 'pipe'
             });
