@@ -10,7 +10,6 @@ export function useGlobalOrderListener(isRoot = false) {
     const setIolInstanceId = useAppStore(s => s.setIolInstanceId);
     const setIsListening = useAppStore(s => s.setIsIolActive);
     const setOrders = useAppStore(s => s.setIolOrders);
-    const addOrder = useAppStore(s => s.addIolOrder);
 
     const [isConnecting, setIsConnecting] = useState(false);
     const [error, setError] = useState(null);

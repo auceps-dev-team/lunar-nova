@@ -285,7 +285,7 @@ const Sidebar = ({ instances, activeId, onSelect, onAdd, onRemove, onUpdate, cur
     const [sidebarWidth, setSidebarWidth] = useState(260);
     const [isResizing, setIsResizing] = useState(false);
     const [activeNavItem, setActiveNavItem] = useState(null);
-    const [activeInstanceItem, setActiveInstanceItem] = useState(null);
+    const [, setActiveInstanceItem] = useState(null);
 
     // Build ordered menu from saved order or default
     const orderedMenu = useMemo(() => {

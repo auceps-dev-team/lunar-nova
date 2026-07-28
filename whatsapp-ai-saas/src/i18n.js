@@ -6,7 +6,7 @@ const defaultLanguage = 'fr'; // default fallback
 
 i18n
     .use(initReactI18next)
-    .use(resourcesToBackend((language, namespace) => import(`./locales/${language}.json`)))
+    .use(resourcesToBackend((language, _namespace) => import(`./locales/${language}.json`)))
     .init({
         lng: defaultLanguage,
         fallbackLng: 'en',

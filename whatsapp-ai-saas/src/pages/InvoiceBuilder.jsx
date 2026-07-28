@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAppStore from '../store';
 import {
@@ -7,7 +7,6 @@ import {
 import {
     arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
@@ -38,15 +37,14 @@ import LogoPicker from '../components/invoice/LogoPicker';
 import SortableLine from '../components/invoice/SortableLine';
 import { buildInvoiceHTML } from '../components/invoice/buildInvoiceHTML';
 import KPI from '../components/invoice/KPI';
-import TplThumb, { TPL_PREVIEWS } from '../components/invoice/TplThumb';
+import TplThumb from '../components/invoice/TplThumb';
+import { TPL_PREVIEWS } from '../components/invoice/templates';
 
 /* ═══════════════════════════════════════════════════════
    MAIN COMPONENT
    ═══════════════════════════════════════════════════════ */
 export default function InvoiceBuilder({ activeId }) {
     const { t } = useTranslation();
-    const appSettings = useAppStore(s => s.appSettings) || {};
-    const language = appSettings.language || 'en';
     const invoices = useAppStore(s => s.invoices) || [];
     const addInvoice = useAppStore(s => s.addInvoice);
     const updateInvoice = useAppStore(s => s.updateInvoice);

@@ -29,7 +29,14 @@ export default defineConfig([
       },
     },
     rules: {
-      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+      'no-unused-vars': ['error', {
+        varsIgnorePattern: '^[A-Z_]',
+        argsIgnorePattern: '^_',
+        // Omettre des clés par déstructuration avec rest est l'idiome standard
+        // — c'est ainsi que le store exclut l'état transitoire de la persistance
+        // (partialize dans src/store.js). Les noms omis ne sont pas des oublis.
+        ignoreRestSiblings: true,
+      }],
     },
   },
 

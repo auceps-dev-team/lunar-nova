@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 
 const Support = () => {
     const { t } = useTranslation();
-    const language = useAppStore(state => state.appSettings?.language) || 'en';
     const userProfile = useAppStore(state => state.userProfile) || {};
     const [ticketSent, setTicketSent] = useState(false);
     const [form, setForm] = useState({
@@ -101,7 +100,7 @@ const Support = () => {
                     <div className="bg-surface dark:bg-gray-900 p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-soft">
                         <h2 className="text-xl font-display font-bold mb-6 dark:text-white">{t('changelog')}</h2>
                         <div className="space-y-6">
-                            {changelog.map((entry, idx) => (
+                            {changelog.map((entry) => (
                                 <div key={entry.version} className="relative pl-6 border-l-2 border-emerald-500/20 last:border-0 pb-6 last:pb-0">
                                     <div className="absolute top-0 left-[-9px] size-4 rounded-full bg-emerald-500 border-4 border-surface dark:border-gray-900"></div>
                                     <div className="flex items-center justify-between mb-1">

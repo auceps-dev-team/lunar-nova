@@ -8,7 +8,6 @@ import { TableSkeleton } from '../../components/ui/SkeletonLoader';
 export default function Segments() {
     const { t } = useTranslation();
     const showAppNotification = useAppStore(state => state.showAppNotification);
-    const language = useAppStore(state => state.appSettings?.language) || 'en';
     const [segments, setSegments] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
 

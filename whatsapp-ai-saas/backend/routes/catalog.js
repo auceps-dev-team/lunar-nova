@@ -37,7 +37,6 @@ router.post('/api/catalog/upload', async (req, res) => {
         const ms = Math.floor(Math.random() * (max - min + 1)) + min;
         return new Promise(resolve => setTimeout(resolve, ms));
     };
-    const humanTypeDelay = () => Math.floor(Math.random() * (120 - 40 + 1)) + 40;
 
     try {
         // 1. Prepare the temporary image file

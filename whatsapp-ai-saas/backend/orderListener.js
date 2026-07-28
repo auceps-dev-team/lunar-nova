@@ -76,7 +76,9 @@ async function processMessage(instanceId, contact, text) {
     console.log(`[IOL Pipeline] 📝 Résumé : ${classif.summary}`);
     console.log(`[IOL Pipeline] 🚀 Signature en base de données...`);
     
-    const [dbLog, agentReply] = await Promise.all([
+    // L'enregistrement en base n'a pas de valeur de retour exploitable ; seul
+    // compte qu'il se termine avant l'émission de l'événement.
+    const [, agentReply] = await Promise.all([
         logOrderToDb(instanceId, contact, text, classif),
         transferToAgent(contact, text)
     ]);

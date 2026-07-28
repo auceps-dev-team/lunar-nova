@@ -11,7 +11,6 @@ import { TableSkeleton } from '../../components/ui/SkeletonLoader';
 
 export default function Contacts({ activeId }) {
     const { t } = useTranslation();
-    const language = useAppStore(state => state.appSettings?.language) || 'en';
     const [contacts, setContacts] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -85,7 +84,6 @@ export default function Contacts({ activeId }) {
 
     const navigate = useNavigate();
     const showAppNotification = useAppStore(state => state.showAppNotification);
-    const fileInputRef = useRef(null);
 
     const fetchContacts = async () => {
         try {
@@ -176,8 +174,6 @@ export default function Contacts({ activeId }) {
     const uniqueSegments = useMemo(() => [...new Set(contacts.map(c => c.segment_name).filter(Boolean))], [contacts]);
     const uniqueLists = useMemo(() => [...new Set(contacts.map(c => c.list_name).filter(Boolean))], [contacts]);
     // Also get segments with IDs for bulk update modal
-    const segments = useMemo(() => [...new Map(contacts.filter(c => c.segment_name && c.segment_id).map(item => [item.segment_id, { id: item.segment_id, name: item.segment_name }])).values()], [contacts]);
-    const listsMap = useMemo(() => [...new Map(contacts.filter(c => c.list_name && c.list_id).map(item => [item.list_id, { id: item.list_id, name: item.list_name }])).values()], [contacts]);
 
 
     // Apply filtering and sorting

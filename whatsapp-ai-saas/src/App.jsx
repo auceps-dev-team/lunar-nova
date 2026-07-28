@@ -56,7 +56,6 @@ function AppContent() {
   const navigate = useNavigate();
 
   const appSettings = useAppStore(state => state.appSettings) || { theme: 'light', language: 'en' };
-  const currentLang = appSettings?.language || 'fr';
   const appNotification = useAppStore(state => state.appNotification);
   const { i18n, t } = useTranslation();
 

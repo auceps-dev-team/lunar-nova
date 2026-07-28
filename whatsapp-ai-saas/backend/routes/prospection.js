@@ -149,8 +149,6 @@ router.post('/search-stream', (req, res) => {
             });
     } else {
         // Non-google sources: run and return result
-        const scraper = source === 'annuaireci' ? annuaireCiScraper : goAfricaScraper;
-        
         // Callback de progression
         const onScrapeProgress = (data) => sendEvent('progress', data);
         

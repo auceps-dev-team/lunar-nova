@@ -1,11 +1,5 @@
 import React from 'react';
 
-export const TPL_PREVIEWS = [
-    { id: 'clean', labelKey: 'templateModernClean', colors: ['#059669', '#ecfdf5', '#fff'] },
-    { id: 'bold', labelKey: 'templateBoldHeader', colors: ['#1e293b', '#f8fafc', '#fff'] },
-    { id: 'stripe', labelKey: 'templateVioletGold', colors: ['#3b1485', '#f7f7f9', '#c2a370'] },
-];
-
 export default function TplThumb({ tpl, active, onClick, t }) {
     return (
         <button onClick={onClick} className={`w-full text-left transition-all duration-200 ${active ? 'scale-[1.02]' : 'hover:scale-[1.01]'}`}>

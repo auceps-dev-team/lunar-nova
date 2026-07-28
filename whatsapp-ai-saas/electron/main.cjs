@@ -114,7 +114,7 @@ function createWindow() {
     });
 
     // Optional: Intercept webview creation to enforce User-Agent
-    mainWindow.webContents.on('will-attach-webview', (event, webPreferences, params) => {
+    mainWindow.webContents.on('will-attach-webview', (event, webPreferences) => {
         webPreferences.userAgent = USER_AGENT;
     });
 

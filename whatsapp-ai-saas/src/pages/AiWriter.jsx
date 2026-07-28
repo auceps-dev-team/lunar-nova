@@ -36,8 +36,6 @@ const SYSTEM_AGENTS = [
 export default function AiWriter() {
     const { t } = useTranslation();
     const showAppNotification = useAppStore(state => state.showAppNotification);
-    const appSettings = useAppStore(state => state.appSettings) || {};
-    const uiLanguage = appSettings.language || 'en';
     const [allAgents, setAllAgents] = useState([]);
 
     // Form state
@@ -50,7 +48,7 @@ export default function AiWriter() {
     const [toneOfVoice, setToneOfVoice] = useState('Professional');
 
     const [isGenerating, setIsGenerating] = useState(false);
-    const [editorContent, setEditorContent] = useState(t('untitledDoc'));
+    const [, setEditorContent] = useState(t('untitledDoc'));
     const [showDownloadMenu, setShowDownloadMenu] = useState(false);
     const [documentId, setDocumentId] = useState(null);
 
@@ -140,7 +138,10 @@ export default function AiWriter() {
                 try {
                     const parsed = JSON.parse(text);
                     text = parsed.text || parsed.proposed_replies?.join('<br/>') || text;
-                } catch { }
+                } catch {
+                    // Réponse en texte brut plutôt qu'en JSON : c'est le cas nominal
+                    // pour cet agent, on conserve le texte tel quel.
+                }
 
                 // Clean markdown if mixed with HTML
                 text = text.replace(/```html/g, '').replace(/```/g, '');

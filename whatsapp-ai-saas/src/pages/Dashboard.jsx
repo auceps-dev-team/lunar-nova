@@ -107,16 +107,12 @@ const Dashboard = () => {
     const { t } = useTranslation();
     const instances = useAppStore(state => state.instances) || [];
     const copilotCount = useAppStore(state => state.copilotRepliesGenerated) || 0;
-    const tasks = useAppStore(state => state.tasks) || [];
     const invoices = useAppStore(state => state.invoices) || [];
     const userProfile = useAppStore(state => state.userProfile) || {};
     const language = useAppStore(state => state.appSettings?.language) || 'en';
 
     const activeInstancesCount = instances.filter(i => i.status !== 'offline').length || instances.length;
 
-    const completedTasksCount = tasks.filter(t => t.status === 'completed').length;
-    const totalTasksCount = tasks.length;
-    const completedPercentage = totalTasksCount > 0 ? Math.round((completedTasksCount / totalTasksCount) * 100) : 0;
 
     // Série de repli quand aucune activité n'est encore enregistrée en base.
     // Elle remplissait auparavant six des sept jours avec Math.random() : le

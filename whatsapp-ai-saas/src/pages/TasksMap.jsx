@@ -554,7 +554,6 @@ Description brouillon : "${taskForm.description}"`;
                                 cells.push(<div key={`e-${i}`} className="border-b border-r border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/30"></div>);
                             }
                             for (let i = 1; i <= daysInMonth; i++) {
-                                const d = new Date(year, month, i);
                                 const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
                                 const isToday = todayStr === dateStr;
                                 const dayTasks = tasks.filter(t => t.date === dateStr);

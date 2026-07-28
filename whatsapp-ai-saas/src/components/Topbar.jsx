@@ -7,7 +7,6 @@ import '../styles/global.css';
 
 const Topbar = ({ activeInstance, currentTitle }) => {
     const { t } = useTranslation();
-    const language = useAppStore(state => state.appSettings?.language) || 'en';
     const tasks = useAppStore(state => state.tasks) || [];
     const [showNotifications, setShowNotifications] = useState(false);
 
