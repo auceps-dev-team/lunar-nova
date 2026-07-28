@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/auceps-dev-team/lunar-nova"><img src="https://img.shields.io/badge/version-1.38.1-blue.svg" alt="Version 1.38.1" /></a>
+  <a href="https://github.com/auceps-dev-team/lunar-nova"><img src="https://img.shields.io/badge/version-1.39.0-blue.svg" alt="Version 1.39.0" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue.svg" alt="License AGPL-3.0" /></a>
   <a href="#-open-source"><img src="https://img.shields.io/badge/open%20source-oui-brightgreen.svg" alt="Open Source" /></a>
   <a href="#-pourquoi-wacopilote-"><img src="https://img.shields.io/badge/Made%20in-%F0%9F%87%A8%F0%9F%87%BE%20C%C3%B4te%20d'Ivoire-orange.svg" alt="Made in Côte d'Ivoire" /></a>
@@ -248,7 +248,7 @@ Vos conversations, vos contacts et vos clés d'API ne quittent jamais votre mach
 2. **Authentification de l'API locale** : toutes les routes exigent un token généré à l'installation et partagé entre le processus Electron et le backend. Un autre programme de la machine ne peut pas interroger l'API.
 3. **Les clés d'API ne sortent pas du backend** : l'endpoint de configuration ne renvoie jamais leur valeur, seulement l'information « configurée / non configurée ».
 4. **Isolation du renderer Electron** : `contextIsolation` activé, `nodeIntegration` désactivé, passerelle IPC réduite à une liste explicite de fonctions.
-5. **CORS restreint** et **limitation de débit** (`express-rate-limit`) sur les routes d'inférence LLM.
+5. **CORS restreint** et **limitation de débit** en trois niveaux : plafond global, plafond serré sur les opérations lourdes (scraping, envoi au catalogue) et plafond dédié aux routes d'inférence LLM.
 6. **Validation des entrées** par `Zod` sur les routes d'agents.
 7. **Gouvernance humaine du pont WordPress** : l'agent IA ne peut que *proposer* des modifications ; leur exécution exige une approbation explicite d'un administrateur du site.
 
@@ -257,7 +257,7 @@ Vos conversations, vos contacts et vos clés d'API ne quittent jamais votre mach
 **Limites connues, à corriger**
 
 - Si le magasin de secrets du système est indisponible (typiquement Linux sans keyring), la clé maître retombe sur un fichier local en permissions `600`. Le chiffrement protège alors les sauvegardes et les dossiers synchronisés, mais plus un attaquant ayant déjà accès au disque sous votre compte.
-- Toutes les routes ne sont pas encore soumises au rate-limiting.
+- Le dépôt public conserve dans son historique Git deux fichiers de travail retirés en v1.38.1, contenant les coordonnées professionnelles de quelques entreprises issues d'annuaires publics. Le raisonnement et la procédure de retrait sur demande figurent dans [SECURITY.md](../SECURITY.md).
 
 Une revue de sécurité complète est ouverte publiquement dans les issues. Si vous trouvez une faille, écrivez à `dev.team@auceps-digital.agency` plutôt que d'ouvrir une issue publique.
 

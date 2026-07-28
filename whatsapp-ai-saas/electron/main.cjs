@@ -160,43 +160,83 @@ app.whenReady().then(async () => {
             console.error('[Main] Failed to initialise master key:', err);
         }
 
-        try {
-            const backendLogStream = fs.createWriteStream(path.join(userDataPath, 'backend_out.log'), { flags: 'a' });
+        const backendLogStream = fs.createWriteStream(path.join(userDataPath, 'backend_out.log'), { flags: 'a' });
+        const logEvent = (msg) => {
+            try {
+                fs.appendFileSync(path.join(userDataPath, 'backend_error.log'), `${new Date().toISOString()} ${msg}\n`);
+            } catch { /* le disque peut être plein ; ne pas masquer l'erreur d'origine */ }
+        };
 
-            backendProcess = utilityProcess.fork(backendPath, [], {
-                env: {
-                    ...process.env,
-                    NODE_ENV: 'production',
-                    USER_DATA_PATH: userDataPath,
-                    ...(masterKey ? { WACOPILOTE_MASTER_KEY: masterKey } : {})
-                },
-                stdio: 'pipe'
-            });
+        /**
+         * Démarre le backend et le relance s'il meurt.
+         *
+         * Auparavant, une sortie du backend était seulement journalisée : la
+         * fenêtre restait ouverte devant une application inerte, chaque écran
+         * affichant une erreur réseau sans que rien n'indique la cause. Le
+         * backend meurt notamment quand le port 3000 est déjà pris ou quand
+         * l'initialisation de la base échoue — deux cas où il sort en code 1.
+         *
+         * Les tentatives sont espacées et plafonnées : au-delà, l'échec est
+         * structurel et réessayer indéfiniment ne ferait que masquer le problème.
+         */
+        const MAX_RESTARTS = 3;
+        let restartCount = 0;
+        let intentionalShutdown = false;
 
-            if (backendProcess.stdout) {
-                backendProcess.stdout.on('data', (data) => backendLogStream.write(data));
+        const startBackend = () => {
+            try {
+                backendProcess = utilityProcess.fork(backendPath, [], {
+                    env: {
+                        ...process.env,
+                        NODE_ENV: 'production',
+                        USER_DATA_PATH: userDataPath,
+                        ...(masterKey ? { WACOPILOTE_MASTER_KEY: masterKey } : {})
+                    },
+                    stdio: 'pipe'
+                });
+
+                if (backendProcess.stdout) {
+                    backendProcess.stdout.on('data', (data) => backendLogStream.write(data));
+                }
+                if (backendProcess.stderr) {
+                    backendProcess.stderr.on('data', (data) => backendLogStream.write(data));
+                }
+
+                backendProcess.on('spawn', () => logEvent('[Backend] Démarré.'));
+
+                backendProcess.on('error', (err) => {
+                    console.error('[Main] Failed to start backend process:', err);
+                    logEvent(`[Backend] Erreur de démarrage : ${err}`);
+                });
+
+                backendProcess.on('exit', (code, signal) => {
+                    logEvent(`[Backend] Sortie — code ${code}, signal ${signal}`);
+                    if (intentionalShutdown) return;
+
+                    if (restartCount < MAX_RESTARTS) {
+                        restartCount++;
+                        const delay = restartCount * 2000;
+                        logEvent(`[Backend] Relance ${restartCount}/${MAX_RESTARTS} dans ${delay} ms.`);
+                        setTimeout(startBackend, delay);
+                    } else {
+                        logEvent('[Backend] Abandon après échecs répétés.');
+                        dialog.showErrorBox(
+                            'WaCopilote — service interne arrêté',
+                            "Le service local de WaCopilote s'est arrêté et n'a pas pu redémarrer.\n\n" +
+                            'Causes fréquentes : le port 3000 est déjà utilisé par un autre programme, ' +
+                            "ou une autre instance de WaCopilote est déjà en cours d'exécution.\n\n" +
+                            `Le détail figure dans :\n${path.join(userDataPath, 'backend_error.log')}`
+                        );
+                    }
+                });
+            } catch (err) {
+                console.error('[Main] Fork error:', err);
+                logEvent(`[Main] Exception au fork : ${err.stack || err}`);
             }
-            if (backendProcess.stderr) {
-                backendProcess.stderr.on('data', (data) => backendLogStream.write(data));
-            }
+        };
 
-            backendProcess.on('spawn', () => {
-                fs.appendFileSync(path.join(userDataPath, 'backend_error.log'), `[Backend Spawned] Process spawned successfully.\n`);
-            });
-
-            backendProcess.on('error', (err) => {
-                console.error('[Main] Failed to start backend process:', err);
-                fs.appendFileSync(path.join(userDataPath, 'backend_error.log'), `[Backend Error] ${err}\n`);
-            });
-
-            backendProcess.on('exit', (code, signal) => {
-                fs.appendFileSync(path.join(userDataPath, 'backend_error.log'), `[Backend Exit] Code: ${code}, Signal: ${signal}\n`);
-            });
-        } catch (err) {
-            console.error('[Main] Fork error:', err);
-            fs.appendFileSync(path.join(userDataPath, 'backend_error.log'), `[Main Exception] ${err.stack || err}\n`);
-        }
-
+        startBackend();
+        app.on('before-quit', () => { intentionalShutdown = true; });
     }
 
     // Auto Updater (Setup Manual GitHub Releases)

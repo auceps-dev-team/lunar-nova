@@ -50,13 +50,39 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 // n'atteint donc jamais cette vérification.
 app.use(requireApiToken);
 
+// Plafond global. Le service n'écoute que sur la boucle locale et exige un
+// token : il ne s'agit donc pas de se protéger d'un tiers, mais d'empêcher
+// qu'une boucle de rendu ou un composant qui rappelle en continu ne sature le
+// backend ou ne fasse exploser une facture d'API. Le seuil est large pour ne
+// jamais gêner un usage normal.
+const globalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 2000,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many requests' }
+});
+app.use(globalLimiter);
+
+// Plafond serré sur les opérations lourdes : le scraping ouvre un navigateur et
+// dure des dizaines de secondes, l'envoi au catalogue accepte jusqu'à 50 Mo de
+// base64 et pilote WhatsApp Web.
+const heavyLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 30,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Trop de requêtes sur une opération coûteuse. Réessayez dans quelques minutes.' }
+});
+
 // --- Google Auth Loopback ---
 const authGoogleRouter = require('./routes/authGoogle');
 app.use('/api/auth/google', authGoogleRouter);
 
 // --- Prospection (Google Maps API) ---
 const prospectionRouter = require('./routes/prospection');
-app.use('/api/prospection', prospectionRouter);
+app.use('/api/prospection', heavyLimiter, prospectionRouter);
+app.use('/api/catalog', heavyLimiter);
 
 // --- Agentic Pipeline (Prospection -> Contacts -> Antoine -> Clarisse/Kanban) ---
 const pipelineRouter = require('./routes/pipeline');
