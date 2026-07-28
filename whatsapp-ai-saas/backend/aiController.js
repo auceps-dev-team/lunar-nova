@@ -6,7 +6,7 @@ const openaiService = require('./openaiService');
 function getNvidiaModels() {
     try {
         delete require.cache[require.resolve('./nvidiaModels')];
-    } catch (e) {
+    } catch {
         // ignore
     }
     return require('./nvidiaModels');

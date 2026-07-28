@@ -118,15 +118,17 @@ const Dashboard = () => {
     const totalTasksCount = tasks.length;
     const completedPercentage = totalTasksCount > 0 ? Math.round((completedTasksCount / totalTasksCount) * 100) : 0;
 
-    const mockChartData = useMemo(() => {
+    // Série de repli quand aucune activité n'est encore enregistrée en base.
+    // Elle remplissait auparavant six des sept jours avec Math.random() : le
+    // tableau de bord présentait donc des chiffres inventés comme s'ils étaient
+    // mesurés. Seul le jour courant, alimenté par copilotCount, était réel.
+    const emptyChartData = useMemo(() => {
         const days = [t('daySun'), t('dayMon'), t('dayTue'), t('dayWed'), t('dayThu'), t('dayFri'), t('daySat')];
         const data = [];
         for (let i = 6; i >= 0; i--) {
             const d = new Date();
             d.setDate(d.getDate() - i);
-            const dayName = days[d.getDay()];
-            const val = i === 0 ? copilotCount : Math.floor(Math.random() * 20) + 5;
-            data.push({ name: dayName, replies: val });
+            data.push({ name: days[d.getDay()], replies: i === 0 ? copilotCount : 0 });
         }
         return data;
     }, [copilotCount, t]);
@@ -139,8 +141,8 @@ const Dashboard = () => {
                 return { name: dayName, replies: item.count };
             });
         }
-        return mockChartData;
-    }, [contactAnalytics, mockChartData, language]);
+        return emptyChartData;
+    }, [contactAnalytics, emptyChartData, language]);
 
     const topProvider = useMemo(() => {
         if (!contactAnalytics?.aiByProvider || contactAnalytics.aiByProvider.length === 0) return 'Gemini';

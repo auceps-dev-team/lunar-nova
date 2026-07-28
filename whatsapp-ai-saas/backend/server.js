@@ -2,11 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const puppeteer = require('puppeteer-core');
-const crypto = require('crypto');
-const fs = require('fs');
 const { z } = require('zod');
-const path = require('path');
-const aiController = require('./aiController');
 const orderListener = require('./orderListener');
 const { logCopilotInteraction, pool, getSetting, setSetting } = require('./db');
 const { getCachedProposals, setCachedProposals } = require('./redisClient');
@@ -210,7 +206,7 @@ app.get('/api/context/:instance_id', async (req, res) => {
                             break;
                         }
                     }
-                } catch (e) { }
+                } catch { }
             }
         }
 

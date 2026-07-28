@@ -68,7 +68,7 @@ export default function JarvisChat({ selectedId, selected }) {
             }
 
             setJarvisHistory(prev => [...prev, { sender: 'agent', text: replyText }]);
-        } catch (err) {
+        } catch {
             setJarvisHistory(prev => [...prev, { sender: 'agent', text: t('wpJarvisConnectionError') }]);
         } finally {
             setIsJarvisLoading(false);

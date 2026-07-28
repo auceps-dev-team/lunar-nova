@@ -288,7 +288,7 @@ export default function AiChat() {
                     const parsed = JSON.parse(cleanText);
                     responseText = parsed.text || (parsed.proposed_replies ? parsed.proposed_replies.join('\n\n---\n\n') : responseText);
                 }
-            } catch (err) {
+            } catch {
                 const textMatch = responseText.match(/"text"\s*:\s*"([\s\S]*?)(?:"|$)/);
                 if (textMatch && textMatch[1]) responseText = textMatch[1].replace(/\\n/g, '\n');
             }

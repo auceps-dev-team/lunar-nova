@@ -409,7 +409,7 @@ router.post('/api/wa/open-chat', async (req, res) => {
                             targetPage = p;
                             break;
                         }
-                    } catch (e) { }
+                    } catch { }
                     if (!targetPage) targetPage = p;
                 }
             }
@@ -500,7 +500,7 @@ router.post('/api/wa/verify-contact', async (req, res) => {
                             targetPage = p;
                             break;
                         }
-                    } catch (e) { }
+                    } catch { }
                     if (!targetPage) targetPage = p;
                 }
             }
@@ -531,7 +531,7 @@ router.post('/api/wa/verify-contact', async (req, res) => {
                 }
             });
             await new Promise(r => setTimeout(r, 300));
-        } catch (_) { }
+        } catch { }
 
         try {
             logTime(`Starting targetPage.goto...`);
@@ -574,7 +574,7 @@ router.post('/api/wa/verify-contact', async (req, res) => {
                     result = state;
                     break;
                 }
-            } catch (evalErr) {
+            } catch {
                 // Execution context destroyed (page navigating) — wait and retry
                 console.warn('[Verifier] Context destroyed, waiting...');
                 await new Promise(r => setTimeout(r, 800));

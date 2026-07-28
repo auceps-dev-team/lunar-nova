@@ -65,7 +65,7 @@ router.post('/api/catalog/upload', async (req, res) => {
                             break;
                         }
                     }
-                } catch (e) { }
+                } catch { }
             }
         }
 
@@ -106,7 +106,7 @@ router.post('/api/catalog/upload', async (req, res) => {
                     isAlreadyOnAddItemPage = true;
                     console.log(`[Catalog] Adaptive check: User is already on the Add Item page. Skipping navigation.`);
                 }
-            } catch (e) {
+            } catch {
                 // Ignore, we will proceed with normal navigation
             }
 
@@ -115,7 +115,7 @@ router.post('/api/catalog/upload', async (req, res) => {
                 const storefrontSelectors = 'span[data-icon="catalog"], span[data-icon="smb-store"], span[data-icon="storefront"]';
                 try {
                     await targetPage.waitForSelector(storefrontSelectors, { timeout: 6000 });
-                } catch (e) {
+                } catch {
                     throw new Error("Veuillez ouvrir la page d'accueil de WhatsApp ou le menu de votre Catalogue avant de publier.");
                 }
 

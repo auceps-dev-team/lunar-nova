@@ -147,7 +147,7 @@ async function search(query, ignoreLandlines, pages) {
                                 } else {
                                     processSchema(data);
                                 }
-                            } catch (e) {}
+                            } catch {}
                         }
 
                         // 2. Fallback to DOM parsing if missing

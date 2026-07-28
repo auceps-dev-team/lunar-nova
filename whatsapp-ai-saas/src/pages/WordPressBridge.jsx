@@ -46,7 +46,7 @@ export default function WordPressBridge() {
                 setConnections(d.data);
                 if (!selectedId && d.data.length > 0) setSelectedId(d.data[0].id);
             }
-        } catch (e) { /* silent */ }
+        } catch { /* silent */ }
     }, [selectedId]);
 
     useEffect(() => { loadConnections(); }, [loadConnections]);
@@ -63,7 +63,7 @@ export default function WordPressBridge() {
                 setLogs(d.data || []);
                 if (d.pagination) setLogsPagination(d.pagination);
             }
-        } catch (e) { /* silent */ }
+        } catch { /* silent */ }
         setIsLogsLoading(false);
     }, []);
 
@@ -91,7 +91,7 @@ export default function WordPressBridge() {
                     current_page: d.data?.current_page || 1,
                 });
             }
-        } catch (e) { /* silent */ }
+        } catch { /* silent */ }
         setIsProductsLoading(false);
     }, []);
 
@@ -145,7 +145,7 @@ export default function WordPressBridge() {
                     setLogsFilters(resetFilters);
                     await loadLogs(resetFilters, selectedId);
                 }
-            } catch (e) { /* silent */ }
+            } catch { /* silent */ }
             setIsLoading(false);
         };
         load();

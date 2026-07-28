@@ -89,7 +89,7 @@ async function initDB() {
             if (currentVersion < targetVersion) {
                 console.log(`[SQLite] Migrating to version ${targetVersion}...`);
                 for (let q of queries) {
-                    try { await client.query(q); } catch (e) { /* Ignore if exists, or log if fatal */ }
+                    try { await client.query(q); } catch { /* Ignore if exists, or log if fatal */ }
                 }
                 await client.query('INSERT INTO schema_version (version) VALUES ($1)', [targetVersion]);
                 currentVersion = targetVersion;
@@ -369,7 +369,7 @@ async function encryptLegacySecrets(client) {
             ]);
             migrated++;
         }
-    } catch (e) {
+    } catch {
         // Table absente sur une base très ancienne : rien à migrer.
     }
 

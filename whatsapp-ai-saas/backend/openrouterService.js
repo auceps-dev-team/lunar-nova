@@ -1,5 +1,6 @@
 const orchestrator = require('./agents/orchestrator');
 const db = require('./db');
+const { parseLlmJson, stripCodeFences } = require('./llmJson');
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 const OPENROUTER_FALLBACK_API_KEY = process.env.OPENROUTER_API_KEY || "";
@@ -96,13 +97,8 @@ async function generateProposals(chatContext, modelParam, apiKey) {
             throw new Error(data.error.message || 'OpenRouter Error');
         }
 
-        let jsonText = data.choices[0].message.content;
-        jsonText = jsonText.replace(/```json/g, '').replace(/```/g, '').trim();
-
-        let parsed;
-        try {
-            parsed = JSON.parse(jsonText);
-        } catch (e) {
+        const parsed = parseLlmJson(data.choices[0].message.content, null);
+        if (parsed === null) {
             return { proposed_replies: ["Erreur de parsing JSON depuis OpenRouter."] };
         }
 
@@ -191,7 +187,7 @@ async function chatWithAgent(persona, message, imageParams, promptFormat, apiKey
         let resultText = data.choices[0].message.content;
 
         if (finalPromptFormat === 'json') {
-            resultText = resultText.replace(/```json/g, '').replace(/```/g, '').trim();
+            resultText = stripCodeFences(resultText);
         }
 
         return { response: resultText };
@@ -201,7 +197,10 @@ async function chatWithAgent(persona, message, imageParams, promptFormat, apiKey
     }
 }
 
-async function listModels(apiKey) {
+// La clé n'est pas utilisée : le catalogue est servi depuis le cache SQLite,
+// alimenté par la synchronisation périodique. Le paramètre reste dans la
+// signature, commune à tous les adaptateurs appelés par aiController.
+async function listModels(_apiKey) {
     // Lecture directe et immédiate depuis le cache SQLite
     try {
         const cached = await db.getSetting('openrouter_models_cache', null);
@@ -250,10 +249,7 @@ async function classifyOrderIntent(text, contactName, apiKey, modelParam) {
         const data = await response.json();
         if (data.error) throw new Error(data.error.message || 'OpenRouter Error');
 
-        let jsonText = data.choices[0].message.content;
-        jsonText = jsonText.replace(/```json/g, '').replace(/```/g, '').trim();
-
-        return { ...fallback, ...JSON.parse(jsonText) };
+        return { ...fallback, ...parseLlmJson(data.choices[0].message.content, {}) };
     } catch (error) {
         console.error("[OrderRadar] OpenRouter classification error:", error.message);
         return fallback;

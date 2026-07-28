@@ -17,7 +17,7 @@ function parseJsonResponse(raw) {
         const end = raw.lastIndexOf('}');
         if (start === -1 || end === -1 || end < start) return null;
         return JSON.parse(raw.substring(start, end + 1));
-    } catch (e) {
+    } catch {
         return null;
     }
 }
@@ -29,7 +29,7 @@ function parseMaybeJson(value) {
     if (typeof value === 'object') return value;
     try {
         return JSON.parse(value);
-    } catch (e) {
+    } catch {
         return null;
     }
 }

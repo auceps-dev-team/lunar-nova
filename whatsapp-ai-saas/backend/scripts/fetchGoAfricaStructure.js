@@ -28,11 +28,13 @@ async function generateStructure() {
         categories: []
     };
 
-    try {
-        if (!fs.existsSync(HTML_FILE)) {
-            console.error(`HTML file not found: ${HTML_FILE}`);
-            return;
-        }
+    if (!fs.existsSync(HTML_FILE)) {
+        // Levé plutôt que loggé : l'appelant HTTP doit pouvoir distinguer un
+        // échec d'une réussite, ce qu'un simple console.error ne permettait pas.
+        throw new Error(`Fichier source introuvable : ${HTML_FILE}`);
+    }
+
+    {
 
         const html = fs.readFileSync(HTML_FILE, 'utf-8');
         const dom = new JSDOM(html);
@@ -85,9 +87,18 @@ async function generateStructure() {
         fs.writeFileSync(DATA_FILE, JSON.stringify(structure, null, 2), 'utf-8');
         console.log(`Successfully saved structure to ${DATA_FILE}`);
 
-    } catch (error) {
-        console.error('Error generating Go Africa structure:', error);
+        return { categories: categories.length, file: DATA_FILE };
     }
 }
 
-generateStructure();
+// Exécution directe (`node fetchGoAfricaStructure.js`) conservée pour l'usage en
+// ligne de commande ; en tant que module, la fonction est appelée en process par
+// la route de mise à jour — l'app packagée n'embarque pas de binaire `node`.
+if (require.main === module) {
+    generateStructure().catch((err) => {
+        console.error('Error generating Go Africa structure:', err);
+        process.exit(1);
+    });
+}
+
+module.exports = { generateStructure };
