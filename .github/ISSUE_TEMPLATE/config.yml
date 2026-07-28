@@ -1,0 +1,13 @@
+# Les issues vierges sont désactivées : les gabarits collectent les informations
+# sans lesquelles un diagnostic est impossible (version, système, journaux).
+blank_issues_enabled: false
+contact_links:
+  - name: Signaler une faille de sécurité
+    url: https://github.com/auceps-dev-team/lunar-nova/blob/main/SECURITY.md
+    about: Ne passez pas par une issue publique — la procédure est décrite ici.
+  - name: Question d'utilisation
+    url: https://github.com/auceps-dev-team/lunar-nova/discussions
+    about: Pour l'aide à la configuration et les questions d'usage, préférez les Discussions.
+  - name: Licence commerciale
+    url: mailto:dev.team@auceps-digital.agency
+    about: Pour une intégration propriétaire ou une revente en marque blanche.
