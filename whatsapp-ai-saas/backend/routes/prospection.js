@@ -6,7 +6,6 @@ const goAfricaScraper = require('../scrapers/goAfricaScraper');
 
 const fs = require('fs');
 const path = require('path');
-const { exec } = require('child_process');
 
 // GET /api/prospection/goafrica-metadata
 // Returns the static JSON structure of countries, categories, and subcategories
@@ -26,45 +25,27 @@ router.get('/goafrica-metadata', (req, res) => {
 });
 
 // POST /api/prospection/goafrica-update-metadata
-// Met à jour la structure de Go Africa
-router.post('/goafrica-update-metadata', (req, res) => {
+// Régénère la structure des catégories Go Africa.
+//
+// Cette route était déclarée deux fois : Express ne retenait que la première, et
+// la seconde — asynchrone, avec journalisation — était du code mort. Les deux
+// lançaient `exec('node <script>')`, ce qui ne fonctionne pas dans l'application
+// packagée, qui n'embarque aucun binaire `node`. Le script est désormais appelé
+// en process.
+router.post('/goafrica-update-metadata', async (req, res) => {
     try {
-        const scriptPath = path.join(__dirname, '../scripts/fetchGoAfricaStructure.js');
-        exec(`node "${scriptPath}"`, (error, stdout, stderr) => {
-            if (error) {
-                console.error(`Error updating metadata: ${error.message}`);
-                return res.status(500).json({ success: false, error: 'Erreur lors de la mise à jour' });
-            }
-            res.json({ success: true, message: 'Structure mise à jour avec succès' });
+        console.log('[Prospection] Régénération de la structure GoAfrica...');
+        const { generateStructure } = require('../scripts/fetchGoAfricaStructure');
+        const result = await generateStructure();
+        console.log(`[Prospection] Structure régénérée : ${result.categories} catégories.`);
+        res.json({
+            success: true,
+            message: `Structure mise à jour : ${result.categories} catégories.`,
+            categories: result.categories
         });
     } catch (error) {
-        res.status(500).json({ success: false, error: 'Erreur serveur' });
-    }
-});
-
-// POST /api/prospection/goafrica-update-metadata
-// Déclenche le script pour mettre à jour les catégories depuis le site
-router.post('/goafrica-update-metadata', (req, res) => {
-    try {
-        const scriptPath = path.join(__dirname, '../scripts/fetchGoAfricaStructure.js');
-        console.log(`[Prospection] Déclenchement de la mise à jour des catégories GoAfrica (${scriptPath})`);
-        
-        // On renvoie la réponse immédiatement, le script tourne en fond
-        res.json({ success: true, message: 'La mise à jour des catégories a démarré en arrière-plan. Cela peut prendre quelques minutes.' });
-        
-        exec(`node "${scriptPath}"`, (error, stdout, stderr) => {
-            if (error) {
-                console.error(`[Prospection] Erreur lors de l'exécution de fetchGoAfricaStructure.js: ${error.message}`);
-                return;
-            }
-            if (stderr) {
-                console.error(`[Prospection] Erreur stderr fetchGoAfricaStructure.js: ${stderr}`);
-            }
-            console.log(`[Prospection] Mise à jour GoAfrica terminée:\n${stdout}`);
-        });
-    } catch (error) {
-        console.error('[Prospection] Erreur déclenchement metadata GoAfrica:', error);
-        res.status(500).json({ success: false, error: 'Erreur interne lors du lancement du script' });
+        console.error('[Prospection] Échec de la mise à jour GoAfrica :', error);
+        res.status(500).json({ success: false, error: error.message });
     }
 });
 

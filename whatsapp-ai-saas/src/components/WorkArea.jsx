@@ -383,7 +383,7 @@ const WorkArea = ({ instances, activeId }) => {
                 } else {
                     setOrchestratorStatus('Error');
                 }
-            } catch (e) {
+            } catch {
                 setOrchestratorStatus('Disconnected');
                 setActivePlaywrightSessions(0);
             }

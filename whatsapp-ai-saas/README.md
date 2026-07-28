@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/auceps-dev-team/lunar-nova"><img src="https://img.shields.io/badge/version-1.37.0-blue.svg" alt="Version 1.37.0" /></a>
+  <a href="https://github.com/auceps-dev-team/lunar-nova"><img src="https://img.shields.io/badge/version-1.38.0-blue.svg" alt="Version 1.38.0" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue.svg" alt="License AGPL-3.0" /></a>
   <a href="#-open-source"><img src="https://img.shields.io/badge/open%20source-oui-brightgreen.svg" alt="Open Source" /></a>
   <a href="#-pourquoi-wacopilote-"><img src="https://img.shields.io/badge/Made%20in-%F0%9F%87%A8%F0%9F%87%BE%20C%C3%B4te%20d'Ivoire-orange.svg" alt="Made in Côte d'Ivoire" /></a>
@@ -276,13 +276,13 @@ npm run lint
 npm run build
 ```
 
-**État réel de la couverture.** Soyons directs : le projet ne compte aujourd'hui qu'un test de fumée. C'est la dette la plus importante du dépôt, et c'est aussi la contribution la plus utile qu'on puisse y apporter. Les zones prioritaires, celles qui cassent en production :
+**État réel de la couverture.** 43 tests couvrent aujourd'hui le chiffrement des secrets, l'analyse des réponses LLM et la normalisation des numéros de téléphone. C'est un début, pas une couverture : le gros du code reste non testé, et c'est la contribution la plus utile qu'on puisse apporter au projet. Les zones encore à couvrir, celles qui cassent en production :
 
-- les parseurs de scraping (`backend/scrapers/`), dépendants de la structure HTML de sites tiers ;
-- les adaptateurs LLM (`backend/*Service.js`), dont les formats de réponse varient d'un fournisseur à l'autre ;
+- les parseurs de scraping (`backend/scrapers/`), dépendants de la structure HTML de sites tiers — leur logique tourne dans `page.evaluate()`, il faudra l'extraire pour la rendre testable ;
+- les chemins d'appel réseau des adaptateurs LLM (`backend/*Service.js`) ;
 - les migrations de schéma (`backend/db.js`).
 
-La configuration ESLint remonte actuellement du bruit sur le code backend et Electron, faute de déclarer les globales Node — un correctif est en cours.
+La configuration ESLint distingue désormais les trois environnements du dépôt (renderer navigateur, backend Node, code injecté dans la page WhatsApp), ce qui a ramené le bruit de 375 à 88 signalements.
 
 ---
 

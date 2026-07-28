@@ -78,7 +78,7 @@ export function useGlobalOrderListener(isRoot = false) {
                     console.log('[IOL Global] Message received via SSE:', data);
                     useAppStore.getState().addIolMessage(data);
                 }
-            } catch (e) {
+            } catch {
                 // Ignore parsing errors for heartbeat
             }
         };

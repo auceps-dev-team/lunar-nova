@@ -1,6 +1,7 @@
 require('dotenv').config({ path: require('path').join(__dirname, '.env') });
 const { GoogleGenAI } = require('@google/genai');
 const db = require('./db');
+const { parseLlmJson } = require('./llmJson');
 
 // Helper function to get Gemini Client dynamically to support runtime API key updates
 async function getGeminiClient(modality = 'none', requestedModel = '') {
@@ -163,8 +164,13 @@ async function generateProposals(chatContext, modelParam) {
             }
         });
 
-        const jsonText = response.text;
-        return JSON.parse(jsonText);
+        // responseMimeType demande du JSON pur, mais le modèle l'encadre parfois
+        // malgré tout — parseLlmJson absorbe les deux cas.
+        const parsed = parseLlmJson(response.text, null);
+        if (parsed === null) {
+            throw new Error('Réponse Gemini non analysable en JSON.');
+        }
+        return parsed;
     } catch (error) {
         console.error("Gemini API Error:", error);
 
@@ -519,7 +525,7 @@ async function classifyOrderIntent(text, contactName, modelParam) {
             }
         });
 
-        return { ...fallback, ...JSON.parse(response.text) };
+        return { ...fallback, ...parseLlmJson(response.text, {}) };
     } catch (error) {
         console.error("[OrderRadar] Gemini classification error:", error.message);
         return fallback;

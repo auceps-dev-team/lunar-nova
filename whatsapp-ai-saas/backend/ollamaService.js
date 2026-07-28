@@ -1,5 +1,6 @@
 const { Ollama } = require('ollama');
 const orchestrator = require('./agents/orchestrator');
+const { parseLlmJson, stripCodeFences } = require('./llmJson');
 
 /**
  * Gets an Ollama client instance.
@@ -44,14 +45,9 @@ async function generateProposals(chatContext, modelParam, apiKey) {
             }
         });
 
-        let jsonText = response.message.content;
-        jsonText = jsonText.replace(/```json/g, '').replace(/```/g, '').trim();
-
-        let parsed;
-        try {
-            parsed = JSON.parse(jsonText);
-        } catch (e) {
-            console.error("JSON Parse Error:", e, "Content:", jsonText);
+        const parsed = parseLlmJson(response.message.content, null);
+        if (parsed === null) {
+            console.error("JSON Parse Error, Content:", response.message.content);
             return { proposed_replies: ["Erreur de parsing JSON depuis Ollama."] };
         }
 
@@ -125,7 +121,7 @@ async function chatWithAgent(persona, message, imageParams, promptFormat, dbAgen
         let resultText = response.message.content;
 
         if (finalPromptFormat === 'json') {
-            resultText = resultText.replace(/```json/g, '').replace(/```/g, '').trim();
+            resultText = stripCodeFences(resultText);
         }
 
         return { response: resultText };
@@ -177,10 +173,7 @@ async function classifyOrderIntent(text, contactName, apiKey, modelParam) {
             options: { num_predict: 512 }
         });
 
-        let jsonText = response.message.content;
-        jsonText = jsonText.replace(/```json/g, '').replace(/```/g, '').trim();
-
-        return { ...fallback, ...JSON.parse(jsonText) };
+        return { ...fallback, ...parseLlmJson(response.message.content, {}) };
     } catch (error) {
         console.error("[OrderRadar] Ollama classification error:", error.message);
         return fallback;

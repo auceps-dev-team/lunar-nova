@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import useAppStore from '../store';
 import { Sparkles, Download, Undo, Redo, Copy, Edit3, AlignLeft, AlignCenter, AlignRight, Bold, Italic, Underline, List } from 'lucide-react';
-import html2pdf from 'html2pdf.js';
 import { useTranslation } from 'react-i18next';
 import CustomSelect from '../components/CustomSelect';
 import { API_BASE_URL } from '../config';
@@ -141,7 +140,7 @@ export default function AiWriter() {
                 try {
                     const parsed = JSON.parse(text);
                     text = parsed.text || parsed.proposed_replies?.join('<br/>') || text;
-                } catch (e) { }
+                } catch { }
 
                 // Clean markdown if mixed with HTML
                 text = text.replace(/```html/g, '').replace(/```/g, '');
@@ -163,7 +162,11 @@ export default function AiWriter() {
         }
     };
 
-    const downloadPDF = () => {
+    // html2pdf.js pèse près de 1 Mo (html2canvas + jsPDF). Importé statiquement,
+    // il était embarqué dans le chunk de cette page et téléchargé à chaque visite,
+    // alors qu'il ne sert qu'au clic sur « Exporter en PDF ». L'import dynamique le
+    // déplace dans un chunk chargé à la demande.
+    const downloadPDF = async () => {
         if (!editorRef.current) return;
         const element = editorRef.current;
         const opt = {
@@ -173,8 +176,15 @@ export default function AiWriter() {
             html2canvas: { scale: 2 },
             jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
         };
-        html2pdf().set(opt).from(element).save();
-        setShowDownloadMenu(false);
+        try {
+            const { default: html2pdf } = await import('html2pdf.js');
+            await html2pdf().set(opt).from(element).save();
+        } catch (err) {
+            console.error('[AiWriter] Export PDF échoué:', err);
+            showAppNotification(t('errorServerConnection'), 'error');
+        } finally {
+            setShowDownloadMenu(false);
+        }
     };
 
     const handleSave = async () => {

@@ -246,7 +246,7 @@ async function search(query, ignoreLandlines, pages, country = 'ci', subcategory
                                         };
                                         if (Array.isArray(data)) data.forEach(processSchema);
                                         else processSchema(data);
-                                    } catch(e) {}
+                                    } catch {}
                                 }
                                 
                                 // Fallback extraction sans réseaux sociaux
@@ -277,7 +277,7 @@ async function search(query, ignoreLandlines, pages, country = 'ci', subcategory
                             if (extraDetails.email) lead.details.email = extraDetails.email;
                             
                             await companyPage.close();
-                        } catch (e) {
+                        } catch {
                             console.error(`[GoAfricaOnline] Erreur extraction page entreprise pour ${lead.nom}`);
                         }
                     }

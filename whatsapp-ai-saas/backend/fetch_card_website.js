@@ -1,4 +1,3 @@
-const fs = require('fs');
 const { chromium } = require('playwright');
 
 (async () => {
@@ -19,7 +18,7 @@ const { chromium } = require('playwright');
         // Sometimes it's in a div or span
         const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
         let node;
-        while(node = walk.nextNode()) {
+        while((node = walk.nextNode())) {
             if (node.nodeValue.includes('boyootimmobilier.com') || node.nodeValue.includes('www.')) {
                 return node.nodeValue.trim();
             }

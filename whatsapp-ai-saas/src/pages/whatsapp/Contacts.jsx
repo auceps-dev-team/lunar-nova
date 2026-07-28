@@ -167,7 +167,7 @@ export default function Contacts({ activeId }) {
             // await fetch(`${API_BASE_URL}/api/wa/contacts/${id}`, { method: 'DELETE' });
             setContacts(contacts.filter(c => c.id !== id));
             showAppNotification('Contact deleted locally (Backend route pending)', 'success');
-        } catch (error) {
+        } catch {
             showAppNotification('Failed to delete contact', 'error');
         }
     };

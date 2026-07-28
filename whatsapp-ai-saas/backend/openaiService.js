@@ -1,6 +1,7 @@
 const OpenAI = require('openai');
 const orchestrator = require('./agents/orchestrator');
 const nvidiaModels = require('./nvidiaModels');
+const { parseLlmJson, stripCodeFences } = require('./llmJson');
 
 function getClient(apiKey, baseURL) {
     if (!apiKey) {
@@ -120,13 +121,8 @@ async function generateProposals(chatContext, modelParam, apiKey, baseURL) {
             stream: false
         });
 
-        let jsonText = response.choices[0].message.content;
-        jsonText = jsonText.replace(/```json/g, '').replace(/```/g, '').trim();
-
-        let parsed;
-        try {
-            parsed = JSON.parse(jsonText);
-        } catch (e) {
+        const parsed = parseLlmJson(response.choices[0].message.content, null);
+        if (parsed === null) {
             return { proposed_replies: ["Erreur de parsing JSON depuis l'API."] };
         }
 
@@ -223,7 +219,7 @@ async function chatWithAgent(persona, message, imageParams, promptFormat, apiKey
         }
 
         if (finalPromptFormat === 'json') {
-            resultText = resultText.replace(/```json/g, '').replace(/```/g, '').trim();
+            resultText = stripCodeFences(resultText);
         }
 
         return { response: resultText };
@@ -515,10 +511,7 @@ async function classifyOrderIntent(text, contactName, apiKey, baseURL, modelPara
         Object.assign(completionArgs, nvidiaModels.buildGenerationParams(nvidiaModels.getModelDef(targetModel)));
 
         const response = await openai.chat.completions.create(completionArgs);
-        let jsonText = response.choices[0].message.content;
-        jsonText = jsonText.replace(/```json/g, '').replace(/```/g, '').trim();
-
-        return { ...fallback, ...JSON.parse(jsonText) };
+        return { ...fallback, ...parseLlmJson(response.choices[0].message.content, {}) };
     } catch (error) {
         console.error("[OrderRadar] NVIDIA classification error:", error.message);
         return fallback;

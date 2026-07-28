@@ -47,7 +47,7 @@ export function useOrderListener(instanceId) {
                     console.log('[IOL] Order detected via SSE:', data);
                     setOrders(prev => [data, ...prev].slice(0, 100)); // Keep last 100
                 }
-            } catch (e) {
+            } catch {
                 // Ignore parsing errors for heartbeat ":\n\n" lines
             }
         };

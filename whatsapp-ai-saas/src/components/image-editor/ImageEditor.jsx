@@ -31,7 +31,7 @@ const ensureJpeg = (base64) => {
 const toSafeExifString = (str) => {
     try {
         return unescape(encodeURIComponent(str || ''));
-    } catch (e) {
+    } catch {
         return str || '';
     }
 };
@@ -125,7 +125,7 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                     jpegData = 'data:image/jpeg;base64,' + jpegData.split(',')[1];
                 }
                 exifObj = piexif.load(jpegData);
-            } catch (e) {
+            } catch {
                 console.debug('Non-JPEG file — EXIF not applicable, initializing empty EXIF');
                 exifObj = { '0th': {}, 'Exif': {}, 'GPS': {}, '1st': {}, 'Interop': {} };
             }
@@ -396,7 +396,7 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
                         : agentData.response;
                     title = parsed.title || title;
                     description = parsed.description || agentData.response;
-                } catch (e) {
+                } catch {
                     description = agentData.response;
                 }
             }

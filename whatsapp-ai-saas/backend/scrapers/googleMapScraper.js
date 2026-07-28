@@ -117,7 +117,7 @@ class GoogleMapScraper extends EventEmitter {
                 const acceptBtn = page.locator('button:has-text("Tout accepter")');
                 await acceptBtn.click({ timeout: 4000 });
                 await page.waitForTimeout(1000);
-            } catch (_) {}
+            } catch {}
 
             await page.waitForTimeout(3000);
 
@@ -181,7 +181,7 @@ class GoogleMapScraper extends EventEmitter {
                         break;
                     }
                 }
-            } catch (e) {
+            } catch {
                 console.log('[GoogleMapScraper] Feed not found. Checking if single place page...');
                 const currentUrl = page.url();
                 if (currentUrl.includes('/maps/place/')) {
@@ -253,7 +253,7 @@ class GoogleMapScraper extends EventEmitter {
                                     break;
                                 }
                             }
-                        } catch (_) {}
+                        } catch {}
                     }
 
                     // Extract website
@@ -262,7 +262,7 @@ class GoogleMapScraper extends EventEmitter {
                         try {
                             const el = await page.$(sel);
                             if (el) { website = await el.getAttribute('href') || ''; if (website) break; }
-                        } catch (_) {}
+                        } catch {}
                     }
 
                     // Extract address
@@ -276,7 +276,7 @@ class GoogleMapScraper extends EventEmitter {
                                 const ariaLabel = await el.getAttribute('aria-label');
                                 if (ariaLabel) { address = ariaLabel.replace(/^Adresse:\s*/i, '').trim(); break; }
                             }
-                        } catch (_) {}
+                        } catch {}
                     }
 
                     if (phone) phone = phone.replace(/[^\d+]/g, '');

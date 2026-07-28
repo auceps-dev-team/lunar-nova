@@ -1,4 +1,3 @@
-const express = require('express');
 const puppeteer = require('puppeteer-core');
 const db = require('./db');
 const aiController = require('./aiController');
@@ -129,7 +128,7 @@ async function attachObserver(instanceId) {
                         targetPages = [p];
                         break;
                     }
-                } catch(e) {}
+                } catch {}
                 targetPages.push(p);
             }
         }
@@ -148,7 +147,7 @@ async function attachObserver(instanceId) {
         try {
             await targetPage.waitForSelector('#pane-side', { timeout: 15000 });
             console.log(`[IOL] ✅ WhatsApp UI loaded. Ready to inject observer.`);
-        } catch (e) {
+        } catch {
             console.log(`[IOL] ⚠️ Timeout waiting for WhatsApp UI, attempting to inject anyway...`);
         }
 
@@ -158,13 +157,13 @@ async function attachObserver(instanceId) {
                 console.log(`\n======================================================\n[IOL DOM Bridge] 📥 Message Received from UI: [${contact}] "${text}"`);
                 processMessage(instanceId, contact, text);
             });
-        } catch (e) {}
+        } catch {}
         
         try {
             await targetPage.exposeFunction('onIolDebug', (msg) => {
                 console.log(`[IOL Background] ${msg}`);
             });
-        } catch (e) {}
+        } catch {}
 
         await targetPage.evaluate(() => {
             if (!document.body || window.__iol_observer) return;
@@ -259,7 +258,7 @@ async function attachObserver(instanceId) {
                                 window.onNewWaMessage(contact, text);
                             }
                         }
-                    } catch (err) {}
+                    } catch {}
                 };
 
                 for (const m of mutations) {
@@ -345,7 +344,7 @@ async function detachObserver(instanceId) {
                     });
                 }
             }
-        } catch (e) {}
+        } catch {}
         browser.disconnect();
     }
     activeObservers.delete(instanceId);

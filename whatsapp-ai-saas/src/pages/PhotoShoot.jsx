@@ -177,7 +177,7 @@ const PhotoShoot = ({ activeId }) => {
                         ? JSON.parse(rawResponse)
                         : rawResponse;
                     optimizedPrompt = parsed.image_generation_prompt || agentData.response;
-                } catch (e) {
+                } catch {
                     // If JSON parse fails, use the raw response
                     optimizedPrompt = agentData.response;
                 }
@@ -290,7 +290,7 @@ const PhotoShoot = ({ activeId }) => {
                         try {
                             window.history.pushState({}, '', '/settings');
                             window.dispatchEvent(new PopStateEvent('popstate'));
-                        } catch (e) {
+                        } catch {
                             window.location.href = '/settings';
                         }
                     }

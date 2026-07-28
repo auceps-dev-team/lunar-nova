@@ -264,7 +264,7 @@ export default function Prospection() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({}) // Empty = clear all sessions
             });
-        } catch (_) { /* Non-critical */ }
+        } catch { /* Non-critical */ }
         showAppNotification('Liste vidée et cache réinitialisé', 'success');
     };
 
