@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 
 const AgentsHub = ({ activeId }) => {
     const navigate = useNavigate();
-    const [activeAgent, setActiveAgent] = useState('creative');
+    const [activeAgent] = useState('creative');
     const [activeTab, setActiveTab] = useState('analyse'); // 'analyse' or 'generation'
     const [productType, setProductType] = useState('');
     const [targetAmbiance, setTargetAmbiance] = useState('');
@@ -34,7 +34,6 @@ const AgentsHub = ({ activeId }) => {
     const showAppNotification = useAppStore(state => state.showAppNotification);
     const setPendingEditImage = useAppStore(state => state.setPendingEditImage);
     const promptFormat = useAppStore(state => state.appSettings?.promptFormat) || 'json';
-    const language = useAppStore(state => state.appSettings?.language) || 'en';
 
 
     const clearAllHistory = () => {

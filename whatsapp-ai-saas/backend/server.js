@@ -2,10 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const puppeteer = require('puppeteer-core');
-const { z } = require('zod');
 const orderListener = require('./orderListener');
-const { logCopilotInteraction, pool, getSetting, setSetting } = require('./db');
-const { getCachedProposals, setCachedProposals } = require('./redisClient');
 const { requireApiToken } = require('./apiAuth');
 
 const app = express();
@@ -136,9 +133,10 @@ app.get('/api/instances', async (req, res) => {
     let browser = null;
     try {
         // To avoid Protocol error (Browser.getVersion), we MUST connect to the browser root, not a specific page target
+        // L'appel sert de contrôle de disponibilité du point CDP : la réponse
+        // elle-même n'est pas exploitée, seul son aboutissement compte.
         const fetch = (await import('node-fetch')).default;
-        const response = await fetch('http://127.0.0.1:8315/json/version');
-        const json = await response.json();
+        await fetch('http://127.0.0.1:8315/json/version');
 
         // Connect to the root browser CDP endpoint
         browser = await puppeteer.connect({ browserURL: 'http://127.0.0.1:8315', defaultViewport: null });

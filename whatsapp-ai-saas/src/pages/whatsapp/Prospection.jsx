@@ -2,11 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Search, MapPin, Phone, Globe, Download, Database, CheckSquare, Square, Loader2, Building2, Map as MapIcon, Globe2, Trash2, Clock, Target, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import useAppStore from '../../store';
-import { useTranslation } from 'react-i18next';
 import CustomSelect from '../../components/CustomSelect';
 
 export default function Prospection() {
-    const { t } = useTranslation();
+    // Cette page n'est pas encore internationalisée : ses libellés sont écrits en
+    // dur dans le JSX. useTranslation() était appelé sans que `t` serve jamais.
+    // La traduction de la page reste à faire.
     const showAppNotification = useAppStore(state => state.showAppNotification);
 
     const query = useAppStore(state => state.prospectSearchQuery);

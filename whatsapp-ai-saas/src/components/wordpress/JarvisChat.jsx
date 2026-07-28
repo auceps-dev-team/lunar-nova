@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { API_BASE_URL } from '../../config';
-import { C } from './WPUI';
+import { C } from './WPTheme';
 
 export default function JarvisChat({ selectedId, selected }) {
     const { t } = useTranslation();

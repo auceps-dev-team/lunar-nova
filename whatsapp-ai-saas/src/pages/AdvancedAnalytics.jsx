@@ -311,15 +311,6 @@ export default function AdvancedAnalytics() {
         Object.values(sessions).reduce((s, arr) => s + (Array.isArray(arr) ? arr.length : 0), 0),
         [sessions]);
 
-    // Segments WhatsApp (from agentHistory product types)
-    const productTypes = useMemo(() => {
-        const counts = {};
-        agentHistory.forEach(h => {
-            if (h.productType) counts[h.productType] = (counts[h.productType] || 0) + 1;
-        });
-        return Object.entries(counts).map(([name, value]) => ({ name, value }));
-    }, [agentHistory]);
-
     // Task distribution for pie
     const taskPieData = [
         { name: t('toDo'), value: taskStats.todo, color: C.amber },

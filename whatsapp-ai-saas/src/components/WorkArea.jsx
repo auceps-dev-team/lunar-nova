@@ -7,11 +7,10 @@ import { Paperclip, X } from 'lucide-react';
 
 const WorkArea = ({ instances, activeId }) => {
     const [orchestratorStatus, setOrchestratorStatus] = useState('Checking...');
-    const [activePlaywrightSessions, setActivePlaywrightSessions] = useState(0);
+    const [, setActivePlaywrightSessions] = useState(0);
     const { t } = useTranslation();
     const appSettings = useAppStore(state => state.appSettings) || {};
-    const language = appSettings.language || 'en';
-    const [copilotProposals, setCopilotProposals] = useState([]);
+    const [, setCopilotProposals] = useState([]);
     const [isCopilotLoading, setIsCopilotLoading] = useState(false);
     const [copiedIndex, setCopiedIndex] = useState(null);
     const [chatInput, setChatInput] = useState('');

@@ -27,7 +27,9 @@ router.post('/api/ai/models', aiLimiter, async (req, res) => {
 
 // Endpoint to test model / API key connection (Soft Validation)
 router.post('/api/test-model', aiLimiter, async (req, res) => {
-    const { provider, apiKey, model } = req.body;
+    // `model` n'est pas utilisé : le test valide la clé et l'accès au
+    // fournisseur en listant ses modèles, pas la disponibilité d'un modèle précis.
+    const { provider, apiKey } = req.body;
     try {
         const models = await aiController.listModels(provider, apiKey);
         if (models && (Array.isArray(models) ? models.length > 0 : (models.chat && models.chat.length > 0))) {

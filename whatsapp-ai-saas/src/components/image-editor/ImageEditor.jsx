@@ -3,7 +3,6 @@ import { Trash2, Download, Wand2, RefreshCw, Info, FileImage, Camera, Sparkles, 
 import { useTranslation } from 'react-i18next';
 
 import piexif from 'piexifjs';
-import useAppStore from '../../store';
 import { API_BASE_URL } from '../../config';
 
 
@@ -45,7 +44,6 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
     const [customPrompt, setCustomPrompt] = useState('');
 
     const { t } = useTranslation();
-    const language = useAppStore(state => state.appSettings?.language) || 'en';
 
     // Image editing always uses Gemini (image-to-image)
 

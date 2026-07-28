@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import useAppStore from '../store';
 import { API_BASE_URL } from '../config';
-import { C, Ico, KPICard, StatusBadge, TabBtn, Card, CardHeader, Field, Input, EmptyState, Skeleton, Spin } from '../components/wordpress/WPUI';
+import { KPICard, StatusBadge, TabBtn, Card, CardHeader, Field, Input, EmptyState, Skeleton, Spin } from '../components/wordpress/WPUI';
+import { C, Ico } from '../components/wordpress/WPTheme';
 import JarvisChat from '../components/wordpress/JarvisChat';
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -27,7 +28,7 @@ export default function WordPressBridge() {
     const [logs, setLogs] = useState([]);
     const [logsPagination, setLogsPagination] = useState({ total: 0, pages: 1, per_page: 25, current_page: 1 });
     const [logsFilters, setLogsFilters] = useState({ status: '', page: 1, per_page: 25 });
-    const [isLogsLoading, setIsLogsLoading] = useState(false);
+    const [, setIsLogsLoading] = useState(false);
     const [productsMeta, setProductsMeta] = useState({ categories: [], brands: [], types: [] });
     const [productsPagination, setProductsPagination] = useState({ total: 0, pages: 1, per_page: 25, current_page: 1 });
     const [productFilters, setProductFilters] = useState({ search: '', category: '', type: '', stock_status: '', brand: '', page: 1, per_page: 25 });
@@ -696,7 +697,7 @@ export default function WordPressBridge() {
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    {products.map((p, i) => (
+                                                    {products.map((p) => (
                                                         <tr key={p.id} style={{ borderTop: `1px solid ${C.border}` }}
                                                             onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
                                                             onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>

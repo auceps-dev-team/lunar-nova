@@ -12,7 +12,6 @@ const Profile = () => {
     const updateUserProfile = useAppStore(state => state.updateUserProfile);
     const logoutUser = useAppStore(state => state.logoutUser);
 
-    const [loginForm, setLoginForm] = useState({ email: '', password: '' });
 
     // Form state for profile details
     const [profileForm, setProfileForm] = useState({
@@ -31,24 +30,12 @@ const Profile = () => {
     const [isSaving, setIsSaving] = useState(false);
     const [saveMessage, setSaveMessage] = useState('');
 
-    const handleEmailSubmit = (e) => {
-        e.preventDefault();
-        setAuthLoading(true);
-        // Simulation d'une vérification d'email et mot de passe (1 seconde)
-        setTimeout(() => {
-            updateUserProfile({
-                isAuthenticated: true,
-                authMethod: 'email',
-                email: loginForm.email
-            });
-
-            setProfileForm(prev => ({
-                ...prev,
-                email: loginForm.email
-            }));
-            setAuthLoading(false);
-        }, 1000);
-    };
+    // Un handler de connexion par e-mail existait ici, rattaché à aucun
+    // formulaire. Il marquait l'utilisateur comme authentifié après un délai d'une
+    // seconde, sans vérifier ni l'adresse ni le mot de passe — son propre
+    // commentaire parlait de « simulation ». Retiré : du code mort qui serait
+    // devenu un contournement d'authentification si quelqu'un l'avait rebranché.
+    // Une vraie connexion par e-mail demande une vérification côté serveur.
 
     const handleImageUpload = (e, field) => {
         const file = e.target.files[0];

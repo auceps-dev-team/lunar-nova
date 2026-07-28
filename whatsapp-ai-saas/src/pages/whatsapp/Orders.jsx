@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAppStore from '../../store';
 import { useGlobalOrderListener } from '../../hooks/useGlobalOrderListener';
@@ -7,9 +7,7 @@ import '../../styles/global.css';
 const Orders = () => {
     const instances = useAppStore(state => state.instances);
     const setInvoiceDraft = useAppStore(state => state.setInvoiceDraft);
-    const appSettings = useAppStore(state => state.appSettings) || {};
     const showAppNotification = useAppStore(state => state.showAppNotification);
-    const language = appSettings.language || 'en';
     const navigate = useNavigate();
 
     // IOL Global State

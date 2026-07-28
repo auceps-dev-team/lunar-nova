@@ -57,7 +57,7 @@ const CATEGORY_COLORS = {
     Female: 'bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300',
 };
 
-const PhotoShoot = ({ activeId }) => {
+const PhotoShoot = ({ activeId: _activeId }) => {
     // ── State ──
     const [productImages, setProductImages] = useState([]); // up to 3
     const [selectedModel, setSelectedModel] = useState(null);
@@ -80,8 +80,6 @@ const PhotoShoot = ({ activeId }) => {
     const removeAgentHistory = useAppStore(state => state.removeAgentHistory);
     const historyForAgent = agentHistory.filter(h => h.agentId === 'photoshoot');
 
-    const promptFormat = useAppStore(state => state.appSettings?.promptFormat) || 'json';
-    const language = useAppStore(state => state.appSettings?.language) || 'en';
 
     // ── Handlers ──
     const loadHistoryItem = (hist) => {
