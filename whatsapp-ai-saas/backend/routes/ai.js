@@ -196,23 +196,8 @@ router.post('/api/ai/generate-image', aiLimiter, async (req, res) => {
     }
 });
 
-// Explicit Qwen-Image alias route for direct text-to-image generation
-router.post('/api/ai/generate-image-qwen', aiLimiter, async (req, res) => {
-    const { prompt, size, seed, provider } = req.body;
-
-    if (!prompt) {
-        return res.status(400).json({ error: 'Missing prompt.' });
-    }
-
-    try {
-        const generationResponse = await aiController.generateImage(prompt, null, { seed }, null, null, provider || null, 'qwen/qwen-image');
-        if (generationResponse.error) {
-            return res.json({ status: 'error', error: generationResponse.error });
-        }
-        res.json({ status: 'success', imageStore: generationResponse.imageBytes });
-    } catch (error) {
-        console.error('Qwen Image Generation Error:', error);
-        res.status(500).json({ error: 'Failed to generate Qwen image via API.' });
-    }
-});
+// La route /api/ai/generate-image-qwen a été retirée en v1.39.1 : aucun appelant
+// dans le dépôt, et elle acceptait un paramètre `size` qu'elle n'utilisait pas.
+// Pour générer une image avec Qwen, passer par /api/ai/generate-image en
+// précisant imageModel: 'qwen/qwen-image'.
 module.exports = router;

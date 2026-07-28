@@ -5,9 +5,25 @@ const path = require('path');
 const puppeteer = require('puppeteer-core');
 
 
-// Endpoint to automatically push an item to WhatsApp Business Catalog via Playwright
+/**
+ * POST /api/catalog/upload — Prépare la publication d'un article au catalogue
+ * WhatsApp Business.
+ *
+ * Portée volontairement limitée : la route ouvre le catalogue, clique sur
+ * « Ajouter un article » et **injecte uniquement l'image** dans le formulaire.
+ * Le nom, le prix et la description ne sont pas saisis par l'automatisation ;
+ * ils sont affichés à l'utilisateur par le copilote, qui les colle lui-même.
+ *
+ * Ce n'est pas une limitation technique mais un choix : faire taper
+ * l'automatisation dans les champs de WhatsApp Web est précisément le genre de
+ * comportement qui déclenche une restriction de compte. Le reste du fichier est
+ * d'ailleurs parsemé de délais « humains » pour la même raison.
+ *
+ * La route recevait auparavant productDescription et productPrice sans jamais
+ * les utiliser, ce qui laissait penser à une fonctionnalité inachevée.
+ */
 router.post('/api/catalog/upload', async (req, res) => {
-    const { instance_id, productName, productDescription, productPrice, imageBase64 } = req.body;
+    const { instance_id, productName, imageBase64 } = req.body;
 
     if (!instance_id || !productName || !imageBase64) {
         return res.status(400).json({ error: 'Missing required fields (instance_id, productName, imageBase64).' });
