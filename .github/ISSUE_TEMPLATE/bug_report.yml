@@ -1,0 +1,101 @@
+name: Signaler un bug
+description: Quelque chose ne fonctionne pas comme attendu
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Merci de prendre le temps de signaler ce problème.
+
+        ⚠️ **S'il s'agit d'une faille de sécurité**, n'ouvrez pas d'issue :
+        écrivez à `dev.team@auceps-digital.agency`. Voir [SECURITY.md](../blob/main/SECURITY.md).
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Que se passe-t-il ?
+      description: Décrivez le comportement observé, puis celui que vous attendiez.
+      placeholder: |
+        Observé : au clic sur « Publier au catalogue », rien ne se passe et une erreur rouge apparaît.
+        Attendu : l'image devait être injectée dans le formulaire WhatsApp.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Comment le reproduire
+      description: Les étapes précises, depuis le lancement de l'application.
+      placeholder: |
+        1. Ouvrir l'onglet Agents
+        2. Générer une fiche produit
+        3. Cliquer sur « Envoyer au catalogue »
+        4. L'erreur apparaît
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version de WaCopilote
+      description: Visible dans les Réglages, ou en bas de la fenêtre.
+      placeholder: "1.39.1"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Système d'exploitation
+      options:
+        - Windows
+        - macOS
+        - Linux
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install
+    attributes:
+      label: Mode d'utilisation
+      description: Le diagnostic diffère beaucoup entre les deux.
+      options:
+        - Application installée (installeur)
+        - Depuis les sources (npm run start:all)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: provider
+    attributes:
+      label: Fournisseur d'IA configuré
+      description: À renseigner si le problème touche une fonction d'IA.
+      options:
+        - Sans objet
+        - Google Gemini
+        - NVIDIA NIM
+        - OpenRouter
+        - Together AI
+        - Ollama (local)
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Journaux
+      description: |
+        Le backend écrit deux fichiers utiles. Collez la fin de `backend_error.log`,
+        et de `backend_out.log` si le problème touche l'IA ou le scraping.
+
+        Ils se trouvent dans :
+        - **Windows** : `%APPDATA%\WaCopilote\`
+        - **macOS** : `~/Library/Application Support/WaCopilote/`
+        - **Linux** : `~/.config/WaCopilote/`
+
+        ⚠️ **Relisez avant de coller** : ces journaux peuvent contenir des extraits
+        de conversations WhatsApp et des noms de contacts. Retirez ce qui est
+        personnel — les clés d'API n'y figurent pas, elles ne sont jamais journalisées.
+      render: text
+    validations:
+      required: false

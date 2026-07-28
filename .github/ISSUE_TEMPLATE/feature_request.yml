@@ -1,0 +1,51 @@
+name: Proposer une évolution
+description: Suggérer une fonctionnalité ou une amélioration
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Quel problème cherchez-vous à résoudre ?
+      description: |
+        Décrivez la situation concrète avant la solution envisagée. Une proposition
+        rattachée à un usage réel a beaucoup plus de chances d'aboutir qu'une idée
+        de fonctionnalité isolée.
+      placeholder: |
+        Je gère trois comptes WhatsApp pour des clients différents et je dois
+        reconfigurer mes segments à chaque changement de compte.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Ce que vous imaginez
+      description: Comment vous verriez la chose fonctionner, même approximativement.
+    validations:
+      required: false
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Ce que vous faites en attendant
+      description: Le contournement actuel, s'il en existe un. C'est souvent ce qui révèle le vrai besoin.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Périmètre
+      options:
+        - label: Cette évolution impliquerait davantage d'automatisation de WhatsApp Web
+          required: false
+        - label: Je serais prêt à contribuer à son implémentation
+          required: false
+
+  - type: markdown
+    attributes:
+      value: |
+        Si vous avez coché la première case : ce n'est pas rédhibitoire, mais nous
+        évaluons ces propositions au regard du risque de restriction de compte
+        WhatsApp qu'elles font peser sur les utilisateurs. Attendez-vous à des
+        questions sur ce point.

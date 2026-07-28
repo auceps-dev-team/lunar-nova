@@ -248,14 +248,16 @@ Vos conversations, vos contacts et vos clés d'API ne quittent jamais votre mach
 2. **Authentification de l'API locale** : toutes les routes exigent un token généré à l'installation et partagé entre le processus Electron et le backend. Un autre programme de la machine ne peut pas interroger l'API.
 3. **Les clés d'API ne sortent pas du backend** : l'endpoint de configuration ne renvoie jamais leur valeur, seulement l'information « configurée / non configurée ».
 4. **Isolation du renderer Electron** : `contextIsolation` activé, `nodeIntegration` désactivé, passerelle IPC réduite à une liste explicite de fonctions.
-5. **CORS restreint** et **limitation de débit** (`express-rate-limit`) sur les routes d'inférence LLM.
+5. **CORS restreint** et **limitation de débit** en trois niveaux : plafond global, plafond serré sur les opérations lourdes (scraping, envoi au catalogue) et plafond dédié aux routes d'inférence LLM.
 6. **Validation des entrées** par `Zod` sur les routes d'agents.
 7. **Gouvernance humaine du pont WordPress** : l'agent IA ne peut que *proposer* des modifications ; leur exécution exige une approbation explicite d'un administrateur du site.
 
+8. **Chiffrement des secrets au repos** *(v1.37.0)* : les clés d'API et les mots de passe d'application WordPress sont chiffrés en **AES-256-GCM** dans la base SQLite. La clé maître ne réside jamais dans la base qu'elle protège : elle est scellée par le magasin de secrets du système d'exploitation via `safeStorage` (DPAPI sous Windows, Trousseau sous macOS, libsecret sous Linux) et n'est transmise au backend qu'au démarrage. Copier `database.sqlite` sur une autre machine ne suffit donc pas à en extraire les secrets. Les bases antérieures sont migrées automatiquement au premier lancement.
+
 **Limites connues, à corriger**
 
-- Les clés d'API et les mots de passe d'application WordPress sont stockés **en clair** dans la base SQLite locale. Le chiffrement au repos est la prochaine étape prioritaire.
-- Toutes les routes ne sont pas encore soumises au rate-limiting.
+- Si le magasin de secrets du système est indisponible (typiquement Linux sans keyring), la clé maître retombe sur un fichier local en permissions `600`. Le chiffrement protège alors les sauvegardes et les dossiers synchronisés, mais plus un attaquant ayant déjà accès au disque sous votre compte.
+- Le dépôt public conserve dans son historique Git deux fichiers de travail retirés en v1.38.1, contenant les coordonnées professionnelles de quelques entreprises issues d'annuaires publics. Le raisonnement et la procédure de retrait sur demande figurent dans [SECURITY.md](SECURITY.md).
 
 Une revue de sécurité complète est ouverte publiquement dans les issues. Si vous trouvez une faille, écrivez à `dev.team@auceps-digital.agency` plutôt que d'ouvrir une issue publique.
 
@@ -274,13 +276,13 @@ npm run lint
 npm run build
 ```
 
-**État réel de la couverture.** Soyons directs : le projet ne compte aujourd'hui qu'un test de fumée. C'est la dette la plus importante du dépôt, et c'est aussi la contribution la plus utile qu'on puisse y apporter. Les zones prioritaires, celles qui cassent en production :
+**État réel de la couverture.** 43 tests couvrent aujourd'hui le chiffrement des secrets, l'analyse des réponses LLM et la normalisation des numéros de téléphone. C'est un début, pas une couverture : le gros du code reste non testé, et c'est la contribution la plus utile qu'on puisse apporter au projet. Les zones encore à couvrir, celles qui cassent en production :
 
-- les parseurs de scraping (`backend/scrapers/`), dépendants de la structure HTML de sites tiers ;
-- les adaptateurs LLM (`backend/*Service.js`), dont les formats de réponse varient d'un fournisseur à l'autre ;
+- les parseurs de scraping (`backend/scrapers/`), dépendants de la structure HTML de sites tiers — leur logique tourne dans `page.evaluate()`, il faudra l'extraire pour la rendre testable ;
+- les chemins d'appel réseau des adaptateurs LLM (`backend/*Service.js`) ;
 - les migrations de schéma (`backend/db.js`).
 
-La configuration ESLint remonte actuellement du bruit sur le code backend et Electron, faute de déclarer les globales Node — un correctif est en cours.
+La configuration ESLint distingue désormais les trois environnements du dépôt (renderer navigateur, backend Node, code injecté dans la page WhatsApp), ce qui a ramené le bruit de 375 à 88 signalements.
 
 ---
 
@@ -383,6 +385,7 @@ whatsapp-ai-saas/
 │   ├── agents/             → Moteurs et prompts des agents IA autonomes
 │   │   └── personas/       → Définitions des 27 personas d'agents
 │   ├── routes/             → Routes API Express (AI, WA, Catalog, Prospection, WP)
+│   ├── __tests__/          → Tests unitaires backend (Vitest)
 │   ├── scrapers/           → Modules de scraping (Annuaire CI, GoAfrica, Google Places)
 │   ├── aiController.js     → Contrôleur centralisé des requêtes IA
 │   ├── apiAuth.js          → Token d'authentification de l'API locale
@@ -392,18 +395,19 @@ whatsapp-ai-saas/
 │   ├── redisClient.js      → Client de mise en cache Redis
 │   └── server.js           → Point d'entrée de l'application Express
 ├── build/                  → Ressources d'empaquetage (licence installeur, script NSIS)
-├── docs/                   → Documentation d'architecture & ponts d'intégration
+├── docs/                   → Documentation d'architecture & notes de conception
 ├── electron/               → Processus principal Electron & IPC (main.cjs, preload.cjs)
 ├── memory-bank/            → Système de mémoire projet & suivi contextuel
 ├── public/                 → Assets statiques (Logos, icônes .ico/.svg/.png, poses, fonds)
 ├── src/                    → Application Frontend React 19 (Vite)
 │   ├── components/         → Composants UI (Sidebar, Topbar, éditeur d'images, kanban)
+│   ├── __tests__/          → Tests unitaires frontend (Vitest)
 │   ├── locales/            → Traductions i18next (fr, en, es, ar)
 │   ├── pages/              → Vues principales (Dashboard, AiChat, PhotoShoot, Prospection...)
 │   │   └── whatsapp/       → Sous-pages dédiées aux flux WhatsApp (Contacts, Orders, Segments)
 │   ├── services/           → Client API et authentification côté renderer
 │   └── store.js            → State management Zustand (store unique persisté)
-├── wordpress-plugin/       → Plugin WaCopilote Bridge (source + archives .zip)
+├── wordpress-plugin/       → Plugin WaCopilote Bridge (source + archive v2.0.0)
 ├── LICENSE                 → GNU AGPL-3.0
 ├── package.json            → Configuration du workspace racine & scripts npm
 ├── vite.config.js          → Configuration du bundler Vite 7
@@ -417,7 +421,8 @@ whatsapp-ai-saas/
 - [x] **Q1 2026** : Publication de WaCopilote v1.35.0 (Electron Desktop + Multi-LLM Gemini / NVIDIA NIM / Ollama).
 - [x] **Q2 2026** : Intégration du Studio Photo IA (Remplacement de fond produit) & Prospection Annuaire CI / GoAfrica.
 - [x] **Q3 2026** : **Passage en open source sous AGPL-3.0** (v1.36.0) et durcissement de la sécurité du backend local.
-- [ ] **Q3 2026** : Chiffrement au repos des clés d'API et des identifiants WordPress ; couverture de tests sur les scrapers et les adaptateurs LLM.
+- [x] **Q3 2026** : Chiffrement au repos des clés d'API et des identifiants WordPress (v1.37.0).
+- [ ] **Q3 2026** : Couverture de tests sur les scrapers, les adaptateurs LLM et les migrations de schéma.
 - [ ] **Q4 2026** : Support de WhatsApp Multi-Appareils Cloud API & fallback Baileys direct sans navigateur.
 - [ ] **2027** : Assistant IA vocal WhatsApp (transcription & réponse vocale temps réel) et version Web SaaS synchronisée.
 
@@ -441,19 +446,13 @@ R : Oui, la gestion des contacts et des segments permet d'organiser vos listes d
 
 ## 🤝 Contribution
 
-Les contributions sont les bienvenues. Pour contribuer :
+Les contributions sont les bienvenues. Le guide complet — installation, architecture des trois processus, conventions de commit et de versionnage — se trouve dans **[CONTRIBUTING.md](CONTRIBUTING.md)**.
 
-1. **Forkez** le projet sur GitHub.
-2. **Créez une branche** : `git checkout -b feature/ma-nouvelle-fonctionnalite`
-3. **Committez vos modifications** : `git commit -m "feat: ajout d'une nouvelle fonctionnalité"`
-4. **Poussez votre branche** : `git push origin feature/ma-nouvelle-fonctionnalite`
-5. **Ouvrez une Pull Request** en décrivant le problème résolu.
-
-Faites passer `npm run lint` et `npm run test` avant de soumettre. Le projet est en JavaScript, pas en TypeScript — pas de contrôle de types à exécuter.
-
-**Par où commencer ?** Les issues étiquetées `good first issue` couvrent surtout l'ajout de tests et le nettoyage de la configuration ESLint. C'est là que l'aide a le plus de valeur immédiate.
+**Par où commencer ?** Les contributions les plus utiles aujourd'hui sont, dans l'ordre : ajouter des tests (en commençant par extraire la logique de parsing hors de `page.evaluate()` pour la rendre testable), traiter les avertissements `react-hooks/exhaustive-deps` restants, et découper les pages qui dépassent 800 lignes. Les issues étiquetées `good first issue` couvrent les deux premiers points.
 
 **Sur les droits.** En contribuant, vous acceptez que votre contribution soit distribuée sous AGPL-3.0. Nous proposant par ailleurs une licence commerciale, un accord de contribution (CLA) sera mis en place pour les contributions substantielles — il n'est pas encore rédigé, nous l'annoncerons dans les issues avant de l'appliquer.
+
+**Sécurité.** N'ouvrez pas d'issue publique pour une faille : la procédure est décrite dans [SECURITY.md](SECURITY.md).
 
 ---
 

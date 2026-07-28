@@ -446,19 +446,13 @@ R : Oui, la gestion des contacts et des segments permet d'organiser vos listes d
 
 ## 🤝 Contribution
 
-Les contributions sont les bienvenues. Pour contribuer :
+Les contributions sont les bienvenues. Le guide complet — installation, architecture des trois processus, conventions de commit et de versionnage — se trouve dans **[CONTRIBUTING.md](../CONTRIBUTING.md)**.
 
-1. **Forkez** le projet sur GitHub.
-2. **Créez une branche** : `git checkout -b feature/ma-nouvelle-fonctionnalite`
-3. **Committez vos modifications** : `git commit -m "feat: ajout d'une nouvelle fonctionnalité"`
-4. **Poussez votre branche** : `git push origin feature/ma-nouvelle-fonctionnalite`
-5. **Ouvrez une Pull Request** en décrivant le problème résolu.
-
-Faites passer `npm run lint` et `npm run test` avant de soumettre. Le projet est en JavaScript, pas en TypeScript — pas de contrôle de types à exécuter.
-
-**Par où commencer ?** Les issues étiquetées `good first issue` couvrent surtout l'ajout de tests et le nettoyage de la configuration ESLint. C'est là que l'aide a le plus de valeur immédiate.
+**Par où commencer ?** Les contributions les plus utiles aujourd'hui sont, dans l'ordre : ajouter des tests (en commençant par extraire la logique de parsing hors de `page.evaluate()` pour la rendre testable), traiter les avertissements `react-hooks/exhaustive-deps` restants, et découper les pages qui dépassent 800 lignes. Les issues étiquetées `good first issue` couvrent les deux premiers points.
 
 **Sur les droits.** En contribuant, vous acceptez que votre contribution soit distribuée sous AGPL-3.0. Nous proposant par ailleurs une licence commerciale, un accord de contribution (CLA) sera mis en place pour les contributions substantielles — il n'est pas encore rédigé, nous l'annoncerons dans les issues avant de l'appliquer.
+
+**Sécurité.** N'ouvrez pas d'issue publique pour une faille : la procédure est décrite dans [SECURITY.md](../SECURITY.md).
 
 ---
 
