@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/auceps-dev-team/lunar-nova"><img src="https://img.shields.io/badge/version-1.38.0-blue.svg" alt="Version 1.38.0" /></a>
+  <a href="https://github.com/auceps-dev-team/lunar-nova"><img src="https://img.shields.io/badge/version-1.38.1-blue.svg" alt="Version 1.38.1" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue.svg" alt="License AGPL-3.0" /></a>
   <a href="#-open-source"><img src="https://img.shields.io/badge/open%20source-oui-brightgreen.svg" alt="Open Source" /></a>
   <a href="#-pourquoi-wacopilote-"><img src="https://img.shields.io/badge/Made%20in-%F0%9F%87%A8%F0%9F%87%BE%20C%C3%B4te%20d'Ivoire-orange.svg" alt="Made in Côte d'Ivoire" /></a>
@@ -385,6 +385,7 @@ whatsapp-ai-saas/
 │   ├── agents/             → Moteurs et prompts des agents IA autonomes
 │   │   └── personas/       → Définitions des 27 personas d'agents
 │   ├── routes/             → Routes API Express (AI, WA, Catalog, Prospection, WP)
+│   ├── __tests__/          → Tests unitaires backend (Vitest)
 │   ├── scrapers/           → Modules de scraping (Annuaire CI, GoAfrica, Google Places)
 │   ├── aiController.js     → Contrôleur centralisé des requêtes IA
 │   ├── apiAuth.js          → Token d'authentification de l'API locale
@@ -394,18 +395,19 @@ whatsapp-ai-saas/
 │   ├── redisClient.js      → Client de mise en cache Redis
 │   └── server.js           → Point d'entrée de l'application Express
 ├── build/                  → Ressources d'empaquetage (licence installeur, script NSIS)
-├── docs/                   → Documentation d'architecture & ponts d'intégration
+├── docs/                   → Documentation d'architecture & notes de conception
 ├── electron/               → Processus principal Electron & IPC (main.cjs, preload.cjs)
 ├── memory-bank/            → Système de mémoire projet & suivi contextuel
 ├── public/                 → Assets statiques (Logos, icônes .ico/.svg/.png, poses, fonds)
 ├── src/                    → Application Frontend React 19 (Vite)
 │   ├── components/         → Composants UI (Sidebar, Topbar, éditeur d'images, kanban)
+│   ├── __tests__/          → Tests unitaires frontend (Vitest)
 │   ├── locales/            → Traductions i18next (fr, en, es, ar)
 │   ├── pages/              → Vues principales (Dashboard, AiChat, PhotoShoot, Prospection...)
 │   │   └── whatsapp/       → Sous-pages dédiées aux flux WhatsApp (Contacts, Orders, Segments)
 │   ├── services/           → Client API et authentification côté renderer
 │   └── store.js            → State management Zustand (store unique persisté)
-├── wordpress-plugin/       → Plugin WaCopilote Bridge (source + archives .zip)
+├── wordpress-plugin/       → Plugin WaCopilote Bridge (source + archive v2.0.0)
 ├── LICENSE                 → GNU AGPL-3.0
 ├── package.json            → Configuration du workspace racine & scripts npm
 ├── vite.config.js          → Configuration du bundler Vite 7
