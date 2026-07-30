@@ -85,15 +85,39 @@ async function initDB() {
         const versionResult = await client.query('SELECT MAX(version) as v FROM schema_version');
         let currentVersion = versionResult.rows[0].v || 0;
 
+        /**
+         * Applique une migration, puis n'enregistre sa version qu'en cas de succès.
+         *
+         * Toutes les erreurs étaient auparavant avalées, et la version marquée
+         * comme appliquée quoi qu'il arrive : une migration échouée était donc
+         * indiscernable d'une migration réussie, et le défaut n'apparaissait
+         * qu'au premier usage de la colonne manquante.
+         *
+         * Seul le cas bénin est ignoré — la colonne existe déjà, ce qui arrive
+         * sur les bases créées avant l'introduction du compteur de version.
+         * Toute autre erreur interrompt le démarrage, ce que la supervision
+         * côté Electron remonte désormais à l'utilisateur.
+         */
+        const isAlreadyApplied = (message = '') =>
+            /duplicate column name|already exists/i.test(message);
+
         const migrateTo = async (targetVersion, queries) => {
-            if (currentVersion < targetVersion) {
-                console.log(`[SQLite] Migrating to version ${targetVersion}...`);
-                for (let q of queries) {
-                    try { await client.query(q); } catch { /* Ignore if exists, or log if fatal */ }
+            if (currentVersion >= targetVersion) return;
+
+            console.log(`[SQLite] Migrating to version ${targetVersion}...`);
+            for (const q of queries) {
+                try {
+                    await client.query(q);
+                } catch (err) {
+                    if (isAlreadyApplied(err.message)) continue;
+                    throw new Error(
+                        `Migration ${targetVersion} échouée sur « ${q.trim().slice(0, 90)} » : ${err.message}`
+                    );
                 }
-                await client.query('INSERT INTO schema_version (version) VALUES ($1)', [targetVersion]);
-                currentVersion = targetVersion;
             }
+            await client.query('INSERT INTO schema_version (version) VALUES ($1)', [targetVersion]);
+            currentVersion = targetVersion;
+            console.log(`[SQLite] Version ${targetVersion} appliquée.`);
         };
 
         // Migrations for Phase 2: Add tracking columns to copilot_logs
