@@ -79,7 +79,6 @@ app.use('/api/auth/google', authGoogleRouter);
 // --- Prospection (Google Maps API) ---
 const prospectionRouter = require('./routes/prospection');
 app.use('/api/prospection', heavyLimiter, prospectionRouter);
-app.use('/api/catalog', heavyLimiter);
 
 // --- Agentic Pipeline (Prospection -> Contacts -> Antoine -> Clarisse/Kanban) ---
 const pipelineRouter = require('./routes/pipeline');
@@ -101,18 +100,25 @@ app.use('/api/wp', wordpressRouter);
 const documentsRouter = require('./routes/documents');
 app.use('/api/documents', documentsRouter);
 
+// Chaque router porte désormais un préfixe de montage explicite et déclare des
+// chemins relatifs. Quatre d'entre eux étaient montés sur '/' en répétant leur
+// préfixe complet en interne, ce qui rendait l'ordre de résolution difficile à
+// suivre — et masquait le doublon /api/documents/api/documents.
+//
+// settings_and_agents et ai sont montés sur /api : ils exposent chacun plusieurs
+// familles de chemins (/settings + /agents, /ai + /debug + /test-model), toutes
+// disjointes.
 const settingsAgentsRouter = require('./routes/settings_and_agents');
-// Note: routes inside settings_and_agents already have full paths like /api/settings
-app.use('/', settingsAgentsRouter);
+app.use('/api', settingsAgentsRouter);
 
 const aiRouter = require('./routes/ai');
-app.use('/', aiRouter);
+app.use('/api', aiRouter);
 
 const catalogRouter = require('./routes/catalog');
-app.use('/', catalogRouter);
+app.use('/api/catalog', heavyLimiter, catalogRouter);
 
 const waRouter = require('./routes/wa');
-app.use('/', waRouter);
+app.use('/api/wa', waRouter);
 
 
 const configLimiter = rateLimit({
