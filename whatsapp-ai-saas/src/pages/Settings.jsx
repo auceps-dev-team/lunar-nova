@@ -70,6 +70,11 @@ const Settings = () => {
             .finally(() => {
                 fetchAiQuota();
             });
+    // Chargement initial, volontairement limité au montage : refreshModels et
+    // fetchAiQuota sont redéfinies à chaque rendu, les ajouter aux dépendances
+    // relancerait la requête en boucle. Les réglages sont ensuite rafraîchis par
+    // les actions explicites de l'utilisateur.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // Pousse les réglages courants (y compris les changements pas encore sauvegardés)

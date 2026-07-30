@@ -140,6 +140,11 @@ export default function Contacts({ activeId }) {
         fetchContacts();
         fetchSettings();
         fetchMetadata();
+    // Chargement initial, volontairement limité au montage : ces trois fonctions
+    // sont redéfinies à chaque rendu, les déclarer en dépendances relancerait les
+    // requêtes en boucle. Les listes sont rechargées explicitement après chaque
+    // création, modification ou suppression.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const fetchMetadata = async () => {

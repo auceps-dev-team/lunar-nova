@@ -80,7 +80,7 @@ export default function ContactAdd() {
                 })
                 .finally(() => setIsLoading(false));
         }
-    }, [id, showAppNotification, t]);
+    }, [id, isEditMode, showAppNotification, t]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();

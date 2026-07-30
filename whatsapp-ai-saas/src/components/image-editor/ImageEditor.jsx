@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Trash2, Download, Wand2, RefreshCw, Info, FileImage, Camera, Sparkles, AlertCircle, Undo2, Redo2, FileText, Eraser } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -52,19 +52,35 @@ export function ImageEditor({ image, onUpdateImage, onRemove }) {
     const [historyIndex, setHistoryIndex] = useState(-1);
 
     // Initialize history when a new image is selected
+    // Miroir de l'historique, lu par la fonction de nettoyage ci-dessous.
+    //
+    // Celle-ci capturait `history` au moment où l'effet était créé, c'est-à-dire
+    // juste après setHistory([image]) : elle ne voyait donc que l'image initiale.
+    // Toutes les versions produites ensuite par les retouches successives
+    // n'étaient jamais révoquées, et leurs URL blob: restaient en mémoire
+    // jusqu'à la fermeture de l'application. La référence donne accès à
+    // l'historique réel au moment du nettoyage.
+    const historyRef = useRef([]);
+    useEffect(() => { historyRef.current = history; }, [history]);
+
     useEffect(() => {
         setHistory([image]);
         setHistoryIndex(0);
-        
+
+        const currentImageId = image.id;
         return () => {
-            // Cleanup blob URLs from history when component unmounts or image changes
-            history.forEach(histImg => {
-                // Don't revoke the initial image URL as it might be used by the workspace
-                if (histImg.id !== image.id && histImg.previewUrl && histImg.previewUrl.startsWith('blob:')) {
+            historyRef.current.forEach(histImg => {
+                // L'image d'origine n'est pas révoquée : l'espace de travail
+                // s'en sert encore.
+                if (histImg.id !== currentImageId && histImg.previewUrl?.startsWith('blob:')) {
                     URL.revokeObjectURL(histImg.previewUrl);
                 }
             });
         };
+    // Dépendance volontairement limitée à image.id : c'est le changement d'image
+    // qui doit réinitialiser l'historique, pas une nouvelle identité d'objet pour
+    // la même image, qui l'effacerait à chaque rendu du parent.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [image.id]);
 
     const pushToHistory = (newImage) => {

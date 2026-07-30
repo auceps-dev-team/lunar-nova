@@ -1,9 +1,14 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Sparkles, Copy, Trash2, Search, Plus, Menu, ArrowLeft, Send, Paperclip, Type, Mic, X } from 'lucide-react';
 import useAppStore from '../store';
 import { useTranslation } from 'react-i18next';
 import CustomSelect from '../components/CustomSelect';
+
+// Replis figés au niveau du module : renvoyés par référence, ils gardent les
+// dépendances de useMemo/useEffect stables d'un rendu à l'autre.
+const EMPTY_ARRAY = [];
+const EMPTY_OBJECT = {};
 
 
 // ─── Couleurs pastel générées déterministement par nom ────────────────────
@@ -30,13 +35,16 @@ const formatMessage = (text) => {
 export default function AiChat() {
     const { t } = useTranslation();
     const showAppNotification = useAppStore(state => state.showAppNotification);
-    const appSettings = useAppStore(state => state.appSettings) || {};
+    const appSettings = useAppStore(state => state.appSettings) || EMPTY_OBJECT;
     const updateSettings = useAppStore(state => state.updateSettings);
     const availableModels = useAppStore(state => state.availableModels);
     const language = appSettings.language || 'en';
 
-    // ── Agents système (définis à l'intérieur pour utiliser t()) ───────────
-    const SYSTEM_AGENTS = [
+    // ── Agents système ────────────────────────────────────────────────────
+    // Mémoïsé : le tableau dépend de t(), il ne peut donc pas sortir du composant,
+    // mais le recréer à chaque rendu invalidait l'effet qui charge les agents
+    // personnalisés — lequel relançait un fetch en boucle.
+    const SYSTEM_AGENTS = useMemo(() => [
         { id: 'copywriter', name: t('agentJarvisName'), description: t('agentJarvisDesc'), isSystem: true },
         { id: 'legal', name: t('agentLegalName'), description: t('agentLegalDesc'), isSystem: true },
         { id: 'ella', name: t('agentEllaName'), description: t('agentEllaDesc'), isSystem: true },
@@ -57,7 +65,7 @@ export default function AiChat() {
         { id: 'support_responder', name: t('agentSupportName'), description: t('agentSupportDesc'), isSystem: true },
         { id: 'legal_compliance', name: t('agentComplianceName'), description: t('agentComplianceDesc'), isSystem: true },
         { id: 'account_strategist', name: t('agentAccountName'), description: t('agentAccountDesc'), isSystem: true },
-    ];
+    ], [t]);
 
     // ── State ──────────────────────────────────────────────────────────────
     const [view, setView] = useState('grid');          // 'grid' | 'chat'
@@ -70,15 +78,17 @@ export default function AiChat() {
     });
 
     // Conversations par agent — { [agentId]: [{ role, text, ts }] }
-    const conversations = useAppStore(state => state.aiChatConversations) || {};
-    const setConversations = (updater) => {
+    const conversations = useAppStore(state => state.aiChatConversations) || EMPTY_OBJECT;
+    // Stabilisé : cette fonction est consommée par des useCallback plus bas.
+    // Recréée à chaque rendu, elle invalidait leur mémoïsation en continu.
+    const setConversations = useCallback((updater) => {
         const currentState = useAppStore.getState().aiChatConversations || {};
         const nextState = typeof updater === 'function' ? updater(currentState) : updater;
         useAppStore.getState().updateAiChatConversations(selectedAgent?.id || 'temp', nextState[selectedAgent?.id || 'temp']);
-    };
+    }, [selectedAgent]);
 
     // Historique des sessions — { [agentId]: [{ id, title, messages, ts }] }
-    const sessions = useAppStore(state => state.aiChatSessions) || {};
+    const sessions = useAppStore(state => state.aiChatSessions) || EMPTY_OBJECT;
     const setSessions = (updater) => {
         const currentState = useAppStore.getState().aiChatSessions || {};
         const nextState = typeof updater === 'function' ? updater(currentState) : updater;
@@ -128,7 +138,7 @@ export default function AiChat() {
         fetchCustomAgents();
         const interval = setInterval(fetchCustomAgents, 30000); // refresh toutes les 30s
         return () => clearInterval(interval);
-    }, [language, t]);
+    }, [language, t, SYSTEM_AGENTS]);
 
     // ── Auto-scroll ───────────────────────────────────────────────────────
     useEffect(() => {
@@ -156,7 +166,7 @@ export default function AiChat() {
             }));
         }
         setTimeout(() => inputRef.current?.focus(), 100);
-    }, [conversations, t]);
+    }, [conversations, setConversations, t]);
 
     // ── Nouvelle conversation ─────────────────────────────────────────────
     const newConversation = () => {

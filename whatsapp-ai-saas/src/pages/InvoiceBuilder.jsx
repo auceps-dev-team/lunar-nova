@@ -40,16 +40,21 @@ import KPI from '../components/invoice/KPI';
 import TplThumb from '../components/invoice/TplThumb';
 import { TPL_PREVIEWS } from '../components/invoice/templates';
 
+// Replis figés au niveau du module : renvoyés par référence, ils gardent les
+// dépendances de useMemo/useEffect stables d'un rendu à l'autre.
+const EMPTY_ARRAY = [];
+const EMPTY_OBJECT = {};
+
 /* ═══════════════════════════════════════════════════════
    MAIN COMPONENT
    ═══════════════════════════════════════════════════════ */
 export default function InvoiceBuilder({ activeId }) {
     const { t } = useTranslation();
-    const invoices = useAppStore(s => s.invoices) || [];
+    const invoices = useAppStore(s => s.invoices) || EMPTY_ARRAY;
     const addInvoice = useAppStore(s => s.addInvoice);
     const updateInvoice = useAppStore(s => s.updateInvoice);
     const deleteInvoice = useAppStore(s => s.deleteInvoice);
-    const userProfile = useAppStore(s => s.userProfile) || {};
+    const userProfile = useAppStore(s => s.userProfile) || EMPTY_OBJECT;
     const invoiceDraft = useAppStore(s => s.invoiceDraft);
     const setInvoiceDraft = useAppStore(s => s.setInvoiceDraft);
 

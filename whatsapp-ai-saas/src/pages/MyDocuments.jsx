@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import useAppStore from '../store';
 import { FileText, Trash2, Edit, Plus, Clock } from 'lucide-react';
@@ -14,11 +14,8 @@ export default function MyDocuments() {
     const [documents, setDocuments] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    useEffect(() => {
-        fetchDocuments();
-    }, []);
 
-    const fetchDocuments = async () => {
+    const fetchDocuments = useCallback(async () => {
         setIsLoading(true);
         try {
             const res = await fetch(API_BASE_URL + '/api/documents');
@@ -34,7 +31,11 @@ export default function MyDocuments() {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [showAppNotification, t]);
+
+    useEffect(() => {
+        fetchDocuments();
+    }, [fetchDocuments]);
 
     const handleDelete = async (id) => {
         if (!window.confirm(t('confirmDeleteDocument'))) return;

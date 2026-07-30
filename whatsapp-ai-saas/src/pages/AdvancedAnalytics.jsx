@@ -7,6 +7,11 @@ import {
 } from 'recharts';
 import { API_BASE_URL } from '../config';
 
+// Replis figés au niveau du module : renvoyés par référence, ils gardent les
+// dépendances de useMemo/useEffect stables d'un rendu à l'autre.
+const EMPTY_ARRAY = [];
+const EMPTY_OBJECT = {};
+
 // ── Palette cohérente avec le projet ──────────────────────────────
 const C = {
     primary: '#0b9f84',
@@ -259,15 +264,15 @@ export default function AdvancedAnalytics() {
     const { t } = useTranslation();
 
     // Pull everything from Zustand
-    const tasks = useAppStore(s => s.tasks) || [];
-    const invoices = useAppStore(s => s.invoices) || [];
-    const instances = useAppStore(s => s.instances) || [];
-    const agentHistory = useAppStore(s => s.agentHistory) || [];
-    const conversations = useAppStore(s => s.aiChatConversations) || {};
-    const sessions = useAppStore(s => s.aiChatSessions) || {};
+    const tasks = useAppStore(s => s.tasks) || EMPTY_ARRAY;
+    const invoices = useAppStore(s => s.invoices) || EMPTY_ARRAY;
+    const instances = useAppStore(s => s.instances) || EMPTY_ARRAY;
+    const agentHistory = useAppStore(s => s.agentHistory) || EMPTY_ARRAY;
+    const conversations = useAppStore(s => s.aiChatConversations) || EMPTY_OBJECT;
+    const sessions = useAppStore(s => s.aiChatSessions) || EMPTY_OBJECT;
     const copilotCount = useAppStore(s => s.copilotRepliesGenerated) || 0;
-    const appSettings = useAppStore(s => s.appSettings) || {};
-    const userProfile = useAppStore(s => s.userProfile) || {};
+    const appSettings = useAppStore(s => s.appSettings) || EMPTY_OBJECT;
+    const userProfile = useAppStore(s => s.userProfile) || EMPTY_OBJECT;
     const language = appSettings.language || 'en';
 
     const [activeTab, setActiveTab] = useState('overview');
