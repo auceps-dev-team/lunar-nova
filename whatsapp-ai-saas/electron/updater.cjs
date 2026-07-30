@@ -6,7 +6,18 @@ const { spawn } = require('child_process');
 
 const REPO_URL = 'https://api.github.com/repos/auceps-dev-team/wacopilote-releases/releases/latest';
 
-module.exports = function setupUpdater(mainWindow) {
+/**
+ * @param {() => Electron.BrowserWindow | undefined} getMainWindow
+ *
+ * Un accesseur, et non la fenêtre elle-même : setupUpdater est appelé avant
+ * createWindow, donc recevoir `mainWindow` directement revenait à capturer
+ * `undefined` pour toute la durée de vie de l'application. La garde
+ * `if (mainWindow && ...)` n'était alors jamais vraie et aucun événement de
+ * progression n'atteignait l'interface — la barre restait figée à 0 %.
+ * L'accesseur résout la fenêtre au moment de l'envoi, et reste valide si elle
+ * est recréée (réactivation sous macOS).
+ */
+module.exports = function setupUpdater(getMainWindow) {
     // 0. OBTENTION DE LA VERSION LOCALE
     ipcMain.handle('update:get-version', () => {
         return app.getVersion();
@@ -83,8 +94,9 @@ module.exports = function setupUpdater(mainWindow) {
                 // Throttling: on n'envoie au front que si le pourcentage change
                 if (percent > lastPercent) {
                     lastPercent = percent;
-                    if (mainWindow && !mainWindow.isDestroyed()) {
-                        mainWindow.webContents.send('update:progress', percent);
+                    const win = getMainWindow();
+                    if (win && !win.isDestroyed()) {
+                        win.webContents.send('update:progress', percent);
                     }
                 }
             });

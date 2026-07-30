@@ -96,7 +96,11 @@ const useAppStore = create(
                 allowAiRead: true,
                 promptFormat: 'json',
                 hasCompletedOnboarding: false,
-                mainMenuOrder: []
+                mainMenuOrder: [],
+                // Identifiants des onglets masqués dans la barre latérale.
+                // Le masquage n'est que visuel : les routes restent accessibles
+                // par URL, il ne s'agit pas d'un contrôle d'accès.
+                hiddenMenuItems: []
             },
 
             // --- Agent Chats & History ---

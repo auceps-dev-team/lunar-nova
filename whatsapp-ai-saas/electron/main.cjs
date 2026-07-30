@@ -240,7 +240,7 @@ app.whenReady().then(async () => {
     }
 
     // Auto Updater (Setup Manual GitHub Releases)
-    setupUpdater(mainWindow);
+    setupUpdater(() => mainWindow);
 
     // Le renderer récupère le token ici pour authentifier ses appels au backend.
     ipcMain.handle('get-api-token', () => apiToken);

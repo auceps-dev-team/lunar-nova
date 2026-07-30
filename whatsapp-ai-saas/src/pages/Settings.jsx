@@ -5,11 +5,20 @@ import { useTranslation } from 'react-i18next';
 import UpdateManager from '../components/UpdateManager';
 import CustomSelect from '../components/CustomSelect';
 import { API_BASE_URL } from '../config';
+import { DEFAULT_MENU_ITEMS } from '../constants/menuItems';
 
 const Settings = () => {
     const { t } = useTranslation();
     const settings = useAppStore(state => state.appSettings) || { theme: 'light', language: 'en', model: 'gemini-pro-latest', allowAiRead: true };
     const updateSettings = useAppStore(state => state.updateSettings);
+    const hiddenMenuItems = settings.hiddenMenuItems || [];
+
+    const toggleMenuItem = (id) => {
+        const next = hiddenMenuItems.includes(id)
+            ? hiddenMenuItems.filter(x => x !== id)
+            : [...hiddenMenuItems, id];
+        updateSettings({ hiddenMenuItems: next });
+    };
     const setZustandBackendSettings = useAppStore(state => state.setBackendSettings);
     const fetchGlobalModels = useAppStore(state => state.fetchGlobalModels);
 
@@ -540,6 +549,50 @@ const Settings = () => {
                     </div>
                 </div>
 
+            </div>
+
+            {/* ── Onglets visibles dans la barre latérale ── */}
+            <div className="mt-6 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                <div className="mb-5">
+                    <h3 className="text-base font-semibold text-gray-900 dark:text-white">{t('visibleTabsTitle')}</h3>
+                    <p className="text-sm text-gray-500 mt-1">{t('visibleTabsDesc')}</p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                    {DEFAULT_MENU_ITEMS.map(item => {
+                        const isHidden = hiddenMenuItems.includes(item.id);
+                        return (
+                            <label
+                                key={item.id}
+                                className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors"
+                            >
+                                <span className={`flex items-center gap-2.5 text-sm font-medium ${isHidden ? 'text-gray-400 dark:text-gray-600' : 'text-gray-800 dark:text-gray-200'}`}>
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0">{item.icon}</svg>
+                                    {t(item.labelKey)}
+                                </span>
+                                <input
+                                    type="checkbox"
+                                    checked={!isHidden}
+                                    onChange={() => toggleMenuItem(item.id)}
+                                    className="size-4 shrink-0 rounded text-primary focus:ring-primary/50 border-gray-300 cursor-pointer"
+                                />
+                            </label>
+                        );
+                    })}
+                </div>
+
+                {hiddenMenuItems.length > 0 && (
+                    <button
+                        onClick={() => updateSettings({ hiddenMenuItems: [] })}
+                        className="mt-4 text-xs font-medium text-primary hover:underline"
+                    >
+                        {t('showAllTabs')}
+                    </button>
+                )}
+
+                <p className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 text-xs text-gray-500">
+                    {t('visibleTabsNote')}
+                </p>
             </div>
 
             <div className="mt-6">
