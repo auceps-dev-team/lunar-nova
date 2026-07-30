@@ -1,4 +1,5 @@
 const { chromium } = require('playwright');
+const { isLandline, COUNTRY_PHONE_CODES } = require('./phoneRules');
 
 // Mapping code pays -> nom complet pour les résultats
 const COUNTRY_NAMES = {
@@ -17,27 +18,6 @@ const COUNTRY_NAMES = {
     ma: "Maroc",
     dz: "Algérie",
     za: "Afrique du Sud"
-};
-
-// Indicatifs téléphoniques par pays
-const COUNTRY_PHONE_CODES = {
-    ci: '225', tg: '228', sn: '221', bj: '229', bf: '226',
-    ml: '223', ne: '227', cm: '237', cg: '242', cd: '243',
-    ga: '241', gn: '224', ma: '212', dz: '213', za: '27'
-};
-
-// Préfixes de numéros fixes par pays (pour filtrage)
-const LANDLINE_PREFIXES = {
-    ci: ['21', '25', '27'],
-    tg: ['22', '23'],
-    sn: ['33'],
-    bj: ['21'],
-    bf: ['20', '25'],
-    cm: ['22', '23', '24', '33'],
-    cg: ['22'],
-    ga: ['01'],
-    ma: ['05'],
-    dz: ['02', '03', '04']
 };
 
 /**
@@ -184,7 +164,6 @@ async function search(query, ignoreLandlines, pages, country = 'ci', subcategory
             console.log(`[GoAfricaOnline] ${currentLeads.length} leads trouvés sur la page ${p}`);
             
             // Filtrage préalable (fixes et doublons)
-            const landlinePrefixes = LANDLINE_PREFIXES[country] || [];
             const validLeads = [];
             
             for (const lead of currentLeads) {
@@ -195,17 +174,11 @@ async function search(query, ignoreLandlines, pages, country = 'ci', subcategory
                 }
                 
                 // --- Filtrage des numéros fixes ---
-                const cleanNumber = lead.numero.replace(/\D/g, '');
-                let isLandline = false;
-                
-                for (const prefix of landlinePrefixes) {
-                    if (cleanNumber.startsWith(prefix) || cleanNumber.startsWith((COUNTRY_PHONE_CODES[country] || '') + prefix)) {
-                        isLandline = true;
-                        break;
-                    }
-                }
-
-                if (ignoreLandlines && isLandline) {
+                // Délégué à phoneRules, qui retire l'indicatif avant de comparer.
+                // La comparaison directe qui se trouvait ici classait « fixe »
+                // tout numéro togolais ou camerounais en format international,
+                // l'indicatif de ces pays commençant par leur propre préfixe fixe.
+                if (ignoreLandlines && isLandline(lead.numero, country)) {
                     if (onProgress) onProgress({ phase: 'extract', current: validLeads.length, total: currentLeads.length, message: `Numéro fixe ignoré : ${lead.nom}` });
                     continue;
                 }

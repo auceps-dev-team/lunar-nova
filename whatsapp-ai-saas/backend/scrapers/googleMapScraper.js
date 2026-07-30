@@ -1,5 +1,6 @@
 const { chromium } = require('playwright');
 const EventEmitter = require('events');
+const { isLandline, detectCountry } = require('./phoneRules');
 
 const MAX_SESSIONS = 10;
 const SESSION_TTL_MS = 60 * 60 * 1000; // 1 hour
@@ -282,31 +283,20 @@ class GoogleMapScraper extends EventEmitter {
                     if (phone) phone = phone.replace(/[^\d+]/g, '');
 
                     // Filter landlines
+                    //
+                    // Une cascade de dix branches en dur vivait ici, avec des
+                    // expressions attendant des espaces (`\s*`) dans un numéro
+                    // dont ils venaient d'être retirés. Le pays est maintenant
+                    // déduit de l'indicatif et la décision déléguée à phoneRules,
+                    // partagé avec les deux autres scrapers.
+                    //
+                    // Google Maps ne renseigne pas le pays de la recherche : sans
+                    // indicatif reconnu, le numéro est conservé plutôt qu'écarté
+                    // sur une supposition.
                     if (ignoreLandlines && phone) {
-                        let isMobile = true;
-                        if (phone.startsWith('+33')) {
-                            if (!phone.match(/^\+33\s*[67]/)) isMobile = false;
-                        } else if (phone.startsWith('+225')) {
-                            if (!phone.match(/^\+225\s*(01|05|07)/)) isMobile = false;
-                        } else if (phone.startsWith('+221') && phone.match(/^\+221\s*33/)) {
-                            isMobile = false; // Sénégal fixe
-                        } else if (phone.startsWith('+228') && phone.match(/^\+228\s*(22|23)/)) {
-                            isMobile = false; // Togo fixe
-                        } else if (phone.startsWith('+237') && phone.match(/^\+237\s*(22|23|24|33)/)) {
-                            isMobile = false; // Cameroun fixe
-                        } else if (phone.startsWith('+226') && phone.match(/^\+226\s*(20|25)/)) {
-                            isMobile = false; // Burkina Faso fixe
-                        } else if (phone.startsWith('+229') && phone.match(/^\+229\s*21/)) {
-                            isMobile = false; // Bénin fixe
-                        } else if (phone.startsWith('+241') && phone.match(/^\+241\s*01/)) {
-                            isMobile = false; // Gabon fixe
-                        } else if (phone.startsWith('+212') && phone.match(/^\+212\s*5/)) {
-                            isMobile = false; // Maroc fixe
-                        } else if (phone.startsWith('+213') && phone.match(/^\+213\s*(02|03|04)/)) {
-                            isMobile = false; // Algérie fixe
-                        }
-                        if (!isMobile) {
-                            console.log(`[GoogleMapScraper] Skipping landline: ${phone}`);
+                        const country = detectCountry(phone);
+                        if (country && isLandline(phone, country)) {
+                            console.log(`[GoogleMapScraper] Numéro fixe ignoré (${country})`);
                             session.scrapedLinks.add(link);
                             continue;
                         }
