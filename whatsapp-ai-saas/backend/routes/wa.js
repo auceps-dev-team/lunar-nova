@@ -28,7 +28,7 @@ const releaseWaMutex = () => {
 };
 
 // --- Phase 13: WhatsApp Contacts APIs ---
-router.get('/api/wa/contact-lists', async (req, res) => {
+router.get('/contact-lists', async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM wa_contact_lists ORDER BY id DESC');
         res.json({ status: 'success', data: result.rows });
@@ -37,7 +37,7 @@ router.get('/api/wa/contact-lists', async (req, res) => {
     }
 });
 
-router.post('/api/wa/contact-lists', async (req, res) => {
+router.post('/contact-lists', async (req, res) => {
     const { name } = req.body;
     try {
         const result = await pool.query('INSERT INTO wa_contact_lists (name) VALUES ($1) RETURNING *', [name]);
@@ -47,7 +47,7 @@ router.post('/api/wa/contact-lists', async (req, res) => {
     }
 });
 
-router.put('/api/wa/contact-lists/:id', async (req, res) => {
+router.put('/contact-lists/:id', async (req, res) => {
     const { name } = req.body;
     try {
         const result = await pool.query('UPDATE wa_contact_lists SET name = $1 WHERE id = $2 RETURNING *', [name, req.params.id]);
@@ -58,7 +58,7 @@ router.put('/api/wa/contact-lists/:id', async (req, res) => {
     }
 });
 
-router.delete('/api/wa/contact-lists/:id', async (req, res) => {
+router.delete('/contact-lists/:id', async (req, res) => {
     try {
         await pool.query('UPDATE wa_contacts SET list_id = NULL WHERE list_id = $1', [req.params.id]);
         await pool.query('DELETE FROM wa_contact_lists WHERE id = $1', [req.params.id]);
@@ -68,7 +68,7 @@ router.delete('/api/wa/contact-lists/:id', async (req, res) => {
     }
 });
 
-router.get('/api/wa/segments', async (req, res) => {
+router.get('/segments', async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM wa_segments ORDER BY id DESC');
         res.json({ status: 'success', data: result.rows });
@@ -77,7 +77,7 @@ router.get('/api/wa/segments', async (req, res) => {
     }
 });
 
-router.post('/api/wa/segments', async (req, res) => {
+router.post('/segments', async (req, res) => {
     const { name } = req.body;
     try {
         const result = await pool.query('INSERT INTO wa_segments (name) VALUES ($1) RETURNING *', [name]);
@@ -87,7 +87,7 @@ router.post('/api/wa/segments', async (req, res) => {
     }
 });
 
-router.put('/api/wa/segments/:id', async (req, res) => {
+router.put('/segments/:id', async (req, res) => {
     const { name } = req.body;
     try {
         const result = await pool.query('UPDATE wa_segments SET name = $1 WHERE id = $2 RETURNING *', [name, req.params.id]);
@@ -98,7 +98,7 @@ router.put('/api/wa/segments/:id', async (req, res) => {
     }
 });
 
-router.delete('/api/wa/segments/:id', async (req, res) => {
+router.delete('/segments/:id', async (req, res) => {
     try {
         await pool.query('UPDATE wa_contacts SET segment_id = NULL WHERE segment_id = $1', [req.params.id]);
         await pool.query('DELETE FROM wa_segments WHERE id = $1', [req.params.id]);
@@ -108,7 +108,7 @@ router.delete('/api/wa/segments/:id', async (req, res) => {
     }
 });
 
-router.get('/api/wa/contacts', async (req, res) => {
+router.get('/contacts', async (req, res) => {
     try {
         const result = await pool.query(`
             SELECT c.*, s.name as segment_name, l.name as list_name
@@ -123,7 +123,7 @@ router.get('/api/wa/contacts', async (req, res) => {
     }
 });
 
-router.post('/api/wa/contacts/bulk', async (req, res) => {
+router.post('/contacts/bulk', async (req, res) => {
     const { contacts } = req.body;
 
     if (!Array.isArray(contacts) || contacts.length === 0) {
@@ -209,7 +209,7 @@ router.post('/api/wa/contacts/bulk', async (req, res) => {
     }
 });
 
-router.post('/api/wa/contacts', async (req, res) => {
+router.post('/contacts', async (req, res) => {
     const { name, phone, list_id, segment_id, email, address } = req.body;
     try {
         const result = await pool.query(
@@ -222,7 +222,7 @@ router.post('/api/wa/contacts', async (req, res) => {
     }
 });
 
-router.get('/api/wa/contacts/:id', async (req, res) => {
+router.get('/contacts/:id', async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM wa_contacts WHERE id = $1', [req.params.id]);
         if (result.rows.length === 0) return res.status(404).json({ error: 'Not found' });
@@ -234,7 +234,7 @@ router.get('/api/wa/contacts/:id', async (req, res) => {
 
 
 
-router.put('/api/wa/contacts/bulk-update', async (req, res) => {
+router.put('/contacts/bulk-update', async (req, res) => {
     const { contactIds, segmentId } = req.body;
     if (!Array.isArray(contactIds) || contactIds.length === 0) {
         return res.status(400).json({ error: 'contactIds array is required and cannot be empty' });
@@ -261,7 +261,7 @@ router.put('/api/wa/contacts/bulk-update', async (req, res) => {
     }
 });
 
-router.put('/api/wa/contacts/bulk-update-list', async (req, res) => {
+router.put('/contacts/bulk-update-list', async (req, res) => {
     const { contactIds, listId } = req.body;
     if (!Array.isArray(contactIds) || contactIds.length === 0) {
         return res.status(400).json({ error: 'contactIds array is required and cannot be empty' });
@@ -287,7 +287,7 @@ router.put('/api/wa/contacts/bulk-update-list', async (req, res) => {
     }
 });
 
-router.put('/api/wa/contacts/:id', async (req, res) => {
+router.put('/contacts/:id', async (req, res) => {
     const { name, phone, list_id, segment_id, email, address } = req.body;
     try {
         // Try with email/address columns first
@@ -318,7 +318,7 @@ router.put('/api/wa/contacts/:id', async (req, res) => {
     }
 });
 
-router.delete('/api/wa/contacts/bulk-delete', async (req, res) => {
+router.delete('/contacts/bulk-delete', async (req, res) => {
     const { contactIds } = req.body;
     if (!Array.isArray(contactIds) || contactIds.length === 0) {
         return res.status(400).json({ error: 'contactIds array is required and cannot be empty' });
@@ -338,7 +338,7 @@ router.delete('/api/wa/contacts/bulk-delete', async (req, res) => {
     }
 });
 
-router.delete('/api/wa/contacts/:id', async (req, res) => {
+router.delete('/contacts/:id', async (req, res) => {
     try {
         await pool.query('DELETE FROM wa_contacts WHERE id = $1', [req.params.id]);
         res.json({ status: 'success', message: 'Deleted' });
@@ -347,7 +347,7 @@ router.delete('/api/wa/contacts/:id', async (req, res) => {
     }
 });
 
-router.post('/api/wa/open-chat', async (req, res) => {
+router.post('/open-chat', async (req, res) => {
     const { instance_id, phone, contact_id, country_code, text } = req.body;
     if (!instance_id || !phone) return res.status(400).json({ error: 'Missing instance_id or phone' });
 
@@ -442,7 +442,7 @@ router.post('/api/wa/open-chat', async (req, res) => {
     }
 });
 
-router.post('/api/wa/verify-contact', async (req, res) => {
+router.post('/verify-contact', async (req, res) => {
     const { instance_id, contact_id, phone, country_code } = req.body;
 
     if (!instance_id || !phone) {
@@ -612,7 +612,7 @@ router.post('/api/wa/verify-contact', async (req, res) => {
 // Nodemon trigger
 
 // --- Phase 19.5: Contact Analytics Endpoint ---
-router.get('/api/wa/analytics', async (req, res) => {
+router.get('/analytics', async (req, res) => {
     try {
         const totalRes = await pool.query('SELECT COUNT(*) as count FROM wa_contacts');
         const segmentRes = await pool.query(`

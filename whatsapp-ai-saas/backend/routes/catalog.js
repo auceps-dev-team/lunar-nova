@@ -22,7 +22,7 @@ const puppeteer = require('puppeteer-core');
  * La route recevait auparavant productDescription et productPrice sans jamais
  * les utiliser, ce qui laissait penser à une fonctionnalité inachevée.
  */
-router.post('/api/catalog/upload', async (req, res) => {
+router.post('/upload', async (req, res) => {
     const { instance_id, productName, imageBase64 } = req.body;
 
     if (!instance_id || !productName || !imageBase64) {

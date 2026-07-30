@@ -14,7 +14,7 @@ const aiLimiter = rateLimit({
     message: { error: 'Too many requests from this IP, please try again after 15 minutes' }
 });
 
-router.post('/api/ai/models', aiLimiter, async (req, res) => {
+router.post('/ai/models', aiLimiter, async (req, res) => {
     try {
         const provider = req.body.provider;
         const apiKey = req.body.apiKey;
@@ -26,7 +26,7 @@ router.post('/api/ai/models', aiLimiter, async (req, res) => {
 });
 
 // Endpoint to test model / API key connection (Soft Validation)
-router.post('/api/test-model', aiLimiter, async (req, res) => {
+router.post('/test-model', aiLimiter, async (req, res) => {
     // `model` n'est pas utilisé : le test valide la clé et l'accès au
     // fournisseur en listant ses modèles, pas la disponibilité d'un modèle précis.
     const { provider, apiKey } = req.body;
@@ -44,7 +44,7 @@ router.post('/api/test-model', aiLimiter, async (req, res) => {
 });
 
 // Debug: return nvidia model definition (hot-loaded)
-router.get('/api/debug/nvidia-model', aiLimiter, async (req, res) => {
+router.get('/debug/nvidia-model', aiLimiter, async (req, res) => {
     try {
         const id = req.query.id;
         try { delete require.cache[require.resolve('../nvidiaModels')]; } catch {}
@@ -57,7 +57,7 @@ router.get('/api/debug/nvidia-model', aiLimiter, async (req, res) => {
 });
 
 // Endpoint to fetch Copilot Generative Replies
-router.post('/api/ai/copilot', aiLimiter, async (req, res) => {
+router.post('/ai/copilot', aiLimiter, async (req, res) => {
     // Requires instance_id for DB logging in a multi-tenant environment.
     // Usually passed as part of the request. Let's assume frontend passes it.
     const { instance_id, chatContext, model, provider } = req.body;
@@ -150,7 +150,7 @@ const agentSchema = z.object({
 });
 
 // Endpoint for specialized Persona AI Agents (Legal, Creative)
-router.post('/api/ai/agent', aiLimiter, async (req, res) => {
+router.post('/ai/agent', aiLimiter, async (req, res) => {
     try {
         // Validation des inputs avec Zod
         const validatedData = agentSchema.parse(req.body);
@@ -175,7 +175,7 @@ router.post('/api/ai/agent', aiLimiter, async (req, res) => {
 });
 
 // Endpoint to generate an image (Gemini, NVIDIA NIM, etc.)
-router.post('/api/ai/generate-image', aiLimiter, async (req, res) => {
+router.post('/ai/generate-image', aiLimiter, async (req, res) => {
     const { prompt, aspectRatio, imageParams, editMode, mode, provider, imageModel } = req.body;
 
     if (!prompt) {

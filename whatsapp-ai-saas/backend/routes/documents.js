@@ -2,8 +2,12 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
 
+// Ce router est monté sur /api/documents dans server.js : les chemins déclarés
+// ici sont donc relatifs. Ils répétaient le préfixe, ce qui exposait l'API sur
+// /api/documents/api/documents et renvoyait 404 à tous les appels du frontend.
+
 // --- Phase 26: AI Writer Document APIs ---
-router.get('/api/documents', async (req, res) => {
+router.get('/', async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM ai_documents ORDER BY updated_at DESC, id DESC');
         res.json({ status: 'success', data: result.rows });
@@ -12,7 +16,7 @@ router.get('/api/documents', async (req, res) => {
     }
 });
 
-router.get('/api/documents/:id', async (req, res) => {
+router.get('/:id', async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM ai_documents WHERE id = $1', [req.params.id]);
         if (result.rows.length === 0) return res.status(404).json({ error: 'Not found' });
@@ -22,7 +26,7 @@ router.get('/api/documents/:id', async (req, res) => {
     }
 });
 
-router.delete('/api/documents/:id', async (req, res) => {
+router.delete('/:id', async (req, res) => {
     try {
         await pool.query('DELETE FROM ai_documents WHERE id = $1', [req.params.id]);
         res.json({ status: 'success' });
@@ -31,7 +35,7 @@ router.delete('/api/documents/:id', async (req, res) => {
     }
 });
 
-router.post('/api/documents', async (req, res) => {
+router.post('/', async (req, res) => {
     const { title, content } = req.body;
     try {
         const result = await pool.query(
@@ -44,7 +48,7 @@ router.post('/api/documents', async (req, res) => {
     }
 });
 
-router.put('/api/documents/:id', async (req, res) => {
+router.put('/:id', async (req, res) => {
     const { title, content } = req.body;
     try {
         const result = await pool.query(

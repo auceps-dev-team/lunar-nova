@@ -19,7 +19,7 @@ const { pool, getSetting, setSetting } = require('../db');
 const isSecretKey = (key) => key.endsWith('_api_key');
 
 // --- Phase 15: Modularity APIs ---
-router.get('/api/settings', async (req, res) => {
+router.get('/settings', async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM app_settings');
         const settings = {};
@@ -38,7 +38,7 @@ router.get('/api/settings', async (req, res) => {
     }
 });
 
-router.put('/api/settings', async (req, res) => {
+router.put('/settings', async (req, res) => {
     try {
         for (const [key, value] of Object.entries(req.body)) {
             if (isSecretKey(key) && (value === '' || value === null || value === undefined)) {
@@ -52,7 +52,7 @@ router.put('/api/settings', async (req, res) => {
     }
 });
 
-router.get('/api/settings/quota', async (req, res) => {
+router.get('/settings/quota', async (req, res) => {
     try {
         const key = await getSetting('gemini_api_key', '');
         const count = parseInt(await getSetting('gemini_image_count', '0')) || 0;
@@ -72,7 +72,7 @@ router.get('/api/settings/quota', async (req, res) => {
     }
 });
 
-router.get('/api/agents', async (req, res) => {
+router.get('/agents', async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM ai_agents');
         res.json({ status: 'success', data: result.rows });
@@ -81,7 +81,7 @@ router.get('/api/agents', async (req, res) => {
     }
 });
 
-router.post('/api/agents', async (req, res) => {
+router.post('/agents', async (req, res) => {
     const { id, name, system_instruction, response_format, provider_override, model_override } = req.body;
     try {
         const agentId = id || `agent_${Date.now()}`;
@@ -95,7 +95,7 @@ router.post('/api/agents', async (req, res) => {
     }
 });
 
-router.delete('/api/agents/:id', async (req, res) => {
+router.delete('/agents/:id', async (req, res) => {
     try {
         await pool.query('DELETE FROM ai_agents WHERE id = $1', [req.params.id]);
         res.json({ status: 'success' });
