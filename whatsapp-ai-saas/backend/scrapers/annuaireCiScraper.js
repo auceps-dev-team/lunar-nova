@@ -1,4 +1,5 @@
 const { chromium } = require('playwright');
+const { isLandline, normalizeDigits } = require('./phoneRules');
 
 /**
  * Scraper pour Annuaire CI
@@ -202,18 +203,13 @@ async function search(query, ignoreLandlines, pages) {
                     await companyPage.close();
 
                     if (details.name && details.phone && details.phone.length >= 8) {
-                        const cleanNumber = details.phone.replace(/\D/g, '');
-                        let isLandline = false;
-                        
-                        if (cleanNumber.length === 10) {
-                            if (cleanNumber.startsWith('21') || cleanNumber.startsWith('25') || cleanNumber.startsWith('27')) {
-                                isLandline = true;
-                            }
-                        } else if (cleanNumber.startsWith('22521') || cleanNumber.startsWith('22525') || cleanNumber.startsWith('22527')) {
-                            isLandline = true;
-                        }
+                        const cleanNumber = normalizeDigits(details.phone);
 
-                        if (ignoreLandlines && isLandline) {
+                        // Le filtrage était écrit en dur ici, et ne reconnaissait
+                        // les numéros nationaux que sur exactement 10 chiffres.
+                        // phoneRules couvre les deux formats et sert désormais les
+                        // trois scrapers.
+                        if (ignoreLandlines && isLandline(cleanNumber, 'ci')) {
                             continue;
                         }
                         

@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/auceps-dev-team/lunar-nova"><img src="https://img.shields.io/badge/version-1.41.0-blue.svg" alt="Version 1.41.0" /></a>
+  <a href="https://github.com/auceps-dev-team/lunar-nova"><img src="https://img.shields.io/badge/version-1.42.0-blue.svg" alt="Version 1.42.0" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue.svg" alt="License AGPL-3.0" /></a>
   <a href="#-open-source"><img src="https://img.shields.io/badge/open%20source-oui-brightgreen.svg" alt="Open Source" /></a>
   <a href="#-pourquoi-wacopilote-"><img src="https://img.shields.io/badge/Made%20in-%F0%9F%87%A8%F0%9F%87%BE%20C%C3%B4te%20d'Ivoire-orange.svg" alt="Made in Côte d'Ivoire" /></a>
@@ -280,7 +280,7 @@ npm run build
 
 **État réel de la couverture.** 43 tests couvrent aujourd'hui le chiffrement des secrets, l'analyse des réponses LLM et la normalisation des numéros de téléphone. C'est un début, pas une couverture : le gros du code reste non testé, et c'est la contribution la plus utile qu'on puisse apporter au projet. Les zones encore à couvrir, celles qui cassent en production :
 
-- les parseurs de scraping (`backend/scrapers/`), dépendants de la structure HTML de sites tiers — leur logique tourne dans `page.evaluate()`, il faudra l'extraire pour la rendre testable ;
+- l'extraction DOM des scrapers (`backend/scrapers/`), qui tourne dans `page.evaluate()` et reste à sortir pour être testable ; les règles de numérotation en ont déjà été extraites (`phoneRules.js`, 20 tests) ;
 - les chemins d'appel réseau des adaptateurs LLM (`backend/*Service.js`) ;
 - les migrations de schéma (`backend/db.js`).
 
