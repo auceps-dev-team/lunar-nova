@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import useAppStore from '../store';
 
+// Repli figé : renvoyé par référence, il garde stables les dépendances des hooks.
+const EMPTY_ARRAY = [];
+
 const STYLE_PRESETS = [
     { id: 'none', labelKey: 'noStylePreset', icon: '○' },
     { id: 'photorealistic', labelKey: 'stylePhotorealistic', icon: '📷' },
@@ -33,7 +36,7 @@ const ImageGeneration = () => {
     const [error, setError] = useState(null);
 
     // Available NVIDIA/Together text-to-image models
-    const availableImageModels = useAppStore(state => state.availableModels?.image) || [];
+    const availableImageModels = useAppStore(state => state.availableModels?.image) || EMPTY_ARRAY;
     const backendImageModel = useAppStore(state => state.backendSettings?.default_image_model) || '';
 
     // Auto-select first model if none selected
@@ -43,7 +46,7 @@ const ImageGeneration = () => {
         } else if (!selectedModel && backendImageModel) {
             setSelectedModel(backendImageModel);
         }
-    }, [availableImageModels, backendImageModel]);
+    }, [availableImageModels, backendImageModel, selectedModel]);
 
     const handleGenerate = async () => {
         if (!prompt.trim() || isGenerating) return;

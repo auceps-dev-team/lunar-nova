@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import useAppStore from '../../store';
 
@@ -22,11 +22,8 @@ export default function ContactLists() {
     const [editName, setEditName] = useState('');
     const [isEditSubmitting, setIsEditSubmitting] = useState(false);
 
-    useEffect(() => {
-        fetchLists();
-    }, []);
 
-    const fetchLists = async () => {
+    const fetchLists = useCallback(async () => {
         try {
             const res = await fetch('http://127.0.0.1:3000/api/wa/contact-lists');
             const data = await res.json();
@@ -39,7 +36,11 @@ export default function ContactLists() {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [showAppNotification, t]);
+
+    useEffect(() => {
+        fetchLists();
+    }, [fetchLists]);
 
     const handleAddList = async (e) => {
         e.preventDefault();

@@ -36,6 +36,14 @@ export function ImageWorkspace() {
                 mimeType: pendingEditImage.mimeType || 'image/jpeg',
                 name: pendingEditImage.name || t('importedImageName'),
             };
+            // Synchronisation d'un signal ponctuel venu d'une autre page (Studio
+            // Photo, Génération d'images) vers l'état local. Le store joue ici le
+            // rôle de système externe, ce qui est l'usage prévu d'un effet.
+            //
+            // Le rendu supplémentaire que la règle signale se produit une seule
+            // fois par image transférée : au passage suivant, pendingEditImage
+            // vaut null et la garde ci-dessus court-circuite l'effet.
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setImages(prev => [newImage, ...prev]);
             setSelectedImageId(id);
             clearPendingEditImage();

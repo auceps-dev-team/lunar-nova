@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/auceps-dev-team/lunar-nova"><img src="https://img.shields.io/badge/version-1.40.0-blue.svg" alt="Version 1.40.0" /></a>
+  <a href="https://github.com/auceps-dev-team/lunar-nova"><img src="https://img.shields.io/badge/version-1.40.1-blue.svg" alt="Version 1.40.1" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue.svg" alt="License AGPL-3.0" /></a>
   <a href="#-open-source"><img src="https://img.shields.io/badge/open%20source-oui-brightgreen.svg" alt="Open Source" /></a>
   <a href="#-pourquoi-wacopilote-"><img src="https://img.shields.io/badge/Made%20in-%F0%9F%87%A8%F0%9F%87%BE%20C%C3%B4te%20d'Ivoire-orange.svg" alt="Made in Côte d'Ivoire" /></a>
@@ -282,7 +282,7 @@ npm run build
 - les chemins d'appel réseau des adaptateurs LLM (`backend/*Service.js`) ;
 - les migrations de schéma (`backend/db.js`).
 
-La configuration ESLint distingue désormais les trois environnements du dépôt (renderer navigateur, backend Node, code injecté dans la page WhatsApp), ce qui a ramené le bruit de 375 à 23 signalements — dont 22 avertissements react-hooks/exhaustive-deps qui demandent un examen au cas par cas.
+La configuration ESLint distingue désormais les trois environnements du dépôt (renderer navigateur, backend Node, code injecté dans la page WhatsApp), ce qui a ramené le bruit de 375 à 0. Les rares omissions volontaires de dépendances portent un commentaire expliquant pourquoi elles le sont.
 
 ---
 

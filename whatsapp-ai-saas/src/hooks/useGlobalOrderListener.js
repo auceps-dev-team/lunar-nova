@@ -39,7 +39,7 @@ export function useGlobalOrderListener(isRoot = false) {
         };
 
         checkStatus();
-    }, [instanceId, setIsListening, setOrders]);
+    }, [isRoot, instanceId, setIsListening, setOrders]);
 
     // Handle Server-Sent Events (SSE) connection Globally
     useEffect(() => {
