@@ -1,11 +1,37 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import useAppStore from '../store';
 import { useTranslation } from 'react-i18next';
+
+const GITHUB_REPO = 'https://github.com/auceps-dev-team/lunar-nova';
+
+/**
+ * Ouvre un lien dans le navigateur du système.
+ *
+ * Un simple target="_blank" ne suffit pas dans Electron : sans
+ * setWindowOpenHandler, la fenêtre est soit bloquée, soit ouverte dans une
+ * fenêtre applicative sans barre d'adresse. Le passage par le processus
+ * principal garantit l'ouverture dans le navigateur par défaut.
+ */
+const openExternal = (url) => (e) => {
+    if (window.electronAPI?.openExternalUrl) {
+        e.preventDefault();
+        window.electronAPI.openExternalUrl(url);
+    }
+};
 
 const Support = () => {
     const { t } = useTranslation();
     const userProfile = useAppStore(state => state.userProfile) || {};
+    const [appVersion, setAppVersion] = useState('');
     const [ticketSent, setTicketSent] = useState(false);
+
+    useEffect(() => {
+        // La version vient du processus principal : c'est celle réellement
+        // installée, pas une constante qui se désynchronise à chaque release.
+        window.updaterAPI?.getVersion?.()
+            .then(v => setAppVersion(v))
+            .catch(() => { });
+    }, []);
     const [form, setForm] = useState({
         email: userProfile.email || '',
         subject: '',
@@ -21,7 +47,11 @@ const Support = () => {
     ];
 
     const changelog = [
-        { version: 'v1.35.0', date: 'Aujourd\'hui', changes: ['Nouveau Pipeline Agentique : un onglet dédié pour enchaîner Agent Prospection → Agent Contacts → Antoine (Stratège Outbound) → Clarisse jusqu\'à un tableau Kanban de suivi commercial', 'Assistant étape par étape avec validation humaine à chaque stade (recherche de leads, sauvegarde des contacts, relecture des messages)', 'Messages d\'approche toujours générés en brouillon, jamais envoyés automatiquement', 'Tableau Kanban drag-and-drop pour organiser le suivi des contacts prospectés'] },
+        { version: 'v1.39.3', date: '2026-07-28', changes: ['Le service interne redémarre désormais tout seul s\'il s\'arrête, au lieu de laisser l\'application inerte sans explication', 'Correction d\'une fuite mémoire qui dégradait les sessions WhatsApp laissées ouvertes plusieurs jours ; la surveillance des commandes s\'arrête maintenant réellement quand vous la désactivez', 'Démarrage fiabilisé : une requête lancée dans la première seconde pouvait partir sans votre clé d\'API et échouer sans raison apparente', 'Analyse des réponses des modèles d\'IA fiabilisée : certaines réponses étaient rejetées à tort quand le modèle ajoutait une phrase autour du résultat', 'Limitation de débit étendue à l\'ensemble du service, avec un plafond spécifique sur le scraping et l\'envoi au catalogue'] },
+        { version: 'v1.38.0', date: '2026-07-28', changes: ['Le graphique d\'activité du tableau de bord affichait des valeurs générées aléatoirement tant qu\'aucune activité n\'était enregistrée ; il affiche désormais la réalité', 'L\'écran Rédacteur IA se charge bien plus vite : près d\'1 Mo de bibliothèque n\'est plus téléchargé qu\'au moment de l\'export PDF', 'Correction de la mise à jour des catégories GoAfrica, qui ne fonctionnait pas dans l\'application installée', 'Première série de tests automatisés (43 cas) sur le chiffrement, l\'analyse des réponses IA et le formatage des numéros'] },
+        { version: 'v1.37.0', date: '2026-07-28', changes: ['Vos clés d\'API et mots de passe WordPress sont désormais chiffrés (AES-256-GCM) dans la base locale, avec une clé scellée par le magasin de secrets de votre système', 'Copier le fichier de base sur une autre machine ne permet plus d\'en extraire les secrets', 'La conversion des données existantes est automatique au premier lancement : aucune ressaisie nécessaire'] },
+        { version: 'v1.36.0', date: '2026-07-27', changes: ['WaCopilote devient open source sous licence AGPL-3.0 — le code source complet est publié et auditable', 'Le service interne n\'est plus accessible depuis le réseau : il n\'écoute que sur votre machine et exige une authentification. Important si vous travaillez en coworking ou sur un Wi-Fi partagé', 'Les clés d\'API ne sont plus jamais réaffichées : les Réglages indiquent seulement si une clé est configurée', 'Publication au catalogue WhatsApp réparée — elle échouait à chaque tentative', 'Envoi d\'images et consultation des journaux WordPress réparés', 'Vérifier un numéro ne modifie plus le statut d\'autres contacts partageant les mêmes chiffres', '21 vulnérabilités de dépendances corrigées'] },
+        { version: 'v1.35.0', date: '2026-07-08', changes: ['Nouveau Pipeline Agentique : un onglet dédié pour enchaîner Agent Prospection → Agent Contacts → Antoine (Stratège Outbound) → Clarisse jusqu\'à un tableau Kanban de suivi commercial', 'Assistant étape par étape avec validation humaine à chaque stade (recherche de leads, sauvegarde des contacts, relecture des messages)', 'Messages d\'approche toujours générés en brouillon, jamais envoyés automatiquement', 'Tableau Kanban drag-and-drop pour organiser le suivi des contacts prospectés'] },
         { version: 'v1.34.2', date: '2026-07-07', changes: ['Correction du tracking des messages WhatsApp suite à la refonte de l\'interface WhatsApp Web (nouveaux sélecteurs, ancrage sur les identifiants internes plutôt que sur les classes CSS)', 'Correction de la détection du sens des messages qui faisait apparaître les suggestions du Copilote comme des réponses de l\'interlocuteur au lieu des vôtres'] },
         { version: 'v1.34.1', date: '2026-07-07', changes: ['Correction : suppression de 3 modèles NVIDIA obsolètes (Gemma 3N E2B/E4B ne répondaient plus, Kimi K2 retiré par NVIDIA)', 'Remplacement du modèle de secours par défaut par un modèle vérifié disponible (Llama 3.1 8B)'] },
         { version: 'v1.34.0', date: '2026-07-07', changes: ['Live Message & Order Radar : détection IA en temps réel des intentions d\'achat dans les conversations WhatsApp', 'Nouvel agent dédié "Order Radar" pour une classification structurée des commandes', 'Catalogue étendu à 56 modèles NVIDIA NIM avec clé API par défaut unique pour tout le système', 'Refonte des réglages IA : séparation claire du provider Chat/Image et sélecteur rapide de modèle dans le chat', 'Simplification des clés API NVIDIA dans les réglages (un seul champ au lieu de 14)'] },
@@ -94,6 +124,55 @@ const Support = () => {
                                 </div>
                             </div>
                         </div>
+                    </div>
+
+                    {/* Open Source */}
+                    <div className="bg-surface dark:bg-gray-900 p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-soft">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="size-10 bg-emerald-500/10 rounded-xl flex items-center justify-center text-emerald-600">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-display font-bold dark:text-white">{t('openSourceTitle')}</h2>
+                                {appVersion && <p className="text-xs text-gray-400">{t('installedVersion')} {appVersion}</p>}
+                            </div>
+                        </div>
+
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                            {t('openSourceDesc')}
+                        </p>
+
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 mb-4 rounded-full bg-emerald-500/10 text-emerald-600 text-[11px] font-semibold">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                            AGPL-3.0
+                        </div>
+
+                        <div className="space-y-3">
+                            <a href={GITHUB_REPO} onClick={openExternal(GITHUB_REPO)} target="_blank" rel="noopener noreferrer"
+                                className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+                                {t('viewSourceCode')}
+                            </a>
+                            <a href={`${GITHUB_REPO}/issues`} onClick={openExternal(`${GITHUB_REPO}/issues`)} target="_blank" rel="noopener noreferrer"
+                                className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                                {t('reportIssueGithub')}
+                            </a>
+                            <a href={`${GITHUB_REPO}/blob/main/CONTRIBUTING.md`} onClick={openExternal(`${GITHUB_REPO}/blob/main/CONTRIBUTING.md`)} target="_blank" rel="noopener noreferrer"
+                                className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                                {t('contributeToProject')}
+                            </a>
+                            <a href={`${GITHUB_REPO}/blob/main/SECURITY.md`} onClick={openExternal(`${GITHUB_REPO}/blob/main/SECURITY.md`)} target="_blank" rel="noopener noreferrer"
+                                className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2 4 5v6c0 5.25 3.4 10.16 8 11.5 4.6-1.34 8-6.25 8-11.5V5z"></path></svg>
+                                {t('reportVulnerability')}
+                            </a>
+                        </div>
+
+                        <p className="mt-5 pt-4 border-t border-gray-100 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-500">
+                            {t('commercialLicenseNote')}
+                        </p>
                     </div>
 
                     {/* Version History */}
