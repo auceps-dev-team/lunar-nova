@@ -1,6 +1,7 @@
 const puppeteer = require('puppeteer-core');
 const db = require('./db');
 const aiController = require('./aiController');
+const { redactMessage, redactContact } = require('./logRedact');
 
 const sseClients = new Map();
 const activeObservers = new Set();
@@ -45,7 +46,7 @@ async function processMessage(instanceId, contact, text) {
     const msgId = `msg_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     
     // Phase 22: Log & Emit EVERY message
-    console.log(`\n------------------------------------------------------\n[IOL Flux] 📩 Nouveau message de [${contact}] : "${text}"`);
+    console.log(`\n------------------------------------------------------\n[IOL Flux] 📩 Nouveau message de [${redactContact(contact)}] : ${redactMessage(text)}`);
     
     const messageEvent = {
         id: msgId,
@@ -63,7 +64,7 @@ async function processMessage(instanceId, contact, text) {
         return;
     }
     
-    console.log(`[IOL Pipeline] ✅ [${contact}] Potentielle commande détectée. Analyse IA en cours...`);
+    console.log(`[IOL Pipeline] ✅ [${redactContact(contact)}] Potentielle commande détectée. Analyse IA en cours...`);
     const orderRadarModel = await db.getSetting('order_radar_model', '');
     const classif = await aiController.classifyOrderIntent(text, contact, orderRadarModel || null);
 
@@ -73,7 +74,8 @@ async function processMessage(instanceId, contact, text) {
     }
     
     console.log(`[IOL Pipeline] 🎯 INTENTION CONFIRMÉE : ${classif.order_type} (Confiance: ${Math.round(classif.confidence*100)}%)`);
-    console.log(`[IOL Pipeline] 📝 Résumé : ${classif.summary}`);
+    // Le résumé est produit par l'IA à partir du message : il en reprend le contenu.
+    console.log(`[IOL Pipeline] 📝 Résumé : ${redactMessage(classif.summary)}`);
     console.log(`[IOL Pipeline] 🚀 Signature en base de données...`);
     
     // L'enregistrement en base n'a pas de valeur de retour exploitable ; seul
@@ -156,7 +158,7 @@ async function attachObserver(instanceId) {
         // Inject observer bridge safely (catch if already exposed after server restart)
         try {
             await targetPage.exposeFunction('onNewWaMessage', (contact, text) => {
-                console.log(`\n======================================================\n[IOL DOM Bridge] 📥 Message Received from UI: [${contact}] "${text}"`);
+                console.log(`\n======================================================\n[IOL DOM Bridge] 📥 Message reçu de l'interface : [${redactContact(contact)}] ${redactMessage(text)}`);
                 processMessage(instanceId, contact, text);
             });
         } catch {}
@@ -229,7 +231,7 @@ async function attachObserver(instanceId) {
                             const hash = contact + '|' + text.trim();
                             if (!window.__iol_seen.has(hash)) {
                                 window.__iol_seen.add(hash);
-                                window.onIolDebug(`[Poller] Nv msg Liste: "${text.substring(0, 30)}..."`);
+                                window.onIolDebug(`[Poller] Nouveau message en liste (${text.length} car.)`);
                                 window.onNewWaMessage(contact, text.trim());
                             }
                         }
@@ -278,7 +280,7 @@ async function attachObserver(instanceId) {
                             const hash = contact + '|' + text;
                             if (!window.__iol_seen.has(hash)) {
                                 window.__iol_seen.add(hash);
-                                window.onIolDebug(`[Observer] Nv msg Actif: "${text.substring(0, 30)}..."`);
+                                window.onIolDebug(`[Observer] Nouveau message en conversation (${text.length} car.)`);
                                 window.onNewWaMessage(contact, text);
                             }
                         }
