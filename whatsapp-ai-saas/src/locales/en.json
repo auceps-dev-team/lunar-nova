@@ -1095,5 +1095,14 @@
   "wpQuickCreateArticle": "📝 Create a post",
   "wpQuickPublishDirect": "📦 Publish directly",
   "wpJarvisInputPlaceholder": "E.g: Create a product Screwdriver at $29.99…",
-  "apiKeyConfigured": "Key already saved — leave blank to keep it"
+  "apiKeyConfigured": "Key already saved — leave blank to keep it",
+  "openSourceTitle": "Open source",
+  "installedVersion": "Installed version:",
+  "openSourceDesc": "WaCopilote is free software. You can read, audit and modify all of its code — including everything that touches your conversations and your API keys.",
+  "viewSourceCode": "Browse the source code",
+  "reportIssueGithub": "Report a bug on GitHub",
+  "contributeToProject": "Contribute to the project",
+  "reportVulnerability": "Report a security vulnerability",
+  "commercialLicenseNote": "A commercial license is available for proprietary integrations and white-label resale: dev.team@auceps-digital.agency",
+  "message": "Message"
 }

@@ -318,5 +318,14 @@
   "wpQuickCreateArticle": "📝 Crear un artículo",
   "wpQuickPublishDirect": "📦 Publicar directamente",
   "wpJarvisInputPlaceholder": "Ej: Crea un producto Destornillador a 29.99€…",
-  "apiKeyConfigured": "Clave ya guardada — déjalo vacío para conservarla"
+  "apiKeyConfigured": "Clave ya guardada — déjalo vacío para conservarla",
+  "openSourceTitle": "Código abierto",
+  "installedVersion": "Versión instalada:",
+  "openSourceDesc": "WaCopilote es software libre. Puedes leer, auditar y modificar todo su código, incluido lo que afecta a tus conversaciones y a tus claves de API.",
+  "viewSourceCode": "Ver el código fuente",
+  "reportIssueGithub": "Informar de un error en GitHub",
+  "contributeToProject": "Contribuir al proyecto",
+  "reportVulnerability": "Informar de una vulnerabilidad",
+  "commercialLicenseNote": "Hay una licencia comercial disponible para integraciones propietarias y reventa de marca blanca: dev.team@auceps-digital.agency",
+  "message": "Mensaje"
 }

@@ -1095,5 +1095,14 @@
   "wpQuickCreateArticle": "📝 Créer un article",
   "wpQuickPublishDirect": "📦 Publier directement",
   "wpJarvisInputPlaceholder": "Ex: Crée un produit Tournevis à 29.99€…",
-  "apiKeyConfigured": "Clé déjà enregistrée — laisser vide pour la conserver"
+  "apiKeyConfigured": "Clé déjà enregistrée — laisser vide pour la conserver",
+  "openSourceTitle": "Code source ouvert",
+  "installedVersion": "Version installée :",
+  "openSourceDesc": "WaCopilote est un logiciel libre. Vous pouvez lire, auditer et modifier l'intégralité de son code — y compris ce qui touche à vos conversations et à vos clés d'API.",
+  "viewSourceCode": "Consulter le code source",
+  "reportIssueGithub": "Signaler un bug sur GitHub",
+  "contributeToProject": "Contribuer au projet",
+  "reportVulnerability": "Signaler une faille de sécurité",
+  "commercialLicenseNote": "Une licence commerciale est disponible pour les intégrations propriétaires et la revente en marque blanche : dev.team@auceps-digital.agency",
+  "message": "Message"
 }

@@ -318,5 +318,14 @@
   "wpQuickCreateArticle": "📝 إنشاء مقالة",
   "wpQuickPublishDirect": "📦 نشر مباشر",
   "wpJarvisInputPlaceholder": "مثال: أنشئ منتج مفك بسعر 29.99$…",
-  "apiKeyConfigured": "المفتاح محفوظ بالفعل — اتركه فارغًا للإبقاء عليه"
+  "apiKeyConfigured": "المفتاح محفوظ بالفعل — اتركه فارغًا للإبقاء عليه",
+  "openSourceTitle": "مصدر مفتوح",
+  "installedVersion": "الإصدار المثبَّت:",
+  "openSourceDesc": "واكوبيلوت برنامج حر. يمكنك قراءة شفرته بالكامل وتدقيقها وتعديلها، بما في ذلك ما يتعلق بمحادثاتك ومفاتيح واجهات البرمجة الخاصة بك.",
+  "viewSourceCode": "تصفَّح الشفرة المصدرية",
+  "reportIssueGithub": "الإبلاغ عن خلل على GitHub",
+  "contributeToProject": "المساهمة في المشروع",
+  "reportVulnerability": "الإبلاغ عن ثغرة أمنية",
+  "commercialLicenseNote": "تتوفر رخصة تجارية للتكاملات المغلقة وإعادة البيع بعلامة تجارية خاصة: dev.team@auceps-digital.agency",
+  "message": "الرسالة"
 }
