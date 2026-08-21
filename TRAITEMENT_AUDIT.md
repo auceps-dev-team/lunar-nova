@@ -102,3 +102,30 @@
 - Limite dédup sans indicatif (contactAgent) — assumée et testée.
 - `disable_safety_checker` reste `true` par défaut pour préserver les shootings fashion (décision produit).
 - Routage aiController non unitarisable sans DI (documenté).
+
+---
+
+## Lot F — Système de mise à jour GitHub Releases inopérant (2026-08-21, `+0.0.1` → 1.42.12)
+
+**Diagnostic (vérifié contre l'API GitHub)** : la dernière release publiée dans
+`auceps-dev-team/wacopilote-releases` est **`1.39.3`**, inférieure à la version du code
+(**1.42.x**). `compareVersions('1.39.3', '1.42.11')` → -1 → `hasUpdate:false` en permanence :
+le système ne pouvait **jamais** proposer de mise à jour, sans aucun message explicatif.
+
+**Corrections apportées (commit `74e059e`) :**
+- `electron/updateLogic.cjs` (nouveau, testable) : `compareVersions` (préfixe `v`, suffixes
+  pré-release ignorés), `parseReleaseTag` (régression : l'ancien `replace('v','')` retirait
+  **tous** les `v` du tag), `pickAssetForPlatform`.
+- `electron/updater.cjs` : timeout 10 s (check) / 5 min (téléchargement), User-Agent explicite,
+  **vérification d'intégrité** du fichier téléchargé (octets vs content-length) + nettoyage du
+  fichier partiel, codes d'erreur remontés (RATE_LIMIT / REPO_NOT_FOUND / NETWORK), cas
+  `release_behind_current` exposé à l'interface.
+- `UpdateManager.jsx` : messages d'erreur lisibles (403 rate limit, 404, réseau) + avertissement
+  explicite « la release publiée est plus ancienne que la version installée ».
+- `App.jsx` : le check silencieux journalise désormais les erreurs.
+- `backend/__tests__/updateLogic.test.js` : +14 tests (100 → **114**).
+- Locales fr/en/es/ar : 4 nouvelles clés.
+
+**Action requise côté éditeur (condition sine qua non)** : publier une release **≥ 1.42.12**
+dans `wacopilote-releases` (`npm run electron:publish`). Aucun correctif de code ne peut
+activer le système tant que les releases ne suivent pas le versionnage du code.
