@@ -360,5 +360,9 @@
   "quotaExceededWarning": "Cuota gratuita alcanzada. Añade tu propia clave de Gemini para seguir generando imágenes.",
   "dismissQuotaBanner": "Ocultar este aviso",
   "updaterNoAssetForPlatform": "No hay instalador disponible para esta plataforma. Descarga la actualización manualmente desde la página de versiones.",
+  "updaterRateLimitError": "Límite de solicitudes de GitHub alcanzado (403). Inténtalo de nuevo en unos minutos.",
+  "updaterRepoNotFoundError": "Repositorio de versiones no encontrado (404). Verifica la configuración del actualizador.",
+  "updaterNetworkError": "No se puede conectar con el servidor de actualizaciones. Comprueba tu conexión a Internet.",
+  "updaterReleaseBehind": "La última versión publicada ({{latest}}) es más antigua que la versión instalada ({{current}}). Las versiones de GitHub están desincronizadas — contacta al editor.",
   "updaterArtifactOpened": "El artefacto de actualización se ha abierto para instalación."
 }

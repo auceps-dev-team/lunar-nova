@@ -121,6 +121,10 @@ function AppContent() {
           if (compareVersions(remoteVersion, currentVersion) > 0) {
             setUpdateAvailable(checkResult);
           }
+        } else if (checkResult && checkResult.error) {
+          // Le check silencieux ne doit pas déranger l'utilisateur, mais
+          // l'erreur doit rester traçable — l'écran Réglages affiche le détail.
+          console.warn('[Updater] Vérification silencieuse impossible:', checkResult.errorCode || '', checkResult.error);
         }
       } catch (e) {
         console.error("Update UX init error:", e);

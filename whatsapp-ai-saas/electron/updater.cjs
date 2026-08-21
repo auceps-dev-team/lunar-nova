@@ -3,29 +3,15 @@ const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
+const { compareVersions, parseReleaseTag, pickAssetForPlatform } = require('./updateLogic.cjs');
 
 const REPO_URL = 'https://api.github.com/repos/auceps-dev-team/wacopilote-releases/releases/latest';
 
-/**
- * Sélectionne l'asset de mise à jour correspondant à la plateforme courante.
- * Le canal Windows (installeur NSIS .exe) reste le seul avec installation
- * silencieuse ; macOS et Linux reçoivent l'artefact adapté (.dmg/.zip et
- * .AppImage/.deb) et l'ouvrent pour installation manuelle guidée.
- */
-function pickAssetForPlatform(assets) {
-    const platform = process.platform;
-    const patterns = {
-        win32: ['.exe'],
-        darwin: ['.dmg', '.zip'],
-        linux: ['.AppImage', '.appimage', '.deb'],
-    };
-    const wanted = patterns[platform] || [];
-    for (const ext of wanted) {
-        const found = assets.find(a => a.name.toLowerCase().endsWith(ext.toLowerCase()));
-        if (found) return { asset: found, platform };
-    }
-    return { asset: null, platform };
-}
+// Timeouts réseau : l'API GitHub peut être lente ou saturée ; un handler IPC
+// ne doit jamais rester bloqué indéfiniment. Le téléchargement (fichier de
+// ~160 Mo) reçoit une marge plus généreuse.
+const CHECK_TIMEOUT_MS = 10000;
+const DOWNLOAD_TIMEOUT_MS = 5 * 60 * 1000;
 
 /**
  * @param {() => Electron.BrowserWindow | undefined} getMainWindow
@@ -47,43 +33,59 @@ module.exports = function setupUpdater(getMainWindow) {
     // 1. VÉRIFICATION DE LA VERSION
     ipcMain.handle('update:check', async () => {
         try {
-            const res = await axios.get(REPO_URL);
-            const latestVersion = res.data.tag_name.replace('v', '');
-            const currentVersion = app.getVersion();
-            
-            // Simple semantic version comparator
-            const compareVersions = (v1, v2) => {
-                const p1 = String(v1).split('.').map(Number);
-                const p2 = String(v2).split('.').map(Number);
-                for (let i = 0; i < Math.max(p1.length, p2.length); i++) {
-                    const n1 = p1[i] || 0;
-                    const n2 = p2[i] || 0;
-                    if (n1 > n2) return 1;
-                    if (n1 < n2) return -1;
-                }
-                return 0;
-            };
+            // User-Agent explicite : l'API GitHub le requiert (il était envoyé
+            // par défaut par axios, mais le rendre explicite évite les refus
+            // et aide au diagnostic côté GitHub).
+            const res = await axios.get(REPO_URL, {
+                timeout: CHECK_TIMEOUT_MS,
+                headers: {
+                    'User-Agent': `WaCopilote/${app.getVersion()}`,
+                    Accept: 'application/vnd.github+json',
+                },
+            });
 
-            if (compareVersions(latestVersion, currentVersion) > 0) {
+            const latestVersion = parseReleaseTag(res.data.tag_name);
+            const currentVersion = app.getVersion();
+            const cmp = compareVersions(latestVersion, currentVersion);
+
+            if (cmp > 0) {
                 // Asset adapté à la plateforme (exe sur Windows, dmg/zip sur
                 // macOS, AppImage/deb sur Linux). Aucun asset pour cette
                 // plateforme → mise à jour signalée sans URL (hasUpdate reste
                 // vrai pour afficher la note de version, mais le bouton de
                 // téléchargement ne sera pas proposé).
-                const { asset, platform } = pickAssetForPlatform(res.data.assets || []);
+                const { asset, platform } = pickAssetForPlatform(res.data.assets);
                 return {
                     hasUpdate: true,
                     version: latestVersion,
+                    currentVersion,
                     notes: res.data.body,
                     platform,
                     assetName: asset ? asset.name : null,
                     downloadUrl: asset ? asset.browser_download_url : null,
                 };
             }
-            return { hasUpdate: false };
+
+            const result = { hasUpdate: false, latestVersion, currentVersion };
+
+            // Cas « release derrière la version installée » : la comparaison
+            // ne peut jamais signaler de mise à jour. Ce n'est pas une erreur
+            // réseau, c'est un état de configuration des releases — on le
+            // remonte pour que l'interface puisse l'expliquer clairement au
+            // lieu d'afficher un « à jour » trompeur.
+            if (cmp < 0) {
+                result.info = 'release_behind_current';
+            }
+            return result;
         } catch (e) {
-            console.error("[Updater] Erreur check update", e);
-            return { hasUpdate: false, error: e.message };
+            console.error('[Updater] Erreur check update:', e.message);
+            const isRateLimit = e.response && e.response.status === 403;
+            const isNotFound = e.response && e.response.status === 404;
+            return {
+                hasUpdate: false,
+                error: e.message,
+                errorCode: isRateLimit ? 'RATE_LIMIT' : isNotFound ? 'REPO_NOT_FOUND' : 'NETWORK',
+            };
         }
     });
 
@@ -95,12 +97,16 @@ module.exports = function setupUpdater(getMainWindow) {
         let ext = '.exe';
         try { ext = path.extname(new URL(url).pathname) || '.exe'; } catch { /* URL invalide */ }
         const tempPath = path.join(app.getPath('temp'), `WaCopilote-Update-${Date.now()}${ext}`);
-        
+
         try {
             const response = await axios({
                 method: 'GET',
                 url: url,
-                responseType: 'stream' // stream response back for progress
+                responseType: 'stream',
+                timeout: DOWNLOAD_TIMEOUT_MS,
+                // Les assets GitHub redirigent vers le CDN (objects.githubusercontent) ;
+                // axios suit les redirections par défaut. User-Agent explicite.
+                headers: { 'User-Agent': `WaCopilote/${app.getVersion()}` },
             });
 
             const totalLength = parseInt(response.headers['content-length'], 10);
@@ -112,7 +118,7 @@ module.exports = function setupUpdater(getMainWindow) {
 
             response.data.on('data', (chunk) => {
                 downloaded += chunk.length;
-                
+
                 // Calcul sécurisé du pourcentage
                 let percent = 0;
                 if (totalLength && totalLength > 0) {
@@ -122,7 +128,7 @@ module.exports = function setupUpdater(getMainWindow) {
                     // ou on laisse à 0 pour indiquer une activité indéterminée
                     percent = Math.min(99, Math.round((downloaded / (40 * 1024 * 1024)) * 100));
                 }
-                
+
                 // Throttling: on n'envoie au front que si le pourcentage change
                 if (percent > lastPercent) {
                     lastPercent = percent;
@@ -134,11 +140,22 @@ module.exports = function setupUpdater(getMainWindow) {
             });
 
             return new Promise((resolve, reject) => {
-                writer.on('finish', () => resolve({ success: true, filePath: tempPath }));
+                writer.on('finish', () => {
+                    // Vérification d'intégrité : un téléchargement interrompu
+                    // (connexion coupée sans erreur) produirait un installeur
+                    // tronqué que NSIS exécuterait sans prévenir.
+                    if (totalLength && downloaded !== totalLength) {
+                        return reject(new Error(`Téléchargement incomplet (${downloaded}/${totalLength} octets).`));
+                    }
+                    resolve({ success: true, filePath: tempPath });
+                });
                 writer.on('error', reject);
+                response.data.on('error', reject);
             });
 
         } catch (error) {
+            // Nettoyage du fichier partiel en cas d'échec
+            try { if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath); } catch { /* ignore */ }
             return { success: false, error: error.message };
         }
     });
