@@ -2,60 +2,11 @@ import React, { useState, useRef } from 'react';
 import { Sparkles } from 'lucide-react';
 import useAppStore from '../store';
 import { useTranslation } from 'react-i18next';
+import { API_BASE_URL } from '../config';
+import { MODELS, POSES, BACKGROUNDS, getModelInitials, getPoseIcon } from '../constants/photoshootPresets';
+import SelectionGrid from '../components/photoshoot/SelectionGrid';
 
 
-// ── Preset Data ────────────────────────────────────────────────
-const MODELS = [
-    { id: 'ethan', name: 'Ethan', gender: 'Male', desc: 'Athletic build, short dark hair, strong jawline, chiseled features', img: './assets/models/ethan.png' },
-    { id: 'mia', name: 'Mia', gender: 'Female', desc: 'Slim, blonde bob hair, blue eyes, fair skin, classic elegance', img: './assets/models/mia.jpg' },
-    { id: 'sophie', name: 'Sophie', gender: 'Female', desc: 'Tan olive skin, dark hair pulled back, strong features, warm tones', img: './assets/models/sophie.jpg' },
-    { id: 'ella', name: 'Ella', gender: 'Female', desc: 'Dark brown skin, natural afro-textured hair, elegant and radiant', img: './assets/models/ella.jpg' },
-    { id: 'olivia', name: 'Olivia', gender: 'Female', desc: 'Auburn hair pulled back, light freckles, blue eyes, natural beauty', img: './assets/models/olivia.png' },
-    { id: 'chloe', name: 'Chloe', gender: 'Female', desc: 'East Asian features, long black hair with bangs, porcelain skin', img: './assets/models/chloe.jpg' },
-    { id: 'emma', name: 'Emma', gender: 'Female', desc: 'Short brown hair, freckles, blue-green eyes, modern European look', img: './assets/models/emma.jpg' },
-    { id: 'lucas', name: 'Lucas', gender: 'Male', desc: 'Mature, salt-and-pepper hair, trimmed beard, blue eyes, distinguished', img: './assets/models/lucas.jpg' },
-    { id: 'liam', name: 'Liam', gender: 'Male', desc: 'Young, blonde wavy hair, fair skin, youthful look', img: './assets/models/liam.jpg' },
-    { id: 'noah', name: 'Noah', gender: 'Male', desc: 'Dark brown skin, short curly afro hair, strong build, confident', img: './assets/models/noah.jpg' },
-    { id: 'oliver', name: 'Oliver', gender: 'Male', desc: 'East Asian features, slicked-back dark hair, sharp jawline, lean build', img: './assets/models/oliver.jpg' },
-];
-
-const POSES = [
-    { id: 'standing_pockets', name: 'Standing, hands in pockets', desc: 'Relaxed standing pose with both hands in pockets', img: './assets/poses/standing_pockets.jpg' },
-    { id: 'hands_back', name: 'Hands in pockets', desc: 'Standing with both hands casually in front pockets', img: './assets/poses/hands_in_pockets.jpg' },
-    { id: 'sitting_stool', name: 'Sitting on stool', desc: 'Sitting casually on a high stool, legs crossed', img: './assets/poses/sitting_stool.jpg' },
-    { id: 'neutral_standing', name: 'Neutral standing', desc: 'Relaxed neutral standing, arms at sides, face forward', img: './assets/poses/neutral_standing.jpg' },
-    { id: 'walking', name: 'Walking forward', desc: 'Dynamic walking pose, mid-stride, natural movement', img: './assets/poses/walking.jpg' },
-    { id: 'side_profile', name: 'Side profile', desc: 'Elegant side profile view, standing straight', img: './assets/poses/side_profile.jpg' },
-    { id: 'arms_crossed', name: 'Arms crossed', desc: 'Confident standing pose with arms crossed over chest', img: './assets/poses/arms_crossed.jpg' },
-    { id: 'natural', name: 'Natural', desc: 'Natural relaxed pose, one hand in pocket, looking at camera', img: './assets/poses/natural.jpg' },
-    { id: 'spinning', name: 'Spinning / twist', desc: 'Dynamic spinning pose with hair flowing, arms outstretched', img: './assets/poses/spinning.jpg' },
-    { id: 'kneeling', name: 'Kneeling', desc: 'Kneeling on the ground, arms crossed, editorial pose', img: './assets/poses/kneeling.jpg' },
-    { id: 'adjusting_hair', name: 'Adjusting hair', desc: 'Both hands adjusting hair, arms up, relaxed expression', img: './assets/poses/adjusting_hair.jpg' },
-    { id: 'neutral_arms_down', name: 'Neutral, arms down', desc: 'Relaxed full-body standing, arms naturally at sides', img: './assets/poses/neutral_arms_down.jpg' },
-];
-
-const BACKGROUNDS = [
-    { id: 'studio_white', name: 'Studio White', category: 'studio', desc: 'Clean pure white cyclorama studio background', img: './assets/backgrounds/studio_white.png' },
-    { id: 'studio_dark', name: 'Studio Dark', category: 'studio', desc: 'Deep dark moody studio with dramatic shadows', img: './assets/backgrounds/studio_dark.jpg' },
-    { id: 'studio_red', name: 'Studio Red', category: 'studio', desc: 'Rich deep red velvet studio with dramatic spotlight and warm tones', img: './assets/backgrounds/studio_red.jpg' },
-    { id: 'beach', name: 'Beach', category: 'outdoor', desc: 'Golden hour beach cabana with soft warm light and sand', img: './assets/backgrounds/beach.jpg' },
-    { id: 'urban', name: 'NYC', category: 'city', desc: 'New York City street with yellow taxi and brownstone buildings', img: './assets/backgrounds/nyc.jpg' },
-    { id: 'european_city', name: 'European City', category: 'city', desc: 'Parisian cobblestone street with classic Haussmann architecture and terrace', img: './assets/backgrounds/european_city.jpg' },
-    { id: 'cozy', name: 'Cozy Studio', category: 'studio', desc: 'Warm studio interior with herringbone floor, stool, and natural sunlight', img: './assets/backgrounds/cozy.jpg' },
-    { id: 'shadow', name: 'Shadow', category: 'studio', desc: 'Warm sandy wall with dramatic diagonal light and shadow play', img: './assets/backgrounds/shadow.jpg' },
-    { id: 'leaf_shadow', name: 'Leaf Shadow', category: 'outdoor', desc: 'Warm terracotta wall with organic leaf shadow patterns', img: './assets/backgrounds/leaf_shadow.jpg' },
-    { id: 'minimal', name: 'Minimalist', category: 'studio', desc: 'Dark navy gradient studio with smooth floor and soft ambient light', img: './assets/backgrounds/minimalist.jpg' },
-    { id: 'floral', name: 'Floral Garden', category: 'outdoor', desc: 'Enchanted floral garden with wisteria, roses, and dreamy fabrics', img: './assets/backgrounds/floral.jpg' },
-];
-
-// ── Color helpers for the category badges ──
-const CATEGORY_COLORS = {
-    studio: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300',
-    outdoor: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
-    city: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
-    Male: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
-    Female: 'bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300',
-};
 
 const PhotoShoot = ({ activeId: _activeId }) => {
     // ── State ──
@@ -146,7 +97,7 @@ const PhotoShoot = ({ activeId: _activeId }) => {
 <POSE>: ${pose.name} — ${pose.desc}
 <BACKGROUND>: ${bg.name} — ${bg.desc}`;
 
-            const agentRes = await fetch('http://127.0.0.1:3000/api/ai/agent', {
+            const agentRes = await fetch(API_BASE_URL + '/api/ai/agent', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -231,7 +182,7 @@ const PhotoShoot = ({ activeId: _activeId }) => {
                 provider: 'gemini',
             };
 
-            const genRes = await fetch('http://127.0.0.1:3000/api/ai/generate-image', {
+            const genRes = await fetch(API_BASE_URL + '/api/ai/generate-image', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(genBody)
@@ -298,9 +249,9 @@ const PhotoShoot = ({ activeId: _activeId }) => {
                 // 2) Handle backend 404 (page not found)
                 if (lower.includes('404') || lower.includes('page not found')) {
                     let message = 'The backend returned 404 (page not found). This usually means the server route is missing or the server needs to be restarted.';
-                    message += '\n\nWould you like to open the server root to inspect logs? (http://127.0.0.1:3000/)';
+                    message += '\n\nWould you like to open the server root to inspect logs? (' + API_BASE_URL + '/)';
                     const openRoot = window.confirm(message);
-                    if (openRoot) window.open('http://127.0.0.1:3000/', '_blank');
+                    if (openRoot) window.open(API_BASE_URL + '/', '_blank');
                     return;
                 }
 
@@ -315,148 +266,7 @@ const PhotoShoot = ({ activeId: _activeId }) => {
     };
 
     // ── Rendering helpers ──
-    const getModelInitials = (name) => name.slice(0, 2).toUpperCase();
-    const getPoseIcon = () => (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <circle cx="12" cy="4" r="2"></circle>
-            <path d="M12 6v6m-4 4l4-4 4 4m-8-6l-2 6m10-6l2 6"></path>
-        </svg>
-    );
 
-    const renderSelectionGrid = () => {
-        if (activeSection === 'model') {
-            return (
-                <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">{t('selectAModel')}</h3>
-                        <button onClick={() => setActiveSection(null)} className="text-sm text-gray-500 hover:text-gray-900 dark:hover:text-white transition">{t('back')}</button>
-                    </div>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        {MODELS.map(m => (
-                            <div
-                                key={m.id}
-                                onClick={() => { setSelectedModel(m); setActiveSection(null); }}
-                                className={`group relative rounded-2xl border-2 p-4 cursor-pointer transition-all hover:-translate-y-1 hover:shadow-lg ${selectedModel?.id === m.id
-                                    ? 'border-[#5468ff] bg-[#5468ff]/5 shadow-md ring-2 ring-[#5468ff]/30'
-                                    : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-[#5468ff]/50'
-                                    }`}
-                            >
-                                <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-600 dark:to-gray-700 flex items-center justify-center text-2xl font-bold text-gray-500 dark:text-gray-300 mb-3 overflow-hidden">
-                                    {m.img ? (
-                                        <img src={m.img} alt={m.name} className="w-full h-full object-cover" />
-                                    ) : (
-                                        getModelInitials(m.name)
-                                    )}
-                                </div>
-                                <div className="text-center">
-                                    <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full mb-1 ${CATEGORY_COLORS[m.gender]}`}>{m.gender}</span>
-                                    <p className="text-sm font-semibold text-gray-900 dark:text-white">{m.name}</p>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">{m.desc}</p>
-                                </div>
-                                {selectedModel?.id === m.id && (
-                                    <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[#5468ff] flex items-center justify-center">
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            );
-        }
-
-        if (activeSection === 'pose') {
-            return (
-                <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">{t('selectAPose')}</h3>
-                        <button onClick={() => setActiveSection(null)} className="text-sm text-gray-500 hover:text-gray-900 dark:hover:text-white transition">{t('back')}</button>
-                    </div>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        {POSES.map(p => (
-                            <div
-                                key={p.id}
-                                onClick={() => { setSelectedPose(p); setActiveSection(null); }}
-                                className={`group relative rounded-2xl border-2 p-4 cursor-pointer transition-all hover:-translate-y-1 hover:shadow-lg ${selectedPose?.id === p.id
-                                    ? 'border-[#5468ff] bg-[#5468ff]/5 shadow-md ring-2 ring-[#5468ff]/30'
-                                    : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-[#5468ff]/50'
-                                    }`}
-                            >
-                                <div className="w-14 h-14 mx-auto rounded-xl bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-900/30 dark:to-orange-800/30 flex items-center justify-center text-orange-600 dark:text-orange-400 mb-3 overflow-hidden">
-                                    {p.img ? (
-                                        <img src={p.img} alt={p.name} className="w-full h-full object-cover" />
-                                    ) : (
-                                        getPoseIcon()
-                                    )}
-                                </div>
-                                <div className="text-center">
-                                    <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full mb-1 bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300">{t('pose')}</span>
-                                    <p className="text-sm font-semibold text-gray-900 dark:text-white">{p.name}</p>
-                                </div>
-                                {selectedPose?.id === p.id && (
-                                    <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[#5468ff] flex items-center justify-center">
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            );
-        }
-
-        if (activeSection === 'background') {
-            return (
-                <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">{t('selectABackground')}</h3>
-                        <button onClick={() => setActiveSection(null)} className="text-sm text-gray-500 hover:text-gray-900 dark:hover:text-white transition">{t('back')}</button>
-                    </div>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        {BACKGROUNDS.map(b => (
-                            <div
-                                key={b.id}
-                                onClick={() => { setSelectedBackground(b); setActiveSection(null); }}
-                                className={`group relative rounded-2xl border-2 p-4 cursor-pointer transition-all hover:-translate-y-1 hover:shadow-lg ${selectedBackground?.id === b.id
-                                    ? 'border-[#5468ff] bg-[#5468ff]/5 shadow-md ring-2 ring-[#5468ff]/30'
-                                    : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-[#5468ff]/50'
-                                    }`}
-                            >
-                                <div className={`w-14 h-14 mx-auto rounded-xl flex items-center justify-center mb-3 overflow-hidden ${b.category === 'studio' ? 'bg-gradient-to-br from-gray-100 to-gray-300 dark:from-gray-700 dark:to-gray-600' :
-                                    b.category === 'outdoor' ? 'bg-gradient-to-br from-green-100 to-emerald-200 dark:from-green-900/30 dark:to-emerald-800/30' :
-                                        'bg-gradient-to-br from-amber-100 to-amber-200 dark:from-amber-900/30 dark:to-amber-800/30'
-                                    }`}>
-                                    {b.img ? (
-                                        <img src={b.img} alt={b.name} className="w-full h-full object-cover" />
-                                    ) : (
-                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className={
-                                            b.category === 'studio' ? 'text-gray-500' : b.category === 'outdoor' ? 'text-emerald-600' : 'text-amber-600'
-                                        }>
-                                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                                            <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                                            <polyline points="21 15 16 10 5 21"></polyline>
-                                        </svg>
-                                    )}
-                                </div>
-                                <div className="text-center">
-                                    <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full mb-1 ${CATEGORY_COLORS[b.category]}`}>{b.category}</span>
-                                    <p className="text-sm font-semibold text-gray-900 dark:text-white">{b.name}</p>
-                                </div>
-                                {selectedBackground?.id === b.id && (
-                                    <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[#5468ff] flex items-center justify-center">
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            );
-        }
-
-        // Default: show results or empty state
-        return null;
-    };
 
     // ── RENDER ──
     return (
@@ -645,7 +455,16 @@ const PhotoShoot = ({ activeId: _activeId }) => {
                 {/* ─── RIGHT PANEL: Grid / Results ─── */}
                 <div className="flex-1 overflow-y-auto bg-[#f8f9fb] dark:bg-[#111318] p-6">
                     {activeSection ? (
-                        renderSelectionGrid()
+                        <SelectionGrid
+                            activeSection={activeSection}
+                            setActiveSection={setActiveSection}
+                            selectedModel={selectedModel}
+                            setSelectedModel={setSelectedModel}
+                            selectedPose={selectedPose}
+                            setSelectedPose={setSelectedPose}
+                            selectedBackground={selectedBackground}
+                            setSelectedBackground={setSelectedBackground}
+                        />
                     ) : (generatedResults.length > 0 || isGeneratingImage) ? (
                         <div className="space-y-6 relative">
                             {/* Premium AI Processing Overlay */}

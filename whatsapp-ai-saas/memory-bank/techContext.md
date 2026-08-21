@@ -3,7 +3,7 @@
 ## Tech Stack
 - **Frontend UI Framework**: React 19, Vite 7, React Router 7, Zustand 5, Tailwind CSS 3
 - **Desktop Runtime**: Electron 40, Electron Builder 26
-- **Backend API & Processing Server**: Node.js 20, Express.js 5
+- **Backend API & Processing Server**: Node.js 20, Express.js 4
 - **Database & Caching**: SQLite 3 (persistent storage), Redis 5 (caching, rate limiting, queues)
 - **Browser Automation**: Playwright, Puppeteer Core (WhatsApp automation & web scraping)
 - **AI Integrations**:
@@ -28,7 +28,7 @@
 ├── src/                # React 19 Frontend App (App Router / Vite)
 │   ├── components/     # UI Components (Radix UI, Lucide React, Charts, Canvas)
 │   ├── pages/          # View Pages (Dashboard, Agents, Photo Studio, Scraper, Settings)
-│   ├── store/          # Zustand state stores
+│   ├── store.js        # Zustand global store (persisté via IndexedDB)
 │   └── services/       # API Client services
 ├── public/             # Static assets (Logos, icons, default assets)
 ├── docs/               # Technical documentation

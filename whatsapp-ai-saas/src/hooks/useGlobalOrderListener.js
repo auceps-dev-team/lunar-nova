@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import useAppStore from '../store';
+import { API_BASE_URL } from '../config';
 
 let globalEventSource = null;
 
@@ -21,14 +22,14 @@ export function useGlobalOrderListener(isRoot = false) {
         const checkStatus = async () => {
             try {
                 // Check if already listening globally on the backend
-                const statusRes = await fetch('http://localhost:3000/api/orders/listen/status');
+                const statusRes = await fetch(API_BASE_URL + '/api/orders/listen/status');
                 const statusData = await statusRes.json();
                 if (statusData.active_listeners?.includes(instanceId)) {
                     setIsListening(true);
                 }
 
                 // Fetch recent orders
-                const ordersRes = await fetch(`http://localhost:3000/api/orders?instance_id=${instanceId}&limit=50`);
+                const ordersRes = await fetch(`${API_BASE_URL}/api/orders?instance_id=${instanceId}&limit=50`);
                 const ordersData = await ordersRes.json();
                 if (ordersData.data) {
                     setOrders(ordersData.data);
@@ -65,7 +66,7 @@ export function useGlobalOrderListener(isRoot = false) {
         }
 
         console.log(`[IOL Global] Connecting to SSE stream for ${instanceId}...`);
-        globalEventSource = new EventSource(`http://localhost:3000/api/orders/stream/${instanceId}`);
+        globalEventSource = new EventSource(`${API_BASE_URL}/api/orders/stream/${instanceId}`);
 
         globalEventSource.onmessage = (event) => {
             try {
@@ -100,7 +101,7 @@ export function useGlobalOrderListener(isRoot = false) {
         setError(null);
 
         try {
-            const res = await fetch('http://localhost:3000/api/orders/listen/start', {
+            const res = await fetch(API_BASE_URL + '/api/orders/listen/start', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ instance_id: id })
@@ -125,7 +126,7 @@ export function useGlobalOrderListener(isRoot = false) {
         setError(null);
 
         try {
-            const res = await fetch('http://localhost:3000/api/orders/listen/stop', {
+            const res = await fetch(API_BASE_URL + '/api/orders/listen/stop', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ instance_id: instanceId })

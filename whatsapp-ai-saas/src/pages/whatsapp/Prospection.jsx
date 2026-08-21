@@ -3,6 +3,7 @@ import { Search, MapPin, Phone, Globe, Download, Database, CheckSquare, Square, 
 import { Link } from 'react-router-dom';
 import useAppStore from '../../store';
 import CustomSelect from '../../components/CustomSelect';
+import { API_BASE_URL } from '../../config';
 
 export default function Prospection() {
     // Cette page n'est pas encore internationalisée : ses libellés sont écrits en
@@ -33,7 +34,7 @@ export default function Prospection() {
     const handleRefreshGoAfricaMetadata = async () => {
         setIsRefreshingMetadata(true);
         try {
-            const response = await fetch('http://127.0.0.1:3000/api/prospection/goafrica-update-metadata', {
+            const response = await fetch(API_BASE_URL + '/api/prospection/goafrica-update-metadata', {
                 method: 'POST'
             });
             const result = await response.json();
@@ -104,7 +105,7 @@ export default function Prospection() {
 
     const fetchConfig = async () => {
         try {
-            const res = await fetch('http://127.0.0.1:3000/api/config');
+            const res = await fetch(API_BASE_URL + '/api/config');
             if (res.ok) {
                 const data = await res.json();
                 if (data.googleMapsApiKey) setGoogleApiKey(data.googleMapsApiKey);
@@ -117,9 +118,9 @@ export default function Prospection() {
     const fetchMetadata = async () => {
         try {
             const [listsRes, segmentsRes, goAfricaRes] = await Promise.all([
-                fetch('http://127.0.0.1:3000/api/wa/contact-lists'),
-                fetch('http://127.0.0.1:3000/api/wa/segments'),
-                fetch('http://127.0.0.1:3000/api/prospection/goafrica-metadata').catch(() => null)
+                fetch(API_BASE_URL + '/api/wa/contact-lists'),
+                fetch(API_BASE_URL + '/api/wa/segments'),
+                fetch(API_BASE_URL + '/api/prospection/goafrica-metadata').catch(() => null)
             ]);
             const listsData = await listsRes.json();
             const segmentsData = await segmentsRes.json();
@@ -160,7 +161,7 @@ export default function Prospection() {
                 .filter(l => l.link)
                 .map(l => l.link);
 
-            const res = await fetch('http://127.0.0.1:3000/api/prospection/search-stream', {
+            const res = await fetch(API_BASE_URL + '/api/prospection/search-stream', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
@@ -260,7 +261,7 @@ export default function Prospection() {
         setSelectedLeadNames(new Set());
         // Also clear the backend session cache so next search starts fresh
         try {
-            await fetch('http://127.0.0.1:3000/api/prospection/clear-cache', {
+            await fetch(API_BASE_URL + '/api/prospection/clear-cache', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({}) // Empty = clear all sessions
@@ -307,7 +308,7 @@ export default function Prospection() {
                 segment_id: selectedSegmentId || null
             }));
 
-            const res = await fetch('http://127.0.0.1:3000/api/wa/contacts/bulk', {
+            const res = await fetch(API_BASE_URL + '/api/wa/contacts/bulk', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ contacts: contactsToImport })

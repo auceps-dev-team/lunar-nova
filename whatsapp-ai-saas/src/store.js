@@ -96,6 +96,11 @@ const useAppStore = create(
                 allowAiRead: true,
                 promptFormat: 'json',
                 hasCompletedOnboarding: false,
+                // Masquage volontaire du bandeau de quota par l'utilisateur.
+                // Persisté (appSettings est conservé par partialize) — remplace
+                // l'ancien hack qui réécrivait aiQuota.imageLimit à 99999 dans
+                // l'état persisté, contaminant les sessions suivantes.
+                dismissQuotaBanner: false,
                 mainMenuOrder: [],
                 // Identifiants des onglets masqués dans la barre latérale.
                 // Le masquage n'est que visuel : les routes restent accessibles

@@ -146,7 +146,7 @@ async function generateProposals(chatContext, modelParam) {
     });
 
     try {
-        let targetModel = modelParam || 'gemini-1.5-pro';
+        let targetModel = modelParam || 'gemini-2.5-flash';
         if (targetModel === 'gemini-1.5-flash') {
             targetModel = 'gemini-1.5-flash-latest';
         }

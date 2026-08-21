@@ -24,9 +24,13 @@ if (process.parentPort) {
 }
 
 // Security: Restrict CORS to specific origins.
-// `!origin` couvre le renderer Electron en production (chargé en file://, donc sans
-// Origin) et les clients non-navigateur ; ceux-là restent filtrés par le token.
-const allowedOrigins = ['http://localhost:5173', 'file://'];
+// `!origin` couvre les clients non-navigateur ; ceux-là restent filtrés par le token.
+// Le renderer Electron en production est chargé en file:// : les requêtes fetch
+// vers le backend partent alors avec `Origin: null` (origin opaque), et non
+// `file://` comme le supposait l'ancienne liste — le renderer aurait été bloqué
+// par le navigateur. `null` n'apporte aucun privilège : l'authentification par
+// token Bearer reste obligatoire sur toutes les routes, c'est elle la barrière.
+const allowedOrigins = ['http://localhost:5173', 'null'];
 
 app.use(cors({
     origin: function (origin, callback) {

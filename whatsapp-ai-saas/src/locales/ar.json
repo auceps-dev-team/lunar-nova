@@ -357,5 +357,12 @@
   "onboardSkipAndStart": "الإعداد لاحقًا والبدء",
   "onboardFinishing": "جارٍ الإعداد…",
   "images": "صور",
-  "quotaExceededWarning": "تم استنفاد الحصة المجانية. أضف مفتاح Gemini الخاص بك لمتابعة توليد الصور."
+  "quotaExceededWarning": "تم استنفاد الحصة المجانية. أضف مفتاح Gemini الخاص بك لمتابعة توليد الصور.",
+  "dismissQuotaBanner": "إخفاء هذا التنبيه",
+  "updaterNoAssetForPlatform": "لا يوجد مثبّت متاح لهذه المنصة. حمّل التحديث يدويًا من صفحة الإصدارات.",
+  "updaterRateLimitError": "تم بلوغ حد طلبات GitHub (403). أعد المحاولة بعد بضع دقائق.",
+  "updaterRepoNotFoundError": "مستودع الإصدارات غير موجود (404). تحقق من إعدادات المحدّث.",
+  "updaterNetworkError": "تعذّر الوصول إلى خادم التحديثات. تحقق من اتصالك بالإنترنت.",
+  "updaterReleaseBehind": "آخر إصدار منشور ({{latest}}) أقدم من النسخة المثبتة ({{current}}). إصدارات GitHub غير متزامنة — تواصل مع الناشر.",
+  "updaterArtifactOpened": "تم فتح ملف التحديث للتثبيت."
 }

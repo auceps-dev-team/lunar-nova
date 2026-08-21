@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import useAppStore from '../store';
+import { API_BASE_URL } from '../config';
 
 // Repli figé : renvoyé par référence, il garde stables les dépendances des hooks.
 const EMPTY_ARRAY = [];
@@ -77,7 +78,7 @@ const ImageGeneration = () => {
 
             console.log('[ImageGeneration] Generating with:', body);
 
-            const res = await fetch('http://127.0.0.1:3000/api/ai/generate-image', {
+            const res = await fetch(API_BASE_URL + '/api/ai/generate-image', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body)

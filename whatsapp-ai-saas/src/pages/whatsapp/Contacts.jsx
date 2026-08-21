@@ -6,8 +6,9 @@ import { useTranslation } from 'react-i18next';
 import CustomSelect from '../../components/CustomSelect';
 import { API_BASE_URL } from '../../config';
 import { TableSkeleton } from '../../components/ui/SkeletonLoader';
-
-
+import BulkEditModal from '../../components/contacts/BulkEditModal';
+import BulkListEditModal from '../../components/contacts/BulkListEditModal';
+import TemplateModal from '../../components/contacts/TemplateModal';
 
 export default function Contacts({ activeId }) {
     const { t } = useTranslation();
@@ -87,7 +88,7 @@ export default function Contacts({ activeId }) {
 
     const fetchContacts = async () => {
         try {
-            const res = await fetch('http://127.0.0.1:3000/api/wa/contacts');
+            const res = await fetch(API_BASE_URL + '/api/wa/contacts');
             const data = await res.json();
             if (data.status === 'success') {
                 setContacts(data.data);
@@ -102,7 +103,7 @@ export default function Contacts({ activeId }) {
 
     const fetchSettings = async () => {
         try {
-            const res = await fetch('http://127.0.0.1:3000/api/settings');
+            const res = await fetch(API_BASE_URL + '/api/settings');
             const data = await res.json();
             if (data.status === 'success' && data.settings && data.settings.dynamic_message_template) {
                 setDynamicTemplate(data.settings.dynamic_message_template);
@@ -116,7 +117,7 @@ export default function Contacts({ activeId }) {
         e.preventDefault();
         setIsSavingTemplate(true);
         try {
-            const res = await fetch('http://127.0.0.1:3000/api/settings', {
+            const res = await fetch(API_BASE_URL + '/api/settings', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ dynamic_message_template: dynamicTemplate })
@@ -150,8 +151,8 @@ export default function Contacts({ activeId }) {
     const fetchMetadata = async () => {
         try {
             const [listsRes, segmentsRes] = await Promise.all([
-                fetch('http://127.0.0.1:3000/api/wa/contact-lists'),
-                fetch('http://127.0.0.1:3000/api/wa/segments')
+                fetch(API_BASE_URL + '/api/wa/contact-lists'),
+                fetch(API_BASE_URL + '/api/wa/segments')
             ]);
             const listsData = await listsRes.json();
             const segmentsData = await segmentsRes.json();
@@ -241,7 +242,7 @@ export default function Contacts({ activeId }) {
         if (!window.confirm(`Are you sure you want to delete ${selectedContacts.length} contacts?`)) return;
 
         try {
-            const res = await fetch('http://127.0.0.1:3000/api/wa/contacts/bulk-delete', {
+            const res = await fetch(API_BASE_URL + '/api/wa/contacts/bulk-delete', {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ contactIds: selectedContacts })
@@ -264,7 +265,7 @@ export default function Contacts({ activeId }) {
         e.preventDefault();
         setIsSubmittingBulk(true);
         try {
-            const res = await fetch('http://127.0.0.1:3000/api/wa/contacts/bulk-update', {
+            const res = await fetch(API_BASE_URL + '/api/wa/contacts/bulk-update', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -295,7 +296,7 @@ export default function Contacts({ activeId }) {
         e.preventDefault();
         setIsSubmittingBulk(true);
         try {
-            const res = await fetch('http://127.0.0.1:3000/api/wa/contacts/bulk-update-list', {
+            const res = await fetch(API_BASE_URL + '/api/wa/contacts/bulk-update-list', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -360,7 +361,7 @@ export default function Contacts({ activeId }) {
                     const controller = new AbortController();
                     const timeoutId = setTimeout(() => controller.abort(), 40000); // 40s max per contact
 
-                    const res = await fetch('http://127.0.0.1:3000/api/wa/verify-contact', {
+                    const res = await fetch(API_BASE_URL + '/api/wa/verify-contact', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ instance_id: activeId, contact_id: contact.id, phone: rawPhone, country_code: countryCode }),
@@ -405,7 +406,7 @@ export default function Contacts({ activeId }) {
         setOpeningChatFor(contactId);
         try {
             const rawPhone = phone.replace(/[^0-9]/g, '');
-            const res = await fetch('http://127.0.0.1:3000/api/wa/open-chat', {
+            const res = await fetch(API_BASE_URL + '/api/wa/open-chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ instance_id: activeId, phone: rawPhone, contact_id: contactId, country_code: countryCode })
@@ -722,175 +723,31 @@ export default function Contacts({ activeId }) {
             </div>
             )}
 
-            {/* Bulk Edit Modal */}
-            {isBulkEditModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-                    <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
-                        <div className="p-6">
-                            <div className="flex justify-between items-start mb-4">
-                                <div>
-                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">{t('bulkEditSegment')}</h3>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('bulkEditSegmentDesc')}</p>
-                                </div>
-                                <button
-                                    onClick={() => setIsBulkEditModalOpen(false)}
-                                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                                >
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                                </button>
-                            </div>
-
-                            <form onSubmit={handleBulkUpdate} className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('selectNewSegment')}</label>
-                                    <select
-                                        className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block p-2.5 dark:bg-zinc-800 dark:border-zinc-700 dark:placeholder-gray-400 dark:text-white transition-colors"
-                                        value={bulkSegmentId}
-                                        onChange={(e) => setBulkSegmentId(e.target.value)}
-                                        required
-                                    >
-                                        <option value="">{t('chooseSegment')}</option>
-                                        {allSegments.map(s => (
-                                            <option key={s.id} value={s.id}>{s.name}</option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div className="pt-2 flex gap-3">
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsBulkEditModalOpen(false)}
-                                        className="flex-1 text-gray-700 bg-gray-100 hover:bg-gray-200 dark:text-gray-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors"
-                                    >
-                                        {t('cancel')}
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        disabled={isSubmittingBulk}
-                                        className="flex-1 text-white bg-[#0b9f84] hover:bg-[#088b73] focus:ring-4 focus:outline-none focus:ring-[#0b9f84]/50 font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors disabled:opacity-50"
-                                    >
-                                        {isSubmittingBulk ? t('updating') : t('update')}
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Bulk Edit List Modal */}
-            {isBulkListEditModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-                    <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
-                        <div className="p-6">
-                            <div className="flex justify-between items-start mb-4">
-                                <div>
-                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">{t('bulkEditList')}</h3>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('bulkEditListDesc')}</p>
-                                </div>
-                                <button
-                                    onClick={() => setIsBulkListEditModalOpen(false)}
-                                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                                >
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                                </button>
-                            </div>
-
-                            <form onSubmit={handleBulkUpdateList} className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('selectNewList')}</label>
-                                    <select
-                                        className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block p-2.5 dark:bg-zinc-800 dark:border-zinc-700 dark:placeholder-gray-400 dark:text-white transition-colors"
-                                        value={bulkListId}
-                                        onChange={(e) => setBulkListId(e.target.value)}
-                                        required
-                                    >
-                                        <option value="">{t('chooseList')}</option>
-                                        {allLists.map(l => (
-                                            <option key={l.id} value={l.id}>{l.name}</option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div className="pt-2 flex gap-3">
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsBulkListEditModalOpen(false)}
-                                        className="flex-1 text-gray-700 bg-gray-100 hover:bg-gray-200 dark:text-gray-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors"
-                                    >
-                                        {t('cancel')}
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        disabled={isSubmittingBulk}
-                                        className="flex-1 text-white bg-[#0b9f84] hover:bg-[#088b73] focus:ring-4 focus:outline-none focus:ring-[#0b9f84]/50 font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors disabled:opacity-50"
-                                    >
-                                        {isSubmittingBulk ? t('updating') : t('update')}
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Dynamic Template Modal */}
-            {isTemplateModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-                    <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200">
-                        <div className="p-6">
-                            <div className="flex justify-between items-start mb-4">
-                                <div>
-                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">{t('messageTemplate')}</h3>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('configAutoMessage')}</p>
-                                </div>
-                                <button
-                                    onClick={() => setIsTemplateModalOpen(false)}
-                                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                                >
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                                </button>
-                            </div>
-
-                            <form onSubmit={handleSaveTemplate} className="space-y-4">
-                                <div>
-                                    <textarea
-                                        ref={templateTextareaRef}
-                                        value={dynamicTemplate}
-                                        onChange={(e) => setDynamicTemplate(e.target.value)}
-                                        rows={5}
-                                        placeholder="Bonjour [Nom], merci pour l'intérêt que vous portez à nos services..."
-                                        className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block p-3 dark:bg-zinc-800 dark:border-zinc-700 dark:placeholder-gray-400 dark:text-white transition-colors outline-none resize-none"
-                                    ></textarea>
-                                    <div className="flex flex-wrap items-center gap-2 mt-2">
-                                        <span className="text-xs text-gray-500 dark:text-gray-400">Cliquez pour insérer :</span>
-                                        <button type="button" onClick={() => insertVariable('[Nom]')} className="text-[11px] bg-gray-100 dark:bg-zinc-800 px-2 py-1 rounded text-emerald-600 dark:text-emerald-400 font-mono hover:bg-gray-200 dark:hover:bg-zinc-700 transition">[Nom]</button>
-                                        <button type="button" onClick={() => insertVariable('[Email]')} className="text-[11px] bg-gray-100 dark:bg-zinc-800 px-2 py-1 rounded text-emerald-600 dark:text-emerald-400 font-mono hover:bg-gray-200 dark:hover:bg-zinc-700 transition">[Email]</button>
-                                        <button type="button" onClick={() => insertVariable('[Adresse]')} className="text-[11px] bg-gray-100 dark:bg-zinc-800 px-2 py-1 rounded text-emerald-600 dark:text-emerald-400 font-mono hover:bg-gray-200 dark:hover:bg-zinc-700 transition">[Adresse]</button>
-                                    </div>
-                                </div>
-
-                                <div className="pt-2 flex gap-3">
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsTemplateModalOpen(false)}
-                                        className="flex-1 text-gray-700 bg-gray-100 hover:bg-gray-200 dark:text-gray-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors"
-                                    >
-                                        {t('cancel')}
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        disabled={isSavingTemplate}
-                                        className="flex-1 text-white bg-emerald-600 hover:bg-emerald-700 focus:ring-4 focus:outline-none focus:ring-emerald-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors disabled:opacity-50"
-                                    >
-                                        {isSavingTemplate ? t('saving') : t('saveTemplate')}
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {/* BulkEditModal — extraite dans src/components/contacts/ */}
+            {isBulkEditModalOpen && <BulkEditModal
+                    allSegments={allSegments}
+                    bulkSegmentId={bulkSegmentId}
+                    handleBulkUpdate={handleBulkUpdate}
+                    isSubmittingBulk={isSubmittingBulk}
+                    setBulkSegmentId={setBulkSegmentId}
+                    setIsBulkEditModalOpen={setIsBulkEditModalOpen} />}
+            {/* BulkListEditModal — extraite dans src/components/contacts/ */}
+            {isBulkListEditModalOpen && <BulkListEditModal
+                    allLists={allLists}
+                    bulkListId={bulkListId}
+                    handleBulkUpdateList={handleBulkUpdateList}
+                    isSubmittingBulk={isSubmittingBulk}
+                    setBulkListId={setBulkListId}
+                    setIsBulkListEditModalOpen={setIsBulkListEditModalOpen} />}
+            {/* TemplateModal — extraite dans src/components/contacts/ */}
+            {isTemplateModalOpen && <TemplateModal
+                    handleSaveTemplate={handleSaveTemplate}
+                    setIsTemplateModalOpen={setIsTemplateModalOpen}
+                    dynamicTemplate={dynamicTemplate}
+                    setDynamicTemplate={setDynamicTemplate}
+                    isSavingTemplate={isSavingTemplate}
+                    insertVariable={insertVariable}
+                    templateTextareaRef={templateTextareaRef} />}
         </div>
     );
 }

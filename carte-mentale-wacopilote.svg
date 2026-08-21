@@ -1,0 +1,527 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="2320" height="1480" viewBox="0 0 2320 1480" font-family="Segoe UI, Inter, system-ui, sans-serif">
+  <defs>
+    <radialGradient id="bgGrad" cx="50%" cy="42%" r="75%">
+      <stop offset="0%" stop-color="#f6faf9"/>
+      <stop offset="100%" stop-color="#e8efec"/>
+    </radialGradient>
+    <radialGradient id="hubGrad" cx="38%" cy="30%" r="80%">
+      <stop offset="0%" stop-color="#12b98f"/>
+      <stop offset="55%" stop-color="#0b9f84"/>
+      <stop offset="100%" stop-color="#075e4c"/>
+    </radialGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#0f302b" flood-opacity="0.18"/>
+    </filter>
+    <filter id="soft" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#0f302b" flood-opacity="0.12"/>
+    </filter>
+  </defs>
+
+  <rect width="2320" height="1480" fill="url(#bgGrad)"/>
+  <g stroke="#0f302b" stroke-opacity="0.05" stroke-width="1">
+    <line x1="0" y1="0" x2="0" y2="1480"/>
+    <line x1="46" y1="0" x2="46" y2="1480"/>
+    <line x1="92" y1="0" x2="92" y2="1480"/>
+    <line x1="138" y1="0" x2="138" y2="1480"/>
+    <line x1="184" y1="0" x2="184" y2="1480"/>
+    <line x1="230" y1="0" x2="230" y2="1480"/>
+    <line x1="276" y1="0" x2="276" y2="1480"/>
+    <line x1="322" y1="0" x2="322" y2="1480"/>
+    <line x1="368" y1="0" x2="368" y2="1480"/>
+    <line x1="414" y1="0" x2="414" y2="1480"/>
+    <line x1="460" y1="0" x2="460" y2="1480"/>
+    <line x1="506" y1="0" x2="506" y2="1480"/>
+    <line x1="552" y1="0" x2="552" y2="1480"/>
+    <line x1="598" y1="0" x2="598" y2="1480"/>
+    <line x1="644" y1="0" x2="644" y2="1480"/>
+    <line x1="690" y1="0" x2="690" y2="1480"/>
+    <line x1="736" y1="0" x2="736" y2="1480"/>
+    <line x1="782" y1="0" x2="782" y2="1480"/>
+    <line x1="828" y1="0" x2="828" y2="1480"/>
+    <line x1="874" y1="0" x2="874" y2="1480"/>
+    <line x1="920" y1="0" x2="920" y2="1480"/>
+    <line x1="966" y1="0" x2="966" y2="1480"/>
+    <line x1="1012" y1="0" x2="1012" y2="1480"/>
+    <line x1="1058" y1="0" x2="1058" y2="1480"/>
+    <line x1="1104" y1="0" x2="1104" y2="1480"/>
+    <line x1="1150" y1="0" x2="1150" y2="1480"/>
+    <line x1="1196" y1="0" x2="1196" y2="1480"/>
+    <line x1="1242" y1="0" x2="1242" y2="1480"/>
+    <line x1="1288" y1="0" x2="1288" y2="1480"/>
+    <line x1="1334" y1="0" x2="1334" y2="1480"/>
+    <line x1="1380" y1="0" x2="1380" y2="1480"/>
+    <line x1="1426" y1="0" x2="1426" y2="1480"/>
+    <line x1="1472" y1="0" x2="1472" y2="1480"/>
+    <line x1="1518" y1="0" x2="1518" y2="1480"/>
+    <line x1="1564" y1="0" x2="1564" y2="1480"/>
+    <line x1="1610" y1="0" x2="1610" y2="1480"/>
+    <line x1="1656" y1="0" x2="1656" y2="1480"/>
+    <line x1="1702" y1="0" x2="1702" y2="1480"/>
+    <line x1="1748" y1="0" x2="1748" y2="1480"/>
+    <line x1="1794" y1="0" x2="1794" y2="1480"/>
+    <line x1="1840" y1="0" x2="1840" y2="1480"/>
+    <line x1="1886" y1="0" x2="1886" y2="1480"/>
+    <line x1="1932" y1="0" x2="1932" y2="1480"/>
+    <line x1="1978" y1="0" x2="1978" y2="1480"/>
+    <line x1="2024" y1="0" x2="2024" y2="1480"/>
+    <line x1="2070" y1="0" x2="2070" y2="1480"/>
+    <line x1="2116" y1="0" x2="2116" y2="1480"/>
+    <line x1="2162" y1="0" x2="2162" y2="1480"/>
+    <line x1="2208" y1="0" x2="2208" y2="1480"/>
+    <line x1="2254" y1="0" x2="2254" y2="1480"/>
+    <line x1="0" y1="0" x2="2320" y2="0"/>
+    <line x1="0" y1="46" x2="2320" y2="46"/>
+    <line x1="0" y1="92" x2="2320" y2="92"/>
+    <line x1="0" y1="138" x2="2320" y2="138"/>
+    <line x1="0" y1="184" x2="2320" y2="184"/>
+    <line x1="0" y1="230" x2="2320" y2="230"/>
+    <line x1="0" y1="276" x2="2320" y2="276"/>
+    <line x1="0" y1="322" x2="2320" y2="322"/>
+    <line x1="0" y1="368" x2="2320" y2="368"/>
+    <line x1="0" y1="414" x2="2320" y2="414"/>
+    <line x1="0" y1="460" x2="2320" y2="460"/>
+    <line x1="0" y1="506" x2="2320" y2="506"/>
+    <line x1="0" y1="552" x2="2320" y2="552"/>
+    <line x1="0" y1="598" x2="2320" y2="598"/>
+    <line x1="0" y1="644" x2="2320" y2="644"/>
+    <line x1="0" y1="690" x2="2320" y2="690"/>
+    <line x1="0" y1="736" x2="2320" y2="736"/>
+    <line x1="0" y1="782" x2="2320" y2="782"/>
+    <line x1="0" y1="828" x2="2320" y2="828"/>
+    <line x1="0" y1="874" x2="2320" y2="874"/>
+    <line x1="0" y1="920" x2="2320" y2="920"/>
+    <line x1="0" y1="966" x2="2320" y2="966"/>
+    <line x1="0" y1="1012" x2="2320" y2="1012"/>
+    <line x1="0" y1="1058" x2="2320" y2="1058"/>
+    <line x1="0" y1="1104" x2="2320" y2="1104"/>
+    <line x1="0" y1="1150" x2="2320" y2="1150"/>
+    <line x1="0" y1="1196" x2="2320" y2="1196"/>
+    <line x1="0" y1="1242" x2="2320" y2="1242"/>
+    <line x1="0" y1="1288" x2="2320" y2="1288"/>
+    <line x1="0" y1="1334" x2="2320" y2="1334"/>
+    <line x1="0" y1="1380" x2="2320" y2="1380"/>
+    <line x1="0" y1="1426" x2="2320" y2="1426"/>
+  </g>
+  <text x="1160" y="52" text-anchor="middle" font-size="34" font-weight="800" fill="#0f302b">🧭  Carte mentale — WaCopilote  (audit complet du dépôt)</text>
+  <text x="1160" y="86" text-anchor="middle" font-size="16" fill="#5b6b66">Assistant IA Desktop &amp; copilote d’automatisation WhatsApp — v1.42.0 · AGPL-3.0 · Conçu à Abidjan 🇨🇮 · audit du 2026-08-21</text>
+<path d="M 1480.0 740.0 L 1520.0 740.0" stroke="#0f302b" stroke-width="7" stroke-linecap="round" fill="none" opacity="0.55"/>
+<g filter="url(#shadow)">
+    <rect x="1415.0" y="716.0" width="210" height="48" rx="14" fill="#0f302b" stroke="#ffffff" stroke-width="2"/>
+    <text x="1520.0" y="736.0" text-anchor="middle" font-size="14.5" font-weight="700" fill="#ffffff">🖥️  Electron</text>
+    <text x="1520.0" y="752.0" text-anchor="middle" font-size="14.5" font-weight="700" fill="#ffffff">Desktop</text>
+  </g>
+<line x1="1520.0" y1="740.0" x2="1612.0" y2="740.0" stroke="#0f302b" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+<circle cx="1582.0" cy="740.0" r="4.5" fill="#0f302b"/>
+<g filter="url(#soft)">
+      <rect x="1478.0" y="723.0" width="268" height="34" rx="10" fill="#e7efec" stroke="#0f302b" stroke-width="1.4"/>
+      <text x="1490.0" y="737.0" text-anchor="start" font-size="12" font-weight="600" fill="#22332e">main.cjs — fenêtres, backend fork +</text>
+      <text x="1490.0" y="748.0" text-anchor="start" font-size="12" font-weight="600" fill="#22332e">supervision (3 redémarrages)</text>
+    </g>
+<line x1="1520.0" y1="740.0" x2="1674.0" y2="740.0" stroke="#0f302b" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+<circle cx="1644.0" cy="740.0" r="4.5" fill="#0f302b"/>
+<g filter="url(#soft)">
+      <rect x="1540.0" y="723.0" width="268" height="34" rx="10" fill="#e7efec" stroke="#0f302b" stroke-width="1.4"/>
+      <text x="1552.0" y="737.0" text-anchor="start" font-size="12" font-weight="600" fill="#22332e">preload.cjs — IPC restreint,</text>
+      <text x="1552.0" y="748.0" text-anchor="start" font-size="12" font-weight="600" fill="#22332e">contextIsolation ON</text>
+    </g>
+<line x1="1520.0" y1="740.0" x2="1736.0" y2="740.0" stroke="#0f302b" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+<circle cx="1706.0" cy="740.0" r="4.5" fill="#0f302b"/>
+<g filter="url(#soft)">
+      <rect x="1602.0" y="723.0" width="268" height="34" rx="10" fill="#e7efec" stroke="#0f302b" stroke-width="1.4"/>
+      <text x="1614.0" y="737.0" text-anchor="start" font-size="12" font-weight="600" fill="#22332e">updater.cjs — auto-update (GitHub</text>
+      <text x="1614.0" y="748.0" text-anchor="start" font-size="12" font-weight="600" fill="#22332e">Releases, Windows)</text>
+    </g>
+<line x1="1520.0" y1="740.0" x2="1798.0" y2="740.0" stroke="#0f302b" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+<circle cx="1768.0" cy="740.0" r="4.5" fill="#0f302b"/>
+<g filter="url(#soft)">
+      <rect x="1664.0" y="723.0" width="268" height="34" rx="10" fill="#e7efec" stroke="#0f302b" stroke-width="1.4"/>
+      <text x="1676.0" y="737.0" text-anchor="start" font-size="12" font-weight="600" fill="#22332e">safeStorage — clé maître scellée</text>
+      <text x="1676.0" y="748.0" text-anchor="start" font-size="12" font-weight="600" fill="#22332e">(DPAPI/Trousseau/libsecret)</text>
+    </g>
+<line x1="1520.0" y1="740.0" x2="1860.0" y2="740.0" stroke="#0f302b" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+<circle cx="1830.0" cy="740.0" r="4.5" fill="#0f302b"/>
+<g filter="url(#soft)">
+      <rect x="1726.0" y="723.0" width="268" height="34" rx="10" fill="#e7efec" stroke="#0f302b" stroke-width="1.4"/>
+      <text x="1738.0" y="737.0" text-anchor="start" font-size="12" font-weight="600" fill="#22332e">Export PDF : fenêtre cachée → printToPDF →</text>
+      <text x="1738.0" y="748.0" text-anchor="start" font-size="12" font-weight="600" fill="#22332e">dialogue</text>
+    </g>
+<path d="M 1418.9 928.1 L 1451.2 951.6" stroke="#0b9f84" stroke-width="7" stroke-linecap="round" fill="none" opacity="0.55"/>
+<g filter="url(#shadow)">
+    <rect x="1346.2" y="927.6" width="210" height="48" rx="14" fill="#0b9f84" stroke="#ffffff" stroke-width="2"/>
+    <text x="1451.2" y="956.6" text-anchor="middle" font-size="14.5" font-weight="700" fill="#ffffff">⚙️  Backend Express</text>
+    
+  </g>
+<line x1="1451.2" y1="951.6" x2="1525.7" y2="1005.7" stroke="#0b9f84" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+<circle cx="1501.4" cy="988.0" r="4.5" fill="#0b9f84"/>
+<g filter="url(#soft)">
+      <rect x="1391.7" y="988.7" width="268" height="34" rx="10" fill="#e6f5f2" stroke="#0b9f84" stroke-width="1.4"/>
+      <text x="1403.7" y="1002.7" text-anchor="start" font-size="12" font-weight="600" fill="#22332e">server.js — écoute 127.0.0.1:3000, CORS,</text>
+      <text x="1403.7" y="1013.7" text-anchor="start" font-size="12" font-weight="600" fill="#22332e">rate-limit ×3</text>
+    </g>
+<line x1="1451.2" y1="951.6" x2="1575.8" y2="1042.1" stroke="#0b9f84" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+<circle cx="1551.6" cy="1024.5" r="4.5" fill="#0b9f84"/>
+<g filter="url(#soft)">
+      <rect x="1441.8" y="1025.1" width="268" height="34" rx="10" fill="#e6f5f2" stroke="#0b9f84" stroke-width="1.4"/>
+      <text x="1453.8" y="1039.1" text-anchor="start" font-size="12" font-weight="600" fill="#22332e">8 routers : ai, wa, catalog, pipeline,</text>
+      <text x="1453.8" y="1050.1" text-anchor="start" font-size="12" font-weight="600" fill="#22332e">prospection, wp, documents, settings</text>
+    </g>
+<line x1="1451.2" y1="951.6" x2="1626.0" y2="1078.6" stroke="#0b9f84" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+<circle cx="1601.7" cy="1060.9" r="4.5" fill="#0b9f84"/>
+<g filter="url(#soft)">
+      <rect x="1492.0" y="1061.6" width="268" height="34" rx="10" fill="#e6f5f2" stroke="#0b9f84" stroke-width="1.4"/>
+      <text x="1504.0" y="1075.6" text-anchor="start" font-size="12" font-weight="600" fill="#22332e">apiAuth — token SHA-256 à temps constant,</text>
+      <text x="1504.0" y="1086.6" text-anchor="start" font-size="12" font-weight="600" fill="#22332e">routes SSE</text>
+    </g>
+<line x1="1451.2" y1="951.6" x2="1676.2" y2="1115.0" stroke="#0b9f84" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+<circle cx="1651.9" cy="1097.4" r="4.5" fill="#0b9f84"/>
+<g filter="url(#soft)">
+      <rect x="1542.2" y="1098.0" width="268" height="34" rx="10" fill="#e6f5f2" stroke="#0b9f84" stroke-width="1.4"/>
+      <text x="1554.2" y="1112.0" text-anchor="start" font-size="12" font-weight="600" fill="#22332e">orderListener — flux SSE commandes en</text>
+      <text x="1554.2" y="1123.0" text-anchor="start" font-size="12" font-weight="600" fill="#22332e">temps réel</text>
+    </g>
+<line x1="1451.2" y1="951.6" x2="1726.3" y2="1151.4" stroke="#0b9f84" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+<circle cx="1702.0" cy="1133.8" r="4.5" fill="#0b9f84"/>
+<g filter="url(#soft)">
+      <rect x="1592.3" y="1134.4" width="268" height="34" rx="10" fill="#e6f5f2" stroke="#0b9f84" stroke-width="1.4"/>
+      <text x="1604.3" y="1148.4" text-anchor="start" font-size="12" font-weight="600" fill="#22332e">Express 4 + CommonJS (4e env : code</text>
+      <text x="1604.3" y="1159.4" text-anchor="start" font-size="12" font-weight="600" fill="#22332e">injecté WhatsApp)</text>
+    </g>
+<path d="M 1258.9 1044.3 L 1271.2 1082.4" stroke="#0d9488" stroke-width="7" stroke-linecap="round" fill="none" opacity="0.55"/>
+<g filter="url(#shadow)">
+    <rect x="1166.2" y="1058.4" width="210" height="48" rx="14" fill="#0d9488" stroke="#ffffff" stroke-width="2"/>
+    <text x="1271.2" y="1078.4" text-anchor="middle" font-size="14.5" font-weight="700" fill="#ffffff">🗄️  Persistance</text>
+    <text x="1271.2" y="1094.4" text-anchor="middle" font-size="14.5" font-weight="700" fill="#ffffff">&amp; Cache</text>
+  </g>
+<line x1="1271.2" y1="1082.4" x2="1299.7" y2="1169.9" stroke="#0d9488" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+<circle cx="1290.4" cy="1141.3" r="4.5" fill="#0d9488"/>
+<g filter="url(#soft)">
+      <rect x="1165.7" y="1152.9" width="268" height="34" rx="10" fill="#e6f6f4" stroke="#0d9488" stroke-width="1.4"/>
+      <text x="1177.7" y="1166.9" text-anchor="start" font-size="12" font-weight="600" fill="#22332e">SQLite — shim PostgreSQL → SQLite</text>
+      <text x="1177.7" y="1177.9" text-anchor="start" font-size="12" font-weight="600" fill="#22332e">(pool.query)</text>
+    </g>
+<line x1="1271.2" y1="1082.4" x2="1318.8" y2="1228.8" stroke="#0d9488" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+<circle cx="1309.6" cy="1200.3" r="4.5" fill="#0d9488"/>
+<g filter="url(#soft)">
+      <rect x="1184.8" y="1211.8" width="268" height="34" rx="10" fill="#e6f6f4" stroke="#0d9488" stroke-width="1.4"/>
+      <text x="1196.8" y="1225.8" text-anchor="start" font-size="12" font-weight="600" fill="#22332e">6 migrations versionnées (succès =</text>
+      <text x="1196.8" y="1236.8" text-anchor="start" font-size="12" font-weight="600" fill="#22332e">enregistrement)</text>
+    </g>
+<line x1="1271.2" y1="1082.4" x2="1338.0" y2="1287.8" stroke="#0d9488" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+<circle cx="1328.7" cy="1259.3" r="4.5" fill="#0d9488"/>
+<g filter="url(#soft)">
+      <rect x="1204.0" y="1270.8" width="268" height="34" rx="10" fill="#e6f6f4" stroke="#0d9488" stroke-width="1.4"/>
+      <text x="1216.0" y="1284.8" text-anchor="start" font-size="12" font-weight="600" fill="#22332e">Redis — cache, rate-limit (repli gracieux</text>
+      <text x="1216.0" y="1295.8" text-anchor="start" font-size="12" font-weight="600" fill="#22332e">sans Redis)</text>
+    </g>
+<line x1="1271.2" y1="1082.4" x2="1357.2" y2="1346.8" stroke="#0d9488" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+<circle cx="1347.9" cy="1318.2" r="4.5" fill="#0d9488"/>
+<g filter="url(#soft)">
+      <rect x="1223.2" y="1329.8" width="268" height="34" rx="10" fill="#e6f6f4" stroke="#0d9488" stroke-width="1.4"/>
+      <text x="1235.2" y="1343.8" text-anchor="start" font-size="12" font-weight="600" fill="#22332e">secretStore — AES-256-GCM au repos, IV</text>
+      <text x="1235.2" y="1354.8" text-anchor="start" font-size="12" font-weight="600" fill="#22332e">aléatoire</text>
+    </g>
+<line x1="1271.2" y1="1082.4" x2="1376.3" y2="1405.7" stroke="#0d9488" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+<circle cx="1367.0" cy="1377.2" r="4.5" fill="#0d9488"/>
+<g filter="url(#soft)">
+      <rect x="1242.3" y="1388.7" width="268" height="34" rx="10" fill="#e6f6f4" stroke="#0d9488" stroke-width="1.4"/>
+      <text x="1254.3" y="1402.7" text-anchor="start" font-size="12" font-weight="600" fill="#22332e">logRedact — masquage des messages/contacts</text>
+      <text x="1254.3" y="1413.7" text-anchor="start" font-size="12" font-weight="600" fill="#22332e">dans les logs</text>
+    </g>
+<path d="M 1061.1 1044.3 L 1048.8 1082.4" stroke="#7c3aed" stroke-width="7" stroke-linecap="round" fill="none" opacity="0.55"/>
+<g filter="url(#shadow)">
+    <rect x="943.8" y="1058.4" width="210" height="48" rx="14" fill="#7c3aed" stroke="#ffffff" stroke-width="2"/>
+    <text x="1048.8" y="1078.4" text-anchor="middle" font-size="14.5" font-weight="700" fill="#ffffff">🧠  Passerelle</text>
+    <text x="1048.8" y="1094.4" text-anchor="middle" font-size="14.5" font-weight="700" fill="#ffffff">IA Multi-LLM</text>
+  </g>
+<line x1="1048.8" y1="1082.4" x2="1020.3" y2="1169.9" stroke="#7c3aed" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+<circle cx="1029.6" cy="1141.3" r="4.5" fill="#7c3aed"/>
+<g filter="url(#soft)">
+      <rect x="886.3" y="1152.9" width="268" height="34" rx="10" fill="#f1eafe" stroke="#7c3aed" stroke-width="1.4"/>
+      <text x="1142.3" y="1166.9" text-anchor="end" font-size="12" font-weight="600" fill="#22332e">Google Gemini — Flash/Pro/Vision, quota 40</text>
+      <text x="1142.3" y="1177.9" text-anchor="end" font-size="12" font-weight="600" fill="#22332e">images/mois</text>
+    </g>
+<line x1="1048.8" y1="1082.4" x2="1001.2" y2="1228.8" stroke="#7c3aed" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+<circle cx="1010.4" cy="1200.3" r="4.5" fill="#7c3aed"/>
+<g filter="url(#soft)">
+      <rect x="867.2" y="1211.8" width="268" height="34" rx="10" fill="#f1eafe" stroke="#7c3aed" stroke-width="1.4"/>
+      <text x="1123.2" y="1225.8" text-anchor="end" font-size="12" font-weight="600" fill="#22332e">NVIDIA NIM — catalogue ~80 modèles</text>
+      <text x="1123.2" y="1236.8" text-anchor="end" font-size="12" font-weight="600" fill="#22332e">paramétrés</text>
+    </g>
+<line x1="1048.8" y1="1082.4" x2="982.0" y2="1287.8" stroke="#7c3aed" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+<circle cx="991.3" cy="1259.3" r="4.5" fill="#7c3aed"/>
+<g filter="url(#soft)">
+      <rect x="848.0" y="1270.8" width="268" height="34" rx="10" fill="#f1eafe" stroke="#7c3aed" stroke-width="1.4"/>
+      <text x="1104.0" y="1284.8" text-anchor="end" font-size="12" font-weight="600" fill="#22332e">OpenRouter — catalogue multi-fournisseurs</text>
+      <text x="1104.0" y="1295.8" text-anchor="end" font-size="12" font-weight="600" fill="#22332e">en cache</text>
+    </g>
+<line x1="1048.8" y1="1082.4" x2="962.8" y2="1346.8" stroke="#7c3aed" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+<circle cx="972.1" cy="1318.2" r="4.5" fill="#7c3aed"/>
+<g filter="url(#soft)">
+      <rect x="828.8" y="1329.8" width="268" height="34" rx="10" fill="#f1eafe" stroke="#7c3aed" stroke-width="1.4"/>
+      <text x="1084.8" y="1343.8" text-anchor="end" font-size="12" font-weight="600" fill="#22332e">Together AI (Qwen Image) + Ollama 100%</text>
+      <text x="1084.8" y="1354.8" text-anchor="end" font-size="12" font-weight="600" fill="#22332e">local</text>
+    </g>
+<line x1="1048.8" y1="1082.4" x2="943.7" y2="1405.7" stroke="#7c3aed" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+<circle cx="953.0" cy="1377.2" r="4.5" fill="#7c3aed"/>
+<g filter="url(#soft)">
+      <rect x="809.7" y="1388.7" width="268" height="34" rx="10" fill="#f1eafe" stroke="#7c3aed" stroke-width="1.4"/>
+      <text x="1065.7" y="1402.7" text-anchor="end" font-size="12" font-weight="600" fill="#22332e">aiController — routage dynamique,</text>
+      <text x="1065.7" y="1413.7" text-anchor="end" font-size="12" font-weight="600" fill="#22332e">résolution de clé ×4</text>
+    </g>
+<path d="M 901.1 928.1 L 868.8 951.6" stroke="#8b5cf6" stroke-width="7" stroke-linecap="round" fill="none" opacity="0.55"/>
+<g filter="url(#shadow)">
+    <rect x="763.8" y="927.6" width="210" height="48" rx="14" fill="#8b5cf6" stroke="#ffffff" stroke-width="2"/>
+    <text x="868.8" y="947.6" text-anchor="middle" font-size="14.5" font-weight="700" fill="#ffffff">🤖  Agents</text>
+    <text x="868.8" y="963.6" text-anchor="middle" font-size="14.5" font-weight="700" fill="#ffffff">&amp; Personas</text>
+  </g>
+<line x1="868.8" y1="951.6" x2="794.3" y2="1005.7" stroke="#8b5cf6" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+<circle cx="818.6" cy="988.0" r="4.5" fill="#8b5cf6"/>
+<g filter="url(#soft)">
+      <rect x="660.3" y="988.7" width="268" height="34" rx="10" fill="#f3eefe" stroke="#8b5cf6" stroke-width="1.4"/>
+      <text x="916.3" y="1002.7" text-anchor="end" font-size="12" font-weight="600" fill="#22332e">27 personas : Jarvis, Clarisse, Ella,</text>
+      <text x="916.3" y="1013.7" text-anchor="end" font-size="12" font-weight="600" fill="#22332e">Order Radar, Antoine…</text>
+    </g>
+<line x1="868.8" y1="951.6" x2="744.2" y2="1042.1" stroke="#8b5cf6" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+<circle cx="768.4" cy="1024.5" r="4.5" fill="#8b5cf6"/>
+<g filter="url(#soft)">
+      <rect x="610.2" y="1025.1" width="268" height="34" rx="10" fill="#f3eefe" stroke="#8b5cf6" stroke-width="1.4"/>
+      <text x="866.2" y="1039.1" text-anchor="end" font-size="12" font-weight="600" fill="#22332e">orchestrator — chargement dynamique des</text>
+      <text x="866.2" y="1050.1" text-anchor="end" font-size="12" font-weight="600" fill="#22332e">personas</text>
+    </g>
+<line x1="868.8" y1="951.6" x2="694.0" y2="1078.6" stroke="#8b5cf6" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+<circle cx="718.3" cy="1060.9" r="4.5" fill="#8b5cf6"/>
+<g filter="url(#soft)">
+      <rect x="560.0" y="1061.6" width="268" height="34" rx="10" fill="#f3eefe" stroke="#8b5cf6" stroke-width="1.4"/>
+      <text x="816.0" y="1075.6" text-anchor="end" font-size="12" font-weight="600" fill="#22332e">Pipeline agentique : prospection →</text>
+      <text x="816.0" y="1086.6" text-anchor="end" font-size="12" font-weight="600" fill="#22332e">contacts → messages → kanban</text>
+    </g>
+<line x1="868.8" y1="951.6" x2="643.8" y2="1115.0" stroke="#8b5cf6" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+<circle cx="668.1" cy="1097.4" r="4.5" fill="#8b5cf6"/>
+<g filter="url(#soft)">
+      <rect x="509.8" y="1098.0" width="268" height="34" rx="10" fill="#f3eefe" stroke="#8b5cf6" stroke-width="1.4"/>
+      <text x="765.8" y="1119.0" text-anchor="end" font-size="12" font-weight="600" fill="#22332e">Sortie JSON/text pilotée par outputFormat</text>
+      
+    </g>
+<line x1="868.8" y1="951.6" x2="593.7" y2="1151.4" stroke="#8b5cf6" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+<circle cx="618.0" cy="1133.8" r="4.5" fill="#8b5cf6"/>
+<g filter="url(#soft)">
+      <rect x="459.7" y="1134.4" width="268" height="34" rx="10" fill="#f3eefe" stroke="#8b5cf6" stroke-width="1.4"/>
+      <text x="715.7" y="1148.4" text-anchor="end" font-size="12" font-weight="600" fill="#22332e">Human-in-the-loop sur toutes les mutations</text>
+      <text x="715.7" y="1159.4" text-anchor="end" font-size="12" font-weight="600" fill="#22332e">WordPress</text>
+    </g>
+<path d="M 840.0 740.0 L 800.0 740.0" stroke="#10b981" stroke-width="7" stroke-linecap="round" fill="none" opacity="0.55"/>
+<g filter="url(#shadow)">
+    <rect x="695.0" y="716.0" width="210" height="48" rx="14" fill="#10b981" stroke="#ffffff" stroke-width="2"/>
+    <text x="800.0" y="736.0" text-anchor="middle" font-size="14.5" font-weight="700" fill="#ffffff">📱  Automatisation</text>
+    <text x="800.0" y="752.0" text-anchor="middle" font-size="14.5" font-weight="700" fill="#ffffff">WhatsApp</text>
+  </g>
+<line x1="800.0" y1="740.0" x2="708.0" y2="740.0" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+<circle cx="738.0" cy="740.0" r="4.5" fill="#10b981"/>
+<g filter="url(#soft)">
+      <rect x="574.0" y="723.0" width="268" height="34" rx="10" fill="#e7f9f1" stroke="#10b981" stroke-width="1.4"/>
+      <text x="830.0" y="737.0" text-anchor="end" font-size="12" font-weight="600" fill="#22332e">orderListener — détection d’intention</text>
+      <text x="830.0" y="748.0" text-anchor="end" font-size="12" font-weight="600" fill="#22332e">d’achat (IOL)</text>
+    </g>
+<line x1="800.0" y1="740.0" x2="646.0" y2="740.0" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+<circle cx="676.0" cy="740.0" r="4.5" fill="#10b981"/>
+<g filter="url(#soft)">
+      <rect x="512.0" y="723.0" width="268" height="34" rx="10" fill="#e7f9f1" stroke="#10b981" stroke-width="1.4"/>
+      <text x="768.0" y="737.0" text-anchor="end" font-size="12" font-weight="600" fill="#22332e">Contacts, listes, segments, import</text>
+      <text x="768.0" y="748.0" text-anchor="end" font-size="12" font-weight="600" fill="#22332e">CSV/Excel dédup</text>
+    </g>
+<line x1="800.0" y1="740.0" x2="584.0" y2="740.0" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+<circle cx="614.0" cy="740.0" r="4.5" fill="#10b981"/>
+<g filter="url(#soft)">
+      <rect x="450.0" y="723.0" width="268" height="34" rx="10" fill="#e7f9f1" stroke="#10b981" stroke-width="1.4"/>
+      <text x="706.0" y="737.0" text-anchor="end" font-size="12" font-weight="600" fill="#22332e">verify-contact — vérifie les numéros sur</text>
+      <text x="706.0" y="748.0" text-anchor="end" font-size="12" font-weight="600" fill="#22332e">WhatsApp</text>
+    </g>
+<line x1="800.0" y1="740.0" x2="522.0" y2="740.0" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+<circle cx="552.0" cy="740.0" r="4.5" fill="#10b981"/>
+<g filter="url(#soft)">
+      <rect x="388.0" y="723.0" width="268" height="34" rx="10" fill="#e7f9f1" stroke="#10b981" stroke-width="1.4"/>
+      <text x="644.0" y="737.0" text-anchor="end" font-size="12" font-weight="600" fill="#22332e">Catalogue Business — injection image seule</text>
+      <text x="644.0" y="748.0" text-anchor="end" font-size="12" font-weight="600" fill="#22332e">(délais humains)</text>
+    </g>
+<line x1="800.0" y1="740.0" x2="460.0" y2="740.0" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+<circle cx="490.0" cy="740.0" r="4.5" fill="#10b981"/>
+<g filter="url(#soft)">
+      <rect x="326.0" y="723.0" width="268" height="34" rx="10" fill="#e7f9f1" stroke="#10b981" stroke-width="1.4"/>
+      <text x="582.0" y="737.0" text-anchor="end" font-size="12" font-weight="600" fill="#22332e">Mutex CDP global + SSE + webviews</text>
+      <text x="582.0" y="748.0" text-anchor="end" font-size="12" font-weight="600" fill="#22332e">persistants</text>
+    </g>
+<path d="M 901.1 551.9 L 868.8 528.4" stroke="#f59e0b" stroke-width="7" stroke-linecap="round" fill="none" opacity="0.55"/>
+<g filter="url(#shadow)">
+    <rect x="763.8" y="504.4" width="210" height="48" rx="14" fill="#f59e0b" stroke="#ffffff" stroke-width="2"/>
+    <text x="868.8" y="533.4" text-anchor="middle" font-size="14.5" font-weight="700" fill="#ffffff">🔍  Prospection B2B</text>
+    
+  </g>
+<line x1="868.8" y1="528.4" x2="794.3" y2="474.3" stroke="#f59e0b" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+<circle cx="818.6" cy="492.0" r="4.5" fill="#f59e0b"/>
+<g filter="url(#soft)">
+      <rect x="660.3" y="457.3" width="268" height="34" rx="10" fill="#fef6e7" stroke="#f59e0b" stroke-width="1.4"/>
+      <text x="916.3" y="471.3" text-anchor="end" font-size="12" font-weight="600" fill="#22332e">phoneRules — fixes/mobiles par pays (fix</text>
+      <text x="916.3" y="482.3" text-anchor="end" font-size="12" font-weight="600" fill="#22332e">Togo/Cameroun)</text>
+    </g>
+<line x1="868.8" y1="528.4" x2="744.2" y2="437.9" stroke="#f59e0b" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+<circle cx="768.4" cy="455.5" r="4.5" fill="#f59e0b"/>
+<g filter="url(#soft)">
+      <rect x="610.2" y="420.9" width="268" height="34" rx="10" fill="#fef6e7" stroke="#f59e0b" stroke-width="1.4"/>
+      <text x="866.2" y="434.9" text-anchor="end" font-size="12" font-weight="600" fill="#22332e">Google Maps scraper — session LRU 10/TTL 1</text>
+      <text x="866.2" y="445.9" text-anchor="end" font-size="12" font-weight="600" fill="#22332e">h</text>
+    </g>
+<line x1="868.8" y1="528.4" x2="694.0" y2="401.4" stroke="#f59e0b" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+<circle cx="718.3" cy="419.1" r="4.5" fill="#f59e0b"/>
+<g filter="url(#soft)">
+      <rect x="560.0" y="384.4" width="268" height="34" rx="10" fill="#fef6e7" stroke="#f59e0b" stroke-width="1.4"/>
+      <text x="816.0" y="405.4" text-anchor="end" font-size="12" font-weight="600" fill="#22332e">GoAfrica (12 pays) + Annuaire CI</text>
+      
+    </g>
+<line x1="868.8" y1="528.4" x2="643.8" y2="365.0" stroke="#f59e0b" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+<circle cx="668.1" cy="382.6" r="4.5" fill="#f59e0b"/>
+<g filter="url(#soft)">
+      <rect x="509.8" y="348.0" width="268" height="34" rx="10" fill="#fef6e7" stroke="#f59e0b" stroke-width="1.4"/>
+      <text x="765.8" y="369.0" text-anchor="end" font-size="12" font-weight="600" fill="#22332e">Filtrage fixes + dédup par numéro</text>
+      
+    </g>
+<line x1="868.8" y1="528.4" x2="593.7" y2="328.6" stroke="#f59e0b" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+<circle cx="618.0" cy="346.2" r="4.5" fill="#f59e0b"/>
+<g filter="url(#soft)">
+      <rect x="459.7" y="311.6" width="268" height="34" rx="10" fill="#fef6e7" stroke="#f59e0b" stroke-width="1.4"/>
+      <text x="715.7" y="325.6" text-anchor="end" font-size="12" font-weight="600" fill="#22332e">Import 1 clic → wa_contacts (index unique</text>
+      <text x="715.7" y="336.6" text-anchor="end" font-size="12" font-weight="600" fill="#22332e">partiel)</text>
+    </g>
+<path d="M 1061.1 435.7 L 1048.8 397.6" stroke="#2563eb" stroke-width="7" stroke-linecap="round" fill="none" opacity="0.55"/>
+<g filter="url(#shadow)">
+    <rect x="943.8" y="373.6" width="210" height="48" rx="14" fill="#2563eb" stroke="#ffffff" stroke-width="2"/>
+    <text x="1048.8" y="402.6" text-anchor="middle" font-size="14.5" font-weight="700" fill="#ffffff">🌐  Pont WordPress</text>
+    
+  </g>
+<line x1="1048.8" y1="397.6" x2="1020.3" y2="310.1" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+<circle cx="1029.6" cy="338.7" r="4.5" fill="#2563eb"/>
+<g filter="url(#soft)">
+      <rect x="886.3" y="293.1" width="268" height="34" rx="10" fill="#eaf0fe" stroke="#2563eb" stroke-width="1.4"/>
+      <text x="1142.3" y="314.1" text-anchor="end" font-size="12" font-weight="600" fill="#22332e">Plugin PHP v2.0.0 — auth App Passwords</text>
+      
+    </g>
+<line x1="1048.8" y1="397.6" x2="1001.2" y2="251.2" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+<circle cx="1010.4" cy="279.7" r="4.5" fill="#2563eb"/>
+<g filter="url(#soft)">
+      <rect x="867.2" y="234.2" width="268" height="34" rx="10" fill="#eaf0fe" stroke="#2563eb" stroke-width="1.4"/>
+      <text x="1123.2" y="248.2" text-anchor="end" font-size="12" font-weight="600" fill="#22332e">HITL : l’IA propose (pending_review),</text>
+      <text x="1123.2" y="259.2" text-anchor="end" font-size="12" font-weight="600" fill="#22332e">l’admin valide</text>
+    </g>
+<line x1="1048.8" y1="397.6" x2="982.0" y2="192.2" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+<circle cx="991.3" cy="220.7" r="4.5" fill="#2563eb"/>
+<g filter="url(#soft)">
+      <rect x="848.0" y="175.2" width="268" height="34" rx="10" fill="#eaf0fe" stroke="#2563eb" stroke-width="1.4"/>
+      <text x="1104.0" y="196.2" text-anchor="end" font-size="12" font-weight="600" fill="#22332e">CPT wa_ai_action + statuts personnalisés</text>
+      
+    </g>
+<line x1="1048.8" y1="397.6" x2="962.8" y2="133.2" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+<circle cx="972.1" cy="161.8" r="4.5" fill="#2563eb"/>
+<g filter="url(#soft)">
+      <rect x="828.8" y="116.2" width="268" height="34" rx="10" fill="#eaf0fe" stroke="#2563eb" stroke-width="1.4"/>
+      <text x="1084.8" y="137.2" text-anchor="end" font-size="12" font-weight="600" fill="#22332e">Rôle « propose-only » + table d’audit</text>
+      
+    </g>
+<line x1="1048.8" y1="397.6" x2="943.7" y2="74.3" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+<circle cx="953.0" cy="102.8" r="4.5" fill="#2563eb"/>
+<g filter="url(#soft)">
+      <rect x="809.7" y="57.3" width="268" height="34" rx="10" fill="#eaf0fe" stroke="#2563eb" stroke-width="1.4"/>
+      <text x="1065.7" y="71.3" text-anchor="end" font-size="12" font-weight="600" fill="#22332e">Proxy REST : produits, posts, médias,</text>
+      <text x="1065.7" y="82.3" text-anchor="end" font-size="12" font-weight="600" fill="#22332e">stats, logs</text>
+    </g>
+<path d="M 1258.9 435.7 L 1271.2 397.6" stroke="#0ea5e9" stroke-width="7" stroke-linecap="round" fill="none" opacity="0.55"/>
+<g filter="url(#shadow)">
+    <rect x="1166.2" y="373.6" width="210" height="48" rx="14" fill="#0ea5e9" stroke="#ffffff" stroke-width="2"/>
+    <text x="1271.2" y="393.6" text-anchor="middle" font-size="14.5" font-weight="700" fill="#ffffff">🎨  Frontend</text>
+    <text x="1271.2" y="409.6" text-anchor="middle" font-size="14.5" font-weight="700" fill="#ffffff">React 19</text>
+  </g>
+<line x1="1271.2" y1="397.6" x2="1299.7" y2="310.1" stroke="#0ea5e9" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+<circle cx="1290.4" cy="338.7" r="4.5" fill="#0ea5e9"/>
+<g filter="url(#soft)">
+      <rect x="1165.7" y="293.1" width="268" height="34" rx="10" fill="#e8f6fe" stroke="#0ea5e9" stroke-width="1.4"/>
+      <text x="1177.7" y="307.1" text-anchor="start" font-size="12" font-weight="600" fill="#22332e">Zustand + IndexedDB — persistance hors</text>
+      <text x="1177.7" y="318.1" text-anchor="start" font-size="12" font-weight="600" fill="#22332e">localStorage</text>
+    </g>
+<line x1="1271.2" y1="397.6" x2="1318.8" y2="251.2" stroke="#0ea5e9" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+<circle cx="1309.6" cy="279.7" r="4.5" fill="#0ea5e9"/>
+<g filter="url(#soft)">
+      <rect x="1184.8" y="234.2" width="268" height="34" rx="10" fill="#e8f6fe" stroke="#0ea5e9" stroke-width="1.4"/>
+      <text x="1196.8" y="255.2" text-anchor="start" font-size="12" font-weight="600" fill="#22332e">25+ pages en lazy-load (Vite 7)</text>
+      
+    </g>
+<line x1="1271.2" y1="397.6" x2="1338.0" y2="192.2" stroke="#0ea5e9" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+<circle cx="1328.7" cy="220.7" r="4.5" fill="#0ea5e9"/>
+<g filter="url(#soft)">
+      <rect x="1204.0" y="175.2" width="268" height="34" rx="10" fill="#e8f6fe" stroke="#0ea5e9" stroke-width="1.4"/>
+      <text x="1216.0" y="196.2" text-anchor="start" font-size="12" font-weight="600" fill="#22332e">i18n ×4 : fr, en, es, ar (+ RTL)</text>
+      
+    </g>
+<line x1="1271.2" y1="397.6" x2="1357.2" y2="133.2" stroke="#0ea5e9" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+<circle cx="1347.9" cy="161.8" r="4.5" fill="#0ea5e9"/>
+<g filter="url(#soft)">
+      <rect x="1223.2" y="116.2" width="268" height="34" rx="10" fill="#e8f6fe" stroke="#0ea5e9" stroke-width="1.4"/>
+      <text x="1235.2" y="130.2" text-anchor="start" font-size="12" font-weight="600" fill="#22332e">Studio photo IA, factures PDF, kanban,</text>
+      <text x="1235.2" y="141.2" text-anchor="start" font-size="12" font-weight="600" fill="#22332e">tâches</text>
+    </g>
+<line x1="1271.2" y1="397.6" x2="1376.3" y2="74.3" stroke="#0ea5e9" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+<circle cx="1367.0" cy="102.8" r="4.5" fill="#0ea5e9"/>
+<g filter="url(#soft)">
+      <rect x="1242.3" y="57.3" width="268" height="34" rx="10" fill="#e8f6fe" stroke="#0ea5e9" stroke-width="1.4"/>
+      <text x="1254.3" y="71.3" text-anchor="start" font-size="12" font-weight="600" fill="#22332e">apiAuth — token injecté sur fetch &amp;</text>
+      <text x="1254.3" y="82.3" text-anchor="start" font-size="12" font-weight="600" fill="#22332e">EventSource</text>
+    </g>
+<path d="M 1418.9 551.9 L 1451.2 528.4" stroke="#64748b" stroke-width="7" stroke-linecap="round" fill="none" opacity="0.55"/>
+<g filter="url(#shadow)">
+    <rect x="1346.2" y="504.4" width="210" height="48" rx="14" fill="#64748b" stroke="#ffffff" stroke-width="2"/>
+    <text x="1451.2" y="533.4" text-anchor="middle" font-size="14.5" font-weight="700" fill="#ffffff">📋  Qualité &amp; Docs</text>
+    
+  </g>
+<line x1="1451.2" y1="528.4" x2="1525.7" y2="474.3" stroke="#64748b" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+<circle cx="1501.4" cy="492.0" r="4.5" fill="#64748b"/>
+<g filter="url(#soft)">
+      <rect x="1391.7" y="457.3" width="268" height="34" rx="10" fill="#eef1f5" stroke="#64748b" stroke-width="1.4"/>
+      <text x="1403.7" y="478.3" text-anchor="start" font-size="12" font-weight="600" fill="#22332e">71 tests verts — 6 fichiers ciblés</text>
+      
+    </g>
+<line x1="1451.2" y1="528.4" x2="1575.8" y2="437.9" stroke="#64748b" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+<circle cx="1551.6" cy="455.5" r="4.5" fill="#64748b"/>
+<g filter="url(#soft)">
+      <rect x="1441.8" y="420.9" width="268" height="34" rx="10" fill="#eef1f5" stroke="#64748b" stroke-width="1.4"/>
+      <text x="1453.8" y="441.9" text-anchor="start" font-size="12" font-weight="600" fill="#22332e">ESLint 9 : 0 erreur / 0 avertissement</text>
+      
+    </g>
+<line x1="1451.2" y1="528.4" x2="1626.0" y2="401.4" stroke="#64748b" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+<circle cx="1601.7" cy="419.1" r="4.5" fill="#64748b"/>
+<g filter="url(#soft)">
+      <rect x="1492.0" y="384.4" width="268" height="34" rx="10" fill="#eef1f5" stroke="#64748b" stroke-width="1.4"/>
+      <text x="1504.0" y="405.4" text-anchor="start" font-size="12" font-weight="600" fill="#22332e">Build Vite OK — chunks vendor/ui/i18n</text>
+      
+    </g>
+<line x1="1451.2" y1="528.4" x2="1676.2" y2="365.0" stroke="#64748b" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+<circle cx="1651.9" cy="382.6" r="4.5" fill="#64748b"/>
+<g filter="url(#soft)">
+      <rect x="1542.2" y="348.0" width="268" height="34" rx="10" fill="#eef1f5" stroke="#64748b" stroke-width="1.4"/>
+      <text x="1554.2" y="362.0" text-anchor="start" font-size="12" font-weight="600" fill="#22332e">README, SECURITY, CONTRIBUTING (modèle de</text>
+      <text x="1554.2" y="373.0" text-anchor="start" font-size="12" font-weight="600" fill="#22332e">menace)</text>
+    </g>
+<line x1="1451.2" y1="528.4" x2="1726.3" y2="328.6" stroke="#64748b" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+<circle cx="1702.0" cy="346.2" r="4.5" fill="#64748b"/>
+<g filter="url(#soft)">
+      <rect x="1592.3" y="311.6" width="268" height="34" rx="10" fill="#eef1f5" stroke="#64748b" stroke-width="1.4"/>
+      <text x="1604.3" y="325.6" text-anchor="start" font-size="12" font-weight="600" fill="#22332e">AGPL-3.0 (plugin WP : GPL-2.0+) — roadmap</text>
+      <text x="1604.3" y="336.6" text-anchor="start" font-size="12" font-weight="600" fill="#22332e">2026</text>
+    </g>
+<g filter="url(#shadow)">
+  <circle cx="1160" cy="740" r="112" fill="url(#hubGrad)" stroke="#ffffff" stroke-width="3"/>
+  <circle cx="1160" cy="740" r="104" fill="none" stroke="#ffffff" stroke-opacity="0.28" stroke-width="1.5" stroke-dasharray="4 6"/>
+  <text x="1160" y="714" text-anchor="middle" font-size="22" font-weight="800" fill="#ffffff">WaCopilote</text>
+  <text x="1160" y="742" text-anchor="middle" font-size="17" font-weight="700" fill="#d9f7ee">v1.42.0</text>
+  <text x="1160" y="766" text-anchor="middle" font-size="12.5" fill="#bfeee0">10 modules audités</text>
+  <text x="1160" y="784" text-anchor="middle" font-size="12.5" fill="#bfeee0">129 fichiers · 29 575 lignes</text>
+</g>
+<text x="2296" y="1458" text-anchor="end" font-size="12.5" fill="#6b7a75">Généré par audit automatique — repository github.com/auceps-dev-team/lunar-nova · branch arena/01a023d0-lunar-nova</text>
+</svg>

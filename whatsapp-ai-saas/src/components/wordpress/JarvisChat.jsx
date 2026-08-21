@@ -43,7 +43,7 @@ export default function JarvisChat({ selectedId, selected }) {
             const siteContext = selected ? `[SITE_CONTEXT]: Site "${selected.name}" (URL: ${selected.site_url})` : '';
             const prompt = `${siteContext}\n\nDemande de l'utilisateur : ${userMessage}`;
 
-            const res = await fetch('http://127.0.0.1:3000/api/ai/agent', {
+            const res = await fetch(API_BASE_URL + '/api/ai/agent', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ message: prompt, persona: 'wordpress_agent', promptFormat: 'json' })

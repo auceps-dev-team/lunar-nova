@@ -4,6 +4,8 @@ import { Sparkles, Copy, Trash2, Search, Plus, Menu, ArrowLeft, Send, Paperclip,
 import useAppStore from '../store';
 import { useTranslation } from 'react-i18next';
 import CustomSelect from '../components/CustomSelect';
+import { API_BASE_URL } from '../config';
+import { makeSystemAgents } from '../aiChatAgents';
 
 // Replis figés au niveau du module : renvoyés par référence, ils gardent les
 // dépendances de useMemo/useEffect stables d'un rendu à l'autre.
@@ -44,28 +46,7 @@ export default function AiChat() {
     // Mémoïsé : le tableau dépend de t(), il ne peut donc pas sortir du composant,
     // mais le recréer à chaque rendu invalidait l'effet qui charge les agents
     // personnalisés — lequel relançait un fetch en boucle.
-    const SYSTEM_AGENTS = useMemo(() => [
-        { id: 'copywriter', name: t('agentJarvisName'), description: t('agentJarvisDesc'), isSystem: true },
-        { id: 'legal', name: t('agentLegalName'), description: t('agentLegalDesc'), isSystem: true },
-        { id: 'ella', name: t('agentEllaName'), description: t('agentEllaDesc'), isSystem: true },
-        { id: 'brand_guardian', name: t('agentBrandName'), description: t('agentBrandDesc'), isSystem: true },
-        { id: 'paid_social_strategist', name: t('agentPaidSocialName'), description: t('agentPaidSocialDesc'), isSystem: true },
-        { id: 'ad_creative_strategist', name: t('agentCreativeAdsName'), description: t('agentCreativeAdsDesc'), isSystem: true },
-        { id: 'outbound_strategist', name: t('agentOutboundName'), description: t('agentOutboundDesc'), isSystem: true },
-        { id: 'sales_engineer', name: t('agentSalesEngName'), description: t('agentSalesEngDesc'), isSystem: true },
-        { id: 'sales_coach', name: t('agentSalesCoachName'), description: t('agentSalesCoachDesc'), isSystem: true },
-        { id: 'growth_hacker', name: t('agentGrowthName'), description: t('agentGrowthDesc'), isSystem: true },
-        { id: 'content_creator', name: t('agentContentName'), description: t('agentContentDesc'), isSystem: true },
-        { id: 'twitter_engager', name: t('agentTwitterName'), description: t('agentTwitterDesc'), isSystem: true },
-        { id: 'tiktok_strategist', name: t('agentTiktokName'), description: t('agentTiktokDesc'), isSystem: true },
-        { id: 'instagram_curator', name: t('agentInstaName'), description: t('agentInstaDesc'), isSystem: true },
-        { id: 'social_media_strategist', name: t('agentSocialMediaName'), description: t('agentSocialMediaDesc'), isSystem: true },
-        { id: 'seo_specialist', name: t('agentSeoName'), description: t('agentSeoDesc'), isSystem: true },
-        { id: 'podcast_strategist', name: t('agentPodcastName'), description: t('agentPodcastDesc'), isSystem: true },
-        { id: 'support_responder', name: t('agentSupportName'), description: t('agentSupportDesc'), isSystem: true },
-        { id: 'legal_compliance', name: t('agentComplianceName'), description: t('agentComplianceDesc'), isSystem: true },
-        { id: 'account_strategist', name: t('agentAccountName'), description: t('agentAccountDesc'), isSystem: true },
-    ], [t]);
+    const SYSTEM_AGENTS = useMemo(() => makeSystemAgents(t), [t]);
 
     // ── State ──────────────────────────────────────────────────────────────
     const [view, setView] = useState('grid');          // 'grid' | 'chat'
@@ -127,7 +108,7 @@ export default function AiChat() {
     useEffect(() => {
         const fetchCustomAgents = async () => {
             try {
-                const res = await fetch('http://127.0.0.1:3000/api/agents');
+                const res = await fetch(API_BASE_URL + '/api/agents');
                 const data = await res.json();
                 const custom = (data.data || []).map(a => ({ ...a, isSystem: false }));
                 setAllAgents([...SYSTEM_AGENTS, ...custom]);
@@ -281,7 +262,7 @@ export default function AiChat() {
                 bodyData.currentTasks = useAppStore.getState().tasks || [];
             }
 
-            const res = await fetch('http://127.0.0.1:3000/api/ai/agent', {
+            const res = await fetch(API_BASE_URL + '/api/ai/agent', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(bodyData)
