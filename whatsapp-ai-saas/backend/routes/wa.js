@@ -2,8 +2,16 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
 const puppeteer = require('puppeteer-core');
+const { isValidPhoneFormat } = require('../services/contactAgent');
 
 // Mutex global pour sécuriser l'accès concurrentiel à l'instance WhatsApp
+
+// Validation de format des numéros en entrée (open-chat, verify-contact) :
+// sans elle, n'importe quelle chaîne — y compris une payload malveillante ou
+// malformée — était injectée dans l'URL web.whatsapp.com/send?phone=….
+// La règle (8 à 15 chiffres après normalisation) est partagée avec le pipeline
+// (backend/services/contactAgent.js) et testée unitairement.
+const isValidPhoneInput = isValidPhoneFormat;
 const waMutexQueue = [];
 let isWaMutexLocked = false;
 
@@ -350,6 +358,9 @@ router.delete('/contacts/:id', async (req, res) => {
 router.post('/open-chat', async (req, res) => {
     const { instance_id, phone, contact_id, country_code, text } = req.body;
     if (!instance_id || !phone) return res.status(400).json({ error: 'Missing instance_id or phone' });
+    if (!isValidPhoneInput(phone)) {
+        return res.status(400).json({ error: 'Numéro de téléphone invalide (8 à 15 chiffres attendus).' });
+    }
 
     let formattedMessage = text || '';
 
@@ -447,6 +458,9 @@ router.post('/verify-contact', async (req, res) => {
 
     if (!instance_id || !phone) {
         return res.status(400).json({ error: 'Missing required fields (instance_id, phone).' });
+    }
+    if (!isValidPhoneInput(phone)) {
+        return res.status(400).json({ error: 'Numéro de téléphone invalide (8 à 15 chiffres attendus).' });
     }
 
     /**
@@ -606,10 +620,6 @@ router.post('/verify-contact', async (req, res) => {
         logTime(`Done.`);
     }
 });
-
-// Nodemon trigger
-
-// Nodemon trigger
 
 // --- Phase 19.5: Contact Analytics Endpoint ---
 router.get('/analytics', async (req, res) => {

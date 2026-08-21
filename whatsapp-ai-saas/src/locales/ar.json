@@ -357,5 +357,8 @@
   "onboardSkipAndStart": "الإعداد لاحقًا والبدء",
   "onboardFinishing": "جارٍ الإعداد…",
   "images": "صور",
-  "quotaExceededWarning": "تم استنفاد الحصة المجانية. أضف مفتاح Gemini الخاص بك لمتابعة توليد الصور."
+  "quotaExceededWarning": "تم استنفاد الحصة المجانية. أضف مفتاح Gemini الخاص بك لمتابعة توليد الصور.",
+  "dismissQuotaBanner": "إخفاء هذا التنبيه",
+  "updaterNoAssetForPlatform": "لا يوجد مثبّت متاح لهذه المنصة. حمّل التحديث يدويًا من صفحة الإصدارات.",
+  "updaterArtifactOpened": "تم فتح ملف التحديث للتثبيت."
 }
