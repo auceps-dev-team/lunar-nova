@@ -357,5 +357,8 @@
   "onboardSkipAndStart": "Configurar más tarde y empezar",
   "onboardFinishing": "Configurando…",
   "images": "imágenes",
-  "quotaExceededWarning": "Cuota gratuita alcanzada. Añade tu propia clave de Gemini para seguir generando imágenes."
+  "quotaExceededWarning": "Cuota gratuita alcanzada. Añade tu propia clave de Gemini para seguir generando imágenes.",
+  "dismissQuotaBanner": "Ocultar este aviso",
+  "updaterNoAssetForPlatform": "No hay instalador disponible para esta plataforma. Descarga la actualización manualmente desde la página de versiones.",
+  "updaterArtifactOpened": "El artefacto de actualización se ha abierto para instalación."
 }

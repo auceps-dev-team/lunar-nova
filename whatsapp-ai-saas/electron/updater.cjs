@@ -1,10 +1,31 @@
-const { app, ipcMain } = require('electron');
+const { app, ipcMain, shell } = require('electron');
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
 
 const REPO_URL = 'https://api.github.com/repos/auceps-dev-team/wacopilote-releases/releases/latest';
+
+/**
+ * Sélectionne l'asset de mise à jour correspondant à la plateforme courante.
+ * Le canal Windows (installeur NSIS .exe) reste le seul avec installation
+ * silencieuse ; macOS et Linux reçoivent l'artefact adapté (.dmg/.zip et
+ * .AppImage/.deb) et l'ouvrent pour installation manuelle guidée.
+ */
+function pickAssetForPlatform(assets) {
+    const platform = process.platform;
+    const patterns = {
+        win32: ['.exe'],
+        darwin: ['.dmg', '.zip'],
+        linux: ['.AppImage', '.appimage', '.deb'],
+    };
+    const wanted = patterns[platform] || [];
+    for (const ext of wanted) {
+        const found = assets.find(a => a.name.toLowerCase().endsWith(ext.toLowerCase()));
+        if (found) return { asset: found, platform };
+    }
+    return { asset: null, platform };
+}
 
 /**
  * @param {() => Electron.BrowserWindow | undefined} getMainWindow
@@ -44,13 +65,19 @@ module.exports = function setupUpdater(getMainWindow) {
             };
 
             if (compareVersions(latestVersion, currentVersion) > 0) {
-                // Trouver l'asset Windows (.exe)
-                const exeAsset = res.data.assets.find(a => a.name.endsWith('.exe'));
+                // Asset adapté à la plateforme (exe sur Windows, dmg/zip sur
+                // macOS, AppImage/deb sur Linux). Aucun asset pour cette
+                // plateforme → mise à jour signalée sans URL (hasUpdate reste
+                // vrai pour afficher la note de version, mais le bouton de
+                // téléchargement ne sera pas proposé).
+                const { asset, platform } = pickAssetForPlatform(res.data.assets || []);
                 return {
                     hasUpdate: true,
                     version: latestVersion,
                     notes: res.data.body,
-                    downloadUrl: exeAsset ? exeAsset.browser_download_url : null,
+                    platform,
+                    assetName: asset ? asset.name : null,
+                    downloadUrl: asset ? asset.browser_download_url : null,
                 };
             }
             return { hasUpdate: false };
@@ -62,7 +89,12 @@ module.exports = function setupUpdater(getMainWindow) {
 
     // 2. TÉLÉCHARGEMENT FLUIDE
     ipcMain.handle('update:start-download', async (event, url) => {
-        const tempPath = path.join(app.getPath('temp'), `WaCopilote-Update-${Date.now()}.exe`);
+        // L'extension du fichier temporaire suit l'asset réel (pas toujours
+        // .exe depuis que macOS/Linux sont couverts) — elle est déduite de
+        // l'URL de téléchargement.
+        let ext = '.exe';
+        try { ext = path.extname(new URL(url).pathname) || '.exe'; } catch { /* URL invalide */ }
+        const tempPath = path.join(app.getPath('temp'), `WaCopilote-Update-${Date.now()}${ext}`);
         
         try {
             const response = await axios({
@@ -111,16 +143,35 @@ module.exports = function setupUpdater(getMainWindow) {
         }
     });
 
-    // 3. INSTALLATION DÉTACHÉE
+    // 3. INSTALLATION / OUVERTURE DE L'ARTEFACT
     ipcMain.handle('update:install', async (event, filePath) => {
-        // Lance NSIS en processus détaché pour forcer l'installation
-        const subprocess = spawn(filePath, ['/S', '--force-run'], {
-            detached: true,
-            stdio: 'ignore'
-        });
-        subprocess.unref();
-        
-        // Quitte l'application pour libérer les fichiers et éviter l'erreur "Files in Use"
-        app.quit();
+        // Windows : installeur NSIS lancé en processus détaché, puis
+        // fermeture de l'application pour libérer les fichiers en cours
+        // d'utilisation (« Files in Use »).
+        if (process.platform === 'win32') {
+            const subprocess = spawn(filePath, ['/S', '--force-run'], {
+                detached: true,
+                stdio: 'ignore'
+            });
+            subprocess.unref();
+            app.quit();
+            return { success: true };
+        }
+
+        // macOS / Linux : pas d'installation silencieuse fiable — on ouvre
+        // l'artefact téléchargé (.dmg → Finder, .AppImage → exécutable, .deb
+        // → installateur système) et on laisse l'utilisateur guider
+        // l'installation. L'application ne se ferme pas.
+        try {
+            if (process.platform === 'linux' && filePath.toLowerCase().endsWith('.appimage')) {
+                fs.chmodSync(filePath, 0o755);
+            }
+            const err = await shell.openPath(filePath);
+            return err
+                ? { success: false, error: err }
+                : { success: true, note: 'open' };
+        } catch (e) {
+            return { success: false, error: e.message };
+        }
     });
 };

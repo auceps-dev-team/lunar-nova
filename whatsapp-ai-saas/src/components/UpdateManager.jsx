@@ -52,7 +52,14 @@ export default function UpdateManager() {
         if (window.electronAPI) {
             await window.electronAPI.storeSet('pendingUpdateInfo', updateInfo);
         }
-        window.updaterAPI.installUpdate(updateInfo.filePath);
+        const result = await window.updaterAPI.installUpdate(updateInfo.filePath);
+        // Sur macOS/Linux l'application ne se ferme pas : l'artefact téléchargé
+        // (.dmg/.AppImage/.deb) vient d'être ouvert pour installation manuelle.
+        if (result && result.note === 'open') {
+            showAppNotification(t('updaterArtifactOpened'), "success");
+        } else if (result && !result.success) {
+            showAppNotification(t('updaterDownloadError') + (result.error || ''), "error");
+        }
     };
 
     return (
@@ -75,11 +82,15 @@ export default function UpdateManager() {
                 <div className="mt-4 p-4 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-100 dark:border-emerald-800 rounded-lg flex items-center justify-between">
                     <div>
                         <p className="text-emerald-800 dark:text-emerald-300 font-semibold mb-1">{t('updaterAvailable', { version: updateInfo.version })}</p>
-                        <p className="text-xs text-emerald-600 dark:text-emerald-400">{t('updaterAvailableDesc')}</p>
+                        <p className="text-xs text-emerald-600 dark:text-emerald-400">
+                            {updateInfo.downloadUrl ? t('updaterAvailableDesc') : t('updaterNoAssetForPlatform')}
+                        </p>
                     </div>
-                    <button onClick={startDownload} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg shadow-sm">
-                        {t('updaterDownloadBtn')}
-                    </button>
+                    {updateInfo.downloadUrl && (
+                        <button onClick={startDownload} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg shadow-sm">
+                            {t('updaterDownloadBtn')}
+                        </button>
+                    )}
                 </div>
             )}
 

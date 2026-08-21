@@ -9,6 +9,15 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: './src/setupTests.js',
     css: true,
+    // Les modules CommonJS du backend (db, services, routes…) doivent être
+    // transformés par Vite pour que vi.mock() s'applique à leurs `require`
+    // internes — sinon le module system natif de Node les charge tels quels
+    // (et tente par exemple de charger le binding natif de sqlite3).
+    server: {
+      deps: {
+        inline: [/backend\//, 'sqlite', 'sqlite3'],
+      },
+    },
   },
   resolve: {
     alias: {

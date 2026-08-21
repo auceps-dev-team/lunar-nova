@@ -1,8 +1,32 @@
 const express = require('express');
 const router = express.Router();
 
-// Memory store for auth payloads, keyed by random session_id from client
+// Memory store for auth payloads, keyed by random session_id from client.
+// Chaque entrée porte un horodatage : une session jamais récupérée par le
+// polling expire après OAUTH_SESSION_TTL_MS au lieu de rester en mémoire
+// indéfiniment. Le nettoyage est paresseux (au prochain accès) — aucun timer
+// global nécessaire pour un flux de boucle locale.
+const OAUTH_SESSION_TTL_MS = 10 * 60 * 1000; // 10 minutes
 const oauthSessions = {};
+
+/** Purge les sessions expirées. Retourne true si au moins une a été retirée. */
+function sweepExpiredOauthSessions() {
+    const now = Date.now();
+    let removed = false;
+    for (const key of Object.keys(oauthSessions)) {
+        if (now - (oauthSessions[key].createdAt || 0) > OAUTH_SESSION_TTL_MS) {
+            delete oauthSessions[key];
+            removed = true;
+        }
+    }
+    return removed;
+}
+
+/** Enregistre le profil utilisateur pour un état OAuth donné. */
+function storeOauthSession(state, userInfo) {
+    sweepExpiredOauthSessions();
+    oauthSessions[state] = { data: userInfo, createdAt: Date.now() };
+}
 
 router.get('/callback', async (req, res) => {
     const { code, state } = req.query;
@@ -37,7 +61,7 @@ router.get('/callback', async (req, res) => {
         const userInfo = await userResponse.json();
 
         // Map it into state so Desktop polling can grab it
-        oauthSessions[state] = userInfo;
+        storeOauthSession(state, userInfo);
 
         res.send(`
             <html>
@@ -72,11 +96,16 @@ router.get('/callback', async (req, res) => {
 
 router.get('/status', (req, res) => {
     const { session_id } = req.query;
-    if (oauthSessions[session_id]) {
-        res.json({ status: 'success', data: oauthSessions[session_id] });
+    const session = oauthSessions[session_id];
+
+    // Session expirée ou inconnue : même réponse que « pas encore arrivée »,
+    // le client continue de poller jusqu'à l'expiration de son propre délai.
+    if (session && Date.now() - (session.createdAt || 0) <= OAUTH_SESSION_TTL_MS) {
+        res.json({ status: 'success', data: session.data });
         // Clean up to prevent memory leak
         delete oauthSessions[session_id];
     } else {
+        if (session) delete oauthSessions[session_id];
         res.json({ status: 'pending' });
     }
 });

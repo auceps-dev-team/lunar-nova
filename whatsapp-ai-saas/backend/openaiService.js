@@ -60,13 +60,23 @@ async function generateImageWithQwen(prompt, apiKey, options = {}) {
     const TOGETHER_BASE = 'https://api.together.xyz/v1';
     const endpoint = `${TOGETHER_BASE}/images/generations`;
 
+    // Conformité / risque ToS : désactiver le filtre de sécurité de Together AI
+    // (`disable_safety_checker`) peut enfreindre leurs conditions d'utilisation
+    // et exposer le compte à un avertissement. C'était forcé à `true` sans tenir
+    // compte de l'option transmise — désormais l'appelant décide, avec un défaut
+    // à `true` uniquement pour préserver les shootings fashion/editorial existants.
+    // Préférez `false` dès que le contenu généré n'en a pas besoin.
+    const disableSafetyChecker = options.disable_safety_checker !== undefined
+        ? !!options.disable_safety_checker
+        : true;
+
     const payload = {
         model: 'Qwen/Qwen-Image',           // Nom exact sur Together AI
         prompt: safePrompt || 'Generate a professional fashion product photo',
         n,
         steps,
         response_format: 'b64_json',
-        disable_safety_checker: true,   // Nécessaire pour les prompts fashion/editorial
+        disable_safety_checker: disableSafetyChecker,
     };
 
     if (options.imageParams && options.imageParams.data) {
@@ -519,6 +529,7 @@ async function classifyOrderIntent(text, contactName, apiKey, baseURL, modelPara
 }
 
 module.exports = {
+    sanitizePromptForTogether,
     generateProposals,
     chatWithAgent,
     analyzeOrEditImage,
