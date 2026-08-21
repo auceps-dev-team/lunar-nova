@@ -139,9 +139,15 @@ async function attachObserver(instanceId) {
     }
 
     if (targetPages.length === 0) {
-        console.log(`[IOL] ❌ Could not find WhatsApp page for instance ${instanceId}. Make sure the instance is connected.`);
+        // Erreur levée et non plus retour silencieux : la route
+        // /api/orders/listen/start répondait « success » alors qu'aucun
+        // écouteur n'était branché — l'interface affichait « écoute active »
+        // pendant que rien n'était observé.
         browser.disconnect();
-        return;
+        throw new Error(
+            `Aucune page WhatsApp trouvée pour l'instance ${instanceId}. ` +
+            'Vérifiez que l\'instance est connectée (QR code scanné) avant de démarrer l\'écoute.'
+        );
     }
 
     browserConnections.set(instanceId, browser);

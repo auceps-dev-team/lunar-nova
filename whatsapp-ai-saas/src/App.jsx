@@ -56,6 +56,7 @@ function AppContent() {
   const navigate = useNavigate();
 
   const appSettings = useAppStore(state => state.appSettings) || { theme: 'light', language: 'en' };
+  const updateSettings = useAppStore(state => state.updateSettings);
   const appNotification = useAppStore(state => state.appNotification);
   const { i18n, t } = useTranslation();
 
@@ -120,6 +121,10 @@ function AppContent() {
           if (compareVersions(remoteVersion, currentVersion) > 0) {
             setUpdateAvailable(checkResult);
           }
+        } else if (checkResult && checkResult.error) {
+          // Le check silencieux ne doit pas déranger l'utilisateur, mais
+          // l'erreur doit rester traçable — l'écran Réglages affiche le détail.
+          console.warn('[Updater] Vérification silencieuse impossible:', checkResult.errorCode || '', checkResult.error);
         }
       } catch (e) {
         console.error("Update UX init error:", e);
@@ -214,7 +219,7 @@ function AppContent() {
         )}
 
         {/* Quota Warning Banner */}
-        {!aiQuota.hasCustomKey && aiQuota.imageUsed >= aiQuota.imageLimit * 0.8 && (
+        {!aiQuota.hasCustomKey && !appSettings.dismissQuotaBanner && aiQuota.imageUsed >= aiQuota.imageLimit * 0.8 && (
           <div className={`fixed bottom-6 right-6 z-[80] max-w-sm w-full animate-in slide-in-from-right-10 duration-500`}>
              <div className={`bg-white dark:bg-gray-800 rounded-2xl shadow-xl border-l-4 ${aiQuota.imageUsed >= aiQuota.imageLimit ? 'border-red-500' : 'border-orange-500'} p-4 flex gap-4 items-start`}>
                 <div className={`size-10 rounded-xl flex-shrink-0 flex items-center justify-center ${aiQuota.imageUsed >= aiQuota.imageLimit ? 'bg-red-50/50 text-red-600' : 'bg-orange-50/50 text-orange-600'}`}>
@@ -236,8 +241,9 @@ function AppContent() {
                   </button>
                 </div>
                 <button 
-                  onClick={() => useAppStore.getState().set({ aiQuota: { ...aiQuota, imageUsed: 0, imageLimit: 99999, hasCustomKey: true } })} // Temporary hack to hide for session
+                  onClick={() => updateSettings({ dismissQuotaBanner: true })}
                   className="text-gray-400 hover:text-gray-600"
+                  title={t('dismissQuotaBanner')}
                 >
                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                 </button>

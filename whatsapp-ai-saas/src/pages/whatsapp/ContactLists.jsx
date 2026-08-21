@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import useAppStore from '../../store';
+import { API_BASE_URL } from '../../config';
 
 import { useTranslation } from 'react-i18next';
 import { TableSkeleton } from '../../components/ui/SkeletonLoader';
@@ -25,7 +26,7 @@ export default function ContactLists() {
 
     const fetchLists = useCallback(async () => {
         try {
-            const res = await fetch('http://127.0.0.1:3000/api/wa/contact-lists');
+            const res = await fetch(API_BASE_URL + '/api/wa/contact-lists');
             const data = await res.json();
             if (data.status === 'success') {
                 setLists(data.data);
@@ -48,7 +49,7 @@ export default function ContactLists() {
 
         setIsSubmitting(true);
         try {
-            const res = await fetch('http://127.0.0.1:3000/api/wa/contact-lists', {
+            const res = await fetch(API_BASE_URL + '/api/wa/contact-lists', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name: newListName })
@@ -77,7 +78,7 @@ export default function ContactLists() {
 
         setIsEditSubmitting(true);
         try {
-            const res = await fetch(`http://127.0.0.1:3000/api/wa/contact-lists/${editingList.id}`, {
+            const res = await fetch(`${API_BASE_URL}/api/wa/contact-lists/${editingList.id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name: editName })
@@ -102,7 +103,7 @@ export default function ContactLists() {
     const handleDeleteList = async (list) => {
         if (!window.confirm(t('deleteListConfirm', { name: list.name }))) return;
         try {
-            const res = await fetch(`http://127.0.0.1:3000/api/wa/contact-lists/${list.id}`, { method: 'DELETE' });
+            const res = await fetch(`${API_BASE_URL}/api/wa/contact-lists/${list.id}`, { method: 'DELETE' });
             const data = await res.json();
             if (data.status === 'success') {
                 showAppNotification(t('successAction'), 'success');

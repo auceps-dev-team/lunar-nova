@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import useAppStore from '../store';
 import { useTranslation } from 'react-i18next';
+import { API_BASE_URL } from '../config';
 import {
     DndContext,
     closestCorners,
@@ -263,7 +264,7 @@ const TasksMap = () => {
             const prompt = `Tu es un expert en gestion de projet. Reformule et améliore la description de tâche suivante pour la rendre professionnelle, claire et actionnable. Retourne uniquement le texte amélioré, sans introduction ni explication.
 
 Description brouillon : "${taskForm.description}"`;
-            const res = await fetch('http://127.0.0.1:3000/api/ai/agent', {
+            const res = await fetch(API_BASE_URL + '/api/ai/agent', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
@@ -310,7 +311,7 @@ Description brouillon : "${taskForm.description}"`;
 
         try {
             const promptContext = `[CURRENT_TASKS]: ${JSON.stringify(tasks)}\n\nUser instruction: ${userMessage}`;
-            const res = await fetch('http://127.0.0.1:3000/api/ai/agent', {
+            const res = await fetch(API_BASE_URL + '/api/ai/agent', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { API_BASE_URL } from '../config';
 
 export function useOrderListener(instanceId) {
     const [orders, setOrders] = useState([]);
@@ -13,14 +14,14 @@ export function useOrderListener(instanceId) {
         const checkStatus = async () => {
             try {
                 // Check if already listening
-                const statusRes = await fetch('http://localhost:3000/api/orders/listen/status');
+                const statusRes = await fetch(API_BASE_URL + '/api/orders/listen/status');
                 const statusData = await statusRes.json();
                 if (statusData.active_listeners?.includes(instanceId)) {
                     setIsListening(true);
                 }
 
                 // Fetch recent orders
-                const ordersRes = await fetch(`http://localhost:3000/api/orders?instance_id=${instanceId}&limit=50`);
+                const ordersRes = await fetch(`${API_BASE_URL}/api/orders?instance_id=${instanceId}&limit=50`);
                 const ordersData = await ordersRes.json();
                 if (ordersData.data) {
                     setOrders(ordersData.data);
@@ -38,7 +39,7 @@ export function useOrderListener(instanceId) {
         if (!isListening || !instanceId) return;
 
         console.log(`[IOL] Connecting to SSE stream for ${instanceId}...`);
-        const eventSource = new EventSource(`http://localhost:3000/api/orders/stream/${instanceId}`);
+        const eventSource = new EventSource(`${API_BASE_URL}/api/orders/stream/${instanceId}`);
 
         eventSource.onmessage = (event) => {
             try {
@@ -69,7 +70,7 @@ export function useOrderListener(instanceId) {
         setError(null);
 
         try {
-            const res = await fetch('http://localhost:3000/api/orders/listen/start', {
+            const res = await fetch(API_BASE_URL + '/api/orders/listen/start', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ instance_id: instanceId })
@@ -94,7 +95,7 @@ export function useOrderListener(instanceId) {
         setError(null);
 
         try {
-            const res = await fetch('http://localhost:3000/api/orders/listen/stop', {
+            const res = await fetch(API_BASE_URL + '/api/orders/listen/stop', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ instance_id: instanceId })

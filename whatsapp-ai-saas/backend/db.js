@@ -1,5 +1,3 @@
-const sqlite3 = require('sqlite3').verbose();
-const { open } = require('sqlite');
 const path = require('path');
 const { encrypt, decrypt, isEncrypted } = require('./secretStore');
 
@@ -16,16 +14,33 @@ const dbFileName = 'database.sqlite';
 const userDataPath = process.env.USER_DATA_PATH;
 const dbFilePath = userDataPath ? path.join(userDataPath, dbFileName) : path.join(__dirname, '..', dbFileName);
 
-// Open SQLite database
-const dbPromise = open({
-    filename: dbFilePath,
-    driver: sqlite3.Database
-});
+/**
+ * Ouvre la base SQLite de façon paresseuse (première requête uniquement).
+ *
+ * Auparavant, l'ouverture (et donc le chargement du binding natif sqlite3)
+ * était déclenchée dès le `require('./db')`, y compris par les modules qui ne
+ * font aucune requête (agents, services…) — et dans les tests unitaires, où le
+ * binding natif n'est pas disponible. Différer l'ouverture ne change aucun
+ * comportement en production (la première requête a lieu au démarrage, via
+ * initDB), mais rend le module chargeable sans effet de bord natif.
+ */
+let dbPromise = null;
+async function getDb() {
+    if (!dbPromise) {
+        const sqlite3 = require('sqlite3').verbose();
+        const { open } = require('sqlite');
+        dbPromise = open({
+            filename: dbFilePath,
+            driver: sqlite3.Database
+        });
+    }
+    return dbPromise;
+}
 
 // Mocking the PostgreSQL 'pool' interface so we don't have to rewrite server.js
 const pool = {
     async query(text, params = []) {
-        const db = await dbPromise;
+        const db = await getDb();
 
         // 1. Convert PostgreSQL positional parameters ($1, $2) to SQLite's (?)
         let sqliteText = text.replace(/\$\d+/g, '?');

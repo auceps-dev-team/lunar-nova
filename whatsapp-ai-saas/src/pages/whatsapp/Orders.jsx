@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import useAppStore from '../../store';
 import { useGlobalOrderListener } from '../../hooks/useGlobalOrderListener';
 import '../../styles/global.css';
+import { API_BASE_URL } from '../../config';
 
 const Orders = () => {
     const instances = useAppStore(state => state.instances);
@@ -48,7 +49,7 @@ const Orders = () => {
 
         try {
             if (isOrder) {
-                const res = await fetch(`http://localhost:3000/api/orders/${msgId}`, { method: 'DELETE' });
+                const res = await fetch(`${API_BASE_URL}/api/orders/${msgId}`, { method: 'DELETE' });
                 const data = await res.json();
                 if (data.status !== 'success') throw new Error(data.error);
             }
@@ -73,7 +74,7 @@ const Orders = () => {
             // Filter which IDs are actually orders in DB
             const orderIds = idsArray.filter(id => orders.some(o => o.id === id));
             if (orderIds.length > 0) {
-                const res = await fetch(`http://localhost:3000/api/orders/bulk-delete`, {
+                const res = await fetch(`${API_BASE_URL}/api/orders/bulk-delete`, {
                     method: 'DELETE',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ ids: orderIds })

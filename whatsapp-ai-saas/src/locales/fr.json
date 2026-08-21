@@ -291,6 +291,7 @@
   "notificationQuotaReached": "Limite atteinte. Ajoutez votre propre clé pour continuer.",
   "notificationReadMore": "Voir comment configurer",
   "quotaWarningTitle": "Limite de quota proche",
+  "dismissQuotaBanner": "Masquer ce bandeau",
   "quotaWarningDesc": "Vous avez utilisé {{used}} sur {{limit}} de vos images gratuites ce mois-ci.",
   "quotaExceededTitle": "Quota gratuit atteint",
   "quotaExceededDesc": "Vous avez atteint votre limite de 40 images gratuites. Veuillez ajouter votre propre clé API pour continuer.",
@@ -1134,5 +1135,11 @@
   "onboardSkipAndStart": "Configurer plus tard et commencer",
   "onboardFinishing": "Configuration…",
   "images": "images",
-  "quotaExceededWarning": "Quota gratuit atteint. Renseignez votre propre clé Gemini pour continuer à générer des images."
+  "quotaExceededWarning": "Quota gratuit atteint. Renseignez votre propre clé Gemini pour continuer à générer des images.",
+  "updaterNoAssetForPlatform": "Aucun installeur disponible pour cette plateforme. Téléchargez la mise à jour manuellement depuis la page des versions.",
+  "updaterRateLimitError": "Limite de requêtes GitHub atteinte (403). Réessayez dans quelques minutes.",
+  "updaterRepoNotFoundError": "Dépôt de releases introuvable (404). Vérifiez la configuration de l'updater.",
+  "updaterNetworkError": "Impossible de joindre le serveur de mises à jour. Vérifiez votre connexion Internet.",
+  "updaterReleaseBehind": "La dernière release publiée ({{latest}}) est plus ancienne que la version installée ({{current}}). Les releases GitHub ne sont pas à jour — contactez l'éditeur.",
+  "updaterArtifactOpened": "L'artefact de mise à jour a été ouvert pour installation."
 }

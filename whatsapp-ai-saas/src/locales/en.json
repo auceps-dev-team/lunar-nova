@@ -266,6 +266,7 @@
   "notificationQuotaReached": "Quota reached. Add your own key to continue.",
   "notificationReadMore": "Learn how to configure",
   "quotaWarningTitle": "Free Tier Limit Approaching",
+  "dismissQuotaBanner": "Dismiss this banner",
   "quotaWarningDesc": "You have used {{used}} of your {{limit}} free images this month.",
   "quotaExceededTitle": "Free Quota Exceeded",
   "quotaExceededDesc": "You have reached your 40 free images limit. Please add your own API key to continue.",
@@ -1134,5 +1135,11 @@
   "onboardSkipAndStart": "Set up later and start",
   "onboardFinishing": "Setting up…",
   "images": "images",
-  "quotaExceededWarning": "Free quota reached. Add your own Gemini key to keep generating images."
+  "quotaExceededWarning": "Free quota reached. Add your own Gemini key to keep generating images.",
+  "updaterNoAssetForPlatform": "No installer available for this platform. Download the update manually from the releases page.",
+  "updaterRateLimitError": "GitHub request limit reached (403). Please retry in a few minutes.",
+  "updaterRepoNotFoundError": "Releases repository not found (404). Check the updater configuration.",
+  "updaterNetworkError": "Cannot reach the update server. Check your Internet connection.",
+  "updaterReleaseBehind": "The latest published release ({{latest}}) is older than the installed version ({{current}}). GitHub releases are out of sync — please contact the publisher.",
+  "updaterArtifactOpened": "The update artifact has been opened for installation."
 }

@@ -90,40 +90,52 @@ router.post('/upload', async (req, res) => {
 
         console.log(`[Catalog] Connected to instance: ${instance_id} `);
 
-        // 3. Pre-flight Check: Is it a Business Account?
-        const isBusinessAccount = await targetPage.evaluate(() => {
-            // Business accounts have specific data-icon available on the top header/menu area
-            const catalogMenuIcon = document.querySelector('span[data-icon="catalog"], span[data-icon="storefront"], span[data-icon="smb-store"]');
-            const labelsIcon = document.querySelector('span[data-icon="labels"], span[data-icon="smb-labels-header"]');
-            return !!(catalogMenuIcon || labelsIcon);
-        });
-
-        if (!isBusinessAccount) {
-            console.warn(`[Catalog] SECURITY WARNING: Business icons ('catalog', 'smb-store', 'labels') not found. Proceeding with caution.`);
-            // throw new Error("SECURITY BLOCK: The selected instance is not a WhatsApp Business account. Catalog actions cannot be performed.");
+        // --- ADAPTIVE CHECK (avant le contrôle Business) ---
+        // Si l'utilisateur est DÉJÀ sur la page « Ajouter un article » (champ
+        // fichier présent), son accès au formulaire prouve qu'il s'agit d'un
+        // compte Business : on saute alors le contrôle d'icônes, qui serait un
+        // faux négatif (le formulaire ouvert ne montre pas le menu catalogue).
+        const isAlreadyOnAddItemPage = await (async () => {
+            try {
+                return !!(await targetPage.$('input[type="file"]'));
+            } catch {
+                return false;
+            }
+        })();
+        if (isAlreadyOnAddItemPage) {
+            console.log(`[Catalog] Adaptive check: User is already on the Add Item page. Skipping navigation.`);
         }
 
-        console.log(`[Catalog] Pre - flight Check Passed.Proceeding with upload...`);
+        // 3. Pre-flight Check: Is it a Business Account?
+        // Le contrôle est bloquant — publier dans le catalogue d'un compte
+        // personnel est précisément le comportement qui déclenche des
+        // restrictions de compte. On attend jusqu'à 5 s l'apparition des
+        // icônes Business (le DOM de WhatsApp se construit progressivement) ;
+        // si elles n'apparaissent pas, le compte n'est pas éligible.
+        if (!isAlreadyOnAddItemPage) {
+            const businessSelectors = 'span[data-icon="catalog"], span[data-icon="storefront"], span[data-icon="smb-store"], span[data-icon="labels"], span[data-icon="smb-labels-header"]';
+            let isBusinessAccount = false;
+            try {
+                await targetPage.waitForSelector(businessSelectors, { timeout: 5000 });
+                isBusinessAccount = true;
+            } catch {
+                isBusinessAccount = false;
+            }
+
+            if (!isBusinessAccount) {
+                throw new Error(
+                    "SECURITY BLOCK: Cette instance n'est pas un compte WhatsApp Business (icônes catalogue/étiquettes introuvables). " +
+                    "Les actions de catalogue ne peuvent pas être exécutées. Connectez-vous avec un compte Business ou ouvrez manuellement le catalogue."
+                );
+            }
+            console.log(`[Catalog] Pre-flight Check Passed: compte Business confirmé.`);
+        }
 
         // In Puppeteer, focus using bringToFront or focus
         await targetPage.bringToFront().catch(() => { });
 
         try {
             await humanDelay(1000, 2000); // Breathe
-
-            // --- ADAPTIVE CHECK ---
-            // If the user is ALREADY on the "Add Item" page, we can skip navigation entirely.
-            // We know we are there if the file input already exists.
-            let isAlreadyOnAddItemPage = false;
-            try {
-                const immediateFileInput = await targetPage.$('input[type="file"]');
-                if (immediateFileInput) {
-                    isAlreadyOnAddItemPage = true;
-                    console.log(`[Catalog] Adaptive check: User is already on the Add Item page. Skipping navigation.`);
-                }
-            } catch {
-                // Ignore, we will proceed with normal navigation
-            }
 
             if (!isAlreadyOnAddItemPage) {
                 // Click Catalog Icon (could be 'catalog', 'smb-store', or 'storefront')
