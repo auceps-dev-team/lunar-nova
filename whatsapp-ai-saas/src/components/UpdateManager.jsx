@@ -23,7 +23,26 @@ export default function UpdateManager() {
             setStatus('AVAILABLE');
         } else if (result.error) {
             setStatus('IDLE');
-            showAppNotification("Erreur de vérification: " + result.error, "error");
+            // Messages d'erreur lisibles selon la cause (l'erreur brute axios
+            // « Request failed with status code 403 » ne dit rien à l'utilisateur).
+            let msg = "Erreur de vérification: " + result.error;
+            if (result.errorCode === 'RATE_LIMIT') {
+                msg = t('updaterRateLimitError');
+            } else if (result.errorCode === 'REPO_NOT_FOUND') {
+                msg = t('updaterRepoNotFoundError');
+            } else if (result.errorCode === 'NETWORK') {
+                msg = t('updaterNetworkError');
+            }
+            showAppNotification(msg, "error");
+        } else if (result.info === 'release_behind_current') {
+            // La dernière release publiée est PLUS ANCIENNE que la version
+            // installée : le système ne peut par construction signaler de mise
+            // à jour. On l'explique au lieu d'afficher « à jour ».
+            setStatus('IDLE');
+            showAppNotification(
+                t('updaterReleaseBehind', { latest: result.latestVersion, current: result.currentVersion }),
+                "error"
+            );
         } else {
             setStatus('IDLE');
             showAppNotification(t('updaterUpToDate'), "success");
