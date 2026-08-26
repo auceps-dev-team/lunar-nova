@@ -1138,67 +1138,11 @@ function wac_bridge_actions_page() {
     echo '</tbody></table></div>';
 }
 
-// ─── 10. POST Endpoints (Legacy direct-write — kept for backward compat) ──
-
-function wac_bridge_create_post( WP_REST_Request $request ) {
-    if ( ! current_user_can( 'publish_posts' ) ) {
-        return new WP_Error( 'forbidden', 'You do not have permission to publish posts.', array( 'status' => 403 ) );
-    }
-
-    $title   = sanitize_text_field( $request->get_param( 'title' ) );
-    $content = wp_kses_post( $request->get_param( 'content' ) );
-    $status  = sanitize_text_field( $request->get_param( 'status' ) ?: 'draft' );
-
-    $post_id = wp_insert_post( array(
-        'post_title'   => $title,
-        'post_content' => $content,
-        'post_status'  => $status,
-        'post_author'  => get_current_user_id()
-    ) );
-
-    if ( is_wp_error( $post_id ) ) {
-        return $post_id;
-    }
-
-    return rest_ensure_response( array(
-        'message' => 'Post created successfully.',
-        'post_id' => $post_id,
-        'url'     => get_permalink( $post_id )
-    ) );
-}
-
-function wac_bridge_create_product( WP_REST_Request $request ) {
-    if ( ! current_user_can( 'publish_products' ) && ! current_user_can( 'edit_products' ) ) {
-        return new WP_Error( 'forbidden', 'You do not have permission to publish products.', array( 'status' => 403 ) );
-    }
-
-    if ( ! class_exists( 'WooCommerce' ) ) {
-        return new WP_Error( 'woocommerce_missing', 'WooCommerce is not installed.', array( 'status' => 400 ) );
-    }
-
-    try {
-        $product = new WC_Product_Simple();
-        $product->set_name( sanitize_text_field( $request->get_param( 'name' ) ) );
-        $product->set_description( wp_kses_post( $request->get_param( 'description' ) ) );
-        if ( $request->get_param( 'short_description' ) ) {
-            $product->set_short_description( wp_kses_post( $request->get_param( 'short_description' ) ) );
-        }
-        if ( $request->get_param( 'regular_price' ) ) {
-            $product->set_regular_price( sanitize_text_field( $request->get_param( 'regular_price' ) ) );
-        }
-        $product->set_status( sanitize_text_field( $request->get_param( 'status' ) ?: 'draft' ) );
-        
-        $product_id = $product->save();
-
-        return rest_ensure_response( array(
-            'message'    => 'Product created successfully.',
-            'product_id' => $product_id,
-            'url'        => get_permalink( $product_id )
-        ) );
-    } catch ( Exception $e ) {
-        return new WP_Error( 'creation_failed', $e->getMessage(), array( 'status' => 500 ) );
-    }
-}
+// ─── 10. Endpoints d'écriture directe retirés ───────────────────────────────
+// Les callbacks « legacy » d'écriture directe (create_post / create_product) ont
+// été supprimés : ils n'étaient enregistrés sur aucune route REST et contredisaient
+// la gouvernance HITL du pont. Toute mutation passe par /propose (pending_review)
+// puis /execute/{action_id} après approbation administrateur.
 
 /**
  * GET /logs  — List audit logs from wp_wacopilote_logs
