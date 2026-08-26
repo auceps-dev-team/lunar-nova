@@ -122,9 +122,10 @@ const Settings = () => {
     const handleDeleteApiKey = async (key) => {
         if (!window.confirm(t('deleteApiKeyConfirm'))) return;
         try {
-            await fetch(`${API_BASE_URL}/api/settings/${key}`, { method: 'DELETE' });
+            await fetch(`${API_BASE_URL}/api/settings/${encodeURIComponent(key)}`, { method: 'DELETE' });
             setBackendSettings(prev => ({ ...prev, [key]: '' }));
             setSecretsSet(prev => ({ ...prev, [key]: false }));
+            refreshModels();
             fetchAiQuota();
             showAppNotification(t('apiKeyDeleted'), 'success');
         } catch (err) {

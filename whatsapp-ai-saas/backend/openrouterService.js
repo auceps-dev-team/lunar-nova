@@ -5,10 +5,11 @@ const { parseLlmJson, stripCodeFences } = require('./llmJson');
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 const OPENROUTER_FALLBACK_API_KEY = process.env.OPENROUTER_API_KEY || "";
 
-// Modèle par défaut commun aux fonctions d'appel. L'en-tête HTTP-Referer envoyé
-// dans chaque requête est exigé par OpenRouter pour l'attribution du trafic —
-// il ne doit pas être retiré.
+// Modèle de chat par défaut commun aux fonctions d'appel (agents et copilot).
 const DEFAULT_MODEL = 'anthropic/claude-3.5-sonnet';
+// Identifiant renvoyé dans l'en-tête HTTP-Referer, exigé par OpenRouter pour
+// l'attribution du trafic (politique de fair-use) — il ne doit pas être retiré.
+const OPENROUTER_HTTP_REFERER = 'http://localhost:3000';
 
 // S'exécute au lancement pour cacher les modèles d'OpenRouter dans la DB
 async function syncOpenRouterModels() {
@@ -21,7 +22,7 @@ async function syncOpenRouterModels() {
         const response = await _fetch("https://openrouter.ai/api/v1/models", {
             headers: {
                 'Authorization': `Bearer ${OPENROUTER_FALLBACK_API_KEY}`,
-                'HTTP-Referer': 'http://localhost:3000',
+                'HTTP-Referer': OPENROUTER_HTTP_REFERER,
                 'X-Title': 'WaCopilote'
             }
         });
@@ -82,7 +83,7 @@ async function generateProposals(chatContext, modelParam, apiKey) {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${apiKey}`,
-                'HTTP-Referer': 'http://localhost:3000',
+                'HTTP-Referer': OPENROUTER_HTTP_REFERER,
                 'X-Title': 'WaCopilote',
                 'Content-Type': 'application/json'
             },
@@ -173,7 +174,7 @@ async function chatWithAgent(persona, message, imageParams, promptFormat, apiKey
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${apiKey}`,
-                'HTTP-Referer': 'http://localhost:3000',
+                'HTTP-Referer': OPENROUTER_HTTP_REFERER,
                 'X-Title': 'WaCopilote',
                 'Content-Type': 'application/json'
             },
@@ -212,10 +213,10 @@ async function listModels(_apiKey) {
         if (cached) {
             return JSON.parse(cached);
         }
-        return { chat: [{ id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet (En attente de synchro...)' }], image: [] };
+        return { chat: [{ id: DEFAULT_MODEL, name: 'Claude 3.5 Sonnet (En attente de synchro...)' }], image: [] };
     } catch (error) {
         console.error("OpenRouter DB Read Error:", error);
-        return { chat: [{ id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet (Erreur Base de données)' }], image: [] };
+        return { chat: [{ id: DEFAULT_MODEL, name: 'Claude 3.5 Sonnet (Erreur Base de données)' }], image: [] };
     }
 }
 
@@ -236,7 +237,7 @@ async function classifyOrderIntent(text, contactName, apiKey, modelParam) {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${apiKey}`,
-                'HTTP-Referer': 'http://localhost:3000',
+                'HTTP-Referer': OPENROUTER_HTTP_REFERER,
                 'X-Title': 'WaCopilote',
                 'Content-Type': 'application/json'
             },
