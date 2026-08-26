@@ -4,6 +4,7 @@ const rateLimit = require('express-rate-limit');
 const puppeteer = require('puppeteer-core');
 const orderListener = require('./orderListener');
 const { requireApiToken } = require('./apiAuth');
+const db = require('./db');
 
 const app = express();
 const PORT = process.env.PORT || process.env.BACKEND_PORT || 3000;
@@ -300,17 +301,32 @@ app.get('/api/context/:instance_id', async (req, res) => {
 // Phase 21: Intelligent Order Listener
 orderListener.registerRoutes(app);
 
-const server = app.listen(PORT, HOST, () => {
-    console.log(`[Orchestrator] Running on http://${HOST}:${PORT}`);
-    console.log(`[Orchestrator] Ready to connect to Electron CDP at port 8315`);
-});
-
-server.on('error', (e) => {
-    if (e.code === 'EADDRINUSE') {
-        console.error(`[CRITICAL] Port ${PORT} is already in use. Exiting to prevent zombie processes.`);
-        process.exit(1);
-    } else {
-        console.error(`[CRITICAL] Server error:`, e);
+// Initialisation DB explicite au démarrage (constat N14) : le module db.js ne
+// fait plus de « fail fast » au require ni n'appelle process.exit lui-même.
+// C'est ici, une seule fois, que l'échec d'initialisation arrête le service —
+// les accesseurs restent eux protégés (mode dégradé) s'ils sont appelés avant.
+(async () => {
+    const ok = await db.initDB().catch((err) => {
+        console.error('[CRITICAL] Erreur inattendue à l\'initialisation de la base :', err);
+        return false;
+    });
+    if (!ok) {
+        console.error('[CRITICAL] Impossible d\'initialiser la base de données. Arrêt du service.');
         process.exit(1);
     }
-});
+
+    const server = app.listen(PORT, HOST, () => {
+        console.log(`[Orchestrator] Running on http://${HOST}:${PORT}`);
+        console.log(`[Orchestrator] Ready to connect to Electron CDP at port 8315`);
+    });
+
+    server.on('error', (e) => {
+        if (e.code === 'EADDRINUSE') {
+            console.error(`[CRITICAL] Port ${PORT} is already in use. Exiting to prevent zombie processes.`);
+            process.exit(1);
+        } else {
+            console.error(`[CRITICAL] Server error:`, e);
+            process.exit(1);
+        }
+    });
+})();
