@@ -1,5 +1,8 @@
 const { chromium } = require('playwright');
 const { isLandline, normalizeDigits } = require('./phoneRules');
+// Parseurs extraits des page.evaluate (P2-3) : testables sous jsdom, et
+// sérialisables par Playwright car auto-portants (aucune portée de module).
+const { resolveQueryLocation, collectCompanyLinks, extractCompanyDetails } = require('./parsers/annuaireCi');
 
 /**
  * Scraper pour Annuaire CI
@@ -10,44 +13,14 @@ const { isLandline, normalizeDigits } = require('./phoneRules');
 async function search(query, ignoreLandlines, pages) {
     let browser;
     const leads = [];
-    
-    // Villes connues pour extraire la ville de la requête
-    const CITIES = [
-        'abidjan', 'bouake', 'cocody', 'san-pedro', 'yamoussoukro', 
-        'grand-bassam', 'treichville', 'marcory', 'plateau', 'daloa', 
-        'bingerville', 'yopougon', 'sassandra', 'korhogo', 'abengourou', 
-        'gagnoa', 'koumassi', 'dabou', 'divo', 'soubre', 'soubré'
-    ];
-
-    const slugify = (text) => text.toString().toLowerCase().trim()
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/[^\w-]+/g, '')
-        .replace(/--+/g, '-');
 
     try {
         console.log(`[AnnuaireCI] Préparation de la recherche pour: "${query}"`);
-        
-        let category = query.toLowerCase().trim();
-        let city = '';
 
-        for (const c of CITIES) {
-            if (category.includes(c)) {
-                city = c === 'soubré' ? 'soubre' : c;
-                category = category.replace(new RegExp(c, 'g'), '').trim();
-                break;
-            }
-        }
-
-        const categorySlug = slugify(category);
+        const { categorySlug, baseUrl } = resolveQueryLocation(query);
         if (!categorySlug) {
             console.error('[AnnuaireCI] Erreur: Catégorie introuvable après extraction.');
             return [];
-        }
-
-        let baseUrl = `https://annuaireci.com/categorie/${categorySlug}/`;
-        if (city) {
-            baseUrl += `${city}/`;
         }
 
         console.log(`[AnnuaireCI] Lancement du navigateur. URL de base: ${baseUrl}`);
@@ -74,20 +47,7 @@ async function search(query, ignoreLandlines, pages) {
             await page.waitForTimeout(2000);
 
             // Étape 1 : Récupérer les URLs des entreprises sur la page de résultats
-            const companyLinks = await page.evaluate(() => {
-                const links = [];
-                const items = document.querySelectorAll('.v2-card, .v2-listing-card, article, .listing-item, .type-business');
-                
-                items.forEach(item => {
-                    // Chercher un lien vers la fiche de l'entreprise
-                    const linkEl = item.querySelector('a[href*="/entreprises/"]');
-                    if (linkEl) {
-                        links.push(linkEl.href);
-                    }
-                });
-                // Dé-dupliquer les liens
-                return [...new Set(links)];
-            });
+            const companyLinks = await page.evaluate(collectCompanyLinks);
 
             console.log(`[AnnuaireCI] ${companyLinks.length} entreprises trouvées sur la page ${p}. Scraping des détails...`);
             
@@ -103,102 +63,7 @@ async function search(query, ignoreLandlines, pages) {
                     await companyPage.goto(link, { waitUntil: 'domcontentloaded', timeout: 20000 });
                     await companyPage.waitForTimeout(1000);
 
-                    const details = await companyPage.evaluate(() => {
-                        let name = '';
-                        let phone = '';
-                        let address = 'Non précisé';
-                        let website = '';
-                        let email = '';
-
-                        // 1. Try to extract from JSON-LD schema (most reliable)
-                        const scripts = document.querySelectorAll('script[type="application/ld+json"]');
-                        for (const script of scripts) {
-                            try {
-                                const data = JSON.parse(script.innerText);
-                                // Sometime data is an array or object
-                                const processSchema = (obj) => {
-                                    if (obj['@type'] === 'LocalBusiness' || obj['@type'] === 'Pharmacy' || obj.telephone) {
-                                        if (obj.name) name = obj.name;
-                                        if (obj.telephone) phone = obj.telephone;
-                                        if (obj.email) email = obj.email;
-                                        if (obj.url) website = obj.url;
-                                        
-                                        // Handle sameAs which might contain website/social
-                                        if (!website && obj.sameAs) {
-                                            website = Array.isArray(obj.sameAs) ? obj.sameAs[0] : obj.sameAs;
-                                        }
-
-                                        if (obj.address) {
-                                            if (typeof obj.address === 'string') address = obj.address;
-                                            else if (obj.address.streetAddress) address = obj.address.streetAddress + (obj.address.addressLocality ? ', ' + obj.address.addressLocality : '');
-                                        }
-                                        return true;
-                                    }
-                                    return false;
-                                };
-
-                                if (Array.isArray(data)) {
-                                    for (const item of data) {
-                                        if (processSchema(item)) break;
-                                    }
-                                } else if (data['@graph']) {
-                                    for (const item of data['@graph']) {
-                                        if (processSchema(item)) break;
-                                    }
-                                } else {
-                                    processSchema(data);
-                                }
-                            } catch {}
-                        }
-
-                        // 2. Fallback to DOM parsing if missing
-                        if (!name) {
-                            const nameEl = document.querySelector('h1, .entry-title, .v2-listing-title, .title-biz');
-                            name = nameEl ? nameEl.innerText.trim() : '';
-                        }
-                        
-                        if (!phone) {
-                            const phoneEl = document.querySelector('a[href^="tel:"], .phone, .contact-phone');
-                            if (phoneEl) {
-                                if (phoneEl.href && phoneEl.href.includes('tel:')) {
-                                    phone = phoneEl.href.replace('tel:', '').replace(/\s+/g, '');
-                                } else {
-                                    phone = phoneEl.innerText.trim();
-                                }
-                            }
-                            // Si pas de numéro "tel:", chercher dans le texte
-                            if (!phone || phone.length < 8) {
-                                const bodyText = document.body.innerText;
-                                const phoneMatch = bodyText.match(/(?:\+225)?\s*[0-9]{2}\s*[0-9]{2}\s*[0-9]{2}\s*[0-9]{2}\s*[0-9]{2}/);
-                                if (phoneMatch) {
-                                    phone = phoneMatch[0].replace(/\s+/g, '');
-                                }
-                            }
-                        }
-
-                        if (!address || address === 'Non précisé') {
-                            const addressEl = document.querySelector('.address, .location, [class*="address"], .v2-listing-address');
-                            if (addressEl) address = addressEl.innerText.trim();
-                        }
-
-                        if (!website) {
-                            const websiteEl = document.querySelector('a[href^="http"]:not([href*="annuaireci.com"]):not([href*="facebook.com"]), .website, .v2-listing-website a');
-                            if (websiteEl) website = websiteEl.href;
-                        }
-
-                        if (!email) {
-                            const emailEl = document.querySelector('a[href^="mailto:"]');
-                            if (emailEl) email = emailEl.href.replace('mailto:', '');
-                        }
-
-                        return {
-                            name,
-                            phone,
-                            address,
-                            website,
-                            email
-                        };
-                    });
+                    const details = await companyPage.evaluate(extractCompanyDetails);
 
                     await companyPage.close();
 

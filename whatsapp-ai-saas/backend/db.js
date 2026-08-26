@@ -12,7 +12,20 @@ const dbFileName = 'database.sqlite';
 // En production (forked depuis main.cjs), process.env.USER_DATA_PATH sera défini.
 // En dev, on garde le dossier backend local.
 const userDataPath = process.env.USER_DATA_PATH;
-const dbFilePath = userDataPath ? path.join(userDataPath, dbFileName) : path.join(__dirname, '..', dbFileName);
+let dbFilePath = userDataPath ? path.join(userDataPath, dbFileName) : path.join(__dirname, '..', dbFileName);
+
+/**
+ * Réservé aux tests (P2-3) : redirige la base vers un autre fichier (p.ex.
+ * ':memory:') avant la première ouverture, pour éprouver les migrations de
+ * schéma sans toucher à la base de développement. Sans effet une fois la
+ * connexion établie.
+ */
+function __setDbFileForTests(filePath) {
+    if (dbPromise) {
+        throw new Error('__setDbFileForTests doit être appelée avant la première requête.');
+    }
+    dbFilePath = filePath;
+}
 
 /**
  * Ouvre la base SQLite de façon paresseuse (première requête uniquement).
@@ -463,6 +476,7 @@ async function getAgent(id) {
 module.exports = {
     pool,
     initDB,
+    __setDbFileForTests,
     logCopilotInteraction,
     getSetting,
     setSetting,
