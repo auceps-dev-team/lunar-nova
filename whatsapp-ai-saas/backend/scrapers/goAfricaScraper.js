@@ -1,5 +1,6 @@
 const { chromium } = require('playwright');
 const { isLandline, COUNTRY_PHONE_CODES } = require('./phoneRules');
+const { extractContactFromJsonLd } = require('./jsonLdContact');
 
 // Mapping code pays -> nom complet pour les résultats
 const COUNTRY_NAMES = {
@@ -203,51 +204,44 @@ async function search(query, ignoreLandlines, pages, country = 'ci', subcategory
                             await companyPage.goto(lead.details.companyUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
                             
                             const extraDetails = await companyPage.evaluate(() => {
-                                let website = '';
-                                let email = '';
-                                
-                                // JSON-LD schema
+                                // 1. JSON-LD (données structurées) — parsé en aval
+                                //    par extractContactFromJsonLd() (logique extraite,
+                                //    testable sans navigateur).
+                                const jsonLd = [];
                                 const scripts = document.querySelectorAll('script[type="application/ld+json"]');
                                 for (const script of scripts) {
-                                    try {
-                                        const data = JSON.parse(script.innerText);
-                                        const processSchema = (obj) => {
-                                            if (obj['@type'] === 'Organization' || obj['@type'] === 'LocalBusiness') {
-                                                if (obj.email) email = obj.email;
-                                                if (obj.url) website = obj.url;
-                                            }
-                                        };
-                                        if (Array.isArray(data)) data.forEach(processSchema);
-                                        else processSchema(data);
-                                    } catch {}
+                                    try { jsonLd.push(JSON.parse(script.innerText)); } catch {}
                                 }
-                                
-                                // Fallback extraction sans réseaux sociaux
-                                if (!website) {
-                                    const links = document.querySelectorAll('a');
-                                    const excludeDomains = ['goafricaonline.com', 'facebook.com', 'twitter.com', 'instagram.com', 'linkedin.com', 'google.com', 'youtube.com', 'wa.me', 'api.whatsapp.com'];
-                                    
-                                    for (let a of links) {
-                                        if (a.href && a.href.includes('http')) {
-                                            const isExcluded = excludeDomains.some(domain => a.href.toLowerCase().includes(domain));
-                                            if (!isExcluded) {
-                                                website = a.href;
-                                                break;
-                                            }
+
+                                // 2. Fallback site web (liens hors réseaux sociaux / domaines GoAfrica)
+                                let website = '';
+                                const links = document.querySelectorAll('a');
+                                const excludeDomains = ['goafricaonline.com', 'facebook.com', 'twitter.com', 'instagram.com', 'linkedin.com', 'google.com', 'youtube.com', 'wa.me', 'api.whatsapp.com'];
+                                for (let a of links) {
+                                    if (a.href && a.href.includes('http')) {
+                                        const isExcluded = excludeDomains.some(domain => a.href.toLowerCase().includes(domain));
+                                        if (!isExcluded) {
+                                            website = a.href;
+                                            break;
                                         }
                                     }
                                 }
-                                
-                                if (!email) {
-                                    const mail = document.querySelector('a[href^="mailto:"]');
-                                    if (mail) email = mail.href.replace('mailto:', '');
-                                }
-                                
-                                return { website, email };
+
+                                // 3. Fallback email
+                                let email = '';
+                                const mail = document.querySelector('a[href^="mailto:"]');
+                                if (mail) email = mail.href.replace('mailto:', '');
+
+                                return { jsonLd, website, email };
                             });
-                            
-                            if (extraDetails.website) lead.details.siteWeb = extraDetails.website;
-                            if (extraDetails.email) lead.details.email = extraDetails.email;
+
+                            // Les données JSON-LD priment ; à défaut, on utilise le
+                            // fallback DOM extrait ci-dessus.
+                            const contact = extractContactFromJsonLd(extraDetails.jsonLd);
+                            if (contact.website) lead.details.siteWeb = contact.website;
+                            else if (extraDetails.website) lead.details.siteWeb = extraDetails.website;
+                            if (contact.email) lead.details.email = contact.email;
+                            else if (extraDetails.email) lead.details.email = extraDetails.email;
                             
                             await companyPage.close();
                         } catch {
