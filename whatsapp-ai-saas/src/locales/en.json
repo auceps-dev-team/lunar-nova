@@ -1141,5 +1141,16 @@
   "updaterRepoNotFoundError": "Releases repository not found (404). Check the updater configuration.",
   "updaterNetworkError": "Cannot reach the update server. Check your Internet connection.",
   "updaterReleaseBehind": "The latest published release ({{latest}}) is older than the installed version ({{current}}). GitHub releases are out of sync — please contact the publisher.",
-  "updaterArtifactOpened": "The update artifact has been opened for installation."
+  "updaterArtifactOpened": "The update artifact has been opened for installation.",
+  "deleteApiKey": "Delete key",
+  "deleteApiKeyConfirm": "Delete this API key? This action cannot be undone.",
+  "apiKeyDeleted": "API key deleted",
+  "metaUpdateStarted": "Update started",
+  "errorGeneric": "Error",
+  "errorUnknown": "Unknown error",
+  "connectionError": "Connection error",
+  "prospectionStarting": "Starting...",
+  "notSpecified": "Not specified",
+  "searchError": "Error during search",
+  "cacheCleared": "List cleared and cache reset"
 }

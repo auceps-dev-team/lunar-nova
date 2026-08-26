@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { Trash2 } from 'lucide-react';
 import useAppStore from '../store';
 import { useTranslation } from 'react-i18next';
 import UpdateManager from '../components/UpdateManager';
@@ -112,6 +113,23 @@ const Settings = () => {
         setBackendSettings(prev => ({ ...prev, [key]: value }));
         if (key === 'default_ai_provider' || key === 'default_image_provider') {
             refreshModels({ [key]: value });
+        }
+    };
+
+    // Supprime une clé API stockée côté backend. PUT /settings ignore les valeurs
+    // vides sur les secrets (une clé ne pouvait donc pas être effacée), d'où un
+    // endpoint dédié DELETE /api/settings/:key.
+    const handleDeleteApiKey = async (key) => {
+        if (!window.confirm(t('deleteApiKeyConfirm'))) return;
+        try {
+            await fetch(`${API_BASE_URL}/api/settings/${key}`, { method: 'DELETE' });
+            setBackendSettings(prev => ({ ...prev, [key]: '' }));
+            setSecretsSet(prev => ({ ...prev, [key]: false }));
+            fetchAiQuota();
+            showAppNotification(t('apiKeyDeleted'), 'success');
+        } catch (err) {
+            console.error(err);
+            showAppNotification(t('errorSave'), 'error');
         }
     };
 
@@ -266,7 +284,7 @@ const Settings = () => {
                                 <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">{t('geminiApiKey')}</p>
                                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('configurePersonalKeyForUnlimitedImages')}</p>
                             </div>
-                            <div className="w-1/2 flex justify-end">
+                            <div className="w-1/2 flex justify-end items-center gap-2">
                                 <input
                                     type="password"
                                     placeholder={secretPlaceholder('gemini_api_key')}
@@ -275,6 +293,11 @@ const Settings = () => {
                                     onBlur={() => refreshModels()}
                                     className="border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none bg-white dark:bg-gray-700 dark:text-white w-full max-w-[300px]"
                                 />
+                                {secretsSet['gemini_api_key'] && (
+                                    <button type="button" onClick={() => handleDeleteApiKey('gemini_api_key')} title={t('deleteApiKey')} className="text-gray-400 hover:text-red-500 transition-colors p-1 shrink-0">
+                                        <Trash2 size={16} />
+                                    </button>
+                                )}
                             </div>
                         </div>
 
@@ -310,7 +333,7 @@ const Settings = () => {
                                 <p className="text-sm font-medium text-gray-800 dark:text-gray-100">{t('openRouterApiKey')}</p>
                                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('requiredForClaudeOrGpt4o')}</p>
                             </div>
-                            <div className="w-1/2 flex justify-end">
+                            <div className="w-1/2 flex justify-end items-center gap-2">
                                 <input
                                     type="password"
                                     placeholder={secretPlaceholder('openrouter_api_key', 'placeholderOpenRouterKey')}
@@ -319,6 +342,11 @@ const Settings = () => {
                                     onBlur={() => refreshModels()}
                                     className="border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none bg-white dark:bg-gray-700 dark:text-white w-full max-w-[300px]"
                                 />
+                                {secretsSet['openrouter_api_key'] && (
+                                    <button type="button" onClick={() => handleDeleteApiKey('openrouter_api_key')} title={t('deleteApiKey')} className="text-gray-400 hover:text-red-500 transition-colors p-1 shrink-0">
+                                        <Trash2 size={16} />
+                                    </button>
+                                )}
                             </div>
                         </div>
                     )}
@@ -329,7 +357,7 @@ const Settings = () => {
                                 <p className="text-sm font-medium text-gray-800 dark:text-gray-100">{t('ollamaCloudApiKey')}</p>
                                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('leaveBlankForLocalModels')}</p>
                             </div>
-                            <div className="w-1/2 flex justify-end">
+                            <div className="w-1/2 flex justify-end items-center gap-2">
                                 <input
                                     type="password"
                                     placeholder={secretPlaceholder('ollama_api_key')}
@@ -338,6 +366,11 @@ const Settings = () => {
                                     onBlur={() => refreshModels()}
                                     className="border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none bg-white dark:bg-gray-700 dark:text-white w-full max-w-[300px]"
                                 />
+                                {secretsSet['ollama_api_key'] && (
+                                    <button type="button" onClick={() => handleDeleteApiKey('ollama_api_key')} title={t('deleteApiKey')} className="text-gray-400 hover:text-red-500 transition-colors p-1 shrink-0">
+                                        <Trash2 size={16} />
+                                    </button>
+                                )}
                             </div>
                         </div>
                     )}
@@ -350,7 +383,7 @@ const Settings = () => {
                                     <p className="text-sm font-medium text-gray-800 dark:text-gray-100">{t('openaiApiKey')}</p>
                                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('nvidiaSingleKeyDesc')}</p>
                                 </div>
-                                <div className="w-1/2 flex justify-end">
+                                <div className="w-1/2 flex justify-end items-center gap-2">
                                     <input
                                         type="password"
                                         placeholder={secretPlaceholder('openai_api_key')}
@@ -359,6 +392,11 @@ const Settings = () => {
                                         onBlur={() => refreshModels()}
                                         className="border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none bg-white dark:bg-gray-700 dark:text-white w-full max-w-[300px]"
                                     />
+                                    {secretsSet['openai_api_key'] && (
+                                        <button type="button" onClick={() => handleDeleteApiKey('openai_api_key')} title={t('deleteApiKey')} className="text-gray-400 hover:text-red-500 transition-colors p-1 shrink-0">
+                                            <Trash2 size={16} />
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                             <div className="flex items-center justify-between">
@@ -383,7 +421,7 @@ const Settings = () => {
                                     <p className="text-sm font-medium text-gray-800 dark:text-gray-100">Together AI API Key</p>
                                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Requis pour Stable Diffusion & Llama Vision (Together)</p>
                                 </div>
-                                <div className="w-1/2 flex justify-end">
+                                <div className="w-1/2 flex justify-end items-center gap-2">
                                     <input
                                         type="password"
                                         placeholder={secretPlaceholder('together_api_key')}
@@ -392,6 +430,11 @@ const Settings = () => {
                                         onBlur={() => refreshModels()}
                                         className="border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none bg-white dark:bg-gray-700 dark:text-white w-full max-w-[300px]"
                                     />
+                                    {secretsSet['together_api_key'] && (
+                                        <button type="button" onClick={() => handleDeleteApiKey('together_api_key')} title={t('deleteApiKey')} className="text-gray-400 hover:text-red-500 transition-colors p-1 shrink-0">
+                                            <Trash2 size={16} />
+                                        </button>
+                                    )}
                                 </div>
                             </div>
 

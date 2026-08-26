@@ -364,5 +364,16 @@
   "updaterRepoNotFoundError": "مستودع الإصدارات غير موجود (404). تحقق من إعدادات المحدّث.",
   "updaterNetworkError": "تعذّر الوصول إلى خادم التحديثات. تحقق من اتصالك بالإنترنت.",
   "updaterReleaseBehind": "آخر إصدار منشور ({{latest}}) أقدم من النسخة المثبتة ({{current}}). إصدارات GitHub غير متزامنة — تواصل مع الناشر.",
-  "updaterArtifactOpened": "تم فتح ملف التحديث للتثبيت."
+  "updaterArtifactOpened": "تم فتح ملف التحديث للتثبيت.",
+  "deleteApiKey": "حذف المفتاح",
+  "deleteApiKeyConfirm": "حذف مفتاح API هذا؟ لا يمكن التراجع عن هذا الإجراء.",
+  "apiKeyDeleted": "تم حذف مفتاح API",
+  "metaUpdateStarted": "بدأ التحديث",
+  "errorGeneric": "خطأ",
+  "errorUnknown": "خطأ غير معروف",
+  "connectionError": "خطأ في الاتصال",
+  "prospectionStarting": "جارٍ البدء...",
+  "notSpecified": "غير محدد",
+  "searchError": "خطأ أثناء البحث",
+  "cacheCleared": "تم مسح القائمة وإعادة تعيين ذاكرة التخزين المؤقت"
 }
