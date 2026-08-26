@@ -52,6 +52,21 @@ router.put('/settings', async (req, res) => {
     }
 });
 
+// DELETE /api/settings/:key — Supprimer une clé de configuration (y compris les secrets API)
+// Permet à l'UI d'offrir un bouton « Supprimer la clé » sans contourner le masquage du GET.
+router.delete('/settings/:key', async (req, res) => {
+    try {
+        const key = req.params.key;
+        if (!key || typeof key !== 'string' || key.trim() === '') {
+            return res.status(400).json({ error: 'Invalid key parameter.' });
+        }
+        await pool.query('DELETE FROM app_settings WHERE setting_key = $1', [key.trim()]);
+        res.json({ status: 'success' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 router.get('/settings/quota', async (req, res) => {
     try {
         const key = await getSetting('gemini_api_key', '');
