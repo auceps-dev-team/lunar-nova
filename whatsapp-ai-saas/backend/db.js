@@ -312,28 +312,48 @@ async function initDB() {
         console.log('[SQLite] Connected and tables verified.');
     } catch (err) {
         console.error('[CRITICAL] DB Init Failed:', err.message);
-        process.exit(1);
+        // P2-2 / N14 : on ne tue plus le processus ici. Le fail-fast est
+        // déplacé dans server.js, qui attend `initDB()` avant d'ouvrir le port
+        // et fait `process.exit(1)` en cas d'échec. En environnement de test ou
+        // sans binding natif SQLite, cette erreur doit pouvoir être interceptée
+        // plutôt que d'appeler process.exit (Vitest interceptait auparavant
+        // « process.exit unexpectedly called »).
+        throw err;
     }
 }
 
 /**
- * Initialisation retenue sous forme de promesse, et non plus lancée sans suite.
+ * Initialisation différée (P2-2 / N14).
  *
- * L'initialisation crée les tables puis chiffre les secrets hérités ; elle prend
- * de l'ordre de la seconde. Tant qu'elle n'était pas terminée, `isDbConnected`
- * restait faux et getSetting renvoyait sa valeur par défaut : une requête d'IA
- * arrivant dans cette fenêtre partait sans clé d'API ni persona, et échouait
- * pour une raison sans rapport avec sa cause réelle. On observait la trace au
- * démarrage — « Aucune clé API, synchronisation ignorée » émis avant
- * « SQLite Connected ».
+ * Anciennement, `initDB()` était appelée dès le `require('./db')` via
+ * `const ready = initDB()`, ce qui déclenchait `process.exit(1)` au chargement
+ * du module dès qu'un binding natif SQLite était absent — en particulier sous
+ * Vitest (l'appel y était intercepté : « process.exit unexpectedly called »).
  *
- * Les accesseurs attendent désormais cette promesse plutôt que de répondre à
- * vide.
+ * L'initialisation est désormais paresseuse : `ensureReady()` la lance à la
+ * première requête réelle et met en cache la promesse (succès OU échec). Les
+ * accesseurs basculent alors en mode dégradé (`isDbConnected` reste faux) au
+ * lieu de tuer le process. Le fail-fast en production est assuré par
+ * `server.js`, qui attend `initDB()` avant d'ouvrir le port et fait
+ * `process.exit(1)` en cas d'échec.
  */
-const ready = initDB();
+let initPromise = null;
+
+async function ensureReady() {
+    if (!initPromise) {
+        initPromise = initDB().catch((err) => {
+            // Échec d'init : on le consigne mais on ne rejette pas, pour que les
+            // accesseurs (getSetting/setSetting/logCopilotInteraction/getAgent)
+            // restent en mode dégradé plutôt que de propager une promesse rejetée.
+            console.error('[DB] Initialisation différée en échec (mode dégradé) :', err.message);
+            return null;
+        });
+    }
+    return initPromise;
+}
 
 async function logCopilotInteraction(instance_id, contact_name, context, proposals, provider = 'gemini', model = 'gemini-1.5-pro', tokens = 0, cost = 0.0, status = 'success') {
-    await ready;
+    await ensureReady();
     if (!isDbConnected) {
         console.log(`[DB Mock] Logged interaction for ${instance_id} with ${contact_name}`);
         return;
@@ -364,7 +384,7 @@ async function logCopilotInteraction(instance_id, contact_name, context, proposa
 
 // --- Phase 15 Helpers ---
 async function getSetting(key, defaultValue = null) {
-    await ready;
+    await ensureReady();
     if (!isDbConnected) return defaultValue;
     try {
         const result = await pool.query('SELECT setting_value FROM app_settings WHERE setting_key = $1', [key]);
@@ -379,7 +399,7 @@ async function getSetting(key, defaultValue = null) {
 }
 
 async function setSetting(key, value) {
-    await ready;
+    await ensureReady();
     if (!isDbConnected) return;
     try {
         const stored = isSecretSetting(key) ? encrypt(value) : value;
@@ -434,7 +454,7 @@ async function encryptLegacySecrets(client) {
 }
 
 async function getAgent(id) {
-    await ready;
+    await ensureReady();
     if (!isDbConnected) return null;
     try {
         const result = await pool.query('SELECT * FROM ai_agents WHERE id = $1', [id]);
@@ -450,5 +470,7 @@ module.exports = {
     logCopilotInteraction,
     getSetting,
     setSetting,
-    getAgent
+    getAgent,
+    initDB,
+    ensureReady
 };
