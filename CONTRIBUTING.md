@@ -159,6 +159,14 @@ Deux points de vigilance propres à ce projet, à garder en tête en contribuant
   jamais de dump de page scrapée, même à titre de fixture, sans l'avoir vidé de
   toute coordonnée réelle.
 
+- **Exception documentée (P2-5 / N5) :** `backend/goafrica-tg-annuaire.html`
+  (≈116 Ko) est un instantané hors-ligne d'une page d'annuaire GoAfrica Online
+  (Togo), utilisé uniquement par `backend/scripts/fetchGoAfricaStructure.js` pour
+  dériver la structure des catégories sans accès réseau. Il est intentionnellement
+  suivi car il ne contient que la structure des liens — aucune coordonnée réelle
+  (0 `tel:` / 0 `email` vérifié à l'audit). Ne pas le confondre avec un dump de
+  prospects : ne commitez jamais de dump contenant de vraies coordonnées.
+
 ---
 
 ## Licence et droits

@@ -73,8 +73,13 @@ backend/list_models.js
 # graphify generated output
 graphify-out/
 
-# Scraper cache dumps — grands fichiers HTML générés automatiquement.
-# goafrica-tg-annuaire.html est un dump de 116 Ko capturé par le scraper GoAfrica.
-# Il ne doit pas être versionné car il contient des données entreprises éphémères.
-# Arbitrage H3 (plan de correctifs v1.42.13) : à supprimer du dépôt via `git rm`.
-backend/goafrica-tg-annuaire.html
+# Scraper cache dumps — grands fichiers HTML générés automatiquement (EXCLUS du dépôt).
+*_dump.html
+
+# NOTE P2-5 / arbitrage H3 : `backend/goafrica-tg-annuaire.html` (≈116 Ko) est
+# intentionnellement VERSIONNÉ (il n'est PAS ignoré). C'est un instantané hors-ligne
+# d'une page d'annuaire GoAfrica Online (Togo) lu par
+# `backend/scripts/fetchGoAfricaStructure.js` pour dériver la structure des
+# catégories sans accès réseau. Aucune donnée personnelle (0 tel:/0 email vérifié
+# par l'audit N5) : il ne contient que la structure des liens, pas de coordonnées
+# d'entreprises. Ne pas le supprimer sans d'abord faire fetch live côté script.
