@@ -227,29 +227,11 @@ router.get('/:id/analytics', async (req, res) => {
     }
 });
 
-// POST /api/wp/:id/posts
-router.post('/:id/posts', async (req, res) => {
-    try {
-        const conn = await loadConnection(req.params.id);
-        if (!conn) return res.status(404).json({ error: 'Connection not found.' });
-        const data = await wpFetch(conn.site_url, conn.wp_username, conn.app_password, '/posts', '', 'POST', req.body);
-        res.json({ status: 'success', data });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// POST /api/wp/:id/products
-router.post('/:id/products', async (req, res) => {
-    try {
-        const conn = await loadConnection(req.params.id);
-        if (!conn) return res.status(404).json({ error: 'Connection not found.' });
-        const data = await wpFetch(conn.site_url, conn.wp_username, conn.app_password, '/products', '', 'POST', req.body);
-        res.json({ status: 'success', data });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
+// Les routes POST /:id/posts et /:id/products ont été retirées : elles ciblaient
+// des endpoints « legacy » d'écriture directe du plugin, jamais enregistrés côté
+// PHP (donc déjà inopérants, 404). Les mutations WordPress passent exclusivement
+// par la gouvernance HITL ci-dessous : /propose (stockage en pending_review) puis
+// /execute/:actionId après approbation humaine — aucune écriture directe.
 
 // ─── HITL Governance Routes ──────────────────────────────────────────────────
 

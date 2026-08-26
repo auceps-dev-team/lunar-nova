@@ -1,6 +1,6 @@
 {
   "name": "backend",
-  "version": "1.42.12",
+  "version": "1.42.13",
   "description": "WhatsApp AI SaaS Orchestrator",
   "license": "AGPL-3.0-only",
   "main": "server.js",
