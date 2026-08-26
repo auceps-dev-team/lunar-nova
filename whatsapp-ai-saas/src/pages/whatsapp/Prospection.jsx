@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, MapPin, Phone, Globe, Download, Database, CheckSquare, Square, Loader2, Building2, Map as MapIcon, Globe2, Trash2, Clock, Target, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import useAppStore from '../../store';
 import CustomSelect from '../../components/CustomSelect';
 import { API_BASE_URL } from '../../config';
 
 export default function Prospection() {
-    // Cette page n'est pas encore internationalisée : ses libellés sont écrits en
-    // dur dans le JSX. useTranslation() était appelé sans que `t` serve jamais.
-    // La traduction de la page reste à faire.
+    // Internationalisation partielle : les notifications et libellés de logique
+    // sont traduits via t() ; les libellés statiques du JSX restent à traduire.
+    const { t } = useTranslation();
     const showAppNotification = useAppStore(state => state.showAppNotification);
 
     const query = useAppStore(state => state.prospectSearchQuery);
@@ -39,12 +40,13 @@ export default function Prospection() {
             });
             const result = await response.json();
             if (result.success) {
-                showAppNotification('success', 'Mise à jour démarrée', result.message);
+                showAppNotification(t('metaUpdateStarted'), 'success');
             } else {
-                showAppNotification('error', 'Erreur', result.error || 'Erreur inconnue');
+                showAppNotification(result.error || t('errorUnknown'), 'error');
             }
         } catch (err) {
-            showAppNotification('error', 'Erreur de connexion', err.message);
+            console.error('GoAfrica metadata update error:', err);
+            showAppNotification(t('connectionError'), 'error');
         } finally {
             setIsRefreshingMetadata(false);
         }
@@ -149,7 +151,7 @@ export default function Prospection() {
         
         setIsSearching(true);
         setProgressPhase('scroll');
-        setProgressMessage('Démarrage...');
+        setProgressMessage(t('prospectionStarting'));
         setProgressPercent(0);
 
         const controller = new AbortController();
@@ -219,7 +221,7 @@ export default function Prospection() {
                                         name: l.name || l.nom,
                                         phone: l.phone || l.numero,
                                         email: l.email || l.details?.email || '',
-                                        address: l.address || l.details?.adresse || 'Non précisé',
+                                        address: l.address || l.details?.adresse || t('notSpecified'),
                                         website: l.website || l.details?.siteWeb || ''
                                     }));
                                     
@@ -246,7 +248,7 @@ export default function Prospection() {
         } catch (error) {
             if (error.name !== 'AbortError') {
                 console.error('Search error:', error);
-                showAppNotification(error.message || 'Erreur lors de la recherche', 'error');
+                showAppNotification(error.message || t('searchError'), 'error');
             }
         } finally {
             setIsSearching(false);
@@ -267,7 +269,7 @@ export default function Prospection() {
                 body: JSON.stringify({}) // Empty = clear all sessions
             });
         } catch { /* Non-critical */ }
-        showAppNotification('Liste vidée et cache réinitialisé', 'success');
+        showAppNotification(t('cacheCleared'), 'success');
     };
 
     const handleExportCSV = () => {
@@ -568,7 +570,7 @@ export default function Prospection() {
                                     {progressPhase === 'extract' && 'Phase 2 — Extraction des données...'}
                                     {progressPhase === 'done' && 'Terminé !'}
                                     {progressPhase === 'info' && 'Information'}
-                                    {!progressPhase && 'Démarrage...'}
+                                    {!progressPhase && t('prospectionStarting')}
                                 </span>
                             </div>
                             <span className="text-sm font-mono text-emerald-600 dark:text-emerald-400">{progressPercent}%</span>

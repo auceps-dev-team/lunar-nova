@@ -4,9 +4,11 @@ const { parseLlmJson, stripCodeFences } = require('./llmJson');
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 const OPENROUTER_FALLBACK_API_KEY = process.env.OPENROUTER_API_KEY || "";
-// Modèle de chat par défaut pour les agents et le copilot OpenRouter
+
+// Modèle de chat par défaut commun aux fonctions d'appel (agents et copilot).
 const DEFAULT_MODEL = 'anthropic/claude-3.5-sonnet';
-// Identifiant renvoyé dans HTTP-Referer (requis par la politique de fair-use d'OpenRouter)
+// Identifiant renvoyé dans l'en-tête HTTP-Referer, exigé par OpenRouter pour
+// l'attribution du trafic (politique de fair-use) — il ne doit pas être retiré.
 const OPENROUTER_HTTP_REFERER = 'http://localhost:3000';
 
 // S'exécute au lancement pour cacher les modèles d'OpenRouter dans la DB

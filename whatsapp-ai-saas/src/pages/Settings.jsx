@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { Trash2 } from 'lucide-react';
 import useAppStore from '../store';
 import { useTranslation } from 'react-i18next';
 import UpdateManager from '../components/UpdateManager';
@@ -115,18 +116,21 @@ const Settings = () => {
         }
     };
 
-    // Supprime une clé API de la base de données via DELETE /api/settings/:key
-    const handleDeleteKey = async (key) => {
-        if (!window.confirm(`Supprimer la clé "${key}" ? Cette action est irréversible.`)) return;
+    // Supprime une clé API stockée côté backend. PUT /settings ignore les valeurs
+    // vides sur les secrets (une clé ne pouvait donc pas être effacée), d'où un
+    // endpoint dédié DELETE /api/settings/:key.
+    const handleDeleteApiKey = async (key) => {
+        if (!window.confirm(t('deleteApiKeyConfirm'))) return;
         try {
             await fetch(`${API_BASE_URL}/api/settings/${encodeURIComponent(key)}`, { method: 'DELETE' });
-            setSecretsSet(prev => ({ ...prev, [key]: false }));
             setBackendSettings(prev => ({ ...prev, [key]: '' }));
-            showAppNotification('Clé supprimée avec succès.', 'success');
+            setSecretsSet(prev => ({ ...prev, [key]: false }));
             refreshModels();
+            fetchAiQuota();
+            showAppNotification(t('apiKeyDeleted'), 'success');
         } catch (err) {
             console.error(err);
-            showAppNotification('Erreur lors de la suppression de la clé.', 'error');
+            showAppNotification(t('errorSave'), 'error');
         }
     };
 
@@ -291,13 +295,8 @@ const Settings = () => {
                                     className="border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none bg-white dark:bg-gray-700 dark:text-white w-full max-w-[300px]"
                                 />
                                 {secretsSet['gemini_api_key'] && (
-                                    <button
-                                        type="button"
-                                        onClick={() => handleDeleteKey('gemini_api_key')}
-                                        title="Supprimer la clé"
-                                        className="text-red-500 hover:text-red-700 text-xs font-medium shrink-0 transition"
-                                    >
-                                        🗑️
+                                    <button type="button" onClick={() => handleDeleteApiKey('gemini_api_key')} title={t('deleteApiKey')} className="text-gray-400 hover:text-red-500 transition-colors p-1 shrink-0">
+                                        <Trash2 size={16} />
                                     </button>
                                 )}
                             </div>
@@ -345,13 +344,8 @@ const Settings = () => {
                                     className="border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none bg-white dark:bg-gray-700 dark:text-white w-full max-w-[300px]"
                                 />
                                 {secretsSet['openrouter_api_key'] && (
-                                    <button
-                                        type="button"
-                                        onClick={() => handleDeleteKey('openrouter_api_key')}
-                                        title="Supprimer la clé"
-                                        className="text-red-500 hover:text-red-700 text-xs font-medium shrink-0 transition"
-                                    >
-                                        🗑️
+                                    <button type="button" onClick={() => handleDeleteApiKey('openrouter_api_key')} title={t('deleteApiKey')} className="text-gray-400 hover:text-red-500 transition-colors p-1 shrink-0">
+                                        <Trash2 size={16} />
                                     </button>
                                 )}
                             </div>
@@ -374,13 +368,8 @@ const Settings = () => {
                                     className="border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none bg-white dark:bg-gray-700 dark:text-white w-full max-w-[300px]"
                                 />
                                 {secretsSet['ollama_api_key'] && (
-                                    <button
-                                        type="button"
-                                        onClick={() => handleDeleteKey('ollama_api_key')}
-                                        title="Supprimer la clé"
-                                        className="text-red-500 hover:text-red-700 text-xs font-medium shrink-0 transition"
-                                    >
-                                        🗑️
+                                    <button type="button" onClick={() => handleDeleteApiKey('ollama_api_key')} title={t('deleteApiKey')} className="text-gray-400 hover:text-red-500 transition-colors p-1 shrink-0">
+                                        <Trash2 size={16} />
                                     </button>
                                 )}
                             </div>
@@ -405,13 +394,8 @@ const Settings = () => {
                                         className="border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none bg-white dark:bg-gray-700 dark:text-white w-full max-w-[300px]"
                                     />
                                     {secretsSet['openai_api_key'] && (
-                                        <button
-                                            type="button"
-                                            onClick={() => handleDeleteKey('openai_api_key')}
-                                            title="Supprimer la clé"
-                                            className="text-red-500 hover:text-red-700 text-xs font-medium shrink-0 transition"
-                                        >
-                                            🗑️
+                                        <button type="button" onClick={() => handleDeleteApiKey('openai_api_key')} title={t('deleteApiKey')} className="text-gray-400 hover:text-red-500 transition-colors p-1 shrink-0">
+                                            <Trash2 size={16} />
                                         </button>
                                     )}
                                 </div>
@@ -448,13 +432,8 @@ const Settings = () => {
                                         className="border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none bg-white dark:bg-gray-700 dark:text-white w-full max-w-[300px]"
                                     />
                                     {secretsSet['together_api_key'] && (
-                                        <button
-                                            type="button"
-                                            onClick={() => handleDeleteKey('together_api_key')}
-                                            title="Supprimer la clé"
-                                            className="text-red-500 hover:text-red-700 text-xs font-medium shrink-0 transition"
-                                        >
-                                            🗑️
+                                        <button type="button" onClick={() => handleDeleteApiKey('together_api_key')} title={t('deleteApiKey')} className="text-gray-400 hover:text-red-500 transition-colors p-1 shrink-0">
+                                            <Trash2 size={16} />
                                         </button>
                                     )}
                                 </div>

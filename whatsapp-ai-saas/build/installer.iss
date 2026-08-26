@@ -4,7 +4,7 @@
 ; ============================================================
 
 #define AppName      "WaCopilote"
-#define AppVersion   "1.42.14"
+#define AppVersion   "1.43.0"
 #define AppPublisher "Auceps Digital"
 #define AppURL       "https://auceps-digital.agency"
 #define AppExeName   "WaCopilote.exe"
@@ -63,6 +63,8 @@ Filename: "{app}\{#AppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(
 
 [UninstallRun]
 ; Ouvrir page de feedback à la désinstallation
+; NB : le slug « unistall » est volontaire — c'est la page réellement publiée
+; côté site (la variante corrigée « uninstall » renvoie 404). Ne pas « corriger ».
 Filename: "{cmd}"; Parameters: "/c start https://auceps-digital.agency/unistall-wacopilote/"; Flags: runhidden; RunOnceId: "UninstallFeedback"
 
 [Code]

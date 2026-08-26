@@ -12,7 +12,20 @@ const dbFileName = 'database.sqlite';
 // En production (forked depuis main.cjs), process.env.USER_DATA_PATH sera défini.
 // En dev, on garde le dossier backend local.
 const userDataPath = process.env.USER_DATA_PATH;
-const dbFilePath = userDataPath ? path.join(userDataPath, dbFileName) : path.join(__dirname, '..', dbFileName);
+let dbFilePath = userDataPath ? path.join(userDataPath, dbFileName) : path.join(__dirname, '..', dbFileName);
+
+/**
+ * Réservé aux tests (P2-3) : redirige la base vers un autre fichier (p.ex.
+ * ':memory:') avant la première ouverture, pour éprouver les migrations de
+ * schéma sans toucher à la base de développement. Sans effet une fois la
+ * connexion établie.
+ */
+function __setDbFileForTests(filePath) {
+    if (dbPromise) {
+        throw new Error('__setDbFileForTests doit être appelée avant la première requête.');
+    }
+    dbFilePath = filePath;
+}
 
 /**
  * Ouvre la base SQLite de façon paresseuse (première requête uniquement).
@@ -70,7 +83,7 @@ const pool = {
     }
 };
 
-async function initDB() {
+async function runInitDB() {
     try {
         const client = await pool.connect();
 
@@ -310,30 +323,45 @@ async function initDB() {
         client.release();
         isDbConnected = true;
         console.log('[SQLite] Connected and tables verified.');
+        return true;
     } catch (err) {
+        // Plus de process.exit(1) ici (constat N14) : au require du module, ce
+        // comportement « fail fast » était déclenché y compris sous Vitest sans
+        // binding natif sqlite3 (process.exit intercepté). L'arrêt en production
+        // est désormais décidé par l'appelant au démarrage (server.js) au vu du
+        // booléen renvoyé ; les accès paresseux dégradent proprement
+        // (isDbConnected reste faux, mode dégradé des accesseurs).
         console.error('[CRITICAL] DB Init Failed:', err.message);
-        process.exit(1);
+        return false;
     }
 }
 
 /**
- * Initialisation retenue sous forme de promesse, et non plus lancée sans suite.
+ * Initialisation idempotente, démarrée soit par server.js au démarrage, soit
+ * paresseusement par le premier accesseur qui en a besoin.
  *
  * L'initialisation crée les tables puis chiffre les secrets hérités ; elle prend
- * de l'ordre de la seconde. Tant qu'elle n'était pas terminée, `isDbConnected`
- * restait faux et getSetting renvoyait sa valeur par défaut : une requête d'IA
+ * de l'ordre de la seconde. Tant qu'elle n'est pas terminée, `isDbConnected`
+ * reste faux et getSetting renvoie sa valeur par défaut : une requête d'IA
  * arrivant dans cette fenêtre partait sans clé d'API ni persona, et échouait
  * pour une raison sans rapport avec sa cause réelle. On observait la trace au
  * démarrage — « Aucune clé API, synchronisation ignorée » émis avant
  * « SQLite Connected ».
  *
- * Les accesseurs attendent désormais cette promesse plutôt que de répondre à
- * vide.
+ * Les accesseurs attendent donc cette promesse plutôt que de répondre à vide.
+ * Elle est calculée une seule fois : un échec n'est pas retenté en boucle, la
+ * décision d'arrêt appartient à l'appelant (server.js) via le booléen false.
  */
-const ready = initDB();
+let readyPromise = null;
+function initDB() {
+    if (!readyPromise) {
+        readyPromise = runInitDB();
+    }
+    return readyPromise;
+}
 
-async function logCopilotInteraction(instance_id, contact_name, context, proposals, provider = 'gemini', model = 'gemini-1.5-pro', tokens = 0, cost = 0.0, status = 'success') {
-    await ready;
+async function logCopilotInteraction(instance_id, contact_name, context, proposals, provider = 'gemini', model = 'gemini-2.5-flash', tokens = 0, cost = 0.0, status = 'success') {
+    await initDB();
     if (!isDbConnected) {
         console.log(`[DB Mock] Logged interaction for ${instance_id} with ${contact_name}`);
         return;
@@ -364,7 +392,7 @@ async function logCopilotInteraction(instance_id, contact_name, context, proposa
 
 // --- Phase 15 Helpers ---
 async function getSetting(key, defaultValue = null) {
-    await ready;
+    await initDB();
     if (!isDbConnected) return defaultValue;
     try {
         const result = await pool.query('SELECT setting_value FROM app_settings WHERE setting_key = $1', [key]);
@@ -379,7 +407,7 @@ async function getSetting(key, defaultValue = null) {
 }
 
 async function setSetting(key, value) {
-    await ready;
+    await initDB();
     if (!isDbConnected) return;
     try {
         const stored = isSecretSetting(key) ? encrypt(value) : value;
@@ -434,7 +462,7 @@ async function encryptLegacySecrets(client) {
 }
 
 async function getAgent(id) {
-    await ready;
+    await initDB();
     if (!isDbConnected) return null;
     try {
         const result = await pool.query('SELECT * FROM ai_agents WHERE id = $1', [id]);
@@ -447,6 +475,8 @@ async function getAgent(id) {
 
 module.exports = {
     pool,
+    initDB,
+    __setDbFileForTests,
     logCopilotInteraction,
     getSetting,
     setSetting,
