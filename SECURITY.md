@@ -62,6 +62,14 @@ accessibles dans l'historique Git, que nous avons choisi de ne pas réécrire :
 **dev.team@auceps-digital.agency**. Nous procéderons alors à une réécriture
 ciblée de l'historique.
 
+Un troisième dump de travail, `backend/goafrica-tg-annuaire.html` (116 Ko,
+capture de l'annuaire GoAfrica Togo), a été retiré du suivi Git en v1.43.0
+(arbitrage H3 du plan de correctifs). L'audit a vérifié qu'il ne contenait
+aucune donnée personnelle (0 numéro, 0 e-mail) : seule la structure des
+catégories y était exploitée. L'application sert la structure générée
+(`backend/data/goafricaStructure.json`, toujours suivi) ; pour la régénérer,
+re-capturer la page puis lancer `backend/scripts/fetchGoAfricaStructure.js`.
+
 ## Utiliser WaCopilote de façon responsable
 
 Les modules d'automatisation WhatsApp et de prospection manipulent des données
