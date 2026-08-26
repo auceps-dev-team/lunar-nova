@@ -332,7 +332,7 @@ async function initDB() {
  */
 const ready = initDB();
 
-async function logCopilotInteraction(instance_id, contact_name, context, proposals, provider = 'gemini', model = 'gemini-1.5-pro', tokens = 0, cost = 0.0, status = 'success') {
+async function logCopilotInteraction(instance_id, contact_name, context, proposals, provider = 'gemini', model = 'gemini-2.5-flash', tokens = 0, cost = 0.0, status = 'success') {
     await ready;
     if (!isDbConnected) {
         console.log(`[DB Mock] Logged interaction for ${instance_id} with ${contact_name}`);
