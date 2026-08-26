@@ -5,6 +5,11 @@ const { parseLlmJson, stripCodeFences } = require('./llmJson');
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 const OPENROUTER_FALLBACK_API_KEY = process.env.OPENROUTER_API_KEY || "";
 
+// Modèle par défaut commun aux fonctions d'appel. L'en-tête HTTP-Referer envoyé
+// dans chaque requête est exigé par OpenRouter pour l'attribution du trafic —
+// il ne doit pas être retiré.
+const DEFAULT_MODEL = 'anthropic/claude-3.5-sonnet';
+
 // S'exécute au lancement pour cacher les modèles d'OpenRouter dans la DB
 async function syncOpenRouterModels() {
     try {
@@ -67,7 +72,7 @@ async function generateProposals(chatContext, modelParam, apiKey) {
         formattedChat += `[${msg.time}] ${msg.sender}: ${msg.text}\n`;
     });
 
-    const targetModel = modelParam || 'anthropic/claude-3.5-sonnet';
+    const targetModel = modelParam || DEFAULT_MODEL;
     const copilotPersona = orchestrator.getPersona('copilot');
     const systemInstruction = copilotPersona ? copilotPersona.systemInstruction : "You are an assistive copilot.";
 
@@ -159,7 +164,7 @@ async function chatWithAgent(persona, message, imageParams, promptFormat, apiKey
             messages[0].content += "\n\nCRITICAL: Return ONLY a valid JSON output. No markdown, no conversational text.";
         }
 
-        let selectedModel = 'anthropic/claude-3.5-sonnet';
+        let selectedModel = DEFAULT_MODEL;
         if (dbAgent && dbAgent.model_override) {
             selectedModel = dbAgent.model_override;
         }
@@ -221,7 +226,7 @@ async function classifyOrderIntent(text, contactName, apiKey, modelParam) {
     const fallback = { is_order: false, confidence: 0, order_type: 'not_an_order', summary: '' };
     if (!apiKey) return fallback;
 
-    const targetModel = modelParam || 'anthropic/claude-3.5-sonnet';
+    const targetModel = modelParam || DEFAULT_MODEL;
     const orderRadarPersona = orchestrator.getPersona('order_radar');
     const systemInstruction = orderRadarPersona ? orderRadarPersona.systemInstruction : '';
 
