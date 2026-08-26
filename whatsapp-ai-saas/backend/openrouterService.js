@@ -4,6 +4,10 @@ const { parseLlmJson, stripCodeFences } = require('./llmJson');
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 const OPENROUTER_FALLBACK_API_KEY = process.env.OPENROUTER_API_KEY || "";
+// Modèle de chat par défaut pour les agents et le copilot OpenRouter
+const DEFAULT_MODEL = 'anthropic/claude-3.5-sonnet';
+// Identifiant renvoyé dans HTTP-Referer (requis par la politique de fair-use d'OpenRouter)
+const OPENROUTER_HTTP_REFERER = 'http://localhost:3000';
 
 // S'exécute au lancement pour cacher les modèles d'OpenRouter dans la DB
 async function syncOpenRouterModels() {
@@ -16,7 +20,7 @@ async function syncOpenRouterModels() {
         const response = await _fetch("https://openrouter.ai/api/v1/models", {
             headers: {
                 'Authorization': `Bearer ${OPENROUTER_FALLBACK_API_KEY}`,
-                'HTTP-Referer': 'http://localhost:3000',
+                'HTTP-Referer': OPENROUTER_HTTP_REFERER,
                 'X-Title': 'WaCopilote'
             }
         });
@@ -67,7 +71,7 @@ async function generateProposals(chatContext, modelParam, apiKey) {
         formattedChat += `[${msg.time}] ${msg.sender}: ${msg.text}\n`;
     });
 
-    const targetModel = modelParam || 'anthropic/claude-3.5-sonnet';
+    const targetModel = modelParam || DEFAULT_MODEL;
     const copilotPersona = orchestrator.getPersona('copilot');
     const systemInstruction = copilotPersona ? copilotPersona.systemInstruction : "You are an assistive copilot.";
 
@@ -77,7 +81,7 @@ async function generateProposals(chatContext, modelParam, apiKey) {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${apiKey}`,
-                'HTTP-Referer': 'http://localhost:3000',
+                'HTTP-Referer': OPENROUTER_HTTP_REFERER,
                 'X-Title': 'WaCopilote',
                 'Content-Type': 'application/json'
             },
@@ -159,7 +163,7 @@ async function chatWithAgent(persona, message, imageParams, promptFormat, apiKey
             messages[0].content += "\n\nCRITICAL: Return ONLY a valid JSON output. No markdown, no conversational text.";
         }
 
-        let selectedModel = 'anthropic/claude-3.5-sonnet';
+        let selectedModel = DEFAULT_MODEL;
         if (dbAgent && dbAgent.model_override) {
             selectedModel = dbAgent.model_override;
         }
@@ -168,7 +172,7 @@ async function chatWithAgent(persona, message, imageParams, promptFormat, apiKey
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${apiKey}`,
-                'HTTP-Referer': 'http://localhost:3000',
+                'HTTP-Referer': OPENROUTER_HTTP_REFERER,
                 'X-Title': 'WaCopilote',
                 'Content-Type': 'application/json'
             },
@@ -207,10 +211,10 @@ async function listModels(_apiKey) {
         if (cached) {
             return JSON.parse(cached);
         }
-        return { chat: [{ id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet (En attente de synchro...)' }], image: [] };
+        return { chat: [{ id: DEFAULT_MODEL, name: 'Claude 3.5 Sonnet (En attente de synchro...)' }], image: [] };
     } catch (error) {
         console.error("OpenRouter DB Read Error:", error);
-        return { chat: [{ id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet (Erreur Base de données)' }], image: [] };
+        return { chat: [{ id: DEFAULT_MODEL, name: 'Claude 3.5 Sonnet (Erreur Base de données)' }], image: [] };
     }
 }
 
@@ -221,7 +225,7 @@ async function classifyOrderIntent(text, contactName, apiKey, modelParam) {
     const fallback = { is_order: false, confidence: 0, order_type: 'not_an_order', summary: '' };
     if (!apiKey) return fallback;
 
-    const targetModel = modelParam || 'anthropic/claude-3.5-sonnet';
+    const targetModel = modelParam || DEFAULT_MODEL;
     const orderRadarPersona = orchestrator.getPersona('order_radar');
     const systemInstruction = orderRadarPersona ? orderRadarPersona.systemInstruction : '';
 
@@ -231,7 +235,7 @@ async function classifyOrderIntent(text, contactName, apiKey, modelParam) {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${apiKey}`,
-                'HTTP-Referer': 'http://localhost:3000',
+                'HTTP-Referer': OPENROUTER_HTTP_REFERER,
                 'X-Title': 'WaCopilote',
                 'Content-Type': 'application/json'
             },

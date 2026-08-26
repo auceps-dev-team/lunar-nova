@@ -1,8 +1,7 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
-    // We will expose APIs here for managing WhatsApp views and communicating with the Orchestrator
-    ping: () => ipcRenderer.invoke('ping'),
+    // Gestion des instances WhatsApp Web
     createInstance: (id) => ipcRenderer.invoke('create-instance', id),
     removeInstance: (id) => ipcRenderer.invoke('remove-instance', id),
     // PDF Export (Phase 18)
@@ -15,6 +14,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     // Token d'authentification pour les appels au backend local
     getApiToken: () => ipcRenderer.invoke('get-api-token'),
 });
+
 
 // NOUVEAU : Exposer le pont Updater
 contextBridge.exposeInMainWorld('updaterAPI', {

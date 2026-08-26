@@ -71,7 +71,7 @@ router.post('/ai/copilot', aiLimiter, async (req, res) => {
         // Create an MD5 hash of the last 3 messages to use as a cache key.
         // This prevents excessive API billing if user spams the button without new messages.
         const contextFingerprint = chatContext.contactName + '_' +
-            chatContext.messages.slice(-3).map(m => m.text).join('|') + '_' + (model || 'gemini-1.5-pro');
+            chatContext.messages.slice(-3).map(m => m.text).join('|') + '_' + (model || 'gemini-2.5-flash');
 
         const cacheKey = 'copilot:' + crypto.createHash('md5').update(contextFingerprint).digest('hex');
 
@@ -92,7 +92,7 @@ router.post('/ai/copilot', aiLimiter, async (req, res) => {
         
         // Obtenir le provider depuis la réponse ou utiliser les valeurs par défaut
         const usedProvider = proposalsObj.provider || provider || 'gemini';
-        const usedModel = proposalsObj.model || model || 'gemini-1.5-pro';
+        const usedModel = proposalsObj.model || model || 'gemini-2.5-flash';
         const tokens = proposalsObj.tokens || 0;
         const cost = proposalsObj.cost || 0.0;
         const status = proposalsObj.status || 'success';
