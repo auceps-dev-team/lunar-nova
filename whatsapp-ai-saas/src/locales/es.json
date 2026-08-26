@@ -364,5 +364,16 @@
   "updaterRepoNotFoundError": "Repositorio de versiones no encontrado (404). Verifica la configuración del actualizador.",
   "updaterNetworkError": "No se puede conectar con el servidor de actualizaciones. Comprueba tu conexión a Internet.",
   "updaterReleaseBehind": "La última versión publicada ({{latest}}) es más antigua que la versión instalada ({{current}}). Las versiones de GitHub están desincronizadas — contacta al editor.",
-  "updaterArtifactOpened": "El artefacto de actualización se ha abierto para instalación."
+  "updaterArtifactOpened": "El artefacto de actualización se ha abierto para instalación.",
+  "deleteApiKey": "Eliminar clave",
+  "deleteApiKeyConfirm": "¿Eliminar esta clave API? Esta acción no se puede deshacer.",
+  "apiKeyDeleted": "Clave API eliminada",
+  "metaUpdateStarted": "Actualización iniciada",
+  "errorGeneric": "Error",
+  "errorUnknown": "Error desconocido",
+  "connectionError": "Error de conexión",
+  "prospectionStarting": "Iniciando...",
+  "notSpecified": "No especificado",
+  "searchError": "Error durante la búsqueda",
+  "cacheCleared": "Lista vaciada y caché restablecido"
 }

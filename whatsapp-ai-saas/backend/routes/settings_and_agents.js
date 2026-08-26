@@ -52,6 +52,25 @@ router.put('/settings', async (req, res) => {
     }
 });
 
+// DELETE /api/settings/:key — Supprime une clé secrète (*_api_key).
+//
+// Complément nécessaire de PUT /settings qui, lui, ignore les valeurs vides sur
+// les secrets (une clé ne pouvait donc jamais être effacée via l'interface).
+// Seules les clés secrètes peuvent être supprimées : les autres réglages n'ont
+// pas de cycle de vie « suppression ».
+router.delete('/settings/:key', async (req, res) => {
+    const key = req.params.key;
+    if (!isSecretKey(key)) {
+        return res.status(400).json({ error: 'Seules les clés API (*_api_key) peuvent être supprimées.' });
+    }
+    try {
+        await pool.query('DELETE FROM app_settings WHERE setting_key = $1', [key]);
+        res.json({ status: 'success' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 router.get('/settings/quota', async (req, res) => {
     try {
         const key = await getSetting('gemini_api_key', '');
