@@ -1141,5 +1141,15 @@
   "updaterRepoNotFoundError": "مستودع الإصدارات غير موجود (404). تحقق من إعدادات المحدّث.",
   "updaterNetworkError": "تعذّر الوصول إلى خادم التحديثات. تحقق من اتصالك بالإنترنت.",
   "updaterReleaseBehind": "آخر إصدار منشور ({{latest}}) أقدم من النسخة المثبتة ({{current}}). إصدارات GitHub غير متزامنة — تواصل مع الناشر.",
-  "updaterArtifactOpened": "تم فتح ملف التحديث للتثبيت."
+  "updaterArtifactOpened": "تم فتح ملف التحديث للتثبيت.",
+  "prospection.updateStarted": "Update started",
+  "prospection.error": "Error",
+  "prospection.connectionError": "Connection error",
+  "prospection.starting": "Starting...",
+  "prospection.notSpecified": "Not specified",
+  "prospection.listCleared": "List cleared and cache reset",
+  "prospection.leadsFound": "{{count}} leads found!",
+  "prospection.searchError": "Search error",
+  "prospection.importedContacts": "{{count}} contacts imported!",
+  "prospection.importError": "Import error"
 }

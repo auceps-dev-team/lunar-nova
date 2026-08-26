@@ -1141,5 +1141,15 @@
   "updaterRepoNotFoundError": "Dépôt de releases introuvable (404). Vérifiez la configuration de l'updater.",
   "updaterNetworkError": "Impossible de joindre le serveur de mises à jour. Vérifiez votre connexion Internet.",
   "updaterReleaseBehind": "La dernière release publiée ({{latest}}) est plus ancienne que la version installée ({{current}}). Les releases GitHub ne sont pas à jour — contactez l'éditeur.",
-  "updaterArtifactOpened": "L'artefact de mise à jour a été ouvert pour installation."
+  "updaterArtifactOpened": "L'artefact de mise à jour a été ouvert pour installation.",
+  "prospection.updateStarted": "Mise à jour démarrée",
+  "prospection.error": "Erreur",
+  "prospection.connectionError": "Erreur de connexion",
+  "prospection.starting": "Démarrage...",
+  "prospection.notSpecified": "Non précisé",
+  "prospection.listCleared": "Liste vidée et cache réinitialisé",
+  "prospection.leadsFound": "{{count}} leads trouvés !",
+  "prospection.searchError": "Erreur lors de la recherche",
+  "prospection.importedContacts": "{{count}} contacts importés !",
+  "prospection.importError": "Erreur lors de l'importation"
 }

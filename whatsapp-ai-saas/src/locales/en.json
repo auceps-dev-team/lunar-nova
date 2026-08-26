@@ -1141,5 +1141,15 @@
   "updaterRepoNotFoundError": "Releases repository not found (404). Check the updater configuration.",
   "updaterNetworkError": "Cannot reach the update server. Check your Internet connection.",
   "updaterReleaseBehind": "The latest published release ({{latest}}) is older than the installed version ({{current}}). GitHub releases are out of sync — please contact the publisher.",
-  "updaterArtifactOpened": "The update artifact has been opened for installation."
+  "updaterArtifactOpened": "The update artifact has been opened for installation.",
+  "prospection.updateStarted": "Update started",
+  "prospection.error": "Error",
+  "prospection.connectionError": "Connection error",
+  "prospection.starting": "Starting...",
+  "prospection.notSpecified": "Not specified",
+  "prospection.listCleared": "List cleared and cache reset",
+  "prospection.leadsFound": "{{count}} leads found!",
+  "prospection.searchError": "Search error",
+  "prospection.importedContacts": "{{count}} contacts imported!",
+  "prospection.importError": "Import error"
 }

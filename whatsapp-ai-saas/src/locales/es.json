@@ -1141,5 +1141,15 @@
   "updaterRepoNotFoundError": "Repositorio de versiones no encontrado (404). Verifica la configuración del actualizador.",
   "updaterNetworkError": "No se puede conectar con el servidor de actualizaciones. Comprueba tu conexión a Internet.",
   "updaterReleaseBehind": "La última versión publicada ({{latest}}) es más antigua que la versión instalada ({{current}}). Las versiones de GitHub están desincronizadas — contacta al editor.",
-  "updaterArtifactOpened": "El artefacto de actualización se ha abierto para instalación."
+  "updaterArtifactOpened": "El artefacto de actualización se ha abierto para instalación.",
+  "prospection.updateStarted": "Update started",
+  "prospection.error": "Error",
+  "prospection.connectionError": "Connection error",
+  "prospection.starting": "Starting...",
+  "prospection.notSpecified": "Not specified",
+  "prospection.listCleared": "List cleared and cache reset",
+  "prospection.leadsFound": "{{count}} leads found!",
+  "prospection.searchError": "Search error",
+  "prospection.importedContacts": "{{count}} contacts imported!",
+  "prospection.importError": "Import error"
 }

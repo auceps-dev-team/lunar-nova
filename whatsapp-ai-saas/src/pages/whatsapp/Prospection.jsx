@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, MapPin, Phone, Globe, Download, Database, CheckSquare, Square, Loader2, Building2, Map as MapIcon, Globe2, Trash2, Clock, Target, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import useAppStore from '../../store';
 import CustomSelect from '../../components/CustomSelect';
 import { API_BASE_URL } from '../../config';
 
 export default function Prospection() {
-    // Cette page n'est pas encore internationalisée : ses libellés sont écrits en
-    // dur dans le JSX. useTranslation() était appelé sans que `t` serve jamais.
-    // La traduction de la page reste à faire.
+    // i18n partielle (P1-11) : les libellés de notification et de logique sont
+    // traduits via `t()`. Les libellés de formulaire restent à internationaliser.
+    const { t } = useTranslation();
     const showAppNotification = useAppStore(state => state.showAppNotification);
 
     const query = useAppStore(state => state.prospectSearchQuery);
@@ -39,12 +40,18 @@ export default function Prospection() {
             });
             const result = await response.json();
             if (result.success) {
-                showAppNotification('success', 'Mise à jour démarrée', result.message);
+                showAppNotification(t('prospection.updateStarted'), 'success');
             } else {
-                showAppNotification('error', 'Erreur', result.error || 'Erreur inconnue');
+                showAppNotification(
+                    result.error ? `${t('prospection.error')} : ${result.error}` : t('prospection.error'),
+                    'error'
+                );
             }
         } catch (err) {
-            showAppNotification('error', 'Erreur de connexion', err.message);
+            showAppNotification(
+                `${t('prospection.connectionError')}${err.message ? ` : ${err.message}` : ''}`,
+                'error'
+            );
         } finally {
             setIsRefreshingMetadata(false);
         }
@@ -149,7 +156,7 @@ export default function Prospection() {
         
         setIsSearching(true);
         setProgressPhase('scroll');
-        setProgressMessage('Démarrage...');
+        setProgressMessage(t('prospection.starting'));
         setProgressPercent(0);
 
         const controller = new AbortController();
@@ -219,7 +226,7 @@ export default function Prospection() {
                                         name: l.name || l.nom,
                                         phone: l.phone || l.numero,
                                         email: l.email || l.details?.email || '',
-                                        address: l.address || l.details?.adresse || 'Non précisé',
+                                        address: l.address || l.details?.adresse || t('prospection.notSpecified'),
                                         website: l.website || l.details?.siteWeb || ''
                                     }));
                                     
@@ -227,7 +234,7 @@ export default function Prospection() {
                                     const existingNames = new Set(latestLeads.map(p => p.name));
                                     const newUniqueLeads = formattedLeads.filter(l => !existingNames.has(l.name));
                                     setLeads([...latestLeads, ...newUniqueLeads]);
-                                    showAppNotification(`${data.count} leads trouvés !`, 'success');
+                                    showAppNotification(t('prospection.leadsFound', { count: data.count }), 'success');
                                 }
                             }
                             
@@ -246,7 +253,7 @@ export default function Prospection() {
         } catch (error) {
             if (error.name !== 'AbortError') {
                 console.error('Search error:', error);
-                showAppNotification(error.message || 'Erreur lors de la recherche', 'error');
+                showAppNotification(error.message || t('prospection.searchError'), 'error');
             }
         } finally {
             setIsSearching(false);
@@ -267,7 +274,7 @@ export default function Prospection() {
                 body: JSON.stringify({}) // Empty = clear all sessions
             });
         } catch { /* Non-critical */ }
-        showAppNotification('Liste vidée et cache réinitialisé', 'success');
+        showAppNotification(t('prospection.listCleared'), 'success');
     };
 
     const handleExportCSV = () => {
@@ -317,7 +324,7 @@ export default function Prospection() {
             const data = await res.json();
             
             if (data.status === 'success') {
-                showAppNotification(data.message || `${data.imported} contacts importés !`, 'success');
+                showAppNotification(data.message || t('prospection.importedContacts', { count: data.imported }), 'success');
                 setIsImportModalOpen(false);
                 setLeads([]); // Clear leads after import
             } else {
@@ -325,7 +332,7 @@ export default function Prospection() {
             }
         } catch (error) {
             console.error('Import error:', error);
-            showAppNotification(error.message || "Erreur lors de l'importation", 'error');
+            showAppNotification(error.message || t('prospection.importError'), 'error');
         } finally {
             setIsImporting(false);
         }
