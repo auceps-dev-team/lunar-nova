@@ -56,10 +56,14 @@ router.put('/settings', async (req, res) => {
 //
 // Complément nécessaire de PUT /settings qui, lui, ignore les valeurs vides sur
 // les secrets (une clé ne pouvait donc jamais être effacée via l'interface).
-// Seules les clés secrètes peuvent être supprimées : les autres réglages n'ont
-// pas de cycle de vie « suppression ».
+// Permet à l'UI d'offrir un bouton « Supprimer la clé » sans contourner le
+// masquage du GET. Seules les clés secrètes peuvent être supprimées : les autres
+// réglages n'ont pas de cycle de vie « suppression ».
 router.delete('/settings/:key', async (req, res) => {
-    const key = req.params.key;
+    const key = typeof req.params.key === 'string' ? req.params.key.trim() : '';
+    if (!key) {
+        return res.status(400).json({ error: 'Invalid key parameter.' });
+    }
     if (!isSecretKey(key)) {
         return res.status(400).json({ error: 'Seules les clés API (*_api_key) peuvent être supprimées.' });
     }

@@ -1,0 +1,44 @@
+﻿name: CI — WaCopilote
+
+on:
+  push:
+    branches: [main, 'arena/**']
+  pull_request:
+    branches: [main, 'arena/**']
+
+defaults:
+  run:
+    working-directory: whatsapp-ai-saas
+
+jobs:
+  build-and-test:
+    name: 🧪 Tests, Lint & Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: whatsapp-ai-saas/package-lock.json
+
+      - name: 📦 Install root dependencies
+        run: npm ci
+
+      - name: 📦 Install backend dependencies
+        run: npm ci
+        working-directory: whatsapp-ai-saas/backend
+
+      - name: 🧪 Run Vitest unit tests
+        run: npx vitest run --reporter=verbose
+
+      - name: 🔍 ESLint (zero warnings)
+        run: npx eslint . --max-warnings=0
+
+      - name: 🏗️ Vite build
+        run: npx vite build
