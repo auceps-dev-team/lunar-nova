@@ -280,6 +280,10 @@ class GoogleMapScraper extends EventEmitter {
                         } catch {}
                     }
 
+                    if (address) {
+                        address = address.replace(/^[\s\uE000-\uF8FF\u200B-\u200D\uFEFF]+/, '').trim();
+                    }
+
                     if (phone) phone = phone.replace(/[^\d+]/g, '');
 
                     // Filter landlines

@@ -1,6 +1,10 @@
 # Active Context: WaCopilote
 
-## Current Implementation State
+- **v1.43.1** — Correctif critique et fiabilisation de la Prospection B2B (+0.0.1) :
+  - **Store Zustand (`src/store.js`)** : Définition robuste des états `prospectSearchQuery` et `prospectLeads` (setters avec fallbacks et support des mises à jour fonctionnelles), sécurisation de l'adaptateur `idbStorage` sans `indexedDB`.
+  - **UI (`src/pages/whatsapp/Prospection.jsx`)** : Élimination des crashes au montage (`trim`/`length` sur `undefined`), vérification `if (!res.ok)` avec remontée d'erreurs HTTP sur le flux SSE, rafraîchissement automatique des métadonnées GoAfrica.
+  - **Scrapers (`backend/scrapers/googleMapScraper.js`)** : Nettoyage automatique des icônes de repères Unicode (`\uE0C8`) et retours chariots parasites dans les adresses.
+  - **Tests** : 16 suites Vitest (157 tests unitaires / intégration validés), 0 warning ESLint, build Vite vérifié.
 - **v1.43.0** — Intégration complète des lots P0, P1 et P2 de l'audit complet :
   - **P0** : Surface d'écriture directe WordPress fermée (HITL strict), CI GitHub Actions opérationnelle (`.github/workflows/ci.yml`).
   - **P1** : `DELETE /api/settings/:key` + bouton UI (🗑️), centralisation OpenRouter/Gemini 2.5 Flash, nettoyage des résidus et variables orphelines, internationalisation de `Prospection.jsx`.
@@ -12,7 +16,7 @@
 - Real-time token usage, latency, and cost tracking dashboard.
 
 ## Active Focus
-- **v1.43.0** stabilisée et validée : 15 fichiers de tests unitaires/intégration (152 tests verts), ESLint 0 warning, Vite build réussi.
+- **v1.43.1** stabilisée et validée : 16 fichiers de tests unitaires/intégration (157 tests verts), ESLint 0 warning, Vite build réussi.
 - Suivi du cycle de release et monitoring des pipelines CI.
 
 ## Key Decisions & Context
