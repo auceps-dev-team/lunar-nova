@@ -1,16 +1,21 @@
 {
   "name": "wacopilote",
   "private": true,
-  "version": "1.43.1",
+  "version": "1.44.0",
   "license": "AGPL-3.0-only",
   "main": "electron/main.cjs",
   "type": "module",
+  "bin": {
+    "wacopilote": "./bin/wacopilote.cjs"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "test": "vitest",
     "test:e2e": "playwright test -c playwright.e2e.config.js",
     "lint": "eslint .",
+    "cli": "node bin/wacopilote.cjs",
+    "cli:mcp": "node bin/wacopilote.cjs mcp",
     "preview": "vite preview",
     "electron:start": "cross-env NODE_ENV=development electron .",
     "electron:dev": "concurrently -k \"npm run dev\" \"wait-on tcp:5173 tcp:3000 && npm run electron:start\"",

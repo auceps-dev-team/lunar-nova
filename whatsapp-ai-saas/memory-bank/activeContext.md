@@ -1,5 +1,13 @@
 # Active Context: WaCopilote
 
+- **v1.44.0** — Architecture CLI Bidirectionnelle & Serveur MCP Standard (+0.1.0) :
+  - **Branche de travail** : `New-feature` créée et synchronisée.
+  - **Inbound CLI (`bin/wacopilote.cjs`)** : Point d'entrée exécutable autonome Node.js supportant `list-agents`, `run` (flags `--agent`, `--prompt`, `--file`, `--provider`, `--model`, `--json`, `--format`, piping `stdin`), `pipeline run`, `status`, `mcp`, et `help`. Déclaré dans `package.json` sous `"bin": { "wacopilote": "./bin/wacopilote.cjs" }` et scripts `npm run cli` / `cli:mcp`.
+  - **Serveur MCP (`backend/mcp/wacopiloteMcpServer.js`)** : Implémentation du protocole Model Context Protocol (JSON-RPC 2.0 sur `stdio`) exposant 4 outils natifs pour Claude Code, Cursor, Antigravity (`list_agents`, `call_agent`, `get_orders`, `create_product_proposal` avec gouvernance HITL dans `wp_pending_actions`).
+  - **Outbound CLI & Délégation (`backend/services/externalAgentRunner.js`)** : Détection système en temps réel des CLI installés (`gemini`, `claude`, `aider`, `ollama`, `python`, `node`, `git`), isolation des sous-processus via `spawn`, liste blanche de sécurité configurable, assainissement strict des commandes, gestion des timeouts et buffers.
+  - **Passerelle Backend (`backend/routes/cliBridge.js`, `backend/aiController.js`)** : Routes REST `/api/cli/status`, `/api/cli/mcp-config`, `/api/cli/run-external`, `/api/cli/settings`, intégration du fournisseur `provider === 'cli'` avec méthode `delegateToExternalCli`.
+  - **Interface Réglages & i18n (`src/components/CliAgentBridgeSettings.jsx`, `src/pages/Settings.jsx`)** : Tableau de bord de statut CLI, configurateur MCP en un clic avec copie presse-papier, matrice des CLI machine détectés en direct, console interactive de test d'agents. 22 clés de traduction i18n (fr, en, es, ar) avec parité stricte.
+  - **Tests & Assurance Qualité** : 4 nouvelles suites de tests (25 tests dédiés au bridge CLI/MCP), 20 suites de tests totales du projet au vert (182 tests passés, 0 échec), ESLint 0 warning (`--max-warnings=0`), build de production Vite validé sans erreur.
 - **v1.43.1** — Correctif critique et fiabilisation de la Prospection B2B & Démarrage dév (+0.0.1) :
   - **Store Zustand (`src/store.js`)** : Définition robuste des états `prospectSearchQuery` et `prospectLeads` (setters avec fallbacks et support des mises à jour fonctionnelles), sécurisation de l'adaptateur `idbStorage` sans `indexedDB`, gestion résiliente des requêtes au démarrage.
   - **Synchronisation Dév (`package.json`, `src/config.js`, `backend/server.js`)** :
@@ -8,7 +16,6 @@
     - `allowedOrigins` étendu à `http://127.0.0.1:5173`.
   - **UI (`src/pages/whatsapp/Prospection.jsx`)** : Élimination des crashes au montage (`trim`/`length` sur `undefined`), vérification `if (!res.ok)` avec remontée d'erreurs HTTP sur le flux SSE, rafraîchissement automatique des métadonnées GoAfrica.
   - **Scrapers (`backend/scrapers/googleMapScraper.js`)** : Nettoyage automatique des icônes de repères Unicode (`\uE0C8`) et retours chariots parasites dans les adresses.
-  - **Tests** : 16 suites Vitest (157 tests unitaires / intégration validés), 0 warning ESLint, build Vite vérifié.
 - **v1.43.0** — Intégration complète des lots P0, P1 et P2 de l'audit complet :
   - **P0** : Surface d'écriture directe WordPress fermée (HITL strict), CI GitHub Actions opérationnelle (`.github/workflows/ci.yml`).
   - **P1** : `DELETE /api/settings/:key` + bouton UI (🗑️), centralisation OpenRouter/Gemini 2.5 Flash, nettoyage des résidus et variables orphelines, internationalisation de `Prospection.jsx`.
@@ -20,11 +27,8 @@
 - Real-time token usage, latency, and cost tracking dashboard.
 
 ## Active Focus
-- **v1.43.1 & Durcissement 360°** stabilisés et validés :
-  - Rapport complet d'audit qualité et sécurité publié (`synthese_changements_et_audit_complet.md`).
-  - Assainissement DOMPurify XSS (AiChat, WpProductModal), confinement IPC Electron (`open-external-url`, `updater.cjs`).
-  - 16 fichiers de tests unitaires/intégration (157 tests verts), ESLint 0 warning (`--max-warnings=0`), Vite build réussi (~25s).
-- Suivi du cycle de release et monitoring des pipelines CI.
+- **v1.44.0 — Architecture CLI & MCP Bidirectionnelle** terminée et validée sur la branche `New-feature`.
+- 20 fichiers de tests unitaires/intégration (182 tests validés, 0 échec), ESLint 0 warning (`--max-warnings=0`), Vite build réussi.
 
 ## Key Decisions & Context
 - Logo integrated via `public/assets/WaCopilot%20Logo.png`.

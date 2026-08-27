@@ -4,6 +4,7 @@ import { Trash2 } from 'lucide-react';
 import useAppStore from '../store';
 import { useTranslation } from 'react-i18next';
 import UpdateManager from '../components/UpdateManager';
+import CliAgentBridgeSettings from '../components/CliAgentBridgeSettings';
 import CustomSelect from '../components/CustomSelect';
 import { API_BASE_URL } from '../config';
 import { DEFAULT_MENU_ITEMS } from '../constants/menuItems';
@@ -642,6 +643,10 @@ const Settings = () => {
                 <p className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 text-xs text-gray-500">
                     {t('visibleTabsNote')}
                 </p>
+            </div>
+
+            <div className="mt-6">
+                <CliAgentBridgeSettings />
             </div>
 
             <div className="mt-6">

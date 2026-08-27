@@ -25,14 +25,22 @@
   - Synchronisation de démarrage multi-ports (`wait-on tcp:5173 tcp:3000`) et ciblage IPv4 `127.0.0.1:3000` (élimination d'ERR_CONNECTION_REFUSED).
   - Assainissement XSS DOMPurify (`AiChat.jsx`, `WpProductModal.jsx`), import manquant `StatusBadge`, confinement IPC (`open-external-url`, `updater.cjs`).
   - 5 tests unitaires prospection validés (157 tests totaux).
+- [x] **Architecture CLI Bidirectionnelle & Serveur MCP v1.44.0 (2026-08-27)** :
+  - Branche `New-feature` dédiée.
+  - Inbound CLI (`bin/wacopilote.cjs`) complet : `list-agents`, `run --agent`, `pipeline run`, `status`, `mcp`, parsing JSON et streaming stdin.
+  - Serveur MCP standard `backend/mcp/wacopiloteMcpServer.js` (JSON-RPC 2.0 stdio) pour Claude Code, Cursor, Antigravity.
+  - Outbound CLI Runner `backend/services/externalAgentRunner.js` (détection système, liste blanche, spawn sécurisé, timeout).
+  - Routes backend `/api/cli` et intégration `provider === 'cli'` dans `aiController.js`.
+  - Panneau UI de configuration dans `src/pages/Settings.jsx` via `CliAgentBridgeSettings.jsx`.
+  - 22 clés i18n dans `fr.json`, `en.json`, `es.json`, `ar.json`.
+  - 4 nouvelles suites de tests (25 tests validés, 182 tests totaux au vert sur 20 fichiers), ESLint 0 warning, Vite build réussi.
 
 ## Current Task
-- [x] Audit complet et continu du dépôt (100% des couches inspectées : Electron, Backend, Passerelle IA, WhatsApp CDP, Scrapers, WordPress Bridge, Frontend React 19).
-- [x] Cartographie mentale et structurelle graphique Mermaid et visuelle SVG/PNG intégrée.
-- [x] Publication du rapport d'audit exhaustif et plan d'implémentation.
+- [x] Audit complet et continu du dépôt.
 - [x] Intégration et validation complète des lots P0, P1, P2 (+0.1.0 -> v1.43.0).
 - [x] Correctif et fiabilisation de la prospection B2B (+0.0.1 -> v1.43.1).
 - [x] Synthèse complète des changements et audit de sécurité 360° validé (`synthese_changements_et_audit_complet.md`).
+- [x] Développement, configuration UI et validation intégrale de l'architecture CLI bidirectionnelle & MCP (+0.1.0 -> v1.44.0 sur `New-feature`).
 
 ## Future Roadmap
 - [ ] Multi-device WhatsApp API Gateway integration (Baileys / official Cloud API fallback).
