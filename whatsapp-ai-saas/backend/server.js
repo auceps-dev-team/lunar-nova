@@ -31,7 +31,7 @@ if (process.parentPort) {
 // `file://` comme le supposait l'ancienne liste — le renderer aurait été bloqué
 // par le navigateur. `null` n'apporte aucun privilège : l'authentification par
 // token Bearer reste obligatoire sur toutes les routes, c'est elle la barrière.
-const allowedOrigins = ['http://localhost:5173', 'null'];
+const allowedOrigins = ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:3000', 'http://127.0.0.1:3000', 'null'];
 
 app.use(cors({
     origin: function (origin, callback) {

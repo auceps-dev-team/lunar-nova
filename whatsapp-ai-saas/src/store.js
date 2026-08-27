@@ -192,12 +192,15 @@ const useAppStore = create(
             fetchAiQuota: async () => {
                 try {
                     const res = await fetch(API_BASE_URL + '/api/settings/quota');
+                    if (!res.ok) return;
                     const data = await res.json();
                     if (data.status === 'success') {
                         set({ aiQuota: data.data });
                     }
                 } catch (e) {
-                    console.error("Failed to fetch AI Quota:", e);
+                    if (e?.name !== 'AbortError') {
+                        console.warn('[Store] Failed to fetch AI Quota (backend offline):', e?.message || e);
+                    }
                 }
             },
 
@@ -211,6 +214,7 @@ const useAppStore = create(
             fetchAndSyncBackendSettings: async () => {
                 try {
                     const res = await fetch(API_BASE_URL + '/api/settings');
+                    if (!res.ok) return;
                     const data = await res.json();
                     if (data.status === 'success' && data.settings) {
                         set((state) => ({
@@ -218,7 +222,9 @@ const useAppStore = create(
                         }));
                     }
                 } catch (e) {
-                    console.error('[Store] Failed to sync backend settings:', e);
+                    if (e?.name !== 'AbortError') {
+                        console.warn('[Store] Failed to sync backend settings (backend offline):', e?.message || e);
+                    }
                 }
             },
 
@@ -243,6 +249,7 @@ const useAppStore = create(
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ provider: chatProvider, apiKey, baseURL })
                     });
+                    if (!chatRes.ok) return;
                     const chatData = await chatRes.json();
 
                     let newChat = [];
@@ -265,9 +272,11 @@ const useAppStore = create(
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ provider: imageProvider })
                             });
-                            const imgData = await imgRes.json();
-                            if (imgData.status === 'success' && imgData.models?.image) {
-                                newImage = imgData.models.image;
+                            if (imgRes.ok) {
+                                const imgData = await imgRes.json();
+                                if (imgData.status === 'success' && imgData.models?.image) {
+                                    newImage = imgData.models.image;
+                                }
                             }
                         } catch (e) {
                             console.warn('[Store] Failed to fetch image models:', e);
@@ -281,7 +290,9 @@ const useAppStore = create(
 
                     set({ availableModels: { chat: newChat, image: newImage } });
                 } catch (e) {
-                    console.error('[Store] Failed to fetch global models:', e);
+                    if (e?.name !== 'AbortError') {
+                        console.warn('[Store] Failed to fetch global models (backend offline):', e?.message || e);
+                    }
                     set({ availableModels: { chat: [], image: [] } });
                 }
             },
