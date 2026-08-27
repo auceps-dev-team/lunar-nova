@@ -376,6 +376,11 @@ const WorkArea = ({ instances, activeId }) => {
         const interval = setInterval(async () => {
             try {
                 const res = await fetch(API_BASE_URL + '/api/instances');
+                if (!res.ok) {
+                    setOrchestratorStatus('Disconnected');
+                    setActivePlaywrightSessions(0);
+                    return;
+                }
                 const data = await res.json();
                 if (data.status === 'success') {
                     setOrchestratorStatus('Connected');

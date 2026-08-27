@@ -1,7 +1,11 @@
 # Active Context: WaCopilote
 
-- **v1.43.1** — Correctif critique et fiabilisation de la Prospection B2B (+0.0.1) :
-  - **Store Zustand (`src/store.js`)** : Définition robuste des états `prospectSearchQuery` et `prospectLeads` (setters avec fallbacks et support des mises à jour fonctionnelles), sécurisation de l'adaptateur `idbStorage` sans `indexedDB`.
+- **v1.43.1** — Correctif critique et fiabilisation de la Prospection B2B & Démarrage dév (+0.0.1) :
+  - **Store Zustand (`src/store.js`)** : Définition robuste des états `prospectSearchQuery` et `prospectLeads` (setters avec fallbacks et support des mises à jour fonctionnelles), sécurisation de l'adaptateur `idbStorage` sans `indexedDB`, gestion résiliente des requêtes au démarrage.
+  - **Synchronisation Dév (`package.json`, `src/config.js`, `backend/server.js`)** :
+    - `API_BASE_URL` configurée sur `http://127.0.0.1:3000` (élimine l'échec de résolution IPv6 `localhost -> ::1` sous Windows `ERR_CONNECTION_REFUSED`).
+    - `start:all` et `electron:dev` configurés avec `wait-on -t 30000 tcp:127.0.0.1:5173 tcp:127.0.0.1:3000` pour garantir que le backend et Vite soient tous deux prêts avant le lancement d'Electron.
+    - `allowedOrigins` étendu à `http://127.0.0.1:5173`.
   - **UI (`src/pages/whatsapp/Prospection.jsx`)** : Élimination des crashes au montage (`trim`/`length` sur `undefined`), vérification `if (!res.ok)` avec remontée d'erreurs HTTP sur le flux SSE, rafraîchissement automatique des métadonnées GoAfrica.
   - **Scrapers (`backend/scrapers/googleMapScraper.js`)** : Nettoyage automatique des icônes de repères Unicode (`\uE0C8`) et retours chariots parasites dans les adresses.
   - **Tests** : 16 suites Vitest (157 tests unitaires / intégration validés), 0 warning ESLint, build Vite vérifié.
