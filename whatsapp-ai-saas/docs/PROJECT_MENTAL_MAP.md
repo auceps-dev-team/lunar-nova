@@ -4,15 +4,16 @@
 L'application est un SaaS desktop (Electron) combinant React (Vite) pour le frontend, Node.js (Express) pour l'orchestration locale et l'interaction avec le navigateur (Puppeteer via CDP port 8315), et un bridge WordPress.
 
 ## Architecture des Dossiers
-- `/backend`: Serveur Node.js local (Express, port 3000).
-  - `/backend/routes/`: `ai.js`, `authGoogle.js`, `catalog.js`, `documents.js`, `prospection.js`, `settings_and_agents.js`, `wa.js`, `wordpress.js`.
-  - `/backend/server.js`: Point d'entrée, configure Express, CORS, multer, et la connexion Puppeteer au CDP d'Electron pour interagir avec les instances WhatsApp Web.
-- `/src`: Frontend React (construit avec Vite).
+- `/backend`: Serveur Node.js local (Express, écoute stricte sur `127.0.0.1:3000` en boucle locale).
+  - `/backend/routes/`: `ai.js`, `authGoogle.js`, `catalog.js`, `documents.js`, `prospection.js`, `settings_and_agents.js`, `wa.js`, `wordpress.js`, `pipeline.js`.
+  - `/backend/server.js`: Point d'entrée, configure Express, CORS (origins autorisées: `localhost:5173`, `127.0.0.1:5173`, `null`), multer, rate-limiting, et la connexion Puppeteer au CDP d'Electron pour interagir avec les instances WhatsApp Web.
+- `/src`: Frontend React (construit avec Vite sur port `5173`).
+  - `/src/config.js`: `API_BASE_URL` configurée sur `http://127.0.0.1:3000` (évite les conflits de résolution IPv6 `::1` de `localhost`).
   - `/src/App.jsx`: Point d'entrée de l'application et définition du routing React (React Router).
   - `/src/pages/`: Pages principales de l'UI (Dashboard, Analytics, AgentsHub, AiChat, AiWriter, InvoiceBuilder, etc.) et sous-pages WhatsApp (Prospection, Contacts, etc.).
   - `/src/components/`: Composants UI réutilisables (`Sidebar`, `Topbar`, `WorkArea`, sous-dossiers `ui/`, `wordpress/`, `image-editor/`, `invoice/`).
-  - `/src/store.js`: Gestion de l'état global (probablement Zustand).
-- `/electron`: Code source de l'application Electron (gestion du cycle de vie, des fenêtres, et de l'updater).
+  - `/src/store.js`: Gestion de l'état global Zustand (persisté via IndexedDB avec adaptateur sécurisé et fallbacks).
+- `/electron`: Code source de l'application Electron (gestion du cycle de vie, des fenêtres, et de l'updater). Synchronisé au démarrage via `wait-on tcp:5173 tcp:3000`.
 - `/wordpress-plugin`: Archives ZIP des plugins bridge (ex: `wacopilote-bridge-v2.0.0.zip`).
 
 ## Routes et Flux de Données

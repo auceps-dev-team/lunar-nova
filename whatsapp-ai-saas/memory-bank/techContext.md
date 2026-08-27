@@ -39,8 +39,19 @@
 ## Environment Variables & Configuration
 - Backend env (`backend/.env`):
   - `PORT` / `BACKEND_PORT`: Backend server port (default 3000)
+  - `BACKEND_HOST`: Host interface (default `127.0.0.1` — strict IPv4 loopback)
   - `REDIS_URL`: Redis connection URL (default `redis://localhost:6379`)
   - `GEMINI_API_KEY`: Google Gemini API credentials
   - `NVIDIA_API_KEY`: NVIDIA NIM API credentials
   - `OPENROUTER_API_KEY`: OpenRouter API credentials
   - `TOGETHER_API_KEY`: Together AI credentials
+- Frontend env (`src/config.js`):
+  - `API_BASE_URL`: `http://127.0.0.1:3000` (IPv4 loopback pour éliminer les échecs de résolution IPv6 `::1` de `localhost` sous Windows).
+
+## Dev Orchestration & Scripts
+- `npm run start:all`: `concurrently -k "npm run start:backend" "npm run electron:dev"`
+- `npm run start:backend`: `node backend/server.js` (démarre Express sur `127.0.0.1:3000`)
+- `npm run electron:dev`: `concurrently -k "npm run dev" "wait-on tcp:5173 tcp:3000 && npm run electron:start"` (attend que Vite sur `5173` ET le Backend sur `3000` soient prêts avant de lancer Electron)
+- `npm run test`: `vitest run` (16 suites de tests, 157 tests unitaires/intégration)
+- `npm run lint`: `eslint .`
+- `npm run build`: `vite build`

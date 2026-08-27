@@ -367,15 +367,15 @@ La configuration ESLint distingue désormais les trois environnements du dépôt
 
 | Commande | Description |
 | --- | --- |
-| `npm run dev` | Démarre uniquement le serveur de développement Vite (Frontend). |
-| `npm run start:backend` | Démarre uniquement le serveur Express backend sur le port 3000. |
-| `npm run electron:dev` | Démarre Vite et l'environnement Electron en parallèle. |
-| `npm run start:all` | **Commande principale** : Lance simultanément le Backend Express, Vite et Electron. |
-| `npm run test` | Lance la suite de tests Vitest. |
-| `npm run lint` | Analyse la qualité du code avec ESLint 9. |
-| `npm run build` | Compile le bundle de production Vite. |
+| `npm run dev` | Démarre uniquement le serveur de développement Vite (Frontend sur port `5173`). |
+| `npm run start:backend` | Démarre uniquement le serveur Express backend sur `http://127.0.0.1:3000`. |
+| `npm run electron:dev` | Démarre Vite et attend la disponibilité des ports `5173` et `3000` avant de lancer Electron. |
+| `npm run start:all` | **Commande principale** : Lance simultanément le Backend Express, Vite et Electron avec synchronisation automatique. |
+| `npm run test` | Lance la suite de tests Vitest (16 suites, 157+ tests validés). |
+| `npm run lint` | Analyse la qualité du code avec ESLint 9 (`--max-warnings=0`). |
+| `npm run build` | Compile le bundle de production Vite (`dist/`). |
 | `npm run electron:build` | Génère les exécutables d'installation desktop (`dist-electron/`). |
-| `npm run electron:publish` | Compile et publie les bannières de release sur GitHub Releases. |
+| `npm run electron:publish` | Compile et publie les binaires de release sur GitHub Releases. |
 
 ---
 
@@ -443,6 +443,9 @@ R : WaCopilote requiert un serveur Redis actif sur le port 6379 pour la gestion 
 
 **Q : Est-il possible d'utiliser WaCopilote pour plusieurs comptes WhatsApp ?**  
 R : Oui, la gestion des contacts et des segments permet d'organiser vos listes de clients par marque ou par campagne.
+
+**Q : Pourquoi Electron attend-il 2 à 3 secondes avant d'ouvrir la fenêtre au lancement de `npm run start:all` ?**  
+R : WaCopilote intègre un mécanisme de synchronisation multi-ports (`wait-on tcp:5173 tcp:3000`). Au démarrage, le backend Express initialise la base SQLite, configure les 27 personas d'agents et synchronise le catalogue de modèles IA. Electron ne s'ouvre que lorsque le backend et Vite sont pleinement prêts à accepter les requêtes HTTP, éliminant ainsi toute erreur `ERR_CONNECTION_REFUSED` au premier chargement.
 
 ---
 
