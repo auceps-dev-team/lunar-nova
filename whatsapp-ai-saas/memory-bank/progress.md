@@ -22,6 +22,7 @@
 - [x] **Correctif Prospection & Store v1.43.1 (2026-08-27)** :
   - Fiabilisation du store Zustand (`prospectSearchQuery`, `prospectLeads`), sécurisation de `idbStorage`.
   - Élimination des plantages UI au montage dans `Prospection.jsx`, gestion des erreurs HTTP SSE, nettoyage d'adresses Google Maps.
+  - Synchronisation de démarrage multi-ports (`wait-on tcp:5173 tcp:3000`) et ciblage IPv4 `127.0.0.1:3000` (élimination d'ERR_CONNECTION_REFUSED).
   - 5 tests unitaires prospection validés.
 
 ## Current Task
