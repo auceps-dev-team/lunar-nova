@@ -19,11 +19,12 @@
   - `initDB()` injectable sans `process.exit`, tests des migrations SQLite.
   - Retrait du dump GoAfrica et exclusion dans `.gitignore`.
   - Squelette E2E Playwright configuré.
-- [x] **Correctif Prospection & Store v1.43.1 (2026-08-27)** :
+- [x] **Correctif Prospection & Store v1.43.1 & Durcissement Sécurité (2026-08-27)** :
   - Fiabilisation du store Zustand (`prospectSearchQuery`, `prospectLeads`), sécurisation de `idbStorage`.
   - Élimination des plantages UI au montage dans `Prospection.jsx`, gestion des erreurs HTTP SSE, nettoyage d'adresses Google Maps.
   - Synchronisation de démarrage multi-ports (`wait-on tcp:5173 tcp:3000`) et ciblage IPv4 `127.0.0.1:3000` (élimination d'ERR_CONNECTION_REFUSED).
-  - 5 tests unitaires prospection validés.
+  - Assainissement XSS DOMPurify (`AiChat.jsx`, `WpProductModal.jsx`), import manquant `StatusBadge`, confinement IPC (`open-external-url`, `updater.cjs`).
+  - 5 tests unitaires prospection validés (157 tests totaux).
 
 ## Current Task
 - [x] Audit complet et continu du dépôt (100% des couches inspectées : Electron, Backend, Passerelle IA, WhatsApp CDP, Scrapers, WordPress Bridge, Frontend React 19).
@@ -31,6 +32,7 @@
 - [x] Publication du rapport d'audit exhaustif et plan d'implémentation.
 - [x] Intégration et validation complète des lots P0, P1, P2 (+0.1.0 -> v1.43.0).
 - [x] Correctif et fiabilisation de la prospection B2B (+0.0.1 -> v1.43.1).
+- [x] Synthèse complète des changements et audit de sécurité 360° validé (`synthese_changements_et_audit_complet.md`).
 
 ## Future Roadmap
 - [ ] Multi-device WhatsApp API Gateway integration (Baileys / official Cloud API fallback).

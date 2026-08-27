@@ -20,7 +20,10 @@
 - Real-time token usage, latency, and cost tracking dashboard.
 
 ## Active Focus
-- **v1.43.1** stabilisée et validée : 16 fichiers de tests unitaires/intégration (157 tests verts), ESLint 0 warning, Vite build réussi.
+- **v1.43.1 & Durcissement 360°** stabilisés et validés :
+  - Rapport complet d'audit qualité et sécurité publié (`synthese_changements_et_audit_complet.md`).
+  - Assainissement DOMPurify XSS (AiChat, WpProductModal), confinement IPC Electron (`open-external-url`, `updater.cjs`).
+  - 16 fichiers de tests unitaires/intégration (157 tests verts), ESLint 0 warning (`--max-warnings=0`), Vite build réussi (~25s).
 - Suivi du cycle de release et monitoring des pipelines CI.
 
 ## Key Decisions & Context
