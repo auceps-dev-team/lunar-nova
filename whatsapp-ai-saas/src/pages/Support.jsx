@@ -47,6 +47,7 @@ const Support = () => {
     ];
 
     const changelog = [
+        { version: 'v1.43.1', date: '2026-08-27', changes: ['Prospection B2B fiabilisée : correction d\'un crash d\'initialisation lié au store global Zustand et persistance des requêtes/leads entre onglets', 'Scraping Google Maps : nettoyage automatique des icônes de géolocalisation parasites dans les adresses', 'Streaming SSE : détection et remontée claire des erreurs HTTP de recherche'] },
         { version: 'v1.43.0', date: '2026-08-26', changes: ['Nouveau : bouton « Supprimer la clé » (🗑️) dans les Réglages pour effacer proprement une clé API — la suppression est limitée aux clés secrètes, les autres réglages restent protégés', 'Prospection : notifications et libellés traduits dans la langue de l\'interface, et correction d\'une inversion qui affichait « success » à la place du vrai message'] },
         { version: 'v1.42.14', date: '2026-08-26', changes: ['Infrastructure : intégration continue GitHub Actions (lint, tests automatisés, build)', 'Centralisation des constantes OpenRouter et mise à jour du modèle Gemini par défaut (gemini-2.5-flash)', 'Nettoyage des variables d\'environnement et des canaux IPC obsolètes'] },
         { version: 'v1.42.13', date: '2026-08-26', changes: ['Sécurité : les modifications WordPress ne passent plus que par la validation humaine — suppression des écritures directes résiduelles, tout transite désormais par la file d\'approbation'] },

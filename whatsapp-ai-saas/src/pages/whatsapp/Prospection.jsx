@@ -12,11 +12,11 @@ export default function Prospection() {
     const { t } = useTranslation();
     const showAppNotification = useAppStore(state => state.showAppNotification);
 
-    const query = useAppStore(state => state.prospectSearchQuery);
+    const query = useAppStore(state => state.prospectSearchQuery) || '';
     const setQuery = useAppStore(state => state.setProspectSearchQuery);
     const [ignoreLandlines, setIgnoreLandlines] = useState(true);
     const [isSearching, setIsSearching] = useState(false);
-    const leads = useAppStore(state => state.prospectLeads);
+    const leads = useAppStore(state => state.prospectLeads) || [];
     const setLeads = useAppStore(state => state.setProspectLeads);
     const [source, setSource] = useState('google');
     const [pages, setPages] = useState(1);
@@ -40,13 +40,14 @@ export default function Prospection() {
             });
             const result = await response.json();
             if (result.success) {
-                showAppNotification(t('metaUpdateStarted'), 'success');
+                showAppNotification(result.message || t('metaUpdateStarted'), 'success');
+                fetchMetadata();
             } else {
                 showAppNotification(result.error || t('errorUnknown'), 'error');
             }
         } catch (err) {
             console.error('GoAfrica metadata update error:', err);
-            showAppNotification(t('connectionError'), 'error');
+            showAppNotification(err.message || t('connectionError'), 'error');
         } finally {
             setIsRefreshingMetadata(false);
         }
@@ -181,6 +182,11 @@ export default function Prospection() {
                 signal: controller.signal
             });
 
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.error || errData.message || `Erreur HTTP ${res.status}`);
+            }
+
             const reader = res.body.getReader();
             const decoder = new TextDecoder();
             let buffer = '';
@@ -215,11 +221,11 @@ export default function Prospection() {
                             // Handle final result
                             if (data.success !== undefined) {
                                 if (data.success) {
-                                    const formattedLeads = data.leads.map(l => ({
+                                    const formattedLeads = (data.leads || []).map(l => ({
                                         ...l,
                                         source: source,
-                                        name: l.name || l.nom,
-                                        phone: l.phone || l.numero,
+                                        name: l.name || l.nom || '',
+                                        phone: l.phone || l.numero || '',
                                         email: l.email || l.details?.email || '',
                                         address: l.address || l.details?.adresse || t('notSpecified'),
                                         website: l.website || l.details?.siteWeb || ''
@@ -524,7 +530,7 @@ export default function Prospection() {
                     <div className="pt-4 flex flex-col md:flex-row gap-4 items-start md:items-end">
                         <button
                             type="submit"
-                            disabled={isSearching || (!query.trim() && !(source === 'goafrica' && (goAfricaCategory || goAfricaSubcategory)))}
+                            disabled={isSearching || (!(query || '').trim() && !(source === 'goafrica' && (goAfricaCategory || goAfricaSubcategory)))}
                             className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-lg font-medium text-sm flex items-center justify-center gap-2 w-full md:w-auto transition-colors disabled:opacity-50 shadow-sm"
                         >
                             {isSearching ? <Loader2 className="animate-spin h-5 w-5" /> : <Search className="h-5 w-5" />}

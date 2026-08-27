@@ -6,9 +6,30 @@ import { API_BASE_URL } from './config';
 
 // IndexedDB storage adapter for Zustand — replaces localStorage (5MB limit → hundreds of MB)
 const idbStorage = {
-    getItem: (name) => get(name),
-    setItem: (name, value) => set(name, value),
-    removeItem: (name) => del(name),
+    getItem: async (name) => {
+        if (typeof indexedDB === 'undefined') return null;
+        try {
+            return await get(name);
+        } catch {
+            return null;
+        }
+    },
+    setItem: async (name, value) => {
+        if (typeof indexedDB === 'undefined') return;
+        try {
+            await set(name, value);
+        } catch {
+            // Échec d'écriture IndexedDB non bloquant
+        }
+    },
+    removeItem: async (name) => {
+        if (typeof indexedDB === 'undefined') return;
+        try {
+            await del(name);
+        } catch {
+            // Échec de suppression IndexedDB non bloquant
+        }
+    },
 };
 
 // Global store to share contexts across Phase 2 apps and persist to IndexedDB
@@ -63,11 +84,15 @@ const useAppStore = create(
             instances: [],
             copilotRepliesGenerated: 0,
             
-            // --- Prospecting Data ---
+            // --- Prospecting Data (B2B Leads) ---
             prospectLeads: [],
             prospectSearchQuery: '',
-            setProspectLeads: (leads) => set({ prospectLeads: leads }),
-            setProspectSearchQuery: (query) => set({ prospectSearchQuery: query }),
+            setProspectSearchQuery: (query) => set((state) => ({ 
+                prospectSearchQuery: typeof query === 'function' ? (query(state.prospectSearchQuery) || '') : (query ?? '') 
+            })),
+            setProspectLeads: (leads) => set((state) => ({ 
+                prospectLeads: typeof leads === 'function' ? leads(state.prospectLeads || []) : (leads || []) 
+            })),
 
             // --- Transient Context Actions ---
             setInvoiceDraft: (draft) => set({ invoiceDraft: draft }),
