@@ -91,6 +91,15 @@ module.exports = function setupUpdater(getMainWindow) {
 
     // 2. TÉLÉCHARGEMENT FLUIDE
     ipcMain.handle('update:start-download', async (event, url) => {
+        try {
+            const parsedUrl = new URL(url);
+            if (parsedUrl.protocol !== 'https:' || !(parsedUrl.hostname === 'github.com' || parsedUrl.hostname.endsWith('.githubusercontent.com'))) {
+                return { success: false, error: 'Origine de mise à jour non autorisée (doit être https://github.com/...).' };
+            }
+        } catch (e) {
+            return { success: false, error: `URL de mise à jour invalide : ${e.message}` };
+        }
+
         // L'extension du fichier temporaire suit l'asset réel (pas toujours
         // .exe depuis que macOS/Linux sont couverts) — elle est déduite de
         // l'URL de téléchargement.
@@ -162,6 +171,13 @@ module.exports = function setupUpdater(getMainWindow) {
 
     // 3. INSTALLATION / OUVERTURE DE L'ARTEFACT
     ipcMain.handle('update:install', async (event, filePath) => {
+        // Confinement du chemin : doit résider dans le répertoire temporaire de l'application
+        const tempDir = path.resolve(app.getPath('temp'));
+        const resolvedPath = path.resolve(filePath);
+        if (!resolvedPath.startsWith(tempDir)) {
+            return { success: false, error: 'Chemin de fichier d\'installation non sécurisé.' };
+        }
+
         // Windows : installeur NSIS lancé en processus détaché, puis
         // fermeture de l'application pour libérer les fichiers en cours
         // d'utilisation (« Files in Use »).
