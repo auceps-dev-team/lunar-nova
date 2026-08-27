@@ -1,5 +1,7 @@
+import DOMPurify from 'dompurify';
 import { useTranslation } from 'react-i18next';
 import { C } from './WPTheme';
+import { StatusBadge } from './WPUI';
 
 /**
  * Onglet extrait de src/pages/WordPressBridge.jsx (refactor de découpage —
@@ -23,7 +25,7 @@ export default function WpProductModal({ productModal, setProductModal }) {
                             <button onClick={() => setProductModal(null)} style={{ background: '#f1f5f9', border: 'none', borderRadius: 8, width: 32, height: 32, cursor: 'pointer', fontSize: 18, color: C.textSub, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
                         </div>
                         <div style={{ padding: '24px', overflowY: 'auto' }}>
-                            <div style={{ fontSize: 14, color: C.text, lineHeight: 1.6, fontFamily: 'system-ui, sans-serif' }} dangerouslySetInnerHTML={{ __html: productModal.description || productModal.short_description || `<div style="color: #94a3b8; font-style: italic;">${t('wpNoDescriptionAvailable')}</div>` }} />
+                            <div style={{ fontSize: 14, color: C.text, lineHeight: 1.6, fontFamily: 'system-ui, sans-serif' }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(productModal.description || productModal.short_description || `<div style="color: #94a3b8; font-style: italic;">${t('wpNoDescriptionAvailable')}</div>`) }} />
                         </div>
                     </div>
                 </div>

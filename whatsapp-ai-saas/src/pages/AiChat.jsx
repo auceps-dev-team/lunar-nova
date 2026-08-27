@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import DOMPurify from 'dompurify';
 import { Link } from 'react-router-dom';
 import { Sparkles, Copy, Trash2, Search, Plus, Menu, ArrowLeft, Send, Paperclip, Type, Mic, X } from 'lucide-react';
 import useAppStore from '../store';
@@ -24,14 +25,18 @@ const PASTEL_PALETTE = [
 const getAgentColor = (id) => PASTEL_PALETTE[id.split('').reduce((a, c) => a + c.charCodeAt(0), 0) % PASTEL_PALETTE.length];
 const getInitials = (name) => name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 3);
 
-// ─── Formatage markdown simple ────────────────────────────────────────────
+// ─── Formatage markdown simple avec assainissement XSS ───────────────────
 const formatMessage = (text) => {
     if (!text) return '';
-    return text
+    const formatted = text
         .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
         .replace(/\*(.+?)\*/g, '<em>$1</em>')
         .replace(/`(.+?)`/g, '<code style="background:#f1f5f9;padding:1px 5px;border-radius:4px;font-size:12px">$1</code>')
         .replace(/\n/g, '<br/>');
+    return DOMPurify.sanitize(formatted, {
+        ALLOWED_TAGS: ['strong', 'em', 'code', 'br', 'span', 'p', 'b', 'i', 'ul', 'ol', 'li', 'pre'],
+        ALLOWED_ATTR: ['style', 'class']
+    });
 };
 
 export default function AiChat() {

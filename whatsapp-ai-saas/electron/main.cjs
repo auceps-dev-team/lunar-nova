@@ -267,9 +267,18 @@ app.whenReady().then(async () => {
     });
 
     ipcMain.handle('open-external-url', (event, url) => {
-        console.log(`[Main] Opening external URL: ${url}`);
-        shell.openExternal(url);
-        return true;
+        try {
+            const parsed = new URL(url);
+            if (['http:', 'https:', 'mailto:'].includes(parsed.protocol)) {
+                console.log(`[Main] Opening external URL: ${url}`);
+                shell.openExternal(url);
+                return true;
+            }
+            console.warn(`[Main] Blocked unsafe external URL protocol: ${parsed.protocol}`);
+        } catch (e) {
+            console.warn(`[Main] Invalid URL passed to open-external-url: ${url}`, e?.message || e);
+        }
+        return false;
     });
 
     // ── PDF Export: render HTML in hidden window → printToPDF → save dialog ──
