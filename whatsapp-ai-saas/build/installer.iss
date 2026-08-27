@@ -4,7 +4,7 @@
 ; ============================================================
 
 #define AppName      "WaCopilote"
-#define AppVersion   "1.43.1"
+#define AppVersion   "1.44.0"
 #define AppPublisher "Auceps Digital"
 #define AppURL       "https://auceps-digital.agency"
 #define AppExeName   "WaCopilote.exe"

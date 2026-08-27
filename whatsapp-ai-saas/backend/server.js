@@ -125,6 +125,9 @@ app.use('/api/catalog', heavyLimiter, catalogRouter);
 const waRouter = require('./routes/wa');
 app.use('/api/wa', waRouter);
 
+const cliBridgeRouter = require('./routes/cliBridge');
+app.use('/api/cli', cliBridgeRouter);
+
 
 const configLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,

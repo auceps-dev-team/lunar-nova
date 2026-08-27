@@ -19,15 +19,17 @@
 ```text
 /
 ├── electron/           # Electron main process entry point & desktop integrations
+├── bin/                # CLI executables (wacopilote.cjs)
 ├── backend/            # Express.js REST API server, LLM adapters, database, & scrapers
 │   ├── agents/         # AI Agent runner engines & prompt handlers
-│   ├── routes/         # Express API route modules
+│   ├── mcp/            # Model Context Protocol (MCP) server stdio (wacopiloteMcpServer.js)
+│   ├── routes/         # Express API route modules (cliBridge.js, etc.)
 │   ├── scrapers/       # Business directory & web scraping logic
-│   ├── services/       # AI services (Gemini, NVIDIA, Ollama, OpenRouter, OpenAI)
-│   └── db.js           # SQLite database schema & migrations
+│   ├── services/       # AI & CLI services (Gemini, NVIDIA, Ollama, OpenRouter, externalAgentRunner)
+│   └── db.js           # SQLite database schema & migrations (wp_pending_actions, etc.)
 ├── src/                # React 19 Frontend App (App Router / Vite)
-│   ├── components/     # UI Components (Radix UI, Lucide React, Charts, Canvas)
-│   ├── pages/          # View Pages (Dashboard, Agents, Photo Studio, Scraper, Settings)
+│   ├── components/     # UI Components (CliAgentBridgeSettings, Radix UI, Lucide React)
+│   ├── pages/          # View Pages (Settings, Dashboard, Agents, Photo Studio, Prospection)
 │   ├── store.js        # Zustand global store (persisté via IndexedDB)
 │   └── services/       # API Client services
 ├── public/             # Static assets (Logos, icons, default assets)

@@ -139,7 +139,19 @@ async function chatWithAgent(personaId, message, imageParams, attachments, promp
         }
     }
 
-    if (provider === 'openrouter') {
+    if (provider === 'cli') {
+        const externalAgentRunner = require('./services/externalAgentRunner');
+        const cliCommand = modelOverride || 'gemini';
+        const result = await externalAgentRunner.executeExternalCli({
+            command: cliCommand,
+            input: processedMessage,
+            args: []
+        });
+        if (!result.success) {
+            throw new Error(result.error || `Échec d'exécution CLI '${cliCommand}'`);
+        }
+        return { response: result.stdout || result.stderr || '' };
+    } else if (provider === 'openrouter') {
         const apiKey = await db.getSetting('openrouter_api_key', '');
         let effectiveAgent = dbAgent;
         if (modelOverride) {
@@ -318,5 +330,6 @@ module.exports = {
     chatWithAgent,
     generateImage,
     listModels,
-    classifyOrderIntent
+    classifyOrderIntent,
+    delegateToExternalCli: (options) => require('./services/externalAgentRunner').executeExternalCli(options)
 };

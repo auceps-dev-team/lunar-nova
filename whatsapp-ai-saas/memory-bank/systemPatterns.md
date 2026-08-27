@@ -29,3 +29,9 @@
    - Le backend écoute strictement sur `127.0.0.1` (`HOST = '127.0.0.1'`), jamais `0.0.0.0`, pour sécuriser l'API locale contre le réseau local.
    - Le client frontend utilise `http://127.0.0.1:3000` par défaut afin d'éviter la tentative de résolution IPv6 (`::1`) de `localhost` sous Windows.
    - La liste `allowedOrigins` autorise explicitement `http://localhost:5173`, `http://127.0.0.1:5173`, `http://localhost:3000`, `http://127.0.0.1:3000` et `null` (production Electron).
+
+8. **Bidirectional CLI & Model Context Protocol (MCP) Pattern**:
+   - **Inbound CLI Control** : Point d'entrée exécutable autonome (`bin/wacopilote.cjs`) permettant le pilotage direct de tous les agents (`list-agents`, `run`, `pipeline run`, `status`) avec support des flux Unix pipés (`stdin`) et des sorties JSON structurées.
+   - **Serveur MCP Standardisé** : Passerelle JSON-RPC 2.0 sur flux `stdio` (`backend/mcp/wacopiloteMcpServer.js`) exposant les outils d'agents, de commandes et de propositions produits HITL (`wp_pending_actions`) directement aux IDEs agentiques (Claude Code, Cursor, Antigravity).
+   - **Outbound Execution & Security Sandboxing** : Exécuteur de sous-processus sécurisé (`backend/services/externalAgentRunner.js`) avec validation par liste blanche stricte (`DEFAULT_ALLOWED_COMMANDS`), assainissement des arguments pour prévenir les injections shell, et plafonnement des temps d'exécution (timeout).
+

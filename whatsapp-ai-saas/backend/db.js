@@ -316,6 +316,17 @@ async function runInitDB() {
             );
         `);
 
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS wp_pending_actions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                action_type VARCHAR(50) NOT NULL,
+                payload TEXT NOT NULL,
+                status VARCHAR(50) DEFAULT 'pending_review',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        `);
+
         // Doit tourner après la création de toutes les tables, et avant que la
         // moindre route ne lise un secret.
         await encryptLegacySecrets(client);

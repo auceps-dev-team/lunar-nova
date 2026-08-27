@@ -7,11 +7,11 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/auceps-dev-team/lunar-nova"><img src="https://img.shields.io/badge/version-1.43.1-blue.svg" alt="Version 1.43.1" /></a>
+  <a href="https://github.com/auceps-dev-team/lunar-nova"><img src="https://img.shields.io/badge/version-1.44.0-blue.svg" alt="Version 1.44.0" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue.svg" alt="License AGPL-3.0" /></a>
   <a href="#-open-source"><img src="https://img.shields.io/badge/open%20source-oui-brightgreen.svg" alt="Open Source" /></a>
   <a href="#-pourquoi-wacopilote-"><img src="https://img.shields.io/badge/Made%20in-%F0%9F%87%A8%F0%9F%87%BE%20C%C3%B4te%20d'Ivoire-orange.svg" alt="Made in Côte d'Ivoire" /></a>
-  <a href="#-routage-multi-llm--fournisseurs-dia"><img src="https://img.shields.io/badge/AI--Engine-Gemini_%7C_NVIDIA_NIM_%7C_OpenRouter_%7C_Ollama-purple.svg" alt="Multi-LLM Engine" /></a>
+  <a href="#-routage-multi-llm--fournisseurs-dia"><img src="https://img.shields.io/badge/AI--Engine-Gemini_%7C_NVIDIA_NIM_%7C_OpenRouter_%7C_Ollama_%7C_CLI-purple.svg" alt="Multi-LLM Engine" /></a>
 </p>
 
 ---
@@ -26,6 +26,7 @@
 - [Fonctionnalités Clés](#-fonctionnalités-clés)
 - [Architecture Avancée & Performance](#-architecture-avancée--performance)
 - [Routage Multi-LLM & Fournisseurs d'IA](#-routage-multi-llm--fournisseurs-dia)
+- [Bridge CLI & Protocoles Agentiques (MCP)](#-bridge-cli--protocoles-agentiques-mcp)
 - [Automatisation WhatsApp & Engine Playwright](#-automatisation-whatsapp--engine-playwright)
 - [Studio Photo IA & Génération de Catalogue](#-studio-photo-ia--génération-de-catalogue)
 - [Pont WordPress & WooCommerce](#-pont-wordpress--woocommerce)
@@ -191,6 +192,67 @@ WaCopilote intègre une passerelle unifiée (AI Gateway) capable de communiquer 
 | **OpenRouter** | Claude 3.5 Sonnet, DeepSeek R1, GPT-4o | Tâches de rédaction experte, code, et raisonnement avancé | Cloud Multi-Provider API |
 | **Ollama** | Llama 3, Mistral 7B, Phi-3, Qwen 2.5 | Confidentialité totale, fonctionnement 100% hors-ligne | Inférence Locale (CPU/GPU) |
 | **Together AI** | Qwen-Image, Flux.1 Schnell / Dev | Génération d'images produits & Studio Photo IA | Cloud Media Generation API |
+| **CLI / Local Agents** | gemini, claude, aider, ollama | Délégation aux agents locaux & binaire autonome | Invocations Shell Sécurisées |
+
+---
+
+## 💻 Bridge CLI & Protocoles Agentiques (MCP)
+
+À partir de la **version 1.44.0**, WaCopilote intègre une architecture **CLI bidirectionnelle** et un serveur **Model Context Protocol (MCP)** complet permettant une interopérabilité totale avec vos terminaux, scripts d'automatisation, et IDEs agentiques (Claude Code, Cursor, Antigravity, VS Code).
+
+### 1. Contrôle Inbound : Pilotez WaCopilote depuis votre Terminal
+
+L'exécutable `wacopilote` (ou `npm run cli`) expose l'intégralité du cerveau WaCopilote :
+
+```bash
+# Lister les 27 personas IA configurés (format texte ou JSON)
+npx wacopilote list-agents
+npx wacopilote list-agents --json
+
+# Exécuter un agent spécifique avec prompt direct
+npx wacopilote run --agent copywriter --prompt "Rédige une offre promotionnelle pour du beurre de karité"
+
+# Pipe Unix et chaînage de scripts
+cat brief_campagne.txt | npx wacopilote run --agent outbound_strategist --json
+
+# Forcer un modèle ou un fournisseur IA spécifique
+npx wacopilote run --agent seo_specialist --file ./articles.md --provider openrouter --model deepseek/deepseek-r1
+
+# Lancer un pipeline autonome de prospection
+npx wacopilote pipeline run --brief "10 boutiques de mode féminine à Dakar"
+
+# Vérifier l'état de la base de données et des clés locales
+npx wacopilote status
+```
+
+### 2. Intégration MCP (Claude Code, Cursor, Antigravity)
+
+WaCopilote intègre nativement un serveur MCP standard sur `stdio` (`backend/mcp/wacopiloteMcpServer.js`) :
+
+Ajoutez simplement la configuration suivante dans votre `claude_desktop_config.json` ou `mcp.json` :
+
+```json
+{
+  "mcpServers": {
+    "wacopilote": {
+      "command": "node",
+      "args": ["bin/wacopilote.cjs", "mcp"]
+    }
+  }
+}
+```
+
+**Outils MCP exposés nativement :**
+- `list_agents` : Découverte des 27 agents et de leurs spécialités.
+- `call_agent` : Exécution d'un persona avec prompt, modèle et format au choix.
+- `get_orders` : Consultation des commandes et paniers WhatsApp en temps réel.
+- `create_product_proposal` : Proposition de nouveaux produits vers la gouvernance humaine (HITL).
+
+### 3. Délégation Outbound : WaCopilote appelle vos Outils CLI Machine
+
+WaCopilote peut à son tour déléguer des tâches complexes (génération de fiches produits, analyse de code, scripts d'automatisation) aux outils CLI déjà installés sur votre poste de travail (`gemini`, `claude`, `aider`, `ollama`, `python`, `node`, `git`).
+- **Isolation & Sécurité** : Liste blanche de commandes configurables depuis `Paramètres > Bridge CLI`.
+- **Gouvernance & Timeout** : Gestion des dépassements de délais d'exécution et assainissement des arguments pour prévenir toute injection shell.
 
 ---
 
