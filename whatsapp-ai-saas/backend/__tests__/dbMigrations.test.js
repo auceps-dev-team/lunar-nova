@@ -29,7 +29,7 @@ describe('db.js — migrations de schéma (SQLite en mémoire)', () => {
         expect(ok).toBe(true);
 
         const v = await db.pool.query('SELECT MAX(version) as v FROM schema_version');
-        expect(v.rows[0].v).toBe(6);
+        expect(v.rows[0].v).toBe(7);
     });
 
     it.runIf(sqlite3Available)('crée les tables attendues par les routes', async () => {
@@ -38,7 +38,7 @@ describe('db.js — migrations de schéma (SQLite en mémoire)', () => {
         for (const table of [
             'copilot_logs', 'app_settings', 'ai_agents', 'ai_documents',
             'wa_contacts', 'wa_contact_lists', 'wa_segments', 'wa_message_logs',
-            'detected_orders', 'wp_connections', 'pipeline_runs', 'pipeline_cards'
+            'detected_orders', 'wp_connections', 'pipeline_runs', 'pipeline_cards', 'quotes'
         ]) {
             expect(names).toContain(table);
         }

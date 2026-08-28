@@ -398,17 +398,54 @@ const useAppStore = create(
             })),
 
             // --- Invoice Actions (Phase 18) ---
-            addInvoice: (invoice) => set((state) => ({
-                invoices: [invoice, ...state.invoices]
-            })),
+            // Migrées vers le backend (table `quotes`) pour être lisibles/pilotables
+            // par le CLI/MCP — le store ne fait plus que refléter la réponse serveur.
+            fetchInvoices: async () => {
+                try {
+                    const res = await fetch(API_BASE_URL + '/api/invoices');
+                    const json = await res.json();
+                    if (json.status === 'success') {
+                        set({ invoices: json.data || [] });
+                    }
+                } catch {
+                    // Échec réseau non bloquant : le store garde son dernier état connu.
+                }
+            },
 
-            updateInvoice: (invoiceId, updatedData) => set((state) => ({
-                invoices: state.invoices.map(inv => inv.id === invoiceId ? { ...inv, ...updatedData } : inv)
-            })),
+            addInvoice: async (invoice) => {
+                const res = await fetch(API_BASE_URL + '/api/invoices', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(invoice)
+                });
+                const json = await res.json();
+                if (json.status === 'success') {
+                    set((state) => ({ invoices: [json.data, ...state.invoices] }));
+                }
+                return json.data;
+            },
 
-            deleteInvoice: (invoiceId) => set((state) => ({
-                invoices: state.invoices.filter(inv => inv.id !== invoiceId)
-            })),
+            updateInvoice: async (invoiceId, updatedData) => {
+                const res = await fetch(API_BASE_URL + '/api/invoices/' + invoiceId, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updatedData)
+                });
+                const json = await res.json();
+                if (json.status === 'success') {
+                    set((state) => ({
+                        invoices: state.invoices.map(inv => inv.id === invoiceId ? json.data : inv)
+                    }));
+                }
+                return json.data;
+            },
+
+            deleteInvoice: async (invoiceId) => {
+                await fetch(API_BASE_URL + '/api/invoices/' + invoiceId, { method: 'DELETE' });
+                set((state) => ({
+                    invoices: state.invoices.filter(inv => inv.id !== invoiceId)
+                }));
+            },
         }),
         {
             name: 'whatsapp-saas-storage',

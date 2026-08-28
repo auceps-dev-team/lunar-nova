@@ -1,4 +1,6 @@
-require('dotenv').config({ path: require('path').join(__dirname, '.env') });
+// quiet: true — sinon dotenv imprime sa bannière sur stdout à chaque require(),
+// ce qui corrompt le flux JSON-RPC du serveur MCP et la sortie --json du CLI.
+require('dotenv').config({ path: require('path').join(__dirname, '.env'), quiet: true });
 const { GoogleGenAI } = require('@google/genai');
 const db = require('./db');
 const { parseLlmJson } = require('./llmJson');
@@ -76,13 +78,17 @@ const orchestrator = require('./agents/orchestrator');
 // S'exécute au lancement pour cacher les modèles Gemini dans la DB
 async function syncGeminiModels() {
     try {
-        console.log('[Gemini] Vérification et synchronisation des modèles...');
+        // stderr : ce sync tourne en tâche de fond (setTimeout) quel que soit le
+        // process qui require() ce module (serveur Express, CLI, serveur MCP) — le
+        // CLI (--json) et le MCP (JSON-RPC sur stdout) ne doivent recevoir aucune
+        // sortie non protocolaire, même différée de 3s.
+        console.error('[Gemini] Vérification et synchronisation des modèles...');
         const cached = await db.getSetting('gemini_models_cache', null);
 
         const _fetch = typeof fetch !== 'undefined' ? fetch : (await import('node-fetch')).default;
         const key = process.env.GEMINI_API_KEY;
         if (!key) {
-            console.log('[Gemini] Aucune clé API, synchronisation ignorée.');
+            console.error('[Gemini] Aucune clé API, synchronisation ignorée.');
             return;
         }
         const res = await _fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
@@ -122,9 +128,9 @@ async function syncGeminiModels() {
 
         if (!cached || modelsJson !== cached) {
             await db.setSetting('gemini_models_cache', modelsJson);
-            console.log(`[Gemini] Cache mis à jour : ${chatModels.length} modèles chat, ${imageModels.length} modèles d'images.`);
+            console.error(`[Gemini] Cache mis à jour : ${chatModels.length} modèles chat, ${imageModels.length} modèles d'images.`);
         } else {
-            console.log('[Gemini] La liste des modèles est déjà à jour.');
+            console.error('[Gemini] La liste des modèles est déjà à jour.');
         }
     } catch (error) {
         console.error("[Gemini] Échec de la synchronisation des modèles:", error.message);

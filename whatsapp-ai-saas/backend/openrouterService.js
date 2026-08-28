@@ -14,7 +14,9 @@ const OPENROUTER_HTTP_REFERER = 'http://localhost:3000';
 // S'exécute au lancement pour cacher les modèles d'OpenRouter dans la DB
 async function syncOpenRouterModels() {
     try {
-        console.log('[OpenRouter] Vérification et synchronisation des modèles...');
+        // stderr : voir la note équivalente dans geminiService.js (sync en tâche de
+        // fond, ne doit jamais polluer stdout — CLI --json / MCP JSON-RPC).
+        console.error('[OpenRouter] Vérification et synchronisation des modèles...');
         const cached = await db.getSetting('openrouter_models_cache', null);
 
         const _fetch = typeof fetch !== 'undefined' ? fetch : (await import('node-fetch')).default;
@@ -45,9 +47,9 @@ async function syncOpenRouterModels() {
 
             if (modelsJson !== cached) {
                 await db.setSetting('openrouter_models_cache', modelsJson);
-                console.log(`[OpenRouter] Base de données mise à jour avec ${chatModels.length} modèles de conversation et ${imageModels.length} modèles d'images.`);
+                console.error(`[OpenRouter] Base de données mise à jour avec ${chatModels.length} modèles de conversation et ${imageModels.length} modèles d'images.`);
             } else {
-                console.log('[OpenRouter] La liste des modèles est déjà à jour dans la base de données.');
+                console.error('[OpenRouter] La liste des modèles est déjà à jour dans la base de données.');
             }
         }
     } catch (error) {

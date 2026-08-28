@@ -3,6 +3,7 @@ const router = express.Router();
 const { pool } = require('../db');
 const puppeteer = require('puppeteer-core');
 const { isValidPhoneFormat } = require('../services/contactAgent');
+const waInstancesService = require('../services/waInstancesService');
 
 // Mutex global pour sécuriser l'accès concurrentiel à l'instance WhatsApp
 
@@ -34,6 +35,38 @@ const releaseWaMutex = () => {
         isWaMutexLocked = false;
     }
 };
+
+// --- Instances : miroir en écriture du store Zustand du renderer (voir
+// src/App.jsx, src/components/OnboardingModal.jsx) — permet au CLI/MCP de
+// lister/piloter les instances sans dépendre de l'état du renderer Electron.
+router.get('/instances', async (req, res) => {
+    try {
+        const data = await waInstancesService.listInstances();
+        res.json({ status: 'success', data });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+router.post('/instances', async (req, res) => {
+    const { id, name, status } = req.body || {};
+    if (!id) return res.status(400).json({ error: 'Missing id.' });
+    try {
+        const data = await waInstancesService.upsertInstance(id, name, status);
+        res.json({ status: 'success', data });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+router.delete('/instances/:id', async (req, res) => {
+    try {
+        await waInstancesService.removeInstance(req.params.id);
+        res.json({ status: 'success' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
 
 // --- Phase 13: WhatsApp Contacts APIs ---
 router.get('/contact-lists', async (req, res) => {
@@ -362,94 +395,18 @@ router.post('/open-chat', async (req, res) => {
         return res.status(400).json({ error: 'Numéro de téléphone invalide (8 à 15 chiffres attendus).' });
     }
 
-    let formattedMessage = text || '';
-
     try {
-        if (contact_id) {
-            // An explicit `text` (e.g. an already-drafted pipeline message) always wins over
-            // the auto-generated template below - the template is only a fallback for callers
-            // that didn't pass their own message.
-            if (!text) {
-                const contactRes = await pool.query('SELECT * FROM wa_contacts WHERE id = $1', [contact_id]);
-                const settingsRes = await pool.query("SELECT setting_value FROM app_settings WHERE setting_key = 'dynamic_message_template'");
-                if (contactRes.rows.length > 0 && settingsRes.rows.length > 0) {
-                    const contact = contactRes.rows[0];
-                    const template = settingsRes.rows[0].setting_value;
-                    if (template) {
-                        formattedMessage = template
-                            .replace(/\[Nom\]/gi, contact.name || '')
-                            .replace(/\[Email\]/gi, contact.email || '')
-                            .replace(/\[Adresse\]/gi, contact.address || '');
-                    }
-                }
-            }
-
-            // Phase 19.5: Message Tracking
-            try {
-                await pool.query(
-                    'INSERT INTO wa_message_logs (contact_id, message) VALUES ($1, $2)',
-                    [contact_id, formattedMessage || 'Direct link manually opened']
-                );
-            } catch (logErr) {
-                console.error('[WA] Silently caught error logging message:', logErr);
-            }
-        }
-    } catch (dbErr) {
-        console.error("Error formatting template", dbErr);
-    }
-
-    let browser;
-    try {
-        await acquireWaMutex();
-        const cdpUrl = `http://localhost:8315`;
-        browser = await puppeteer.connect({
-            browserURL: cdpUrl,
-            defaultViewport: null
+        const result = await waInstancesService.openChat({
+            instanceId: instance_id,
+            phone,
+            contactId: contact_id,
+            countryCode: country_code,
+            text
         });
-
-        const targets = await browser.targets();
-        let targetPage = null;
-
-        for (const target of targets) {
-            if (target.type() === 'webview' && target.url().includes('whatsapp')) {
-                const p = await target.page();
-                if (p) {
-                    try {
-                        const id = await p.evaluate(() => window.__whatsapp_instance_id);
-                        if (id === instance_id) {
-                            targetPage = p;
-                            break;
-                        }
-                    } catch { }
-                    if (!targetPage) targetPage = p;
-                }
-            }
-        }
-
-        if (!targetPage) {
-            browser.disconnect();
-            return res.status(404).json({ error: 'WhatsApp instance not found or not ready.' });
-        }
-
-        // Clean phone number (e.g. 2250707070707, numbers only)
-        const hasInternationalPrefix = /^\s*\+/.test(phone);
-        let cleanPhone = phone.replace(/[^0-9]/g, '');
-        if (!hasInternationalPrefix && country_code && country_code !== 'none' && !cleanPhone.startsWith(country_code)) {
-            cleanPhone = country_code + cleanPhone;
-        }
-        let url = `https://web.whatsapp.com/send?phone=${cleanPhone}`;
-        if (formattedMessage) {
-            url += `&text=${encodeURIComponent(formattedMessage)}`;
-        }
-        await targetPage.goto(url);
-
-        res.json({ status: 'success', message: 'Chat opened', formattedMessage });
+        res.json({ status: 'success', ...result });
     } catch (err) {
         console.error("Open chat error:", err);
-        res.status(500).json({ error: err.message });
-    } finally {
-        if (browser) browser.disconnect();
-        releaseWaMutex();
+        res.status(err.statusCode || 500).json({ error: err.message });
     }
 });
 

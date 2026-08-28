@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/auceps-dev-team/lunar-nova"><img src="https://img.shields.io/badge/version-1.44.0-blue.svg" alt="Version 1.44.0" /></a>
+  <a href="https://github.com/auceps-dev-team/lunar-nova"><img src="https://img.shields.io/badge/version-1.45.0-blue.svg" alt="Version 1.45.0" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue.svg" alt="License AGPL-3.0" /></a>
   <a href="#-open-source"><img src="https://img.shields.io/badge/open%20source-oui-brightgreen.svg" alt="Open Source" /></a>
   <a href="#-pourquoi-wacopilote-"><img src="https://img.shields.io/badge/Made%20in-%F0%9F%87%A8%F0%9F%87%BE%20C%C3%B4te%20d'Ivoire-orange.svg" alt="Made in Côte d'Ivoire" /></a>
@@ -198,7 +198,7 @@ WaCopilote intègre une passerelle unifiée (AI Gateway) capable de communiquer 
 
 ## 💻 Bridge CLI & Protocoles Agentiques (MCP)
 
-À partir de la **version 1.44.0**, WaCopilote intègre une architecture **CLI bidirectionnelle** et un serveur **Model Context Protocol (MCP)** complet permettant une interopérabilité totale avec vos terminaux, scripts d'automatisation, et IDEs agentiques (Claude Code, Cursor, Antigravity, VS Code).
+À partir de la **version 1.44.0**, WaCopilote intègre une architecture **CLI bidirectionnelle** et un serveur **Model Context Protocol (MCP)** complet permettant une interopérabilité totale avec vos terminaux, scripts d'automatisation, et IDEs agentiques (Claude Code, Cursor, Antigravity, VS Code). La **version 1.45.0** étend cette surface à (quasi) toutes les actions métier : prospection, listes de contacts, plannings (Kanban), documents, génération photo, devis, instances WhatsApp et gouvernance WordPress.
 
 ### 1. Contrôle Inbound : Pilotez WaCopilote depuis votre Terminal
 
@@ -218,8 +218,31 @@ cat brief_campagne.txt | npx wacopilote run --agent outbound_strategist --json
 # Forcer un modèle ou un fournisseur IA spécifique
 npx wacopilote run --agent seo_specialist --file ./articles.md --provider openrouter --model deepseek/deepseek-r1
 
-# Lancer un pipeline autonome de prospection
-npx wacopilote pipeline run --brief "10 boutiques de mode féminine à Dakar"
+# Prospection + création de liste + planning en un seul appel
+npx wacopilote pipeline run --brief "10 boutiques de mode féminine à Dakar" --auto --list-name "Prospects Dakar"
+# ... ou étape par étape : create, prospect, save-contacts, generate-messages, organize, cards
+npx wacopilote prospect search --query "institut de beauté" --zone "Abidjan" --json
+
+# Documents (AI Writer)
+npx wacopilote documents list --json
+npx wacopilote documents create --title "Argumentaire" --content "..." --json
+
+# Génération photo (produit ou mannequin)
+npx wacopilote photo generate --agent photoshoot --prompt "Robe d'été rouge" --out ./photo.png
+
+# Devis — export PDF autonome (Chromium headless, aucune dépendance à l'app Electron)
+npx wacopilote quotes create --client-name "Boutique X" --data '{"items":[{"description":"Robe","qty":2,"price":15000}]}'
+npx wacopilote quotes export-pdf 5 --out ./devis-5.pdf
+
+# WordPress — gouvernance HITL : toute écriture exige une approbation humaine explicite
+npx wacopilote wordpress propose --connection 1 --prompt "Crée un article sur nos soldes d'été"
+npx wacopilote wordpress actions --connection 1
+npx wacopilote wordpress approve --connection 1 --action 42
+
+# Instances WhatsApp déjà connectées (la création d'une nouvelle instance reste
+# un scan QR humain dans l'app — non automatisable côté CLI)
+npx wacopilote instances list --json
+npx wacopilote instances open-chat --instance wa-tab-123 --phone 2250700000000 --message "Bonjour !"
 
 # Vérifier l'état de la base de données et des clés locales
 npx wacopilote status
@@ -242,11 +265,17 @@ Ajoutez simplement la configuration suivante dans votre `claude_desktop_config.j
 }
 ```
 
-**Outils MCP exposés nativement :**
-- `list_agents` : Découverte des 27 agents et de leurs spécialités.
-- `call_agent` : Exécution d'un persona avec prompt, modèle et format au choix.
-- `get_orders` : Consultation des commandes et paniers WhatsApp en temps réel.
-- `create_product_proposal` : Proposition de nouveaux produits vers la gouvernance humaine (HITL).
+**Outils MCP exposés nativement (v1.45.0) :**
+- **Agents** : `list_agents`, `call_agent`.
+- **Prospection & Pipeline** : `prospect_leads`, `run_pipeline` (composite prospection → liste → messages → planning), `create_pipeline_run`, `save_pipeline_contacts`, `generate_pipeline_messages`, `organize_pipeline`, `list_pipeline_cards`, `update_pipeline_card_stage`.
+- **Documents** : `list_documents`, `get_document`, `create_document`, `update_document`, `delete_document`.
+- **Photo** : `generate_photo`.
+- **Devis** : `list_quotes`, `get_quote`, `create_quote`, `update_quote`, `export_quote_pdf`.
+- **WordPress (gouvernance HITL — validation humaine obligatoire)** : `wordpress_propose_action`, `wordpress_list_actions`, `wordpress_approve_action`, `wordpress_reject_action`, `wordpress_list_products`, `wordpress_list_orders`.
+- **Instances WhatsApp** : `list_instances`, `open_whatsapp_chat` (pilotage d'une instance déjà authentifiée — la création d'une nouvelle instance reste une action humaine).
+- **Commandes** : `get_orders`, `create_product_proposal`.
+
+> **Gouvernance des actions à risque** : toute action d'écriture qui modifie un état externe (publication WordPress, création de produit) passe par un flux `propose` → `approve`/`reject` — jamais d'exécution automatique. Les actions de lecture/génération (recherche, texte, image, devis) restent autonomes.
 
 ### 3. Délégation Outbound : WaCopilote appelle vos Outils CLI Machine
 

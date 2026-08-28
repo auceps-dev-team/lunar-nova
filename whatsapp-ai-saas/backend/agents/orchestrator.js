@@ -25,7 +25,9 @@ class PersonaOrchestrator {
                         const personaData = require(path.join(personasDir, file));
                         if (personaData && personaData.id) {
                             this.personas.set(personaData.id, personaData);
-                            console.log(`[Orchestrator] Loaded persona: ${personaData.id} (${personaData.name})`);
+                            // stderr, pas stdout : le CLI (--json) et le serveur MCP (JSON-RPC
+                            // sur stdout) ne doivent recevoir que leur propre sortie protocolaire.
+                            console.error(`[Orchestrator] Loaded persona: ${personaData.id} (${personaData.name})`);
                         }
                     } catch (err) {
                         console.error(`[Orchestrator] Failed to load persona file ${file}:`, err.message);

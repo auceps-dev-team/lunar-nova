@@ -1,4 +1,7 @@
-import { calc, fmt } from './helpers';
+// Extension .js explicite requise par le résolveur ESM natif de Node (utilisé
+// par backend/services/invoiceService.js pour le rendu PDF serveur) — Vite
+// tolère les deux formes, donc ce changement n'affecte pas le build frontend.
+import { calc, fmt } from './helpers.js';
 
 export function buildInvoiceHTML(draft, t) {
     const { sub, tax, total } = calc(draft.items, draft.taxRate);

@@ -135,7 +135,7 @@ async function chatWithAgent(personaId, message, imageParams, attachments, promp
         // Force fallback to Gemini if audio is present
         if (hasAudio && provider === 'openai') {
             provider = 'gemini'; 
-            console.log('[aiController] Audio attachment detected -> falling back to Gemini');
+            console.error('[aiController] Audio attachment detected -> falling back to Gemini');
         }
     }
 
@@ -245,7 +245,7 @@ async function generateImage(prompt, aspectRatio, imageParams, editMode, mode, p
     const isEditMode = !!(imageParams && imageParams.data);
     
     if (isEditMode) {
-        console.log('[aiController] Image-to-Image mode detected → routing to Gemini');
+        console.error('[aiController] Image-to-Image mode detected → routing to Gemini');
         const geminiModel = imageModelOverride || 'gemini-3.1-flash-image-preview';
         return await geminiService.generateImage(prompt, aspectRatio, imageParams, editMode, mode, geminiModel);
     }
@@ -273,7 +273,7 @@ async function generateImage(prompt, aspectRatio, imageParams, editMode, mode, p
     } else if (provider === 'openai') {
         // Text-to-Image via NVIDIA/Together AI
         const modelDef = getNvidiaModels().getModelDef(imageModel);
-        console.log('[generateImage] Text-to-Image | imageModel=', imageModel);
+        console.error('[generateImage] Text-to-Image | imageModel=', imageModel);
         if (!modelDef || modelDef.type === 'text' || modelDef.type === 'vision') {
             return { error: `Le modèle sélectionné (${modelDef ? modelDef.name : imageModel}) ne supporte pas la génération d'images.` };
         }
@@ -286,7 +286,7 @@ async function generateImage(prompt, aspectRatio, imageParams, editMode, mode, p
             apiKey = await db.getSetting('together_api_key', '');
             if (!apiKey) apiKey = await resolveNvidiaKey(imageModel);
             baseURL = 'https://api.together.xyz/v1';
-            console.log('[generateImage] Routed to Together AI | key present:', !!apiKey);
+            console.error('[generateImage] Routed to Together AI | key present:', !!apiKey);
         } else {
             apiKey = await resolveNvidiaKey(imageModel);
         }

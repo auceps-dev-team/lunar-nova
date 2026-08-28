@@ -132,7 +132,10 @@ async function runInitDB() {
         const migrateTo = async (targetVersion, queries) => {
             if (currentVersion >= targetVersion) return;
 
-            console.log(`[SQLite] Migrating to version ${targetVersion}...`);
+            // stderr : db.initDB() est appelé par le CLI (--json) et le serveur MCP
+            // (JSON-RPC sur stdout), qui ne doivent recevoir aucune sortie non
+            // protocolaire.
+            console.error(`[SQLite] Migrating to version ${targetVersion}...`);
             for (const q of queries) {
                 try {
                     await client.query(q);
@@ -145,7 +148,7 @@ async function runInitDB() {
             }
             await client.query('INSERT INTO schema_version (version) VALUES ($1)', [targetVersion]);
             currentVersion = targetVersion;
-            console.log(`[SQLite] Version ${targetVersion} appliquée.`);
+            console.error(`[SQLite] Version ${targetVersion} appliquée.`);
         };
 
         // Migrations for Phase 2: Add tracking columns to copilot_logs
@@ -327,13 +330,53 @@ async function runInitDB() {
             );
         `);
 
+        // Instances WhatsApp — la création réelle (webview + scan QR) reste
+        // pilotée par l'app Electron (renderer) ; cette table est un miroir
+        // en écriture pour que le CLI/MCP puisse lister/piloter les instances
+        // déjà connectées sans dépendre du store Zustand du renderer.
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS wa_instances (
+                id TEXT PRIMARY KEY,
+                name TEXT,
+                status VARCHAR(50) DEFAULT 'offline',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                last_seen_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        `);
+
+        // Devis / Invoice Builder — migré du stockage 100% client (Zustand +
+        // IndexedDB) vers le backend, pour être lisible/pilotable par le CLI/MCP.
+        // `data` contient le draft complet (même forme que freshInvoice() côté
+        // frontend) ; invoice_number/client_name/total_amount sont dénormalisées
+        // pour lister sans reparser le JSON à chaque ligne.
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS quotes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                invoice_number VARCHAR(100),
+                client_name VARCHAR(255),
+                total_amount NUMERIC DEFAULT 0,
+                status VARCHAR(50) DEFAULT 'draft',
+                data TEXT NOT NULL DEFAULT '{}',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        `);
+
+        // Le schéma de `quotes` a changé pendant le développement de cette version
+        // (client_contact/items -> invoice_number/data) avant tout merge/release :
+        // migration défensive pour les bases locales déjà créées avec l'ancien schéma.
+        await migrateTo(7, [
+            "ALTER TABLE quotes ADD COLUMN invoice_number VARCHAR(100)",
+            "ALTER TABLE quotes ADD COLUMN data TEXT NOT NULL DEFAULT '{}'"
+        ]);
+
         // Doit tourner après la création de toutes les tables, et avant que la
         // moindre route ne lise un secret.
         await encryptLegacySecrets(client);
 
         client.release();
         isDbConnected = true;
-        console.log('[SQLite] Connected and tables verified.');
+        console.error('[SQLite] Connected and tables verified.');
         return true;
     } catch (err) {
         // Plus de process.exit(1) ici (constat N14) : au require du module, ce
