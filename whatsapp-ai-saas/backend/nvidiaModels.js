@@ -21,7 +21,8 @@
  *                         ex: `thinking_budget`, `min_thinking_tokens` selon le modèle)
  */
 
-require('dotenv').config();
+// quiet: true — voir la note équivalente dans geminiService.js.
+require('dotenv').config({ quiet: true });
 
 const NVIDIA_BASE_URL = 'https://integrate.api.nvidia.com/v1';
 

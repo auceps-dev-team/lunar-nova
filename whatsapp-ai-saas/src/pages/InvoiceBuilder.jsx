@@ -49,6 +49,9 @@ export default function InvoiceBuilder({ activeId }) {
     const [saved, setSaved] = useState(false);
     const [showSaveToast, setShowSaveToast] = useState(false);
 
+    // Devis persistés côté backend (table `quotes`) depuis cette version — chargés
+    // une fois au démarrage de l'app (App.jsx, comme fetchAiQuota/fetchGlobalModels).
+
     // Consume cross-app invoiceDraft coming from Orders.jsx
     useEffect(() => {
         if (invoiceDraft) {
@@ -158,9 +161,16 @@ export default function InvoiceBuilder({ activeId }) {
     // une facture dans l'éditeur.
     const handleEdit = (inv) => { setDraft({ ...inv }); setSaved(true); setView('editor'); };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!draft) return;
-        invoices.find(i => i.id === draft.id) ? updateInvoice(draft.id, draft) : addInvoice(draft);
+        const isExisting = invoices.some(i => i.id === draft.id);
+        const saved = isExisting ? await updateInvoice(draft.id, draft) : await addInvoice(draft);
+        // Le serveur attribue un id définitif à la création : on l'adopte pour que
+        // les sauvegardes suivantes déclenchent une mise à jour, pas une nouvelle
+        // création en doublon.
+        if (saved && saved.id !== draft.id) {
+            setDraft(d => ({ ...d, id: saved.id }));
+        }
         setSaved(true);
         setShowSaveToast(true);
         setTimeout(() => setShowSaveToast(false), 3000);

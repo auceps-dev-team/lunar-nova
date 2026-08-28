@@ -64,11 +64,18 @@ const OnboardingModal = () => {
 
     const createFirstInstance = () => {
         const id = `wa-tab-${Date.now()}`;
+        const name = instanceName.trim() || `Instance ${instances.length + 1}`;
         setInstances([
             ...instances,
-            { id, name: instanceName.trim() || `Instance ${instances.length + 1}`, status: 'offline' },
+            { id, name, status: 'offline' },
         ]);
         if (window.electronAPI) window.electronAPI.createInstance(id);
+        // Miroir en écriture côté backend (table wa_instances), voir App.jsx.
+        fetch(`${API_BASE_URL}/api/wa/instances`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, name, status: 'offline' })
+        }).catch(() => { });
     };
 
     const saveApiKey = async () => {

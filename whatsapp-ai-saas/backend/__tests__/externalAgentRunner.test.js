@@ -91,6 +91,15 @@ describe('externalAgentRunner — service d\'exécution CLI externe', { timeout:
             expect(result.stdout).toContain('STDIN_RECV:DATA_FROM_WACOPILOTE');
         });
 
+        it('ne laisse pas les métacaractères shell d\'un argument npx s\'exécuter (anti-injection)', async () => {
+            const result = await executeExternalCli({
+                command: 'npx',
+                args: ['--version', '&&', 'echo', 'SHOULD_NOT_BE_EXECUTED'],
+                timeout: 20000
+            });
+            expect(result.stdout).not.toContain('SHOULD_NOT_BE_EXECUTED');
+        }, 25000);
+
         it('interrompt proprement un processus en cas de dépassement de timeout', async () => {
             const infiniteScript = `
                 setTimeout(() => {}, 100000);

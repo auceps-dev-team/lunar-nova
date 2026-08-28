@@ -1,6 +1,6 @@
 {
   "name": "backend",
-  "version": "1.44.0",
+  "version": "1.45.0",
   "description": "WhatsApp AI SaaS Orchestrator",
   "license": "AGPL-3.0-only",
   "main": "server.js",
@@ -11,6 +11,7 @@
   "dependencies": {
     "@google/genai": "^1.43.0",
     "cors": "^2.8.5",
+    "cross-spawn": "^7.0.6",
     "dotenv": "^17.3.1",
     "express": "^4.21.2",
     "express-rate-limit": "^8.3.2",

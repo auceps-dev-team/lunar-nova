@@ -1,4 +1,5 @@
 const { spawn } = require('child_process');
+const crossSpawn = require('cross-spawn');
 const path = require('path');
 const db = require('../db');
 
@@ -88,7 +89,9 @@ function isBinaryInPath(cmd) {
     return new Promise((resolve) => {
         const isWin = process.platform === 'win32';
         const checkCmd = isWin ? 'where' : 'which';
-        const p = spawn(checkCmd, [cmd], { shell: isWin, stdio: 'ignore' });
+        // 'where'/'which' sont des exécutables natifs (pas des scripts .cmd/.bat) :
+        // aucun shell n'est requis pour les lancer, même sous Windows.
+        const p = spawn(checkCmd, [cmd], { stdio: 'ignore' });
         const timer = setTimeout(() => {
             try { p.kill(); } catch { /* Ignore */ }
             resolve(false);
@@ -205,9 +208,7 @@ async function executeExternalCli({
         }
     }
 
-    const isWin = process.platform === 'win32';
     const cleanCmd = (command || '').toLowerCase();
-    const isBatchCmd = isWin && (cleanCmd === 'npx' || cleanCmd === 'npm');
     const executable = (cleanCmd === 'node') ? process.execPath : command;
 
     return new Promise((resolve) => {
@@ -222,10 +223,13 @@ async function executeExternalCli({
             ...env
         };
 
-        const proc = spawn(executable, args, {
+        // cross-spawn résout nativement les .cmd/.bat (npx, npm...) sous Windows
+        // sans jamais concaténer les arguments dans une chaîne interprétée par
+        // cmd.exe : chaque argument reste une valeur littérale, ce qui élimine
+        // le risque d'injection de métacaractères shell (&, |, &&, ...).
+        const proc = crossSpawn(executable, args, {
             cwd,
             env: executionEnv,
-            shell: isBatchCmd,
             stdio: ['pipe', 'pipe', 'pipe']
         });
 

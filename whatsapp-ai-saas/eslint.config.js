@@ -66,6 +66,7 @@ export default defineConfig([
       'backend/scrapers/**/*.js',
       'backend/routes/catalog.js',
       'backend/routes/wa.js',
+      'backend/services/waInstancesService.js',
       'backend/server.js',
       'backend/extract_goafrica.js',
       'backend/fetch_card_website.js',

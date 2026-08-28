@@ -1,5 +1,14 @@
 # Active Context: WaCopilote
 
+- **v1.45.0** — Extension CLI/MCP : pilotage quasi-total par agents externes (+0.1.0) :
+  - **Principe** : extraction de la logique métier des routes Express vers `backend/services/*.js` (pipelineService, prospectionService, documentsService, invoiceService, wordpressService, waInstancesService), appelées identiquement en in-process par le CLI/MCP (aucun serveur ni token requis) et par les routes REST (devenues des wrappers fins).
+  - **Prospection, listes, plannings** : `pipeline create/prospect/save-contacts/generate-messages/organize/cards/run --auto`, `prospect search` ; 8 nouveaux tools MCP (`run_pipeline`, `prospect_leads`, etc.). Remplace le stub `pipeline run` v1.44.0 (qui n'appelait que la persona de classification, sans jamais toucher au scraping/Kanban).
+  - **Documents & Photo** : `documents list/get/create/update/delete`, `photo generate` (chaîne persona → génération d'image).
+  - **WordPress — gouvernance HITL** : `wordpressService.proposeFromPrompt` (persona `wordpress_agent` → flux `/propose` existant côté site client), CLI `wordpress propose/actions/approve/reject/products/orders/stats`. Toute écriture exige une commande `approve` explicite — jamais d'exécution automatique. La table locale `wp_pending_actions`/tool `create_product_proposal` restent legacy (non branchés, gouvernance retenue = flux distant déjà câblé).
+  - **Devis** : migration du stockage 100% client (Zustand/IndexedDB) vers le backend — nouvelle table `quotes` (migration schema v7), `backend/routes/invoices.js`, export PDF via Chromium headless autonome (`playwright`, pas de dépendance à l'app Electron — le pont CDP partagé ne supporte pas `Target.createTarget`). `InvoiceBuilder.jsx`/`store.js` migrés vers `/api/invoices`.
+  - **Instances WhatsApp** : nouvelle table `wa_instances` (miroir en écriture du store Zustand du renderer), `instances list/open-chat`. Création d'une nouvelle instance (scan QR) reste hors périmètre CLI — contrainte de sécurité WhatsApp Web, non contournable.
+  - **Bug transverse corrigé** : plusieurs modules (`orchestrator.js`, `geminiService.js`, `openrouterService.js`, `db.js`, `redisClient.js`, `nvidiaModels.js`, `aiController.js`) écrivaient des logs de démarrage sur **stdout**, corrompant le flux JSON-RPC du serveur MCP — routé vers stderr.
+  - **Tests** : 4 nouvelles suites (`pipelineService`, `documentsService`, `invoiceService`, `waInstancesService`), `cliInbound.test.js`/`mcpServer.test.js` étendus. 24 suites au vert (208 tests, 1 skip), ESLint 0 warning, build Vite validé.
 - **v1.44.0** — Architecture CLI Bidirectionnelle & Serveur MCP Standard (+0.1.0) :
   - **Branche de travail** : `New-feature` créée et synchronisée.
   - **Inbound CLI (`bin/wacopilote.cjs`)** : Point d'entrée exécutable autonome Node.js supportant `list-agents`, `run` (flags `--agent`, `--prompt`, `--file`, `--provider`, `--model`, `--json`, `--format`, piping `stdin`), `pipeline run`, `status`, `mcp`, et `help`. Déclaré dans `package.json` sous `"bin": { "wacopilote": "./bin/wacopilote.cjs" }` et scripts `npm run cli` / `cli:mcp`.
@@ -27,8 +36,8 @@
 - Real-time token usage, latency, and cost tracking dashboard.
 
 ## Active Focus
-- **v1.44.0 — Architecture CLI & MCP Bidirectionnelle** terminée et validée sur la branche `New-feature`.
-- 20 fichiers de tests unitaires/intégration (182 tests validés, 0 échec), ESLint 0 warning (`--max-warnings=0`), Vite build réussi.
+- **v1.45.0 — Extension CLI/MCP (pilotage quasi-total)** terminée et validée sur la branche `New-feature`.
+- 24 fichiers de tests unitaires/intégration (208 tests validés, 1 skip, 0 échec), ESLint 0 warning (`--max-warnings=0`), Vite build réussi.
 
 ## Key Decisions & Context
 - Logo integrated via `public/assets/WaCopilot%20Logo.png`.

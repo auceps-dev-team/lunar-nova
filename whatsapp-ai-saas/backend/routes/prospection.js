@@ -3,6 +3,7 @@ const router = express.Router();
 const googleMapScraper = require('../scrapers/googleMapScraper');
 const annuaireCiScraper = require('../scrapers/annuaireCiScraper');
 const goAfricaScraper = require('../scrapers/goAfricaScraper');
+const prospectionService = require('../services/prospectionService');
 
 const fs = require('fs');
 const path = require('path');
@@ -52,37 +53,16 @@ router.post('/goafrica-update-metadata', async (req, res) => {
 // POST /api/prospection/search
 // Standard search (non-streaming) — used by annuaireci, goafrica, and as fallback
 router.post('/search', async (req, res) => {
+    const { source = 'google' } = req.body || {};
     try {
-        const { query, ignoreLandlines, source = 'google', pages = 1, zone = '', duration = 5, quantity = 20, knownLinks = [], country, subcategorySlug } = req.body;
-
-        if (!query && source !== 'goafrica') {
-            return res.status(400).json({ error: 'La requête (query) est obligatoire.' });
-        }
-
-        console.log(`[Prospection] Recherche en cours: "${query}" | Source: ${source} | Pages: ${pages}`);
-        
-        let leads = [];
-
-        if (source === 'google') {
-            leads = await googleMapScraper.search(query, ignoreLandlines, quantity, duration, zone, knownLinks);
-        } else if (source === 'annuaireci') {
-            leads = await annuaireCiScraper.search(query, ignoreLandlines, pages);
-        } else if (source === 'goafrica') {
-            leads = await goAfricaScraper.search(query, ignoreLandlines, pages, country, subcategorySlug);
-        } else {
-            return res.status(400).json({ error: 'Source de prospection invalide.' });
-        }
-        
-        res.json({
-            success: true,
-            count: leads.length,
-            leads: leads
-        });
+        console.log(`[Prospection] Recherche en cours: "${req.body.query}" | Source: ${source} | Pages: ${req.body.pages || 1}`);
+        const { count, leads } = await prospectionService.search(req.body);
+        res.json({ success: true, count, leads });
     } catch (error) {
-        console.error(`[Prospection] Erreur lors de la recherche (${req.body.source}):`, error);
-        res.status(500).json({ 
-            success: false, 
-            error: error.message || 'Erreur lors de la recherche de leads' 
+        console.error(`[Prospection] Erreur lors de la recherche (${source}):`, error);
+        res.status(error.statusCode || 500).json({
+            success: false,
+            error: error.message || 'Erreur lors de la recherche de leads'
         });
     }
 });

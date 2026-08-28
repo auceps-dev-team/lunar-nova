@@ -1,5 +1,6 @@
 const redis = require('redis');
-require('dotenv').config();
+// quiet: true — voir la note équivalente dans geminiService.js.
+require('dotenv').config({ quiet: true });
 
 const redisClient = redis.createClient({
     url: process.env.REDIS_URL || 'redis://localhost:6379',

@@ -1,3 +1,10 @@
+const path = require('path');
+const dotenv = require('dotenv');
+
+// Charge le fichier .env du backend ou de la racine
+dotenv.config({ path: path.join(__dirname, '.env'), quiet: true });
+dotenv.config({ quiet: true });
+
 const express = require('express');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
@@ -104,6 +111,9 @@ app.use('/api/wp', wordpressRouter);
 
 const documentsRouter = require('./routes/documents');
 app.use('/api/documents', documentsRouter);
+
+const invoicesRouter = require('./routes/invoices');
+app.use('/api/invoices', invoicesRouter);
 
 // Chaque router porte désormais un préfixe de montage explicite et déclare des
 // chemins relatifs. Quatre d'entre eux étaient montés sur '/' en répétant leur

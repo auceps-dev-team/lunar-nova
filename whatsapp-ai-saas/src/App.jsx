@@ -42,6 +42,7 @@ import { useGlobalOrderListener } from './hooks/useGlobalOrderListener';
 const WordPressBridge = React.lazy(() => import('./pages/WordPressBridge'));
 
 import useAppStore from './store';
+import { API_BASE_URL } from './config';
 import './styles/global.css';
 
 function AppContent() {
@@ -66,6 +67,7 @@ function AppContent() {
   const fetchAiQuota = useAppStore(state => state.fetchAiQuota);
   const fetchAndSyncBackendSettings = useAppStore(state => state.fetchAndSyncBackendSettings);
   const fetchGlobalModels = useAppStore(state => state.fetchGlobalModels);
+  const fetchInvoices = useAppStore(state => state.fetchInvoices);
   const [showPostUpdateModal, setShowPostUpdateModal] = useState(null);
 
 
@@ -135,7 +137,8 @@ function AppContent() {
     fetchAndSyncBackendSettings().then(() => {
       fetchGlobalModels();
     });
-  }, [setUpdateAvailable, fetchAiQuota, fetchAndSyncBackendSettings, fetchGlobalModels]);
+    fetchInvoices();
+  }, [setUpdateAvailable, fetchAiQuota, fetchAndSyncBackendSettings, fetchGlobalModels, fetchInvoices]);
 
 
   const handleAddInstance = () => {
@@ -144,6 +147,13 @@ function AppContent() {
     setInstances([...instances, newInstance]);
     setActiveId(id);
     if (window.electronAPI) window.electronAPI.createInstance(id);
+    // Miroir en écriture côté backend (table wa_instances) pour que le CLI/MCP
+    // puisse lister les instances sans dépendre du store Zustand du renderer.
+    fetch(API_BASE_URL + '/api/wa/instances', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, name: newInstance.name, status: newInstance.status })
+    }).catch(() => { });
   };
 
   const handleRemoveInstance = (id) => {
@@ -151,6 +161,7 @@ function AppContent() {
     setInstances(newInstances);
     if (activeId === id) setActiveId(newInstances.length > 0 ? newInstances[0].id : null);
     if (window.electronAPI) window.electronAPI.removeInstance(id);
+    fetch(API_BASE_URL + '/api/wa/instances/' + id, { method: 'DELETE' }).catch(() => { });
   };
   const handleUpdateInstance = (id, updates) => {
     if (id === '__reorder__') {
