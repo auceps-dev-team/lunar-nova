@@ -277,6 +277,8 @@ Ajoutez simplement la configuration suivante dans votre `claude_desktop_config.j
 
 > **Gouvernance des actions à risque** : toute action d'écriture qui modifie un état externe (publication WordPress, création de produit) passe par un flux `propose` → `approve`/`reject` — jamais d'exécution automatique. Les actions de lecture/génération (recherche, texte, image, devis) restent autonomes.
 
+**Fiabilité du flux CLI/MCP.** `backend/__tests__/cliMcpFlow.test.js` ouvre une vraie session MCP sur `stdio` (subprocess `wacopilote mcp`, protocole JSON-RPC réel — pas un appel de fonction en process) et vérifie bout en bout : la pureté du flux `stdout` sur toute une session (aucune ligne non-JSON, condition nécessaire pour tout client MCP strict), la cohérence des données entre le CLI et le MCP lancés comme deux process indépendants (même base SQLite), et la résilience de la session après l'échec d'un appel d'outil.
+
 ### 3. Délégation Outbound : WaCopilote appelle vos Outils CLI Machine
 
 WaCopilote peut à son tour déléguer des tâches complexes (génération de fiches produits, analyse de code, scripts d'automatisation) aux outils CLI déjà installés sur votre poste de travail (`gemini`, `claude`, `aider`, `ollama`, `python`, `node`, `git`).
@@ -462,7 +464,7 @@ La configuration ESLint distingue désormais les trois environnements du dépôt
 | `npm run start:backend` | Démarre uniquement le serveur Express backend sur `http://127.0.0.1:3000`. |
 | `npm run electron:dev` | Démarre Vite et attend la disponibilité des ports `5173` et `3000` avant de lancer Electron. |
 | `npm run start:all` | **Commande principale** : Lance simultanément le Backend Express, Vite et Electron avec synchronisation automatique. |
-| `npm run test` | Lance la suite de tests Vitest (16 suites, 157+ tests validés). |
+| `npm run test` | Lance la suite de tests Vitest (25 suites, 220+ tests validés). |
 | `npm run lint` | Analyse la qualité du code avec ESLint 9 (`--max-warnings=0`). |
 | `npm run build` | Compile le bundle de production Vite (`dist/`). |
 | `npm run electron:build` | Génère les exécutables d'installation desktop (`dist-electron/`). |

@@ -51,11 +51,13 @@ const Support = () => {
             version: 'v1.45.0',
             date: '2026-08-28',
             changes: [
-                'Architecture CLI & Serveur MCP (Model Context Protocol) complet : pilotage de WaCopilote depuis le terminal (wacopilote run, list-agents, pipeline run, status) et serveur MCP stdio prêt pour Claude Code, Cursor et Antigravity',
-                'Refactorisation modulaire du Backend en architecture par Services (pipelineService, prospectionService, documentsService, invoiceService, wordpressService, waInstancesService)',
+                'Le bridge CLI/MCP pilote désormais (quasi) toute l\'application : prospection, création de listes de contacts et de plannings (Kanban), documents, génération de photos, devis, et instances WhatsApp déjà connectées',
+                'Devis : export PDF autonome via Chromium headless, qui fonctionne même sans l\'application ouverte',
+                'Toute action WordPress qui écrit sur votre site (publication, création de produit) exige désormais une validation humaine explicite via le CLI/MCP — jamais d\'exécution automatique',
+                'Refactorisation modulaire du Backend en architecture par Services (pipelineService, prospectionService, documentsService, invoiceService, wordpressService, waInstancesService), plus facile à maintenir et à étendre',
                 'Intégration Google Maps Embed API : prévisualisation en direct de la carte dans le Générateur de Leads avec chargement sécurisé via backend/.env',
-                'Passerelle Outbound CLI & délégation locale : exécution sécurisée et sandboxing des outils d\'agents machine (gemini, claude, ollama, aider, python) avec liste blanche et gouvernance HITL',
-                'Nouvel onglet de réglages dédié « Bridge CLI & Protocoles Agentiques » avec console de test interactive et statut en direct'
+                'Correctif : les journaux de démarrage de plusieurs modules internes s\'affichaient par erreur dans le flux de données du serveur MCP, ce qui pouvait perturber les clients agentiques stricts (Claude Code, Cursor, Antigravity)',
+                'Nouvelle suite de tests qui ouvre une vraie session MCP sur le protocole stdio et vérifie le flux CLI/MCP de bout en bout'
             ]
         },
         { version: 'v1.43.1', date: '2026-08-27', changes: ['Prospection B2B fiabilisée : correction d\'un crash d\'initialisation lié au store global Zustand et persistance des requêtes/leads entre onglets', 'Scraping Google Maps : nettoyage automatique des icônes de géolocalisation parasites dans les adresses', 'Streaming SSE : détection et remontée claire des erreurs HTTP de recherche'] },
