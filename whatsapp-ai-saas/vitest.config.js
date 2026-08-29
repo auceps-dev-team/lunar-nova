@@ -9,12 +9,7 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: './src/setupTests.js',
     css: true,
-    pool: 'forks',
-    poolOptions: {
-      forks: {
-        singleFork: true,
-      },
-    },
+    pool: 'threads',
     // Les specs E2E (e2e/*.spec.js) tournent sous Playwright avec l'application
     // Electron réelle (`npm run test:e2e`) — elles ne sont pas exécutables sous
     // Vitest (pas de binaire Electron, pas d'affichage). Les autres motifs

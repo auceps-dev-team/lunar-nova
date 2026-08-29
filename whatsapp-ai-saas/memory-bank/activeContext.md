@@ -36,8 +36,10 @@
 - Real-time token usage, latency, and cost tracking dashboard.
 
 ## Active Focus
-- **v1.45.0 — Extension CLI/MCP (pilotage quasi-total)** terminée et validée sur la branche `New-feature`.
-- 24 fichiers de tests unitaires/intégration (208 tests validés, 1 skip, 0 échec), ESLint 0 warning (`--max-warnings=0`), Vite build réussi.
+- **v1.45.1 — Résolution Lot P0 (MCP / CLI Database & Stdio Cleansing) (+0.0.1)** :
+  - **Auto-résolution DB & SecretStore** : `backend/db.js` et `backend/secretStore.js` résolvent automatiquement le dossier applicatif OS (`%APPDATA%/WaCopilote` sous Windows, macOS `Application Support`, Linux `XDG_CONFIG_HOME`) si présent. Déchiffrement transparent de `master-key.enc` via helper Electron `safeStorage`. Les clés API réelles et contacts applicatifs sont immédiatement partagés par le CLI et le MCP sans configuration manuelle.
+  - **Immunité Stdio & Nettoyage Logs** : Redirection absolue de `console.log` vers `stderr` dans `wacopiloteMcpServer.js` (`startMcpServer`). Substitution systématique de `console.log` vers `console.error` dans tous les scrapers (`googleMapScraper`, `goAfricaScraper`, `annuaireCiScraper`), services, routes et `server.js`.
+  - **220 tests au vert (100% de réussite)** : Exécution de toutes les 25 suites validée. Flux MCP stdio 100% pur JSON-RPC vérifié.
 
 ## Key Decisions & Context
 - Logo integrated via `public/assets/WaCopilot%20Logo.png`.

@@ -84,8 +84,8 @@ async function generateImageWithQwen(prompt, apiKey, options = {}) {
         payload.mode = "image-to-image";
     }
 
-    console.log('[Qwen→Together] POST', endpoint, '| model:', payload.model, '| steps:', steps);
-    console.log('[Qwen→Together] Prompt (sanitized, first 200 chars):', safePrompt?.slice(0, 200));
+    console.error('[Qwen→Together] POST', endpoint, '| model:', payload.model, '| steps:', steps);
+    console.error('[Qwen→Together] Prompt (sanitized, first 200 chars):', safePrompt?.slice(0, 200));
 
     const response = await axios.post(endpoint, payload, {
         headers: {
@@ -295,7 +295,7 @@ async function analyzeOrEditImage(prompt, imageParams, apiKey, baseURL, modelId)
                 imageBytes = payload?.b64_json || payload?.image || null;
             }
 
-            console.log('[Qwen→Together] Response keys:', Object.keys(payload || {}));
+            console.error('[Qwen→Together] Response keys:', Object.keys(payload || {}));
             if (!imageBytes) {
                 console.error('[Qwen→Together] Full payload:', JSON.stringify(payload));
                 return { error: 'Together AI / Qwen-Image : aucune image retournée. Vérifiez la clé API Together AI et le quota.' };
@@ -338,7 +338,7 @@ async function analyzeOrEditImage(prompt, imageParams, apiKey, baseURL, modelId)
 
                 try {
                     const endpointToUse = `${normalizedBase}/vision/${modelId}`;
-                    console.log(`[NVIDIA] Calling endpoint: ${endpointToUse} | modelId=${modelId} | apiKeyPresent=${!!apiKey}`);
+                    console.error(`[NVIDIA] Calling endpoint: ${endpointToUse} | modelId=${modelId} | apiKeyPresent=${!!apiKey}`);
                     const nvidiaResponse = await attemptPost(modelId);
                     return {
                         success: true,
@@ -352,7 +352,7 @@ async function analyzeOrEditImage(prompt, imageParams, apiKey, baseURL, modelId)
                     if (statusCode === 404) {
                         const alt = modelId.includes('_') ? modelId.replace(/_/g, '.') : modelId.replace(/\./g, '_');
                         try {
-                            console.log(`Retrying NVIDIA endpoint with alternative model id: ${alt}`);
+                            console.error(`Retrying NVIDIA endpoint with alternative model id: ${alt}`);
                             const altResp = await attemptPost(alt);
                             return { success: true, imageBytes: altResp.data.image };
                         } catch (err2) {

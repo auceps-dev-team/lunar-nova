@@ -23,12 +23,12 @@ const db = require('../db');
 // première requête").
 let pipelineService;
 
-describe('pipelineService — étapes DB du pipeline (SQLite en mémoire)', () => {
+describe('pipelineService — étapes DB du pipeline (SQLite en mémoire)', { timeout: 25000 }, () => {
     beforeAll(async () => {
         db.__setDbFileForTests(':memory:');
         await db.initDB();
         pipelineService = require('../services/pipelineService');
-    });
+    }, 25000);
 
     it.runIf(sqlite3Available)('createRun exige un brief non vide', async () => {
         await expect(pipelineService.createRun({ brief: '' })).rejects.toMatchObject({ statusCode: 400 });

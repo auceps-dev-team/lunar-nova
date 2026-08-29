@@ -19,7 +19,7 @@ async function search(query, ignoreLandlines, pages, country = 'ci', subcategory
     const seenPhones = new Set(); // Déduplication par numéro de téléphone entre les pages
     
     try {
-        console.log(`[GoAfricaOnline] Lancement du navigateur pour la requête: ${query}`);
+        console.error(`[GoAfricaOnline] Lancement du navigateur pour la requête: ${query}`);
         browser = await chromium.launch({ headless: true });
         const context = await browser.newContext({
             userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
@@ -41,7 +41,7 @@ async function search(query, ignoreLandlines, pages, country = 'ci', subcategory
             let success = false;
             for (let attempt = 1; attempt <= 3; attempt++) {
                 try {
-                    console.log(`[GoAfricaOnline] Navigation vers la page ${p} (Essai ${attempt}) : ${searchUrl}`);
+                    console.error(`[GoAfricaOnline] Navigation vers la page ${p} (Essai ${attempt}) : ${searchUrl}`);
                     if (onProgress) onProgress({ phase: 'scroll', newCount: p, target: pages, message: `Navigation page ${p}/${pages} (Essai ${attempt}/3)...` });
                     await page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
                     
@@ -63,7 +63,7 @@ async function search(query, ignoreLandlines, pages, country = 'ci', subcategory
             
             const currentLeads = await page.evaluate(extractListingLeads, { phoneCode, countryName });
 
-            console.log(`[GoAfricaOnline] ${currentLeads.length} leads trouvés sur la page ${p}`);
+            console.error(`[GoAfricaOnline] ${currentLeads.length} leads trouvés sur la page ${p}`);
             
             // Filtrage préalable (fixes et doublons)
             const validLeads = [];
@@ -123,7 +123,7 @@ async function search(query, ignoreLandlines, pages, country = 'ci', subcategory
             }
 
             if (currentLeads.length === 0) {
-                console.log(`[GoAfricaOnline] Aucun résultat sur la page ${p}, arrêt de la pagination.`);
+                console.error(`[GoAfricaOnline] Aucun résultat sur la page ${p}, arrêt de la pagination.`);
                 break;
             }
         }

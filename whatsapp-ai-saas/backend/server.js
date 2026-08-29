@@ -23,7 +23,7 @@ const HOST = process.env.BACKEND_HOST || '127.0.0.1';
 function handleMessage(msg) {
     if (msg && msg.type === 'UPDATE_ENV' && msg.key) {
         process.env[msg.key] = msg.value;
-        console.log(`[Backend] Updated environment variable: ${msg.key}`);
+        console.error(`[Backend] Updated environment variable: ${msg.key}`);
     }
 }
 process.on('message', handleMessage);
@@ -180,13 +180,13 @@ app.get('/api/instances', async (req, res) => {
                             if (window.whatsAppObserverAttached) return;
                             window.whatsAppObserverAttached = true;
 
-                            console.log('[Orchestrator] Attached DOM Observer for new messages');
+                            console.error('[Orchestrator] Attached DOM Observer for new messages');
                             const observer = new MutationObserver((mutations) => {
                                 mutations.forEach((mutation) => {
                                     if (mutation.addedNodes.length) {
                                         mutation.addedNodes.forEach((node) => {
                                             if (node.nodeType === Node.ELEMENT_NODE && node.outerHTML.includes('message-in')) {
-                                                console.log('[Orchestrator Event] New incoming message detected!');
+                                                console.error('[Orchestrator Event] New incoming message detected!');
                                             }
                                         });
                                     }
@@ -195,7 +195,7 @@ app.get('/api/instances', async (req, res) => {
                             if (document.body) {
                                 observer.observe(document.body, { childList: true, subtree: true });
                             } else {
-                                console.log('[Orchestrator] document.body not available for observation');
+                                console.error('[Orchestrator] document.body not available for observation');
                             }
                         }).catch(err => {
                             if (err && err.message && !err.message.includes('Execution context was destroyed')) {
@@ -329,8 +329,8 @@ orderListener.registerRoutes(app);
     }
 
     const server = app.listen(PORT, HOST, () => {
-        console.log(`[Orchestrator] Running on http://${HOST}:${PORT}`);
-        console.log(`[Orchestrator] Ready to connect to Electron CDP at port 8315`);
+        console.error(`[Orchestrator] Running on http://${HOST}:${PORT}`);
+        console.error(`[Orchestrator] Ready to connect to Electron CDP at port 8315`);
     });
 
     server.on('error', (e) => {

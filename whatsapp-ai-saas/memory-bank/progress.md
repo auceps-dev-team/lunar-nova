@@ -34,19 +34,25 @@
   - Panneau UI de configuration dans `src/pages/Settings.jsx` via `CliAgentBridgeSettings.jsx`.
   - 22 clés i18n dans `fr.json`, `en.json`, `es.json`, `ar.json`.
   - 4 nouvelles suites de tests (25 tests validés, 182 tests totaux au vert sur 20 fichiers), ESLint 0 warning, Vite build réussi.
-- [x] **Extension CLI/MCP : pilotage quasi-total v1.45.0 (2026-08-28)** :
+- [x] **Extension CLI/MCP : pilotage quasi-total v1.45.0 (2026-08-28/29)** :
   - Extraction service (`backend/services/{pipelineService,prospectionService,documentsService,invoiceService,wordpressService,waInstancesService}.js`), routes existantes devenues des wrappers fins.
-  - Prospection/listes/plannings pilotables en CLI/MCP (remplace le stub `pipeline run` de v1.44.0) ; documents et génération photo ; devis migrés vers le backend avec export PDF autonome (Chromium headless) ; WordPress gouvernance HITL (propose → approve/reject, jamais d'exécution automatique) ; instances WhatsApp (liste + pilotage de l'existant, création QR restant humaine).
-  - Correctif transverse : logs de démarrage redirigés vers stderr (corrompaient le flux JSON-RPC du serveur MCP).
-  - 4 nouvelles suites de tests, `cliInbound.test.js`/`mcpServer.test.js` étendus : 24 suites au vert (208 tests, 1 skip), ESLint 0 warning, Vite build réussi.
+  - Prospection/listes/plannings pilotables en CLI/MCP ; documents et génération photo ; devis migrés vers SQLite avec export PDF autonome (Chromium headless) ; WordPress gouvernance HITL ; instances WhatsApp.
+  - 25 fichiers de tests unitaires/intégration au vert (**220 tests réussis**, 1 skip, 0 échec), build Vite réussi.
+- [x] **Audit complet 360° et Carte Mentale Graphique v1.45.0 (2026-08-29)** :
+  - Analyse approfondie des derniers commits Git, exécution intégrale des tests.
+  - Mise à jour de `docs/PROJECT_MENTAL_MAP.md` avec diagrammes Mermaid.
+  - Génération de l'artefact d'audit complet.
+
+- [x] **Lot P0 — Résolution de la Base & Propreté Stdio MCP/CLI v1.45.1 (2026-08-29)** :
+  - Détection automatique et partage direct de la base applicative (`%APPDATA%/WaCopilote`) dans `backend/db.js` et `backend/secretStore.js`.
+  - Déchiffrement transparent de `master-key.enc` via helper Electron `safeStorage` (clés API réelles partagées avec le CLI et MCP).
+  - Immunité totale de `stdout` : redirection stricte de `console.log` vers `stderr` dans `startMcpServer()`, substitution systématique de `console.log` vers `console.error` dans tous les scrapers, routes, services et serveur.
+  - 25 fichiers de tests unitaires/intégration au vert (**220 tests réussis**, 0 échec).
 
 ## Current Task
-- [x] Audit complet et continu du dépôt.
-- [x] Intégration et validation complète des lots P0, P1, P2 (+0.1.0 -> v1.43.0).
-- [x] Correctif et fiabilisation de la prospection B2B (+0.0.1 -> v1.43.1).
-- [x] Synthèse complète des changements et audit de sécurité 360° validé (`synthese_changements_et_audit_complet.md`).
-- [x] Développement, configuration UI et validation intégrale de l'architecture CLI bidirectionnelle & MCP (+0.1.0 -> v1.44.0 sur `New-feature`).
-- [x] Extension CLI/MCP au pilotage quasi-total (prospection, documents, photo, devis, WordPress HITL, instances WhatsApp) (+0.1.0 -> v1.45.0 sur `New-feature`).
+- [x] Lot P0 complété et vérifié avec succès.
+- [ ] Lot P1 : Raccordement Pipeline / Segments (`save_pipeline_contacts` `segmentName`/`segmentId`) & Réaffectation des contacts doublons.
+- [ ] Lot P2 : Outils CRM atomiques MCP (`list_segments`, `create_segment`, `list_contacts`, `create_contact`, `assign_contacts_to_segment`).
 
 ## Future Roadmap
 - [ ] Multi-device WhatsApp API Gateway integration (Baileys / official Cloud API fallback).

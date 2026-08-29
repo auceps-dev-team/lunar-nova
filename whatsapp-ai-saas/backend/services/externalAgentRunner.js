@@ -141,7 +141,7 @@ async function detectInstalledClis() {
             const check = await executeExternalCli({
                 command: item.name,
                 args: [item.flag],
-                timeout: 1000,
+                timeout: 3000,
                 skipAllowanceCheck: true
             });
 

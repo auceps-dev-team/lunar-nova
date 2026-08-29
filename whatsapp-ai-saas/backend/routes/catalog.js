@@ -52,7 +52,7 @@ router.post('/upload', async (req, res) => {
         tempImagePath = path.join(tempDir, fileName);
 
         fs.writeFileSync(tempImagePath, base64Data, 'base64');
-        console.log(`[Catalog] Saved temporary image to ${tempImagePath} `);
+        console.error(`[Catalog] Saved temporary image to ${tempImagePath} `);
 
         // 2. Connect to Puppeteer
         browser = await puppeteer.connect({ browserURL: 'http://127.0.0.1:8315', defaultViewport: null });
@@ -88,7 +88,7 @@ router.post('/upload', async (req, res) => {
             throw new Error(`Target Page Context could not be located.Ensure the Webview for instance ${instance_id} is mounted.`);
         }
 
-        console.log(`[Catalog] Connected to instance: ${instance_id} `);
+        console.error(`[Catalog] Connected to instance: ${instance_id} `);
 
         // --- ADAPTIVE CHECK (avant le contrôle Business) ---
         // Si l'utilisateur est DÉJÀ sur la page « Ajouter un article » (champ
@@ -103,7 +103,7 @@ router.post('/upload', async (req, res) => {
             }
         })();
         if (isAlreadyOnAddItemPage) {
-            console.log(`[Catalog] Adaptive check: User is already on the Add Item page. Skipping navigation.`);
+            console.error(`[Catalog] Adaptive check: User is already on the Add Item page. Skipping navigation.`);
         }
 
         // 3. Pre-flight Check: Is it a Business Account?
@@ -128,7 +128,7 @@ router.post('/upload', async (req, res) => {
                     "Les actions de catalogue ne peuvent pas être exécutées. Connectez-vous avec un compte Business ou ouvrez manuellement le catalogue."
                 );
             }
-            console.log(`[Catalog] Pre-flight Check Passed: compte Business confirmé.`);
+            console.error(`[Catalog] Pre-flight Check Passed: compte Business confirmé.`);
         }
 
         // In Puppeteer, focus using bringToFront or focus
@@ -153,7 +153,7 @@ router.post('/upload', async (req, res) => {
                         btn.click();
                     }
                 }, storefrontSelectors);
-                console.log(`[Catalog] Clicked Catalog/Storefront Icon`);
+                console.error(`[Catalog] Clicked Catalog/Storefront Icon`);
 
                 // Wait a moment for navigation (human reading time)
                 await humanDelay(2500, 4500);
@@ -170,7 +170,7 @@ router.post('/upload', async (req, res) => {
                         btn.click();
                     }
                 });
-                console.log(`[Catalog] Checked for intermediate Catalogue menu`);
+                console.error(`[Catalog] Checked for intermediate Catalogue menu`);
 
                 await humanDelay(2000, 3000);
 
@@ -221,7 +221,7 @@ router.post('/upload', async (req, res) => {
                     console.error(`[Catalog] Available buttons:`, allButtons);
                     throw new Error("Impossible de trouver le bouton 'Ajouter un article'. Essayez d'ouvrir la page du catalogue manuellement.");
                 }
-                console.log(`[Catalog] Clicked Add Item Button via ${clicked}`);
+                console.error(`[Catalog] Clicked Add Item Button via ${clicked}`);
 
                 // Wait for form to appear (animation time + human visual register)
                 await humanDelay(2500, 4000);
@@ -234,7 +234,7 @@ router.post('/upload', async (req, res) => {
             const fileInput = await targetPage.$(fileInputSelector);
             if (fileInput) {
                 await fileInput.uploadFile(tempImagePath);
-                console.log(`[Catalog] Image injected from disk: ${tempImagePath} `);
+                console.error(`[Catalog] Image injected from disk: ${tempImagePath} `);
             } else {
                 throw new Error("File input not found in DOM");
             }
@@ -245,7 +245,7 @@ router.post('/upload', async (req, res) => {
             // Wait for image thumbnail to render and load (avoid suspicious speed)
             await humanDelay(3000, 5000);
 
-            console.log(`[Catalog] Image upload complete. Handing off to user via Copilot...`);
+            console.error(`[Catalog] Image upload complete. Handing off to user via Copilot...`);
 
         } catch (e) {
             console.error("Puppeteer Catalog Interaction Error", e);

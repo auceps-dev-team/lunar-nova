@@ -1,5 +1,5 @@
 const path = require('path');
-const { encrypt, decrypt, isEncrypted } = require('./secretStore');
+const { encrypt, decrypt, isEncrypted, resolveUserDataDir } = require('./secretStore');
 
 let isDbConnected = false;
 
@@ -9,10 +9,8 @@ const isSecretSetting = (key) => typeof key === 'string' && key.endsWith('_api_k
 
 // Determiner le chemin de la base de données
 const dbFileName = 'database.sqlite';
-// En production (forked depuis main.cjs), process.env.USER_DATA_PATH sera défini.
-// En dev, on garde le dossier backend local.
-const userDataPath = process.env.USER_DATA_PATH;
-let dbFilePath = userDataPath ? path.join(userDataPath, dbFileName) : path.join(__dirname, '..', dbFileName);
+const userDataPath = resolveUserDataDir();
+let dbFilePath = path.join(userDataPath, dbFileName);
 
 /**
  * Réservé aux tests (P2-3) : redirige la base vers un autre fichier (p.ex.
@@ -417,7 +415,7 @@ function initDB() {
 async function logCopilotInteraction(instance_id, contact_name, context, proposals, provider = 'gemini', model = 'gemini-2.5-flash', tokens = 0, cost = 0.0, status = 'success') {
     await initDB();
     if (!isDbConnected) {
-        console.log(`[DB Mock] Logged interaction for ${instance_id} with ${contact_name}`);
+        console.error(`[DB Mock] Logged interaction for ${instance_id} with ${contact_name}`);
         return;
     }
 
@@ -511,7 +509,7 @@ async function encryptLegacySecrets(client) {
     }
 
     if (migrated > 0) {
-        console.log(`[SecretStore] ${migrated} secret(s) chiffré(s) au repos.`);
+        console.error(`[SecretStore] ${migrated} secret(s) chiffré(s) au repos.`);
     }
 }
 

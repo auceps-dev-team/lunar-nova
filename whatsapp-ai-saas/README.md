@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/auceps-dev-team/lunar-nova"><img src="https://img.shields.io/badge/version-1.45.0-blue.svg" alt="Version 1.45.0" /></a>
+  <a href="https://github.com/auceps-dev-team/lunar-nova"><img src="https://img.shields.io/badge/version-1.45.1-blue.svg" alt="Version 1.45.1" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue.svg" alt="License AGPL-3.0" /></a>
   <a href="#-open-source"><img src="https://img.shields.io/badge/open%20source-oui-brightgreen.svg" alt="Open Source" /></a>
   <a href="#-pourquoi-wacopilote-"><img src="https://img.shields.io/badge/Made%20in-%F0%9F%87%A8%F0%9F%87%BE%20C%C3%B4te%20d'Ivoire-orange.svg" alt="Made in Côte d'Ivoire" /></a>
@@ -539,6 +539,32 @@ R : Oui, la gestion des contacts et des segments permet d'organiser vos listes d
 
 **Q : Pourquoi Electron attend-il 2 à 3 secondes avant d'ouvrir la fenêtre au lancement de `npm run start:all` ?**  
 R : WaCopilote intègre un mécanisme de synchronisation multi-ports (`wait-on tcp:5173 tcp:3000`). Au démarrage, le backend Express initialise la base SQLite, configure les 27 personas d'agents et synchronise le catalogue de modèles IA. Electron ne s'ouvre que lorsque le backend et Vite sont pleinement prêts à accepter les requêtes HTTP, éliminant ainsi toute erreur `ERR_CONNECTION_REFUSED` au premier chargement.
+
+---
+
+## 📌 Règles de Versionnage & Conventions de Commit
+
+Le projet suit des règles de versionnage sémantique et de traçabilité strictes, applicables à l'ensemble du cycle de développement :
+
+1. **Incrémentation des versions** :
+   - **`+0.1.0` (Majeur / Important)** : Tout changement majeur ou important (nouvelles fonctionnalités structurantes, refonte d'architecture, nouvelle surface d'outils CLI/MCP, nouveaux modules).
+   - **`+0.0.1` (Mineur mais Important / Fix)** : Tout correctif de bug, patch de stabilité, fiabilisation d'intégration ou ajustement d'API.
+   - **Pas de changement de version** : Tâches de maintenance interne pure (documentation isolée, ajustements CI, refactoring sans impact fonctionnel).
+
+2. **Propagation globale de la version** :
+   Lorsqu'une version change, elle **doit être mise à jour sur l'ensemble du projet** :
+   - `package.json` et `backend/package.json`
+   - `build/installer.iss`
+   - `src/pages/Support.jsx` (historique et sélecteur de version)
+   - `src/components/CliAgentBridgeSettings.jsx`
+   - `README.md` (badges et documentations)
+   - Memory Bank (`activeContext.md`, `progress.md`)
+
+3. **Traçabilité des changements (Changelog utilisateur)** :
+   Chaque nouvelle version doit obligatoirement être consignée avec ses points clés dans la liste `changelog` de `src/pages/Support.jsx`.
+
+4. **Documentation & Synchronisation** :
+   Le `README.md` et les fichiers du Memory Bank doivent être synchronisés à chaque étape avant le commit.
 
 ---
 

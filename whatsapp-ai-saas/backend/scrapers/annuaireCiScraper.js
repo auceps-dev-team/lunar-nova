@@ -15,7 +15,7 @@ async function search(query, ignoreLandlines, pages) {
     const leads = [];
 
     try {
-        console.log(`[AnnuaireCI] Préparation de la recherche pour: "${query}"`);
+        console.error(`[AnnuaireCI] Préparation de la recherche pour: "${query}"`);
 
         const { categorySlug, baseUrl } = resolveQueryLocation(query);
         if (!categorySlug) {
@@ -23,7 +23,7 @@ async function search(query, ignoreLandlines, pages) {
             return [];
         }
 
-        console.log(`[AnnuaireCI] Lancement du navigateur. URL de base: ${baseUrl}`);
+        console.error(`[AnnuaireCI] Lancement du navigateur. URL de base: ${baseUrl}`);
         browser = await chromium.launch({ headless: true });
         const context = await browser.newContext({
             userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
@@ -36,11 +36,11 @@ async function search(query, ignoreLandlines, pages) {
                 searchUrl = `${baseUrl}page/${p}/`;
             }
 
-            console.log(`[AnnuaireCI] Navigation vers la page ${p} : ${searchUrl}`);
+            console.error(`[AnnuaireCI] Navigation vers la page ${p} : ${searchUrl}`);
             const response = await page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
             
             if (response && response.status() === 404) {
-                console.log(`[AnnuaireCI] 404 - Aucun résultat trouvé pour cette catégorie/ville.`);
+                console.error(`[AnnuaireCI] 404 - Aucun résultat trouvé pour cette catégorie/ville.`);
                 break;
             }
 
@@ -49,10 +49,10 @@ async function search(query, ignoreLandlines, pages) {
             // Étape 1 : Récupérer les URLs des entreprises sur la page de résultats
             const companyLinks = await page.evaluate(collectCompanyLinks);
 
-            console.log(`[AnnuaireCI] ${companyLinks.length} entreprises trouvées sur la page ${p}. Scraping des détails...`);
+            console.error(`[AnnuaireCI] ${companyLinks.length} entreprises trouvées sur la page ${p}. Scraping des détails...`);
             
             if (companyLinks.length === 0) {
-                console.log(`[AnnuaireCI] Aucun résultat sur la page ${p}, arrêt de la pagination.`);
+                console.error(`[AnnuaireCI] Aucun résultat sur la page ${p}, arrêt de la pagination.`);
                 break;
             }
 

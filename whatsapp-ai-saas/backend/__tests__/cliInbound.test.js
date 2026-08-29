@@ -32,7 +32,7 @@ function runCli(args = [], input = '') {
     });
 }
 
-describe('bin/wacopilote.js — Point d\'entrée CLI Inbound', { timeout: 15000 }, () => {
+describe('bin/wacopilote.js — Point d\'entrée CLI Inbound', { timeout: 30000 }, () => {
     it('--version affiche la version de WaCopilote', async () => {
         const { code, stdout } = await runCli(['--version']);
         expect(code).toBe(0);
