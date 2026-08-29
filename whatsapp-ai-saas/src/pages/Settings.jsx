@@ -38,7 +38,9 @@ const Settings = () => {
         default_image_model: '',
         together_api_key: '',
     });
-    const [channelsStatus, setChannelsStatus] = useState(null);
+    // Statut temps réel des canaux LLM — seul le setter est câblé ici ; la
+    // valeur sera consommée par les badges dynamiques prévus en v1.48.0.
+    const [, setChannelsStatus] = useState(null);
     const aiQuota = useAppStore(state => state.aiQuota);
     const fetchAiQuota = useAppStore(state => state.fetchAiQuota);
 

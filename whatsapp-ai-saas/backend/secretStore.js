@@ -94,7 +94,7 @@ app.whenReady().then(() => {
                     }
                 }
             }
-        } catch (e) {
+        } catch {
             // Repli gracieux
         }
     }

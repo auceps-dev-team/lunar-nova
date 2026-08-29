@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/auceps-dev-team/lunar-nova"><img src="https://img.shields.io/badge/version-1.43.0-blue.svg" alt="Version 1.43.0" /></a>
+  <a href="https://github.com/auceps-dev-team/lunar-nova"><img src="https://img.shields.io/badge/version-1.47.1-blue.svg" alt="Version 1.47.1" /></a>
   <a href="whatsapp-ai-saas/LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue.svg" alt="License AGPL-3.0" /></a>
   <a href="#-open-source"><img src="https://img.shields.io/badge/open%20source-oui-brightgreen.svg" alt="Open Source" /></a>
   <a href="#-pourquoi-wacopilote-"><img src="https://img.shields.io/badge/Made%20in-%F0%9F%87%A8%F0%9F%87%BE%20C%C3%B4te%20d'Ivoire-orange.svg" alt="Made in Côte d'Ivoire" /></a>
@@ -278,11 +278,11 @@ npm run lint
 npm run build
 ```
 
-**État réel de la couverture.** 43 tests couvrent aujourd'hui le chiffrement des secrets, l'analyse des réponses LLM et la normalisation des numéros de téléphone. C'est un début, pas une couverture : le gros du code reste non testé, et c'est la contribution la plus utile qu'on puisse apporter au projet. Les zones encore à couvrir, celles qui cassent en production :
+**État réel de la couverture (v1.47.1).** **247 tests** répartis dans **27 suites** couvrent aujourd'hui les zones qui cassent en production : chiffrement des secrets (`secretStore`, 11 tests), extraction JSON des réponses LLM (`llmJson`, 18), numérotation (`phoneRules` 20 + `phoneFormat` 13), migrations SQLite (5), parité i18n des 4 langues (3), CLI entrant (`cliInbound`, 13) et flux CLI/MCP bout-en-bout (`cliMcpFlow`, 6), routage agentique (`agentFallback`, 6 — les tests d'intégration réels s'ignorent proprement sans clé API), CRM (`crmService`, 6), parseurs de scrapers (14), comparaison de versions de l'updater (14), etc. Le gros du code reste non testé, et c'est la contribution la plus utile qu'on puisse apporter au projet. Les zones encore à couvrir :
 
-- l'extraction DOM des scrapers (`backend/scrapers/`), qui tourne dans `page.evaluate()` et reste à sortir pour être testable ; les règles de numérotation en ont déjà été extraites (`phoneRules.js`, 20 tests) ;
 - les chemins d'appel réseau des adaptateurs LLM (`backend/*Service.js`) ;
-- les migrations de schéma (`backend/db.js`).
+- l'extraction DOM des scrapers (`backend/scrapers/`), qui tourne dans `page.evaluate()` et reste à sortir pour être testable ;
+- les routeurs Express d'intégration (`wa.js`, `catalog.js`, `orderListener.js`) et `electron/main.cjs`.
 
 La configuration ESLint distingue désormais les trois environnements du dépôt (renderer navigateur, backend Node, code injecté dans la page WhatsApp), ce qui a ramené le bruit de 375 à 0. Les rares omissions volontaires de dépendances portent un commentaire expliquant pourquoi elles le sont.
 
@@ -449,6 +449,19 @@ R : Oui, la gestion des contacts et des segments permet d'organiser vos listes d
 ## 🤝 Contribution
 
 Les contributions sont les bienvenues. Le guide complet — installation, architecture des trois processus, conventions de commit et de versionnage — se trouve dans **[CONTRIBUTING.md](CONTRIBUTING.md)**.
+
+### 🏷️ Règles de versionnage & journal des changements (norme projet)
+
+Ces règles s'appliquent à **tous les projets** du dépôt (et aux autres projets Auceps) — sans exception :
+
+1. **Choix de la version** :
+   * `+0.1.0` pour tout changement **majeur ou important** (nouvelle fonctionnalité, changement de contrat ou d'architecture) ;
+   * `+0.0.1` pour tout **correctif** ou changement **mineur mais important** ;
+   * **aucun changement de version** pour les autres changements (docs internes, commentaires, formatage).
+2. **Propagation intégrale** : la version est changée **sur l'ensemble du projet** en une seule fois — `package.json` (racine + `backend/`), les deux `package-lock.json`, `build/installer.iss`, `index.html`, badges des deux README, gabarit de bug. Le script `./bump_version.sh <patch|feature|major>` automatise cette propagation.
+3. **Journal des changements** : chaque version est documentée dans **`whatsapp-ai-saas/src/pages/Support.jsx`** (constante `changelog`, entrée en tête avec version, date et liste des changements) — c'est ce que voit l'utilisateur dans l'application.
+4. **Documentation** : le README (racine + interne) est mis à jour avec les correctifs et la version correspondante.
+5. **Commits** : un message par lot cohérent (`feat:`, `fix:`, `docs:`…), décrivant le *pourquoi* ; la version et ses documents voyagent dans le commit du lot.
 
 **Par où commencer ?** Les contributions les plus utiles aujourd'hui sont, dans l'ordre : ajouter des tests (en commençant par extraire la logique de parsing hors de `page.evaluate()` pour la rendre testable), traiter les avertissements `react-hooks/exhaustive-deps` restants, et découper les pages qui dépassent 800 lignes. Les issues étiquetées `good first issue` couvrent les deux premiers points.
 

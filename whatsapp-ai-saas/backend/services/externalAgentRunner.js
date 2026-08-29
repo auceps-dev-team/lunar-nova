@@ -43,8 +43,11 @@ function sanitizeCommandName(command) {
         throw new Error('Nom de commande CLI invalide.');
     }
     const trimmed = command.trim();
-    // Extraire le nom de base si un chemin complet est fourni
-    const baseName = path.basename(trimmed).replace(/\.(exe|cmd|bat|sh)$/i, '');
+    // Normaliser les séparateurs Windows (« \ ») en « / » AVANT l'extraction :
+    // sous POSIX, path.basename ignore les anti-slashes et renverrait le chemin
+    // complet (« c:\program files\nodejs\node »), ce qui faisait échouer la
+    // liste blanche — et le test de portabilité — sur un chemin Windows.
+    const baseName = path.basename(trimmed.replace(/\\/g, '/')).replace(/\.(exe|cmd|bat|sh)$/i, '');
     return baseName.toLowerCase();
 }
 
@@ -276,8 +279,13 @@ async function executeExternalCli({
         }
     }
 
-    const cleanCmd = (command || '').toLowerCase();
-    const executable = (cleanCmd === 'node') ? process.execPath : command;
+    const cleanCmd = sanitizeCommandName(command);
+    // Exécuter le nom assaini (résolu via le PATH), jamais le chemin brut saisi :
+    // « C:\outils\gemini.exe » devait sinon franchir la liste blanche sous
+    // Windows (basename = « gemini ») puis être exécuté depuis son chemin
+    // d'origine — une évasion de binaire. Le nom simple, lui, est résolu par
+    // le système parmi les binaires réellement installés.
+    const executable = (cleanCmd === 'node') ? process.execPath : cleanCmd;
 
     return new Promise((resolve) => {
         let stdoutData = '';

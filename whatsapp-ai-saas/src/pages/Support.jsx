@@ -48,6 +48,17 @@ const Support = () => {
 
     const changelog = [
         {
+            version: 'v1.47.1',
+            date: '2026-08-29',
+            changes: [
+                'Fiabilisation du bridge CLI : le nom de commande est désormais normalisé avant contrôle de la liste blanche — un chemin Windows (C:\\Program Files\\...) est correctement réduit à son nom de base sur tous les systèmes d\'exploitation, et l\'exécution utilise toujours le nom simple résolu via le PATH, jamais un chemin brut fourni en entrée',
+                'CLI : correction de la troncature des sorties JSON volumineuses (list-agents ≈ 158 Ko pouvait arriver tronqué chez les consommateurs programmatiques — scripts, IDE agentiques) : le processus attend désormais le vidage effectif de stdout avant de se terminer',
+                'Tests : les deux tests de cascade du routage agentique qui appellent les vraies API sont ignorés proprement quand aucune clé Gemini n\'est configurée (CI, poste vierge) au lieu d\'enregistrer un échec fallacieux',
+                'Qualité : suppression de 6 variables et imports morts détectés par ESLint (suite lint à nouveau 100 % verte)',
+                'Documentation : comptage de tests et badge de version mis à jour dans le README racine et la page d\'accueil ; formalisation des règles de versionnage et de journal des changements (README + CONTRIBUTING)'
+            ]
+        },
+        {
             version: 'v1.47.0',
             date: '2026-08-29',
             changes: [

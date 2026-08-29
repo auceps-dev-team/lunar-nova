@@ -10,7 +10,10 @@ const CliAgentBridgeSettings = () => {
 
     const [statusData, setStatusData] = useState(null);
     const [mcpConfigData, setMcpConfigData] = useState(null);
-    const [isLoading, setIsLoading] = useState(true);
+    // isLoading jamais lu : seul le passage à false en fin de chargement est
+    // utile aujourd'hui. Réintroduire la valeur si un état de chargement
+    // conditionnel est un jour affiché.
+    const [, setIsLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [copiedMcp, setCopiedMcp] = useState(false);
     const [copiedCmd, setCopiedCmd] = useState(null);
