@@ -123,19 +123,27 @@ Corps expliquant le problème résolu et pourquoi cette solution.
 
 Les types utilisés : `feat`, `fix`, `security`, `chore`, `docs`.
 
-### Versionnage
+### Versionnage & journal des changements (norme projet)
 
-La version est portée **dans les deux `package.json`** (racine et `backend/`) et
-dans les badges du README :
+Ces règles s'appliquent à tous les projets Auceps, sans exception :
 
-- **Modification majeure** — nouvelle fonctionnalité, changement de contrat :
-  `+0.1.0`
-- **Modification importante** — correctif notable, changement de comportement :
-  `+0.0.1`
-- **Autre** — documentation, commentaires, formatage : pas de changement
+- **Changement majeur ou important** (nouvelle fonctionnalité, changement de
+  contrat ou d'architecture) : `+0.1.0`
+- **Correctif ou changement mineur mais important** : `+0.0.1`
+- **Autre** (documentation interne, commentaires, formatage) : pas de changement
 
-Dans une pull request, ne modifiez pas la version : la personne qui fusionne s'en
-charge, ce qui évite les conflits.
+La version est changée **sur l'ensemble du projet dans le même lot** :
+les deux `package.json` (racine et `backend/`) et leurs lockfiles,
+`build/installer.iss`, `index.html`, les badges des deux README et le gabarit
+de bug — `./bump_version.sh <patch|feature|major>` automatise cette propagation.
+
+Chaque version est documentée :
+
+1. dans **`whatsapp-ai-saas/src/pages/Support.jsx`** (constante `changelog`,
+   entrée en tête : version, date, liste des changements — visible par
+   l'utilisateur dans l'application) ;
+2. dans les **README** (racine + interne), avec les correctifs et la version
+   correspondante.
 
 ### Pull requests
 

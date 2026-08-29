@@ -49,6 +49,14 @@
   - 9 outils CRM atomiques MCP + sous-commandes CLI `contacts` et `segments`.
   - 26 suites de tests au vert (**237 tests réussis**, 1 skip, 0 échec).
 
+- [x] **Traitement audit révision 2 — Lot 1 (correctifs bloquants CI) v1.47.1 (2026-08-29)** :
+  - C1 — Portabilité `sanitizeCommandName` : normalisation des séparateurs Windows avant extraction du nom de base (le test chemin Windows passe désormais sous Linux), et durcissement : `executeExternalCli` exécute toujours le nom assaini résolu via le PATH, jamais le chemin brut (fermeture de l'évasion de binaire sous Windows).
+  - N1 — CLI : suppression de la troncature non déterministe des sorties JSON volumineuses (`process.exit()` coupat le tampon stdout) — attente du drain effectif avant sortie ; vérifié sur `list-agents --json` (158 Ko, JSON valide).
+  - N2 — Les 2 tests de cascade à appels API réels (`agentFallback.test.js`) s'ignorent proprement sans clé Gemini (patron `it.runIf`, homogène avec `dbMigrations.test.js`).
+  - N3 — 6 variables/imports morts supprimés : ESLint à nouveau 0 erreur / 0 warning.
+  - Suite : **27 fichiers, 244 tests réussis, 0 échec, 3 skip conditionnels** ; ESLint 0 ; build Vite OK.
+  - Documentation : README racine à jour (badge, 247 tests décrits), règles de versionnage/journal formalisées (README + CONTRIBUTING), Support.jsx v1.47.1.
+
 - [x] **Routage Agentique Intelligent & Auto-Fallback Multi-Canal v1.47.0 (2026-08-29)** :
   - Moteur de résilience `backend/services/agentFallbackRouter.js` avec cascade de secours multi-canal (Gemini API Cloud -> Google Gemini CLI local v0.57.0 -> Claude Code CLI v2.1.250 -> OpenRouter -> Ollama).
   - Élimination absolue des erreurs bloquantes "API key not configured" dans Chat IA (ex: Jarvis configuré avec NVIDIA/Llama sans clé NVIDIA).

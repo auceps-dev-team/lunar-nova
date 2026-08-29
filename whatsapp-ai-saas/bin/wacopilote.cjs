@@ -1040,9 +1040,17 @@ async function handleSegments(args) {
 }
 
 main().then(() => {
-    // Si la commande n'est pas 'mcp' (serveur stdio persistant), sortir proprement
+    // Si la commande n'est pas 'mcp' (serveur stdio persistant), sortir
+    // proprement — mais seulement APRÈS le vidage effectif de stdout.
+    // Un process.exit() immédiat coupe le tampon du pipe avant que Node
+    // n'ait flushé les écritures volumineuses : `list-agents --json`
+    // (≈ 158 Ko) arrivait ainsi tronqué, de façon non déterministe, chez
+    // les consommateurs programmatiques (scripts, IDE agentiques, tests).
+    // L'écriture d'une chaîne vide ordonne le drain de tous les écrits
+    // précédents (FIFO) ; le callback ne part qu'une fois tout vidé.
     if (process.argv[2] !== 'mcp') {
-        process.exit(0);
+        process.stdout.once('error', () => process.exit(0)); // EPIPE : lecteur parti, quitter sans trace
+        process.stdout.write('', () => process.exit(0));
     }
 }).catch((err) => {
     console.error(`\x1b[31mErreur inattendue : ${err.message}\x1b[0m`);

@@ -71,8 +71,6 @@ async function getExecutionChannelsStatus() {
     const rawOpenaiKey = (await db.getSetting('openai_api_key', '')) || process.env.NVIDIA_API_KEY || '';
     const hasOpenaiKey = Boolean(rawOpenaiKey && !rawOpenaiKey.includes('your-nvidia-key') && rawOpenaiKey.trim().length > 10);
 
-    const ollamaKey = (await db.getSetting('ollama_api_key', '')) || '';
-
     let installedClis = [];
     try {
         installedClis = await detectInstalledClis();

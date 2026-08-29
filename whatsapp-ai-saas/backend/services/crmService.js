@@ -1,5 +1,4 @@
 const { pool } = require('../db');
-const contactAgent = require('./contactAgent');
 
 /**
  * Service CRM : Gestion unifiée des contacts et segments.
