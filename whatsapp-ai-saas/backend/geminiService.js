@@ -17,7 +17,7 @@ async function getGeminiClient(modality = 'none', requestedModel = '') {
         isDefaultKey = true;
     }
 
-    if (!key) {
+    if (!key || key.includes('your-gemini-api-key') || key.length < 10) {
         throw new Error('API key not valid');
     }
 
@@ -285,8 +285,15 @@ async function chatWithAgent(personaId, message, imageParams, attachments, promp
 
         return { response: response.text };
     } catch (error) {
-        console.error(`Gemini Agent Error (${personaId}):`, error);
-        return { response: "I am currently offline or experiencing a connection error. Please try again." };
+        const isKeyErr = error && error.message && (
+            error.message.includes('API key not valid') ||
+            error.message.includes('API_KEY_INVALID') ||
+            error.message.includes('API key not configured')
+        );
+        if (!isKeyErr) {
+            console.error(`Gemini Agent Error (${personaId}):`, error.message || error);
+        }
+        throw error;
     }
 }
 

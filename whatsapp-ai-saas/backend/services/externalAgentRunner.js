@@ -317,6 +317,10 @@ async function executeExternalCli({
             } catch (e) {
                 console.warn('[ExternalAgentRunner] Erreur écriture stdin:', e.message);
             }
+        } else if (proc.stdin) {
+            try {
+                proc.stdin.end();
+            } catch {}
         }
 
         proc.stdout.on('data', (chunk) => {

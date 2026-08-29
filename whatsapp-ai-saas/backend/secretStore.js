@@ -151,6 +151,8 @@ function encrypt(plaintext) {
     return PREFIX + Buffer.concat([iv, tag, ciphertext]).toString('base64');
 }
 
+let hasWarnedDecryptionFailure = false;
+
 /**
  * Déchiffre une valeur. Une valeur non préfixée est renvoyée telle quelle : les
  * bases antérieures à cette version contiennent du texte clair, et la migration
@@ -173,7 +175,10 @@ function decrypt(value) {
         decipher.setAuthTag(tag);
         return Buffer.concat([decipher.update(ciphertext), decipher.final()]).toString('utf8');
     } catch (err) {
-        console.error('[SecretStore] Déchiffrement impossible (clé maître absente ou modifiée) :', err.message);
+        if (!hasWarnedDecryptionFailure) {
+            console.error('[SecretStore] Déchiffrement impossible (clé maître absente ou modifiée) :', err.message);
+            hasWarnedDecryptionFailure = true;
+        }
         return '';
     }
 }
