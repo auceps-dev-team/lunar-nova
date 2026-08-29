@@ -1,0 +1,200 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2560" height="1930" viewBox="0 0 2560 1930" font-family="DejaVu Sans, sans-serif">
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+  <stop offset="0" stop-color="#0b1220"/><stop offset="0.55" stop-color="#101b30"/><stop offset="1" stop-color="#0c1526"/>
+</linearGradient>
+<radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+  <stop offset="0" stop-color="#3b82f6" stop-opacity="0.22"/><stop offset="1" stop-color="#3b82f6" stop-opacity="0"/>
+</radialGradient>
+</defs>
+<rect width="2560" height="1930" fill="url(#bg)"/>
+<ellipse cx="1280" cy="790" rx="980" ry="820" fill="url(#glow)"/>
+<text x="64" y="66" font-size="40" font-weight="bold" fill="#f1f5f9">Carte mentale — WaCopilote v1.45.0</text>
+<text x="64" y="102" font-size="20" fill="#94a3b8">Audit intégral du dépôt lunar-nova · 2026-08-29 · commit 609bd08 (branche New-feature) · 280 fichiers vérifiés</text>
+<path d="M 1460 744 C 1748 744, 1748 216, 2036 216" stroke="#38bdf8" stroke-width="3.5" fill="none" opacity="0.75"/>
+<path d="M 1460 744 C 1748 744, 1748 556, 2036 556" stroke="#a78bfa" stroke-width="3.5" fill="none" opacity="0.75"/>
+<path d="M 1460 836 C 1748 836, 1748 896, 2036 896" stroke="#34d399" stroke-width="3.5" fill="none" opacity="0.75"/>
+<path d="M 1460 836 C 1748 836, 1748 1236, 2036 1236" stroke="#fbbf24" stroke-width="3.5" fill="none" opacity="0.75"/>
+<path d="M 1460 836 C 1748 836, 1748 1576, 2036 1576" stroke="#f87171" stroke-width="3.5" fill="none" opacity="0.75"/>
+<path d="M 1100 744 C 812 744, 812 216, 524 216" stroke="#22d3ee" stroke-width="3.5" fill="none" opacity="0.75"/>
+<path d="M 1100 744 C 812 744, 812 556, 524 556" stroke="#60a5fa" stroke-width="3.5" fill="none" opacity="0.75"/>
+<path d="M 1100 836 C 812 836, 812 896, 524 896" stroke="#f472b6" stroke-width="3.5" fill="none" opacity="0.75"/>
+<path d="M 1100 836 C 812 836, 812 1236, 524 1236" stroke="#4ade80" stroke-width="3.5" fill="none" opacity="0.75"/>
+<rect x="1100" y="720" rx="22" width="360" height="140" fill="#1d4ed8" stroke="#93c5fd" stroke-width="3"/>
+<text x="1280" y="768" text-anchor="middle" font-size="34" font-weight="bold" fill="#ffffff">WACOPILOTE</text>
+<text x="1280" y="802" text-anchor="middle" font-size="20" fill="#dbeafe">v1.45.0 · Desktop Electron</text>
+<text x="1280" y="832" text-anchor="middle" font-size="17" fill="#bfdbfe">IA × WhatsApp × WordPress · AGPL-3.0</text>
+<rect x="2036" y="190" rx="12" width="440" height="52" fill="#38bdf8" />
+<text x="2256" y="223" text-anchor="middle" font-size="19.5" font-weight="bold" fill="#0b1220">ARCHITECTURE &amp; EXÉCUTION</text>
+<rect x="1956" y="256" rx="9" width="520" height="37" fill="#16233d" stroke="#38bdf8" stroke-opacity="0.45" stroke-width="1.5"/>
+<circle cx="1976" cy="274.5" r="4.5" fill="#38bdf8"/>
+<text x="1992" y="280" font-size="15.5" fill="#e2e8f0">Renderer React 19 · Vite 7 · Zustand + IndexedDB</text>
+<rect x="1956" y="302" rx="9" width="520" height="37" fill="#16233d" stroke="#38bdf8" stroke-opacity="0.45" stroke-width="1.5"/>
+<circle cx="1976" cy="320.5" r="4.5" fill="#38bdf8"/>
+<text x="1992" y="326" font-size="15.5" fill="#e2e8f0">Process principal Electron 40 · CDP :8315 · safeStorage</text>
+<rect x="1956" y="348" rx="9" width="520" height="37" fill="#16233d" stroke="#38bdf8" stroke-opacity="0.45" stroke-width="1.5"/>
+<circle cx="1976" cy="366.5" r="4.5" fill="#38bdf8"/>
+<text x="1992" y="372" font-size="15.5" fill="#e2e8f0">Backend Express · 127.0.0.1:3000 uniquement · rate-limit</text>
+<rect x="1956" y="394" rx="9" width="520" height="37" fill="#16233d" stroke="#38bdf8" stroke-opacity="0.45" stroke-width="1.5"/>
+<circle cx="1976" cy="412.5" r="4.5" fill="#38bdf8"/>
+<text x="1992" y="418" font-size="15.5" fill="#e2e8f0">SQLite versionnée (7 migrations) · Redis optionnel</text>
+<rect x="1956" y="440" rx="9" width="520" height="37" fill="#16233d" stroke="#38bdf8" stroke-opacity="0.45" stroke-width="1.5"/>
+<circle cx="1976" cy="458.5" r="4.5" fill="#38bdf8"/>
+<text x="1992" y="464" font-size="15.5" fill="#e2e8f0">4 environnements : renderer / main / backend / injecté</text>
+<rect x="2036" y="530" rx="12" width="440" height="52" fill="#a78bfa" />
+<text x="2256" y="563" text-anchor="middle" font-size="19.5" font-weight="bold" fill="#0b1220">MOTEUR IA MULTI-FOURNISSEURS</text>
+<rect x="1956" y="596" rx="9" width="520" height="37" fill="#16233d" stroke="#a78bfa" stroke-opacity="0.45" stroke-width="1.5"/>
+<circle cx="1976" cy="614.5" r="4.5" fill="#a78bfa"/>
+<text x="1992" y="620" font-size="15.5" fill="#e2e8f0">Gemini (@google/genai) · quotas images mensuels</text>
+<rect x="1956" y="642" rx="9" width="520" height="37" fill="#16233d" stroke="#a78bfa" stroke-opacity="0.45" stroke-width="1.5"/>
+<circle cx="1976" cy="660.5" r="4.5" fill="#a78bfa"/>
+<text x="1992" y="666" font-size="15.5" fill="#e2e8f0">NVIDIA NIM : 53 modèles + canal Together AI</text>
+<rect x="1956" y="688" rx="9" width="520" height="37" fill="#16233d" stroke="#a78bfa" stroke-opacity="0.45" stroke-width="1.5"/>
+<circle cx="1976" cy="706.5" r="4.5" fill="#a78bfa"/>
+<text x="1992" y="712" font-size="15.5" fill="#e2e8f0">OpenRouter · Ollama (100 % local, confidentialité)</text>
+<rect x="1956" y="734" rx="9" width="520" height="37" fill="#16233d" stroke="#a78bfa" stroke-opacity="0.45" stroke-width="1.5"/>
+<circle cx="1976" cy="752.5" r="4.5" fill="#a78bfa"/>
+<text x="1992" y="758" font-size="15.5" fill="#e2e8f0">27 personas · orchestrator singleton + overrides DB</text>
+<rect x="1956" y="780" rx="9" width="520" height="37" fill="#16233d" stroke="#a78bfa" stroke-opacity="0.45" stroke-width="1.5"/>
+<circle cx="1976" cy="798.5" r="4.5" fill="#a78bfa"/>
+<text x="1992" y="804" font-size="15.5" fill="#e2e8f0">llmJson : extraction JSON robuste (18 tests)</text>
+<rect x="2036" y="870" rx="12" width="440" height="52" fill="#34d399" />
+<text x="2256" y="903" text-anchor="middle" font-size="19.5" font-weight="bold" fill="#0b1220">AUTOMATISATION WHATSAPP</text>
+<rect x="1956" y="936" rx="9" width="520" height="37" fill="#16233d" stroke="#34d399" stroke-opacity="0.45" stroke-width="1.5"/>
+<circle cx="1976" cy="954.5" r="4.5" fill="#34d399"/>
+<text x="1992" y="960" font-size="15.5" fill="#e2e8f0">Webviews Electron · User-Agent Chrome forcé</text>
+<rect x="1956" y="982" rx="9" width="520" height="37" fill="#16233d" stroke="#34d399" stroke-opacity="0.45" stroke-width="1.5"/>
+<circle cx="1976" cy="1000.5" r="4.5" fill="#34d399"/>
+<text x="1992" y="1006" font-size="15.5" fill="#e2e8f0">CDP Puppeteer · lecture DOM en mode read-only</text>
+<rect x="1956" y="1028" rx="9" width="520" height="37" fill="#16233d" stroke="#34d399" stroke-opacity="0.45" stroke-width="1.5"/>
+<circle cx="1976" cy="1046.5" r="4.5" fill="#34d399"/>
+<text x="1992" y="1052" font-size="15.5" fill="#e2e8f0">Order Listener : mots-clés → IA → SSE → detected_orders</text>
+<rect x="1956" y="1074" rx="9" width="520" height="37" fill="#16233d" stroke="#34d399" stroke-opacity="0.45" stroke-width="1.5"/>
+<circle cx="1976" cy="1092.5" r="4.5" fill="#34d399"/>
+<text x="1992" y="1098" font-size="15.5" fill="#e2e8f0">Contacts, listes, segments · open-chat validé (8-15 ch.)</text>
+<rect x="1956" y="1120" rx="9" width="520" height="37" fill="#16233d" stroke="#34d399" stroke-opacity="0.45" stroke-width="1.5"/>
+<circle cx="1976" cy="1138.5" r="4.5" fill="#34d399"/>
+<text x="1992" y="1144" font-size="15.5" fill="#e2e8f0">Upload catalogue : délais « humains » anti-restriction</text>
+<rect x="2036" y="1210" rx="12" width="440" height="52" fill="#fbbf24" />
+<text x="2256" y="1243" text-anchor="middle" font-size="19.5" font-weight="bold" fill="#0b1220">PROSPECTION &amp; PIPELINE B2B</text>
+<rect x="1956" y="1276" rx="9" width="520" height="37" fill="#16233d" stroke="#fbbf24" stroke-opacity="0.45" stroke-width="1.5"/>
+<circle cx="1976" cy="1294.5" r="4.5" fill="#fbbf24"/>
+<text x="1992" y="1300" font-size="15.5" fill="#e2e8f0">Google Places · Annuaire CI · GoAfrica (parsers testés)</text>
+<rect x="1956" y="1322" rx="9" width="520" height="37" fill="#16233d" stroke="#fbbf24" stroke-opacity="0.45" stroke-width="1.5"/>
+<circle cx="1976" cy="1340.5" r="4.5" fill="#fbbf24"/>
+<text x="1992" y="1346" font-size="15.5" fill="#e2e8f0">phoneRules : 17 pays, fixes vs mobiles (20 tests)</text>
+<rect x="1956" y="1368" rx="9" width="520" height="37" fill="#16233d" stroke="#fbbf24" stroke-opacity="0.45" stroke-width="1.5"/>
+<circle cx="1976" cy="1386.5" r="4.5" fill="#fbbf24"/>
+<text x="1992" y="1392" font-size="15.5" fill="#e2e8f0">Pipeline : brief → scrape → contacts → messages → Kanban</text>
+<rect x="1956" y="1414" rx="9" width="520" height="37" fill="#16233d" stroke="#fbbf24" stroke-opacity="0.45" stroke-width="1.5"/>
+<circle cx="1976" cy="1432.5" r="4.5" fill="#fbbf24"/>
+<text x="1992" y="1438" font-size="15.5" fill="#e2e8f0">Sessions scraper LRU : 10 max · TTL 1 h</text>
+<rect x="1956" y="1460" rx="9" width="520" height="37" fill="#16233d" stroke="#fbbf24" stroke-opacity="0.45" stroke-width="1.5"/>
+<circle cx="1976" cy="1478.5" r="4.5" fill="#fbbf24"/>
+<text x="1992" y="1484" font-size="15.5" fill="#e2e8f0">Prospection.jsx 798 l. — plus grosse page du frontend</text>
+<rect x="2036" y="1550" rx="12" width="440" height="52" fill="#f87171" stroke="#fca5a5" stroke-width="2.5" stroke-dasharray="7 4"/>
+<text x="2256" y="1583" text-anchor="middle" font-size="19.5" font-weight="bold" fill="#450a0a">CONSTATS DE L'AUDIT (2026-08-29)</text>
+<rect x="1956" y="1616" rx="9" width="520" height="37" fill="#16233d" stroke="#f87171" stroke-opacity="0.45" stroke-width="1.5"/>
+<circle cx="1976" cy="1634.5" r="4.5" fill="#f87171"/>
+<text x="1992" y="1640" font-size="15.5" fill="#e2e8f0">C1 · ÉLEVÉ — test sanitizeCommandName rouge sous Linux → CI cassée</text>
+<rect x="1956" y="1662" rx="9" width="520" height="37" fill="#16233d" stroke="#f87171" stroke-opacity="0.45" stroke-width="1.5"/>
+<circle cx="1976" cy="1680.5" r="4.5" fill="#f87171"/>
+<text x="1992" y="1686" font-size="15.5" fill="#e2e8f0">C2 · MOYEN — AiWriter : innerHTML sans DOMPurify (sortie IA)</text>
+<rect x="1956" y="1708" rx="9" width="520" height="37" fill="#16233d" stroke="#f87171" stroke-opacity="0.45" stroke-width="1.5"/>
+<circle cx="1976" cy="1726.5" r="4.5" fill="#f87171"/>
+<text x="1992" y="1732" font-size="15.5" fill="#e2e8f0">C3 · FAIBLE — README racine : badge 1.43.0 + « 43 tests » obsolètes</text>
+<rect x="1956" y="1754" rx="9" width="520" height="37" fill="#16233d" stroke="#f87171" stroke-opacity="0.45" stroke-width="1.5"/>
+<circle cx="1976" cy="1772.5" r="4.5" fill="#f87171"/>
+<text x="1992" y="1778" font-size="15.5" fill="#e2e8f0">C4 · FAIBLE — callback OAuth : HTML interpolé non échappé</text>
+<rect x="1956" y="1800" rx="9" width="520" height="37" fill="#16233d" stroke="#f87171" stroke-opacity="0.45" stroke-width="1.5"/>
+<circle cx="1976" cy="1818.5" r="4.5" fill="#f87171"/>
+<text x="1992" y="1824" font-size="15.5" fill="#e2e8f0">C5 · INFO — 5 pages &gt; 700 lignes · couverture non mesurée</text>
+<rect x="84" y="190" rx="12" width="440" height="52" fill="#22d3ee" />
+<text x="304" y="223" text-anchor="middle" font-size="19.5" font-weight="bold" fill="#0b1220">CLI &amp; SERVEUR MCP</text>
+<rect x="84" y="256" rx="9" width="520" height="37" fill="#16233d" stroke="#22d3ee" stroke-opacity="0.45" stroke-width="1.5"/>
+<circle cx="104" cy="274.5" r="4.5" fill="#22d3ee"/>
+<text x="120" y="280" font-size="15.5" fill="#e2e8f0">bin/wacopilote.cjs · 873 lignes · 12 familles de commandes</text>
+<rect x="84" y="302" rx="9" width="520" height="37" fill="#16233d" stroke="#22d3ee" stroke-opacity="0.45" stroke-width="1.5"/>
+<circle cx="104" cy="320.5" r="4.5" fill="#22d3ee"/>
+<text x="120" y="326" font-size="15.5" fill="#e2e8f0">MCP JSON-RPC 2.0 stdio · ~30 outils (v1.45.0)</text>
+<rect x="84" y="348" rx="9" width="520" height="37" fill="#16233d" stroke="#22d3ee" stroke-opacity="0.45" stroke-width="1.5"/>
+<circle cx="104" cy="366.5" r="4.5" fill="#22d3ee"/>
+<text x="120" y="372" font-size="15.5" fill="#e2e8f0">Cursor · Claude Code · Antigravity (config auto-générée)</text>
+<rect x="84" y="394" rx="9" width="520" height="37" fill="#16233d" stroke="#22d3ee" stroke-opacity="0.45" stroke-width="1.5"/>
+<circle cx="104" cy="412.5" r="4.5" fill="#22d3ee"/>
+<text x="120" y="418" font-size="15.5" fill="#e2e8f0">Bridge sortant : liste blanche 12 CLIs · cross-spawn</text>
+<rect x="84" y="440" rx="9" width="520" height="37" fill="#16233d" stroke="#22d3ee" stroke-opacity="0.45" stroke-width="1.5"/>
+<circle cx="104" cy="458.5" r="4.5" fill="#22d3ee"/>
+<text x="120" y="464" font-size="15.5" fill="#e2e8f0">Devis : export PDF autonome (Chromium headless)</text>
+<rect x="84" y="530" rx="12" width="440" height="52" fill="#60a5fa" />
+<text x="304" y="563" text-anchor="middle" font-size="19.5" font-weight="bold" fill="#0b1220">PONT WORDPRESS &amp; WOOCOMMERCE</text>
+<rect x="84" y="596" rx="9" width="520" height="37" fill="#16233d" stroke="#60a5fa" stroke-opacity="0.45" stroke-width="1.5"/>
+<circle cx="104" cy="614.5" r="4.5" fill="#60a5fa"/>
+<text x="120" y="620" font-size="15.5" fill="#e2e8f0">Plugin PHP 1 234 lignes (wacopilote-bridge v2)</text>
+<rect x="84" y="642" rx="9" width="520" height="37" fill="#16233d" stroke="#60a5fa" stroke-opacity="0.45" stroke-width="1.5"/>
+<circle cx="104" cy="660.5" r="4.5" fill="#60a5fa"/>
+<text x="120" y="666" font-size="15.5" fill="#e2e8f0">Application Passwords · Basic Auth native WP</text>
+<rect x="84" y="688" rx="9" width="520" height="37" fill="#16233d" stroke="#60a5fa" stroke-opacity="0.45" stroke-width="1.5"/>
+<circle cx="104" cy="706.5" r="4.5" fill="#60a5fa"/>
+<text x="120" y="712" font-size="15.5" fill="#e2e8f0">HITL strict : propose → approve / reject (jamais auto)</text>
+<rect x="84" y="734" rx="9" width="520" height="37" fill="#16233d" stroke="#60a5fa" stroke-opacity="0.45" stroke-width="1.5"/>
+<circle cx="104" cy="752.5" r="4.5" fill="#60a5fa"/>
+<text x="120" y="758" font-size="15.5" fill="#e2e8f0">Produits · commandes · articles IA · SEO · analytics</text>
+<rect x="84" y="780" rx="9" width="520" height="37" fill="#16233d" stroke="#60a5fa" stroke-opacity="0.45" stroke-width="1.5"/>
+<circle cx="104" cy="798.5" r="4.5" fill="#60a5fa"/>
+<text x="120" y="804" font-size="15.5" fill="#e2e8f0">Upload média ≤ 50 Mo (multer mémoire) · désinstallation propre</text>
+<rect x="84" y="870" rx="12" width="440" height="52" fill="#f472b6" />
+<text x="304" y="903" text-anchor="middle" font-size="19.5" font-weight="bold" fill="#0b1220">SÉCURITÉ (POSTURE LOCALE)</text>
+<rect x="84" y="936" rx="9" width="520" height="37" fill="#16233d" stroke="#f472b6" stroke-opacity="0.45" stroke-width="1.5"/>
+<circle cx="104" cy="954.5" r="4.5" fill="#f472b6"/>
+<text x="120" y="960" font-size="15.5" fill="#e2e8f0">Token API 256 bits · comparaison à temps constant</text>
+<rect x="84" y="982" rx="9" width="520" height="37" fill="#16233d" stroke="#f472b6" stroke-opacity="0.45" stroke-width="1.5"/>
+<circle cx="104" cy="1000.5" r="4.5" fill="#f472b6"/>
+<text x="120" y="1006" font-size="15.5" fill="#e2e8f0">AES-256-GCM au repos · clé maître via safeStorage</text>
+<rect x="84" y="1028" rx="9" width="520" height="37" fill="#16233d" stroke="#f472b6" stroke-opacity="0.45" stroke-width="1.5"/>
+<circle cx="104" cy="1046.5" r="4.5" fill="#f472b6"/>
+<text x="120" y="1052" font-size="15.5" fill="#e2e8f0">Secrets jamais renvoyés par le GET (champs masqués)</text>
+<rect x="84" y="1074" rx="9" width="520" height="37" fill="#16233d" stroke="#f472b6" stroke-opacity="0.45" stroke-width="1.5"/>
+<circle cx="104" cy="1092.5" r="4.5" fill="#f472b6"/>
+<text x="120" y="1098" font-size="15.5" fill="#e2e8f0">Logs expurgés : PII masquées par défaut (logRedact)</text>
+<rect x="84" y="1120" rx="9" width="520" height="37" fill="#16233d" stroke="#f472b6" stroke-opacity="0.45" stroke-width="1.5"/>
+<circle cx="104" cy="1138.5" r="4.5" fill="#f472b6"/>
+<text x="120" y="1144" font-size="15.5" fill="#e2e8f0">contextIsolation:true · nodeIntegration:false</text>
+<rect x="84" y="1166" rx="9" width="520" height="37" fill="#16233d" stroke="#f472b6" stroke-opacity="0.45" stroke-width="1.5"/>
+<circle cx="104" cy="1184.5" r="4.5" fill="#f472b6"/>
+<text x="120" y="1190" font-size="15.5" fill="#e2e8f0">CORS en liste blanche · Origin:null justifié (file://)</text>
+<rect x="84" y="1210" rx="12" width="440" height="52" fill="#4ade80" />
+<text x="304" y="1243" text-anchor="middle" font-size="19.5" font-weight="bold" fill="#0b1220">QUALITÉ, TESTS &amp; CI</text>
+<rect x="84" y="1276" rx="9" width="520" height="37" fill="#16233d" stroke="#4ade80" stroke-opacity="0.45" stroke-width="1.5"/>
+<circle cx="104" cy="1294.5" r="4.5" fill="#4ade80"/>
+<text x="120" y="1300" font-size="15.5" fill="#e2e8f0">221 tests Vitest · 25 fichiers · 219 verts (1 échec CI, 1 skip)</text>
+<rect x="84" y="1322" rx="9" width="520" height="37" fill="#16233d" stroke="#4ade80" stroke-opacity="0.45" stroke-width="1.5"/>
+<circle cx="104" cy="1340.5" r="4.5" fill="#4ade80"/>
+<text x="120" y="1346" font-size="15.5" fill="#e2e8f0">ESLint 0 warning · build Vite production OK (15,9 s)</text>
+<rect x="84" y="1368" rx="9" width="520" height="37" fill="#16233d" stroke="#4ade80" stroke-opacity="0.45" stroke-width="1.5"/>
+<circle cx="104" cy="1386.5" r="4.5" fill="#4ade80"/>
+<text x="120" y="1392" font-size="15.5" fill="#e2e8f0">i18n : 4 langues × 1 189 clés, parité verrouillée par test</text>
+<rect x="84" y="1414" rx="9" width="520" height="37" fill="#16233d" stroke="#4ade80" stroke-opacity="0.45" stroke-width="1.5"/>
+<circle cx="104" cy="1432.5" r="4.5" fill="#4ade80"/>
+<text x="120" y="1438" font-size="15.5" fill="#e2e8f0">E2E Playwright : smoke sur la vraie app Electron</text>
+<rect x="84" y="1460" rx="9" width="520" height="37" fill="#16233d" stroke="#4ade80" stroke-opacity="0.45" stroke-width="1.5"/>
+<circle cx="104" cy="1478.5" r="4.5" fill="#4ade80"/>
+<text x="120" y="1484" font-size="15.5" fill="#e2e8f0">CI GitHub Actions : vitest + eslint + build (Node 20)</text>
+<rect x="84" y="1506" rx="9" width="520" height="37" fill="#16233d" stroke="#4ade80" stroke-opacity="0.45" stroke-width="1.5"/>
+<circle cx="104" cy="1524.5" r="4.5" fill="#4ade80"/>
+<text x="120" y="1530" font-size="15.5" fill="#e2e8f0">0 TODO/FIXME · 0 secret en dur · migrations idempotentes</text>
+<rect x="84" y="1544" rx="14" width="700" height="150" fill="#0f1b2f" stroke="#334155" stroke-width="2"/>
+<text x="108" y="1580" font-size="18" font-weight="bold" fill="#f8fafc">SYNTHÈSE CHIFFRÉE</text>
+<text x="108" y="1612" font-size="15" fill="#cbd5e1">• ≈ 33 000 lignes applicatives · 2 179 lignes de tests Vitest</text>
+<text x="108" y="1639" font-size="15" fill="#cbd5e1">• 27 personas · 53 modèles NVIDIA · 11 routeurs · 3 scrapers</text>
+<text x="108" y="1666" font-size="15" fill="#cbd5e1">• AGPL-3.0 · Abidjan, Côte d'Ivoire · open source depuis v1.36.0</text>
+<rect x="930" y="1564" rx="14" width="700" height="150" fill="#0f1b2f" stroke="#334155" stroke-width="2"/>
+<text x="954" y="1600" font-size="18" font-weight="bold" fill="#f8fafc">VÉRIFICATIONS EXÉCUTÉES</text>
+<circle cx="962" cy="1626" r="5" fill="#f87171"/>
+<text x="978" y="1631" font-size="15" fill="#cbd5e1">Vitest 221 tests : 219 ✔ · 1 échec (C1) · 1 ignoré volontaire</text>
+<circle cx="962" cy="1653" r="5" fill="#4ade80"/>
+<text x="978" y="1658" font-size="15" fill="#cbd5e1">ESLint 0 warning ✔ · Vite build OK ✔ · CLI + MCP testés ✔</text>
+<circle cx="962" cy="1680" r="5" fill="#4ade80"/>
+<text x="978" y="1685" font-size="15" fill="#cbd5e1">2 audits antérieurs (v1.42) traités : CI, CORS, OAuth, i18n ✔</text>
+<text x="2496" y="1904" text-anchor="end" font-size="15" fill="#64748b">Généré le 2026-08-29 · Audit complet : AUDIT_COMPLET_2026-08-29.md</text>
+</svg>
