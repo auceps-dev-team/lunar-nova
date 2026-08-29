@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import useAppStore from '../store';
+import DOMPurify from 'dompurify';
 import { Sparkles, Download, Undo, Redo, Copy, Edit3, AlignLeft, AlignCenter, AlignRight, Bold, Italic, Underline, List } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import CustomSelect from '../components/CustomSelect';
@@ -32,6 +33,28 @@ const SYSTEM_AGENTS = [
     { id: 'ad_creative_strategist', name: 'Ad Creative Strategist', isSystem: true },
     { id: 'paid_social_strategist', name: 'Paid Social Strategist', isSystem: true }
 ];
+
+/**
+ * Assainissement du HTML riche entrant dans l'éditeur (contenteditable).
+ *
+ * Le DOM de l'éditeur n'est peuplé de l'extérieur que par deux chemins — le
+ * chargement d'un document en base et la génération IA. Tout HTML à ces deux
+ * endroits est donc assaini : une injection de prompt (contenu web récupéré
+ * par un agent, document partagé) ne peut plus produire de HTML actif
+ * (`<img onerror=…>`, scripts) exécuté dans le renderer. Même configuration
+ * DOMPurify que les autres surfaces IA (AiChat.jsx, WpProductModal.jsx).
+ *
+ * La frappe utilisateur n'est volontairement pas ré-assainie à l'`onInput` :
+ * réécrire le DOM à chaque touche détruirait le curseur — l'état reflète un
+ * DOM qui n'a pu être peuplé que par ces chemins assainis ou par l'édition
+ * locale (export PDF et sauvegarde inclus).
+ */
+const SANITIZE_EDITOR = (html) => DOMPurify.sanitize(html || '', {
+    ALLOWED_TAGS: ['p', 'div', 'span', 'br', 'b', 'strong', 'i', 'em', 'u', 's', 'strike',
+        'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'pre',
+        'code', 'a', 'img', 'table', 'thead', 'tbody', 'tr', 'td', 'th', 'hr', 'font'],
+    ALLOWED_ATTR: ['style', 'class', 'href', 'src', 'alt', 'title', 'colspan', 'rowspan'],
+});
 
 export default function AiWriter() {
     const { t } = useTranslation();
@@ -83,10 +106,14 @@ export default function AiWriter() {
             const res = await fetch(`${API_BASE_URL}/api/documents/${id}`);
             const data = await res.json();
             if (data.status === 'success') {
+                // Le contenu d'un document est un HTML potentiellement d'origine
+                // tierce (généré par IA, importé) : il est assaini avant tout
+                // peuplement du DOM (voir SANITIZE_EDITOR).
+                const safeContent = SANITIZE_EDITOR(data.data.content || '');
                 setDocumentTitle(data.data.title);
-                setEditorContent(data.data.content || '');
+                setEditorContent(safeContent);
                 if (editorRef.current) {
-                    editorRef.current.innerHTML = data.data.content || '';
+                    editorRef.current.innerHTML = safeContent;
                 }
             }
         } catch (err) {
@@ -145,6 +172,11 @@ export default function AiWriter() {
 
                 // Clean markdown if mixed with HTML
                 text = text.replace(/```html/g, '').replace(/```/g, '');
+
+                // La sortie du LLM est une entrée non fiable (injection de
+                // prompt possible via le contenu source) : assainie avant
+                // peuplement de l'éditeur.
+                text = SANITIZE_EDITOR(text);
 
                 setEditorContent(text);
                 if (editorRef.current) {

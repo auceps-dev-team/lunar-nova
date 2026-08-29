@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/auceps-dev-team/lunar-nova"><img src="https://img.shields.io/badge/version-1.47.1-blue.svg" alt="Version 1.47.1" /></a>
+  <a href="https://github.com/auceps-dev-team/lunar-nova"><img src="https://img.shields.io/badge/version-1.47.2-blue.svg" alt="Version 1.47.2" /></a>
   <a href="whatsapp-ai-saas/LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue.svg" alt="License AGPL-3.0" /></a>
   <a href="#-open-source"><img src="https://img.shields.io/badge/open%20source-oui-brightgreen.svg" alt="Open Source" /></a>
   <a href="#-pourquoi-wacopilote-"><img src="https://img.shields.io/badge/Made%20in-%F0%9F%87%A8%F0%9F%87%BE%20C%C3%B4te%20d'Ivoire-orange.svg" alt="Made in Côte d'Ivoire" /></a>
@@ -255,6 +255,10 @@ Vos conversations, vos contacts et vos clés d'API ne quittent jamais votre mach
 8. **Chiffrement des secrets au repos** *(v1.37.0)* : les clés d'API et les mots de passe d'application WordPress sont chiffrés en **AES-256-GCM** dans la base SQLite. La clé maître ne réside jamais dans la base qu'elle protège : elle est scellée par le magasin de secrets du système d'exploitation via `safeStorage` (DPAPI sous Windows, Trousseau sous macOS, libsecret sous Linux) et n'est transmise au backend qu'au démarrage. Copier `database.sqlite` sur une autre machine ne suffit donc pas à en extraire les secrets. Les bases antérieures sont migrées automatiquement au premier lancement.
 
 9. **Journaux expurgés par défaut** *(v1.40.2)* : le moteur de détection de commandes journalisait le texte intégral des messages WhatsApp et le nom des contacts, dans un fichier que le gabarit de signalement de bug demande justement de joindre aux issues publiques. Seules la longueur du message et l'initiale du contact y figurent désormais. Relancer le backend avec `WACOPILOTE_LOG_MESSAGES=1` rétablit les traces complètes pour un diagnostic ponctuel.
+
+10. **Assainissement DOMPurify sur toutes les surfaces IA** *(complété en v1.47.2)* : chaque HTML produit par un LLM est assaini avant rendu — chat (`AiChat`), fiches produits WordPress (`WpProductModal`) et, depuis v1.47.2, l'éditeur de documents (`AiWriter`) au chargement comme à la génération. Une injection de prompt ne peut plus produire de HTML actif dans le renderer. La page d'erreur du callback OAuth Google n'interpole plus la réponse du fournisseur (message générique, détail en journal serveur uniquement) *(v1.47.2)*.
+
+11. **Déchiffrement safeStorage sans écriture dans l'application** *(v1.47.2)* : le helper de déchiffrement de la clé maître (utilisé par le CLI/MCP quand la clé est scellée par le système) est écrit dans le répertoire temporaire du système plutôt que dans le dossier du backend — il reste donc opérationnel en build packagé, où `app.asar` est en lecture seule.
 
 **Limites connues, à corriger**
 

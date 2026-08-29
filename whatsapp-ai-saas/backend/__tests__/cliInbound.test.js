@@ -1,8 +1,20 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterAll } from 'vitest';
 import { spawn } from 'child_process';
 import path from 'path';
+import fs from 'fs';
+import os from 'os';
 
 const binPath = path.resolve(__dirname, '../../bin/wacopilote.cjs');
+
+// Isolation : dossier userData temporaire pour tous les spawns de ce fichier —
+// la base SQLite est créée à la volée dans un répertoire temporaire au lieu
+// d'écrire dans la base de développement du projet. Les spawns d'un même test
+// partagent le dossier (nécessaire aux flux create → list → delete).
+const testUserDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'wacopilote-cli-inbound-'));
+const isolatedEnv = { ...process.env, USER_DATA_PATH: testUserDataDir };
+afterAll(() => {
+    fs.rmSync(testUserDataDir, { recursive: true, force: true });
+});
 
 function runCli(args = [], input = '') {
     return new Promise((resolve) => {
@@ -13,7 +25,8 @@ function runCli(args = [], input = '') {
         // sans interpolation shell, préservant les espaces des chemins sous Windows.
         const proc = spawn(process.execPath, [binPath, ...args], {
             shell: false,
-            stdio: ['pipe', 'pipe', 'pipe']
+            stdio: ['pipe', 'pipe', 'pipe'],
+            env: isolatedEnv
         });
 
         if (proc.stdin) {

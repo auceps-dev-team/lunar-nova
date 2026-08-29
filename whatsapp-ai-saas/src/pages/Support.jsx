@@ -48,6 +48,17 @@ const Support = () => {
 
     const changelog = [
         {
+            version: 'v1.47.2',
+            date: '2026-08-29',
+            changes: [
+                'Sécurité — Éditeur de documents durci : le HTML chargé depuis la base et le HTML produit par la génération IA sont désormais assainis (DOMPurify) avant affichage dans AiWriter — une injection de prompt ne peut plus exécuter de contenu actif dans l\'application',
+                'Sécurité — Page d\'erreur du callback Google : message générique affiché, le détail de la réponse OAuth ne reste plus que dans les journaux locaux du backend (suppression d\'une interpolation HTML sur une route publique)',
+                'Fiabilité — CLI/MCP en version packagée : le helper de déchiffrement de la clé maître safeStorage s\'exécute désormais depuis le répertoire temporaire système (app.asar est en lecture seule) — les clés scellées redeviennent lisibles par le CLI et le serveur MCP',
+                'Hygiène des tests : toute exécution de la suite Vitest s\'effectue sur une base SQLite temporaire — la base de développement du projet n\'est plus jamais modifiée par les tests (aucun segment/contact/document de test résiduel)',
+                'Note : pensez à supprimer le fichier whatsapp-ai-saas/database.sqlite de votre poste s\'il contient des données de test héritées des versions précédentes'
+            ]
+        },
+        {
             version: 'v1.47.1',
             date: '2026-08-29',
             changes: [

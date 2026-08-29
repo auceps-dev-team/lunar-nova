@@ -8,15 +8,27 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { spawn } from 'child_process';
 import path from 'path';
+import fs from 'fs';
+import os from 'os';
 import readline from 'readline';
 
 const binPath = path.resolve(__dirname, '../../bin/wacopilote.cjs');
+
+// Isolation : dossier userData temporaire partagé par tous les spawns du
+// fichier — CLI et MCP doivent voir la MÊME base pour vérifier la cohérence
+// inter-process, mais cette base vit dans un répertoire temporaire au lieu
+// d'écrire dans la base de développement du projet.
+const testUserDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'wacopilote-cli-mcp-'));
+const isolatedEnv = { ...process.env, USER_DATA_PATH: testUserDataDir };
+afterAll(() => {
+    fs.rmSync(testUserDataDir, { recursive: true, force: true });
+});
 
 function runCli(args = []) {
     return new Promise((resolve) => {
         let stdout = '';
         let stderr = '';
-        const proc = spawn(process.execPath, [binPath, ...args], { shell: false, stdio: ['ignore', 'pipe', 'pipe'] });
+        const proc = spawn(process.execPath, [binPath, ...args], { shell: false, stdio: ['ignore', 'pipe', 'pipe'], env: isolatedEnv });
         proc.stdout.on('data', d => stdout += d.toString());
         proc.stderr.on('data', d => stderr += d.toString());
         proc.on('close', code => resolve({ code, stdout: stdout.trim(), stderr: stderr.trim() }));
@@ -33,7 +45,7 @@ function parseCliJson(stdout) {
  * qui résout la réponse JSON-RPC correspondante par id.
  */
 function startMcpSession() {
-    const proc = spawn(process.execPath, [binPath, 'mcp'], { shell: false, stdio: ['pipe', 'pipe', 'pipe'] });
+    const proc = spawn(process.execPath, [binPath, 'mcp'], { shell: false, stdio: ['pipe', 'pipe', 'pipe'], env: isolatedEnv });
     const rl = readline.createInterface({ input: proc.stdout, terminal: false });
     const pending = new Map();
     const protocolViolations = [];

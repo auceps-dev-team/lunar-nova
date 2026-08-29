@@ -49,6 +49,13 @@
   - 9 outils CRM atomiques MCP + sous-commandes CLI `contacts` et `segments`.
   - 26 suites de tests au vert (**237 tests réussis**, 1 skip, 0 échec).
 
+- [x] **Traitement audit révision 2 — Lot 2 (sécurité & robustesse) v1.47.2 (2026-08-29)** :
+  - C2 — AiWriter : DOMPurify (`SANITIZE_EDITOR`, allowlist éditeur riche) sur les deux points d'entrée externe du HTML — chargement d'un document et génération IA ; `onInput` volontairement non ré-assaini (détruirait le curseur) car le DOM n'est peuplé que par ces chemins assainis ou l'édition locale.
+  - C4 — Callback OAuth Google : message d'erreur générique côté page publique, détail de la réponse Google relégué au journal serveur (surface XSS par interpolation supprimée).
+  - N4 — Le helper de déchiffrement safeStorage est écrit dans `os.tmpdir()` : le canal de déchiffrement CLI/MCP redevient fonctionnel en build packagé (app.asar en lecture seule).
+  - N5 — Isolation DB des tests : `USER_DATA_PATH` temporaire global via `vitest.config.js` (tests in-process) + dossier dédié par fichier pour les spawns CLI/MCP (`cliInbound`, `cliMcpFlow`) ; `crmService.test.js` sur `:memory:`. La base de développement n'est plus jamais modifiée par une exécution de tests (mtime stable vérifié sur 2 runs).
+  - Suite : 27 fichiers, 244 tests réussis, 0 échec, 3 skip ; ESLint 0 ; build Vite OK ; base de dev nettoyée (données de test supprimées).
+
 - [x] **Traitement audit révision 2 — Lot 1 (correctifs bloquants CI) v1.47.1 (2026-08-29)** :
   - C1 — Portabilité `sanitizeCommandName` : normalisation des séparateurs Windows avant extraction du nom de base (le test chemin Windows passe désormais sous Linux), et durcissement : `executeExternalCli` exécute toujours le nom assaini résolu via le PATH, jamais le chemin brut (fermeture de l'évasion de binaire sous Windows).
   - N1 — CLI : suppression de la troncature non déterministe des sorties JSON volumineuses (`process.exit()` coupat le tampon stdout) — attente du drain effectif avant sortie ; vérifié sur `list-agents --json` (158 Ko, JSON valide).

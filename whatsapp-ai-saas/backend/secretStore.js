@@ -63,7 +63,14 @@ function loadOrCreateMasterKey() {
         try {
             const electronBinary = require('electron');
             if (electronBinary && typeof electronBinary === 'string' && fs.existsSync(electronBinary)) {
-                const helperScript = path.join(__dirname, '.temp_electron_key.cjs');
+                // Helper écrit dans le répertoire temporaire système : en build
+                // packagé, backend/ vit dans app.asar (lecture seule) et toute
+                // écriture dans __dirname échouait silencieusement — le canal de
+                // déchiffrement CLI/MCP était inopérant. Exécuté PAR le binaire
+                // Electron, le script résout `require('electron')` comme module
+                // natif : son emplacement est sans effet sur la résolution.
+                const os = require('os');
+                const helperScript = path.join(os.tmpdir(), `wacopilote-key-${process.pid}.cjs`);
                 fs.writeFileSync(helperScript, `
 const { app, safeStorage } = require('electron');
 const fs = require('fs');
