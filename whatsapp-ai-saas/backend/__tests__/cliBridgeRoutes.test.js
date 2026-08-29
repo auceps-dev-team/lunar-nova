@@ -80,4 +80,59 @@ describe('routes/cliBridge.js — Endpoints REST pour le Bridge CLI', { timeout:
         expect(body.success).toBe(true);
         expect(body.message).toContain('avec succès');
     });
+
+    it('POST /api/cli/test-bridge en mode external exécute un binaire machine autorisé', async () => {
+        const res = await fetch(`${baseUrl}/api/cli/test-bridge`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                mode: 'external',
+                cliCommand: 'node',
+                cliArgs: ['--version']
+            })
+        });
+
+        expect(res.status).toBe(200);
+        const body = await res.json();
+        expect(body.success).toBe(true);
+        expect(body.mode).toBe('external');
+        expect(body.response).toMatch(/^v\d+/);
+        expect(body.executionTimeMs).toBeGreaterThanOrEqual(0);
+    });
+
+    it('POST /api/cli/test-bridge en mode mcp invoque un outil MCP directement', async () => {
+        const res = await fetch(`${baseUrl}/api/cli/test-bridge`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                mode: 'mcp',
+                agent: 'list_agents',
+                prompt: ''
+            })
+        });
+
+        expect(res.status).toBe(200);
+        const body = await res.json();
+        expect(body.success).toBe(true);
+        expect(body.mode).toBe('mcp');
+        expect(body.command).toContain('list_agents');
+        expect(body.details.personas).toBeDefined();
+    });
+
+    it('POST /api/cli/test-bridge rejette un prompt vide en mode CLI', async () => {
+        const res = await fetch(`${baseUrl}/api/cli/test-bridge`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                mode: 'cli',
+                agent: 'copywriter',
+                prompt: '   '
+            })
+        });
+
+        expect(res.status).toBe(400);
+        const body = await res.json();
+        expect(body.success).toBe(false);
+        expect(body.error).toContain('prompt de test est obligatoire');
+    });
 });

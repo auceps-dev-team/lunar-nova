@@ -1,5 +1,12 @@
 # Active Context: WaCopilote
 
+- **v1.46.1** — Découplage de la Console de Test CLI/MCP & Détection Outils Système (+0.0.1) :
+  - **Console de Test Bridge Autonome (`POST /api/cli/test-bridge`)** : Élimination de l'ancien appel vers `/api/ai/agent` qui exigeait des clés OpenAI/NVIDIA non configurées. Remplacement par un routeur de test autonome supportant 3 modes réels :
+    1. `CLI WaCopilote` : Exécute le sous-processus réel `node bin/wacopilote.cjs run --agent <agent> --prompt <prompt> --json` via `executeExternalCli`.
+    2. `Protocole MCP` : Invoque directement les outils MCP (`call_agent`, `list_agents`) via `wacopiloteMcpServer.handleToolCall`.
+    3. `Délégation Machine` : Exécute les binaires CLI installés sur la machine (Claude Code, Python, Node, Git, Gemini, etc.).
+  - **Détection des Outils Google CLI & Système** : Intégration de `gcloud` (Google Cloud SDK) et `google-genai` dans `DEFAULT_ALLOWED_COMMANDS` et `detectInstalledClis`. Résolution des chemins système standards sous Windows (`%LOCALAPPDATA%`, `%APPDATA%/npm`, `%USERPROFILE%/.local/bin`).
+  - **Tests & Assurance Qualité** : 26 suites de tests au vert (**240 tests passés**, 1 skip, 0 échec), tests unitaires dédiés pour `POST /api/cli/test-bridge`.
 - **v1.46.0** — Raccordement Pipeline / Segments & Outils CRM Atomiques MCP/CLI (+0.1.0) :
   - **Lot P1 (Pipeline / Segments & Réaffectation Doublons)** :
     - Prise en charge des segments (`segmentName`, `segmentId`, `listName`, `listId`) dans `save_pipeline_contacts` (MCP/CLI), `run_pipeline` et `wacopilote pipeline run --auto`.

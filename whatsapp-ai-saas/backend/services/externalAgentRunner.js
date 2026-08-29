@@ -7,9 +7,17 @@ const db = require('../db');
  * Liste blanche par défaut des commandes CLI agentiques et utilitaires autorisées.
  * Empêche l'exécution de binaires système dangereux (format, rm, etc.).
  */
+const fs = require('fs');
+
+/**
+ * Liste blanche par défaut des commandes CLI agentiques et utilitaires autorisées.
+ * Empêche l'exécution de binaires système dangereux (format, rm, etc.).
+ */
 const DEFAULT_ALLOWED_COMMANDS = [
     'gemini',
     'gemini-cli',
+    'gcloud',
+    'google-genai',
     'claude',
     'aider',
     'ollama',
@@ -78,6 +86,39 @@ async function isCommandAllowed(command) {
 }
 
 /**
+ * Résout les chemins système standards pour Windows lorsque la variable PATH n'est pas héritée.
+ *
+ * @param {string} cmd
+ * @returns {string|null} Chemin résolu ou null
+ */
+function resolveWindowsFallbackPath(cmd) {
+    if (process.platform !== 'win32') return null;
+    const userProfile = process.env.USERPROFILE || '';
+    const appData = process.env.APPDATA || '';
+    const localAppData = process.env.LOCALAPPDATA || '';
+    const programFiles = process.env['ProgramFiles'] || 'C:\\Program Files';
+    const programFilesX86 = process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)';
+
+    const candidates = [
+        path.join(appData, 'npm', `${cmd}.cmd`),
+        path.join(appData, 'npm', `${cmd}.ps1`),
+        path.join(userProfile, '.local', 'bin', `${cmd}.exe`),
+        path.join(localAppData, 'Google', 'Cloud SDK', 'google-cloud-sdk', 'bin', `${cmd}.cmd`),
+        path.join(programFiles, 'Google', 'Cloud SDK', 'google-cloud-sdk', 'bin', `${cmd}.cmd`),
+        path.join(programFilesX86, 'Google', 'Cloud SDK', 'google-cloud-sdk', 'bin', `${cmd}.cmd`),
+        path.join(localAppData, 'Programs', cmd, `${cmd}.exe`),
+        path.join(localAppData, 'Programs', 'Ollama', `${cmd}.exe`)
+    ];
+
+    for (const c of candidates) {
+        if (c && fs.existsSync(c)) {
+            return c;
+        }
+    }
+    return null;
+}
+
+/**
  * Vérifie rapidement la présence d'un binaire dans le PATH système.
  * Évite le spawn de binaires inexistants et élimine les lenteurs lors des tests concurrents.
  *
@@ -94,16 +135,30 @@ function isBinaryInPath(cmd) {
         const p = spawn(checkCmd, [cmd], { stdio: 'ignore' });
         const timer = setTimeout(() => {
             try { p.kill(); } catch { /* Ignore */ }
-            resolve(false);
+            if (isWin && resolveWindowsFallbackPath(cmd)) {
+                resolve(true);
+            } else {
+                resolve(false);
+            }
         }, 800);
 
         p.on('close', (code) => {
             clearTimeout(timer);
-            resolve(code === 0);
+            if (code === 0) {
+                resolve(true);
+            } else if (isWin && resolveWindowsFallbackPath(cmd)) {
+                resolve(true);
+            } else {
+                resolve(false);
+            }
         });
         p.on('error', () => {
             clearTimeout(timer);
-            resolve(false);
+            if (isWin && resolveWindowsFallbackPath(cmd)) {
+                resolve(true);
+            } else {
+                resolve(false);
+            }
         });
     });
 }
@@ -118,6 +173,7 @@ async function detectInstalledClis() {
     const commandsToCheck = [
         { name: 'gemini', flag: '--version' },
         { name: 'gemini-cli', flag: '--version' },
+        { name: 'gcloud', flag: '--version' },
         { name: 'claude', flag: '--version' },
         { name: 'aider', flag: '--version' },
         { name: 'ollama', flag: '--version' },

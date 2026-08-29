@@ -43,11 +43,17 @@
   - Mise à jour de `docs/PROJECT_MENTAL_MAP.md` avec diagrammes Mermaid.
   - Génération de l'artefact d'audit complet.
 
-- [x] **Lot P0 — Résolution de la Base & Propreté Stdio MCP/CLI v1.45.1 (2026-08-29)** :
-  - Détection automatique et partage direct de la base applicative (`%APPDATA%/WaCopilote`) dans `backend/db.js` et `backend/secretStore.js`.
-  - Déchiffrement transparent de `master-key.enc` via helper Electron `safeStorage` (clés API réelles partagées avec le CLI et MCP).
-  - Immunité totale de `stdout` : redirection stricte de `console.log` vers `stderr` dans `startMcpServer()`, substitution systématique de `console.log` vers `console.error` dans tous les scrapers, routes, services et serveur.
-  - 25 fichiers de tests unitaires/intégration au vert (**220 tests réussis**, 0 échec).
+- [x] **Lot P1 & P2 — Raccordement Pipeline Segments, Doublons & Outils CRM MCP/CLI v1.46.0 (2026-08-29)** :
+  - Pipeline raccordé aux segments nommés ou par ID (`saveContactsStage`, `createSegment`, `runAuto`).
+  - Réaffectation automatique des contacts doublons avec rafraîchissement d'adresses et de métadonnées.
+  - 9 outils CRM atomiques MCP + sous-commandes CLI `contacts` et `segments`.
+  - 26 suites de tests au vert (**237 tests réussis**, 1 skip, 0 échec).
+
+- [x] **Correctif Découplage Console de Test & Détection Google CLI v1.46.1 (2026-08-29)** :
+  - Découplage complet de la console de test Bridge CLI/MCP des routes d'API cloud génériques via `POST /api/cli/test-bridge`.
+  - Support de 3 modes de test autonomes : CLI WaCopilote (`wacopilote run`), Serveur MCP (`tools/call`), et Délégation Machine (`claude`, `python`, `node`, `git`, `gemini`).
+  - Détection enrichie des outils Google Cloud (`gcloud`) et `google-genai` dans `externalAgentRunner.js` avec résolution des chemins système standards sous Windows.
+  - 26 suites de tests au vert (**240 tests réussis**, 1 skip, 0 échec).
 
 - [x] **Lot P1 & P2 — Raccordement Pipeline / Segments & Outils CRM Atomiques MCP v1.46.0 (2026-08-29)** :
   - Support complet des segments et listes dans le pipeline (`save_pipeline_contacts`, `run_pipeline`, `pipeline run --auto`).
