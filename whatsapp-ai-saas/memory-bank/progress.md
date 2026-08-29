@@ -49,10 +49,19 @@
   - Immunité totale de `stdout` : redirection stricte de `console.log` vers `stderr` dans `startMcpServer()`, substitution systématique de `console.log` vers `console.error` dans tous les scrapers, routes, services et serveur.
   - 25 fichiers de tests unitaires/intégration au vert (**220 tests réussis**, 0 échec).
 
+- [x] **Lot P1 & P2 — Raccordement Pipeline / Segments & Outils CRM Atomiques MCP v1.46.0 (2026-08-29)** :
+  - Support complet des segments et listes dans le pipeline (`save_pipeline_contacts`, `run_pipeline`, `pipeline run --auto`).
+  - Réaffectation et enrichissement automatique des contacts doublons lors de la prospection.
+  - Service CRM modulaire `backend/services/crmService.js` (list, create, get, update, delete, assignation en lot).
+  - 9 outils atomiques MCP (`list_segments`, `create_segment`, `delete_segment`, `list_contacts`, `get_contact`, `create_contact`, `update_contact`, `delete_contact`, `assign_contacts_to_segment`).
+  - Commandes CLI `contacts` et `segments` et optimisation de sortie instantanée.
+  - 26 fichiers de tests unitaires/intégration au vert (**237 tests réussis**, 0 échec).
+
 ## Current Task
-- [x] Lot P0 complété et vérifié avec succès.
-- [ ] Lot P1 : Raccordement Pipeline / Segments (`save_pipeline_contacts` `segmentName`/`segmentId`) & Réaffectation des contacts doublons.
-- [ ] Lot P2 : Outils CRM atomiques MCP (`list_segments`, `create_segment`, `list_contacts`, `create_contact`, `assign_contacts_to_segment`).
+- [x] Lot P0 complété et validé (v1.45.1).
+- [x] Lot P1 complété et validé (v1.46.0).
+- [x] Lot P2 complété et validé (v1.46.0).
+- [ ] Commit & synchronisation sur la branche `New-feature`.
 
 ## Future Roadmap
 - [ ] Multi-device WhatsApp API Gateway integration (Baileys / official Cloud API fallback).

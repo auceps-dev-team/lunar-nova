@@ -1,5 +1,20 @@
 # Active Context: WaCopilote
 
+- **v1.46.0** — Raccordement Pipeline / Segments & Outils CRM Atomiques MCP/CLI (+0.1.0) :
+  - **Lot P1 (Pipeline / Segments & Réaffectation Doublons)** :
+    - Prise en charge des segments (`segmentName`, `segmentId`, `listName`, `listId`) dans `save_pipeline_contacts` (MCP/CLI), `run_pipeline` et `wacopilote pipeline run --auto`.
+    - Réaffectation automatique des contacts doublons : les leads dont le téléphone existe déjà en base voient leurs informations (nom, adresse, segment, liste) rafraîchies et sont renvoyés dans le flux du pipeline pour les étapes ultérieures.
+    - Correction des index de paramètres SQL 1:1 pour assurer une compatibilité dialecte absolue sous SQLite et PostgreSQL.
+  - **Lot P2 (Outils CRM Atomiques MCP & CLI)** :
+    - Nouveau service modulaire `backend/services/crmService.js` (listSegments, createSegment, deleteSegment, listContacts, getContact, createContact avec sémantique upsert, updateContact, deleteContact, assignContactsToSegment).
+    - 9 outils atomiques MCP exposés dans `wacopiloteMcpServer.js` (`list_segments`, `create_segment`, `delete_segment`, `list_contacts`, `get_contact`, `create_contact`, `update_contact`, `delete_contact`, `assign_contacts_to_segment`).
+    - 2 nouvelles suites de sous-commandes CLI dans `bin/wacopilote.cjs` : `wacopilote contacts` et `wacopilote segments`.
+    - Terminaison instantanée des commandes CLI one-shot via `process.exit(0)` dès résolution, éliminant les attentes de timers de fond.
+  - **Tests & Validation** : 26 suites de tests au vert (**237 tests réussis**, 1 skip, 0 échec), flux cross-process MCP <-> CLI validé.
+- **v1.45.1** — Résolution Lot P0 (MCP / CLI Database & Stdio Cleansing) (+0.0.1) :
+  - **Auto-résolution DB & SecretStore** : `backend/db.js` et `backend/secretStore.js` résolvent automatiquement le dossier applicatif OS (`%APPDATA%/WaCopilote` sous Windows, macOS `Application Support`, Linux `XDG_CONFIG_HOME`) si présent. Déchiffrement transparent de `master-key.enc` via helper Electron `safeStorage`. Les clés API réelles et contacts applicatifs sont immédiatement partagés par le CLI et le MCP sans configuration manuelle.
+  - **Immunité Stdio & Nettoyage Logs** : Redirection absolue de `console.log` vers `stderr` dans `wacopiloteMcpServer.js` (`startMcpServer`). Substitution systématique de `console.log` vers `console.error` dans tous les scrapers (`googleMapScraper`, `goAfricaScraper`, `annuaireCiScraper`), services, routes et `server.js`.
+  - **220 tests au vert (100% de réussite)** : Exécution de toutes les 25 suites validée. Flux MCP stdio 100% pur JSON-RPC vérifié.
 - **v1.45.0** — Extension CLI/MCP : pilotage quasi-total par agents externes (+0.1.0) :
   - **Principe** : extraction de la logique métier des routes Express vers `backend/services/*.js` (pipelineService, prospectionService, documentsService, invoiceService, wordpressService, waInstancesService), appelées identiquement en in-process par le CLI/MCP (aucun serveur ni token requis) et par les routes REST (devenues des wrappers fins).
   - **Prospection, listes, plannings** : `pipeline create/prospect/save-contacts/generate-messages/organize/cards/run --auto`, `prospect search` ; 8 nouveaux tools MCP (`run_pipeline`, `prospect_leads`, etc.). Remplace le stub `pipeline run` v1.44.0 (qui n'appelait que la persona de classification, sans jamais toucher au scraping/Kanban).

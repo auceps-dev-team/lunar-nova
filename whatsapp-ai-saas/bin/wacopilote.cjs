@@ -83,6 +83,10 @@ function printHelp() {
                                    Gouvernance HITL WordPress (validation humaine obligatoire)
   \x1b[36mquotes list|get|create|update|delete|export-pdf\x1b[0m
                                    Gérer les devis (export PDF autonome, via Chromium headless)
+  \x1b[36mcontacts list|get|create|update|delete|assign\x1b[0m
+                                   Gérer les contacts CRM (filtres segment/liste, assignation)
+  \x1b[36msegments list|create|delete\x1b[0m
+                                   Gérer les segments de contacts
   \x1b[36minstances list|open-chat\x1b[0m        Lister/piloter les instances WhatsApp déjà connectées
   \x1b[36mmcp\x1b[0m                              Démarrer le serveur MCP (Model Context Protocol stdio)
   \x1b[36mstatus\x1b[0m                           Vérifier la configuration locale (DB, clés, API)
@@ -102,6 +106,8 @@ function printHelp() {
   \x1b[33m--brief <texte>\x1b[0m                  Brief de prospection en langage naturel
   \x1b[33m--list-name <nom>\x1b[0m                Crée une nouvelle liste de contacts pour les leads trouvés
   \x1b[33m--list-id <id>\x1b[0m                   Utilise une liste de contacts existante
+  \x1b[33m--segment-name <nom>\x1b[0m             Crée ou utilise un segment de contacts nommé
+  \x1b[33m--segment-id <id>\x1b[0m                Utilise un segment de contacts existant
 
 \x1b[1mEXEMPLES :\x1b[0m
   $ wacopilote list-agents
@@ -109,7 +115,7 @@ function printHelp() {
   $ cat brief.txt | wacopilote run --agent outbound_strategist --json
   $ wacopilote run --agent seo_specialist --file ./keywords.txt --provider openrouter
   $ wacopilote prospect search --query "institut de beauté" --zone "Abidjan" --json
-  $ wacopilote pipeline run --brief "10 boutiques de vêtements à Abidjan" --auto --list-name "Prospects Abidjan"
+  $ wacopilote pipeline run --brief "10 boutiques de vêtements à Abidjan" --auto --list-name "Prospects Abidjan" --segment-name "Mode"
   $ wacopilote pipeline cards --run-id 3 --json
   $ wacopilote documents create --title "Argumentaire" --content "..." --json
   $ wacopilote photo generate --agent photoshoot --prompt "Robe d'été rouge" --out ./photo.png
@@ -383,16 +389,29 @@ async function handlePipeline(args) {
             case 'save-contacts': {
                 const runId = args[1];
                 if (!runId) {
-                    console.error(`\x1b[31mUsage : pipeline save-contacts <runId> [--list-id <id>] [--leads-file <path>]\x1b[0m`);
+                    console.error(`\x1b[31mUsage : pipeline save-contacts <runId> [--list-id <id>] [--list-name <nom>] [--segment-id <id>] [--segment-name <nom>] [--leads-file <path>]\x1b[0m`);
                     process.exit(1);
                 }
                 const leads = await readJsonArrayInput(opts, 'leads-file');
                 let listId = opts['list-id'] ? Number(opts['list-id']) : null;
-                if (!listId && opts['list-name']) {
-                    const list = await pipelineService.createContactList(opts['list-name']);
-                    listId = list.id;
+                const listName = opts['list-name'] || opts.list || null;
+                if (!listId && listName) {
+                    const list = await pipelineService.createContactList(listName);
+                    if (list) listId = list.id;
                 }
-                const result = await pipelineService.saveContactsStage(runId, { leads, list_id: listId, segment_id: opts['segment-id'] ? Number(opts['segment-id']) : null });
+
+                let segmentId = opts['segment-id'] ? Number(opts['segment-id']) : null;
+                const segmentName = opts['segment-name'] || opts.segment || null;
+                if (!segmentId && segmentName) {
+                    const seg = await pipelineService.createSegment(segmentName);
+                    if (seg) segmentId = seg.id;
+                }
+
+                const result = await pipelineService.saveContactsStage(runId, {
+                    leads,
+                    list_id: listId,
+                    segment_id: segmentId
+                });
                 printJsonOrError(isJson, result);
                 return;
             }
@@ -437,8 +456,9 @@ async function handlePipeline(args) {
                     brief,
                     name: opts.name,
                     listId: opts['list-id'] ? Number(opts['list-id']) : null,
-                    listName: opts['list-name'],
-                    segmentId: opts['segment-id'] ? Number(opts['segment-id']) : null
+                    listName: opts['list-name'] || opts.list || null,
+                    segmentId: opts['segment-id'] ? Number(opts['segment-id']) : null,
+                    segmentName: opts['segment-name'] || opts.segment || null
                 });
                 printJsonOrError(isJson, result);
                 return;
@@ -863,11 +883,168 @@ async function main() {
         return;
     }
 
+    if (command === 'contacts') {
+        await handleContacts(rawArgs.slice(1));
+        return;
+    }
+
+    if (command === 'segments') {
+        await handleSegments(rawArgs.slice(1));
+        return;
+    }
+
     console.error(`\x1b[31mCommande inconnue : '${command}'. Tapez 'wacopilote help' pour voir la liste des commandes.\x1b[0m`);
     process.exit(1);
 }
 
-main().catch((err) => {
+/**
+ * Commande `contacts` : Gestion des contacts CRM.
+ */
+async function handleContacts(args) {
+    const subCommand = args[0] || 'list';
+    const isJson = args.includes('--json');
+    const opts = parseNamedArgs(args.slice(1));
+    const crmService = require('../backend/services/crmService');
+    await db.initDB();
+
+    if (subCommand === 'list') {
+        const contacts = await crmService.listContacts({
+            segmentId: opts['segment-id'] || opts['segment'],
+            listId: opts['list-id'] || opts['list'],
+            status: opts['status'],
+            search: opts['search'] || opts['query'],
+            limit: opts['limit'],
+            offset: opts['offset']
+        });
+        printJsonOrError(isJson, { contacts, count: contacts.length });
+        return;
+    }
+
+    if (subCommand === 'get') {
+        const id = args[1];
+        if (!id) {
+            console.error('\x1b[31mErreur : Identifiant de contact requis.\x1b[0m');
+            process.exit(1);
+        }
+        const contact = await crmService.getContact(id);
+        printJsonOrError(isJson, { contact });
+        return;
+    }
+
+    if (subCommand === 'create') {
+        const phone = opts.phone || args[1];
+        if (!phone) {
+            console.error('\x1b[31mErreur : Option --phone <numéro> requise.\x1b[0m');
+            process.exit(1);
+        }
+        const contact = await crmService.createContact({
+            phone,
+            name: opts.name,
+            email: opts.email,
+            address: opts.address,
+            segmentId: opts['segment-id'] || opts['segment'],
+            listId: opts['list-id'] || opts['list'],
+            status: opts.status
+        });
+        printJsonOrError(isJson, { success: true, contact });
+        return;
+    }
+
+    if (subCommand === 'update') {
+        const id = args[1];
+        if (!id) {
+            console.error('\x1b[31mErreur : Identifiant de contact requis.\x1b[0m');
+            process.exit(1);
+        }
+        const contact = await crmService.updateContact(id, {
+            name: opts.name,
+            phone: opts.phone,
+            email: opts.email,
+            address: opts.address,
+            segmentId: opts['segment-id'] || opts['segment'],
+            listId: opts['list-id'] || opts['list'],
+            status: opts.status
+        });
+        printJsonOrError(isJson, { success: true, contact });
+        return;
+    }
+
+    if (subCommand === 'delete') {
+        const id = args[1];
+        if (!id) {
+            console.error('\x1b[31mErreur : Identifiant de contact requis.\x1b[0m');
+            process.exit(1);
+        }
+        await crmService.deleteContact(id);
+        printJsonOrError(isJson, { success: true, id });
+        return;
+    }
+
+    if (subCommand === 'assign') {
+        const segmentId = opts['segment-id'] || opts['segment'];
+        const nonNamed = args.slice(1).filter(a => !a.startsWith('--'));
+        const contactIds = nonNamed.map(id => parseInt(id, 10)).filter(id => !isNaN(id));
+        if (contactIds.length === 0) {
+            console.error('\x1b[31mErreur : Au moins un ID de contact doit être spécifié.\x1b[0m');
+            process.exit(1);
+        }
+        const result = await crmService.assignContactsToSegment(contactIds, segmentId ? parseInt(segmentId, 10) : null);
+        printJsonOrError(isJson, { success: true, ...result });
+        return;
+    }
+
+    console.error(`\x1b[31mSous-commande contacts inconnue : '${subCommand}'.\x1b[0m`);
+    process.exit(1);
+}
+
+/**
+ * Commande `segments` : Gestion des segments CRM.
+ */
+async function handleSegments(args) {
+    const subCommand = args[0] || 'list';
+    const isJson = args.includes('--json');
+    const opts = parseNamedArgs(args.slice(1));
+    const crmService = require('../backend/services/crmService');
+    await db.initDB();
+
+    if (subCommand === 'list') {
+        const segments = await crmService.listSegments();
+        printJsonOrError(isJson, { segments, count: segments.length });
+        return;
+    }
+
+    if (subCommand === 'create') {
+        const name = opts.name || args[1];
+        if (!name) {
+            console.error('\x1b[31mErreur : Nom de segment requis (--name <nom>).\x1b[0m');
+            process.exit(1);
+        }
+        const segment = await crmService.createSegment({ name });
+        printJsonOrError(isJson, { success: true, segment });
+        return;
+    }
+
+    if (subCommand === 'delete') {
+        const id = args[1];
+        if (!id) {
+            console.error('\x1b[31mErreur : Identifiant de segment requis.\x1b[0m');
+            process.exit(1);
+        }
+        await crmService.deleteSegment(id);
+        printJsonOrError(isJson, { success: true, id });
+        return;
+    }
+
+    console.error(`\x1b[31mSous-commande segments inconnue : '${subCommand}'.\x1b[0m`);
+    process.exit(1);
+}
+
+main().then(() => {
+    // Si la commande n'est pas 'mcp' (serveur stdio persistant), sortir proprement
+    if (process.argv[2] !== 'mcp') {
+        process.exit(0);
+    }
+}).catch((err) => {
     console.error(`\x1b[31mErreur inattendue : ${err.message}\x1b[0m`);
     process.exit(1);
 });

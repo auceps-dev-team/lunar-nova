@@ -66,6 +66,48 @@ describe('wacopiloteMcpServer — Serveur MCP standard', { timeout: 30000 }, () 
         // unique (singleFork: true) quand d'autres suites tournent en parallèle.
     }, 15000);
 
+    it('handleToolCall("save_pipeline_contacts") prend en charge segmentName et listName', async () => {
+        const pipelineService = require('../services/pipelineService');
+        const run = await pipelineService.createRun({ brief: 'brief mcp' });
+        const result = await handleToolCall('save_pipeline_contacts', {
+            runId: run.id,
+            leads: [{ name: 'Lead MCP', phone: '0506070809', address: 'Plateau' }],
+            segmentName: 'Segments MCP',
+            listName: 'Listes MCP'
+        });
+        expect(result.contacts).toHaveLength(1);
+        expect(result.contacts[0].name).toBe('Lead MCP');
+        expect(result.contacts[0].segment_id).toBeDefined();
+        expect(result.contacts[0].list_id).toBeDefined();
+    });
+
+    it('handleToolCall CRUD CRM : create_segment, create_contact, list_contacts, assign_contacts_to_segment', async () => {
+        const segRes = await handleToolCall('create_segment', { name: 'Segment MCP Atomique' });
+        expect(segRes.success).toBe(true);
+        expect(segRes.segment.id).toBeDefined();
+
+        const contactRes = await handleToolCall('create_contact', {
+            name: 'Contact MCP Atomique',
+            phone: '0711223344',
+            address: 'Abidjan Treichville',
+            segmentId: segRes.segment.id
+        });
+        expect(contactRes.success).toBe(true);
+        expect(contactRes.contact.segment_id).toBe(segRes.segment.id);
+
+        const listRes = await handleToolCall('list_contacts', { segmentId: segRes.segment.id });
+        expect(listRes.contacts.length).toBeGreaterThanOrEqual(1);
+
+        const assignRes = await handleToolCall('assign_contacts_to_segment', {
+            contactIds: [contactRes.contact.id],
+            segmentId: null
+        });
+        expect(assignRes.success).toBe(true);
+
+        const getRes = await handleToolCall('get_contact', { id: contactRes.contact.id });
+        expect(getRes.contact.segment_id).toBeNull();
+    });
+
     it('handleToolCall("wordpress_propose_action") exige connectionId et prompt', async () => {
         await expect(handleToolCall('wordpress_propose_action', {})).rejects.toThrow(/obligatoires/);
     });

@@ -104,7 +104,7 @@ const CliAgentBridgeSettings = () => {
                                 {t('cliBridgeTitle') || 'Bridge CLI & Protocoles Agentiques (MCP)'}
                             </h3>
                             <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                                v{statusData?.version || '1.45.1'}
+                                v{statusData?.version || '1.46.0'}
                             </span>
                         </div>
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">

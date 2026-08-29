@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/auceps-dev-team/lunar-nova"><img src="https://img.shields.io/badge/version-1.45.1-blue.svg" alt="Version 1.45.1" /></a>
+  <a href="https://github.com/auceps-dev-team/lunar-nova"><img src="https://img.shields.io/badge/version-1.46.0-blue.svg" alt="Version 1.46.0" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue.svg" alt="License AGPL-3.0" /></a>
   <a href="#-open-source"><img src="https://img.shields.io/badge/open%20source-oui-brightgreen.svg" alt="Open Source" /></a>
   <a href="#-pourquoi-wacopilote-"><img src="https://img.shields.io/badge/Made%20in-%F0%9F%87%A8%F0%9F%87%BE%20C%C3%B4te%20d'Ivoire-orange.svg" alt="Made in Côte d'Ivoire" /></a>
@@ -218,10 +218,17 @@ cat brief_campagne.txt | npx wacopilote run --agent outbound_strategist --json
 # Forcer un modèle ou un fournisseur IA spécifique
 npx wacopilote run --agent seo_specialist --file ./articles.md --provider openrouter --model deepseek/deepseek-r1
 
-# Prospection + création de liste + planning en un seul appel
-npx wacopilote pipeline run --brief "10 boutiques de mode féminine à Dakar" --auto --list-name "Prospects Dakar"
+# Prospection + création de liste + planning en un seul appel (avec segment)
+npx wacopilote pipeline run --brief "10 boutiques de mode féminine à Dakar" --auto --list-name "Prospects Dakar" --segment-name "Mode & Luxe"
 # ... ou étape par étape : create, prospect, save-contacts, generate-messages, organize, cards
 npx wacopilote prospect search --query "institut de beauté" --zone "Abidjan" --json
+
+# CRM — Segments & Contacts atomiques
+npx wacopilote segments list --json
+npx wacopilote segments create --name "VIP B2B"
+npx wacopilote contacts create --phone "2250700000000" --name "Client A" --segment-id 1 --json
+npx wacopilote contacts list --segment-id 1 --search "Client" --json
+npx wacopilote contacts assign --segment-id 2 101 102 103 --json
 
 # Documents (AI Writer)
 npx wacopilote documents list --json
