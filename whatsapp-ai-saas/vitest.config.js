@@ -44,6 +44,27 @@ export default defineConfig({
         inline: [/backend\//, 'sqlite', 'sqlite3'],
       },
     },
+    // Mesure de couverture (constat C5 de l'audit) : `npm run test:coverage`.
+    // Volontairement SANS seuil bloquant — la couverture est publiée pour
+    // piloter les contributions (le gros du code reste non testé), pas pour
+    // casser la CI. Rapport lisible en console + lcov (artifact CI).
+    coverage: {
+      provider: 'v8',
+      reportsDirectory: 'coverage',
+      reporter: ['text', 'lcov'],
+      include: ['src/**/*.{js,jsx}', 'backend/**/*.{js,jsx}'],
+      exclude: [
+        'src/setupTests.js',
+        'backend/__tests__/**',
+        'e2e/**',
+        '**/*.config.js',
+      ],
+      // Limite connue (Vitest 4) : les fichiers jamais exécutés par les tests
+      // sont inclus via un parse statique Rollup, qui ne comprend pas le JSX —
+      // les pages React non couvertes (AiChat, AiWriter, WpProductModal) sont
+      // exclues avec un avertissement non bloquant. Elles sont de toute façon
+      // à 0 % : le rapport reste fidèle.
+    },
   },
   resolve: {
     alias: {

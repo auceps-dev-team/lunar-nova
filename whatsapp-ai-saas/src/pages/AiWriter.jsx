@@ -195,26 +195,60 @@ export default function AiWriter() {
         }
     };
 
-    // html2pdf.js pèse près de 1 Mo (html2canvas + jsPDF). Importé statiquement,
-    // il était embarqué dans le chunk de cette page et téléchargé à chaque visite,
-    // alors qu'il ne sert qu'au clic sur « Exporter en PDF ». L'import dynamique le
-    // déplace dans un chunk chargé à la demande.
+    // Export PDF via l'IPC Electron native (`printToPDF`, rendu Chromium dans
+    // une fenêtre cachée) — le même canal que les devis/factures
+    // (InvoiceBuilder). Remplace html2pdf.js (html2canvas + jsPDF, ~1 Mo
+    // embarqué) : moteur natif, bundle allégé d'autant (constat C5 de l'audit).
     const downloadPDF = async () => {
         if (!editorRef.current) return;
-        const element = editorRef.current;
-        const opt = {
-            margin: 1,
-            filename: `${documentTitle || 'document'}.pdf`,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2 },
-            jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-        };
+        const title = documentTitle || t('untitledDoc');
+        const fileName = `${title.replace(/[^a-zA-Z0-9\u00C0-\u024F-_ ]/g, '').trim() || 'document'}.pdf`;
+        // Document autonome : le contenu de l'éditeur (HTML déjà assaini à
+        // l'entrée comme à la génération) est enveloppé d'une feuille de style
+        // d'impression minimale, comme le fait buildInvoiceHTML pour les factures.
+        const html = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>${title}</title>
+<style>
+  body { font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.55; color: #1a1a1a; margin: 0; padding: 24px; }
+  img { max-width: 100%; height: auto; }
+  table { border-collapse: collapse; width: 100%; }
+  th, td { border: 1px solid #d0d0d0; padding: 6px 8px; text-align: left; }
+  h1, h2, h3 { line-height: 1.25; }
+  blockquote { border-left: 3px solid #ccc; margin: 12px 0; padding: 4px 14px; color: #555; }
+  pre { background: #f5f5f5; padding: 10px; border-radius: 6px; overflow-x: auto; white-space: pre-wrap; }
+</style></head>
+<body>${editorRef.current.innerHTML}</body></html>`;
+
+        // Canal natif Electron : rendu Chromium + boîte de dialogue de sauvegarde.
+        if (window.electronAPI?.printToPDF) {
+            try {
+                const result = await window.electronAPI.printToPDF(html, fileName);
+                if (!result?.success && result?.reason !== 'cancelled') {
+                    console.error('[AiWriter] Export PDF échoué:', result?.reason);
+                    showAppNotification(t('pdfExportError'), 'error');
+                }
+            } catch (err) {
+                console.error('[AiWriter] Export PDF échoué:', err);
+                showAppNotification(t('pdfExportError'), 'error');
+            } finally {
+                setShowDownloadMenu(false);
+            }
+            return;
+        }
+
+        // Fallback navigateur (dev hors Electron) : nouvel onglet + impression.
         try {
-            const { default: html2pdf } = await import('html2pdf.js');
-            await html2pdf().set(opt).from(element).save();
+            const win = window.open('', '_blank', 'width=800,height=1100');
+            if (!win) {
+                showAppNotification(t('allowPopupsPdf'), 'error');
+                return;
+            }
+            win.document.write(html);
+            win.document.close();
+            setTimeout(() => { win.focus(); win.print(); }, 400);
         } catch (err) {
             console.error('[AiWriter] Export PDF échoué:', err);
-            showAppNotification(t('errorServerConnection'), 'error');
+            showAppNotification(t('pdfExportError'), 'error');
         } finally {
             setShowDownloadMenu(false);
         }

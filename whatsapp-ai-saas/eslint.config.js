@@ -9,7 +9,7 @@ import { defineConfig, globalIgnores } from 'eslint/config'
 // `module`, `process` et `__dirname` comme non définis dans tout le backend, et
 // appliquait les règles React à des fichiers qui n'en contiennent pas.
 export default defineConfig([
-  globalIgnores(['dist', 'dist-electron', 'node_modules', 'backend/node_modules']),
+  globalIgnores(['dist', 'dist-electron', 'node_modules', 'backend/node_modules', 'coverage']),
 
   // --- Renderer React (navigateur) ---
   {
