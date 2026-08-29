@@ -1,6 +1,6 @@
 {
-  "name": "backend",
-  "version": "1.46.1",
+  "name": "wacopilote-backend",
+  "version": "1.47.0",
   "description": "WhatsApp AI SaaS Orchestrator",
   "license": "AGPL-3.0-only",
   "main": "server.js",

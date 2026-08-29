@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/auceps-dev-team/lunar-nova"><img src="https://img.shields.io/badge/version-1.46.1-blue.svg" alt="Version 1.46.1" /></a>
+  <a href="https://github.com/auceps-dev-team/lunar-nova"><img src="https://img.shields.io/badge/version-1.47.0-blue.svg" alt="Version 1.47.0" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue.svg" alt="License AGPL-3.0" /></a>
   <a href="#-open-source"><img src="https://img.shields.io/badge/open%20source-oui-brightgreen.svg" alt="Open Source" /></a>
   <a href="#-pourquoi-wacopilote-"><img src="https://img.shields.io/badge/Made%20in-%F0%9F%87%A8%F0%9F%87%BE%20C%C3%B4te%20d'Ivoire-orange.svg" alt="Made in Côte d'Ivoire" /></a>
@@ -193,6 +193,17 @@ WaCopilote intègre une passerelle unifiée (AI Gateway) capable de communiquer 
 | **Ollama** | Llama 3, Mistral 7B, Phi-3, Qwen 2.5 | Confidentialité totale, fonctionnement 100% hors-ligne | Inférence Locale (CPU/GPU) |
 | **Together AI** | Qwen-Image, Flux.1 Schnell / Dev | Génération d'images produits & Studio Photo IA | Cloud Media Generation API |
 | **CLI / Local Agents** | gemini, claude, aider, ollama | Délégation aux agents locaux & binaire autonome | Invocations Shell Sécurisées |
+
+### Routage Agentique Intelligent & Auto-Fallback Multi-Canal (v1.47.0)
+
+WaCopilote intègre un moteur de résilience agentique (`backend/services/agentFallbackRouter.js`) garantissant la continuité absolue des opérations :
+- **Sélection de la stratégie d'appel LLM** dans les *Réglages* :
+  - `🔄 Auto-Fallback (Recommandé)` : Cascade intelligente et transparente en cas de clé manquante ou de défaillance.
+  - `☁️ API Cloud Direct` : Privilégie les APIs REST directes (Gemini, NVIDIA, OpenRouter).
+  - `💻 CLI Machine Local` : Délègue l'exécution aux outils CLI installés sur votre machine (`gemini`, `claude`, `ollama`).
+  - `⚡ Protocole MCP stdio` : Exécution via le serveur MCP standardisé.
+- **Résilience et Zéro Blocage** : Si un agent est configuré sur un modèle tiers (ex: NVIDIA/Llama) sans clé API configurée, le routeur bascule automatiquement sur les canaux disponibles (Gemini Cloud API, Gemini CLI local `@google/gemini-cli`, Claude Code CLI, etc.) sans jamais renvoyer d'erreur bloquante à l'utilisateur.
+- **Tableau de bord temps réel** : Détection dynamique et badges d'état des canaux opérationnels (`GET /api/settings/channels-status`).
 
 ---
 

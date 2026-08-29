@@ -1,5 +1,15 @@
 # Active Context: WaCopilote
 
+- **v1.47.0** — Routage Agentique Intelligent & Auto-Fallback Multi-Canal (+0.1.0) :
+  - **Moteur de Routage Résilient (`backend/services/agentFallbackRouter.js`)** :
+    - Fournit `executeAgentWithFallback`, `getExecutionChannelsStatus` et `isKeyConfigurationError`.
+    - Cascade de repli automatique en cas de clé manquante ou de défaillance réseau : basculement fluide sur Gemini API Cloud -> Google Gemini CLI local `0.57.0` -> Claude Code CLI `2.1.250` -> OpenRouter -> Ollama.
+    - Élimination des erreurs bloquantes dans Chat IA (notamment pour les modèles NVIDIA/Llama sans clé NVIDIA).
+  - **Paramètres & Interface Utilisateur (`src/pages/Settings.jsx`)** :
+    - Sélecteur de stratégie d'appel LLM (Auto-Fallback, API Cloud, CLI Machine Local, Protocole MCP).
+    - Sélecteur d'agent CLI par défaut et affichage en temps réel des badges de canaux connectés.
+    - Endpoint REST dédié `GET /api/settings/channels-status`.
+  - **Tests & Assurance Qualité** : 27 suites de tests au vert (**247 tests réussis**, 1 skip, 0 échec), tests unitaires et d'intégration dédiés dans `backend/__tests__/agentFallback.test.js`.
 - **v1.46.1** — Découplage de la Console de Test CLI/MCP & Détection Outils Système (+0.0.1) :
   - **Console de Test Bridge Autonome (`POST /api/cli/test-bridge`)** : Élimination de l'ancien appel vers `/api/ai/agent` qui exigeait des clés OpenAI/NVIDIA non configurées. Remplacement par un routeur de test autonome supportant 3 modes réels :
     1. `CLI WaCopilote` : Exécute le sous-processus réel `node bin/wacopilote.cjs run --agent <agent> --prompt <prompt> --json` via `executeExternalCli`.

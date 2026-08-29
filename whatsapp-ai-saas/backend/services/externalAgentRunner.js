@@ -163,13 +163,23 @@ function isBinaryInPath(cmd) {
     });
 }
 
+let cachedClis = null;
+let lastClisCheckTime = 0;
+const CLIS_CACHE_TTL = 30000; // 30 secondes de cache en mémoire
+
 /**
  * Détecte les outils et CLI agentiques disponibles sur le système d'exploitation.
  * Teste la présence de chaque commande en tentant d'exécuter `--version`.
  *
+ * @param {boolean} [forceRefresh=false]
  * @returns {Promise<Array<{ command: string, installed: boolean, version: string|null }>>}
  */
-async function detectInstalledClis() {
+async function detectInstalledClis(forceRefresh = false) {
+    const now = Date.now();
+    if (!forceRefresh && cachedClis && (now - lastClisCheckTime < CLIS_CACHE_TTL)) {
+        return cachedClis;
+    }
+
     const commandsToCheck = [
         { name: 'gemini', flag: '--version' },
         { name: 'gemini-cli', flag: '--version' },
@@ -223,6 +233,8 @@ async function detectInstalledClis() {
         }
     }));
 
+    cachedClis = results;
+    lastClisCheckTime = now;
     return results;
 }
 

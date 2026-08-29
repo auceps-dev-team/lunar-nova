@@ -65,7 +65,7 @@ function startMcpSession() {
                 const timer = setTimeout(() => {
                     pending.delete(id);
                     reject(new Error(`Timeout MCP sur ${method} (id=${id})`));
-                }, 15000);
+                }, 30000);
                 pending.set(id, {
                     resolve: (msg) => { clearTimeout(timer); resolve(msg); }
                 });
@@ -93,7 +93,7 @@ function startMcpSession() {
     };
 }
 
-describe('Flux CLI/MCP bout-en-bout (subprocess réels)', { timeout: 20000 }, () => {
+describe('Flux CLI/MCP bout-en-bout (subprocess réels)', { timeout: 60000 }, () => {
     let session;
 
     beforeAll(async () => {

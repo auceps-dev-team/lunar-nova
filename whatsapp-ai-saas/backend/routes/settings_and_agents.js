@@ -75,6 +75,16 @@ router.delete('/settings/:key', async (req, res) => {
     }
 });
 
+router.get('/settings/channels-status', async (req, res) => {
+    try {
+        const { getExecutionChannelsStatus } = require('../services/agentFallbackRouter');
+        const status = await getExecutionChannelsStatus();
+        res.json({ status: 'success', data: status });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 router.get('/settings/quota', async (req, res) => {
     try {
         const key = await getSetting('gemini_api_key', '');

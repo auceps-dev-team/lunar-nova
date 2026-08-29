@@ -42,22 +42,29 @@ async function generateProposals(chatContext, modelParam, providerOverride = nul
     const { provider: defaultProvider } = await getProviderConfig(null);
     const provider = providerOverride || defaultProvider;
 
-    if (provider === 'openrouter') {
-        const apiKey = await db.getSetting('openrouter_api_key', '');
-        return await openrouterService.generateProposals(chatContext, modelParam, apiKey);
-    } else if (provider === 'ollama') {
-        const apiKey = await db.getSetting('ollama_api_key', '');
-        return await ollamaService.generateProposals(chatContext, modelParam, apiKey);
-    } else if (provider === 'openai') {
-        const apiKey = await resolveNvidiaKey(modelParam);
-        const nvidiaModels = getNvidiaModels();
-        let baseURL = await db.getSetting('openai_base_url', nvidiaModels.NVIDIA_BASE_URL);
-        const modelDef = nvidiaModels.getModelDef(modelParam);
-        if (modelDef && modelDef.provider === 'together') {
-            baseURL = 'https://api.together.xyz/v1';
+    try {
+        if (provider === 'openrouter') {
+            const apiKey = await db.getSetting('openrouter_api_key', '');
+            if (!apiKey && !process.env.OPENROUTER_API_KEY) throw new Error('OpenRouter API key not configured');
+            return await openrouterService.generateProposals(chatContext, modelParam, apiKey);
+        } else if (provider === 'ollama') {
+            const apiKey = await db.getSetting('ollama_api_key', '');
+            return await ollamaService.generateProposals(chatContext, modelParam, apiKey);
+        } else if (provider === 'openai') {
+            const apiKey = await resolveNvidiaKey(modelParam);
+            if (!apiKey) throw new Error('OpenAI/NVIDIA API key not configured');
+            const nvidiaModels = getNvidiaModels();
+            let baseURL = await db.getSetting('openai_base_url', nvidiaModels.NVIDIA_BASE_URL);
+            const modelDef = nvidiaModels.getModelDef(modelParam);
+            if (modelDef && modelDef.provider === 'together') {
+                baseURL = 'https://api.together.xyz/v1';
+            }
+            return await openaiService.generateProposals(chatContext, modelParam, apiKey, baseURL);
+        } else {
+            return await geminiService.generateProposals(chatContext, modelParam);
         }
-        return await openaiService.generateProposals(chatContext, modelParam, apiKey, baseURL);
-    } else {
+    } catch (err) {
+        console.error(`[aiController] Fallback sur Gemini pour generateProposals suite à l'erreur (${provider}) :`, err.message);
         return await geminiService.generateProposals(chatContext, modelParam);
     }
 }
@@ -72,22 +79,29 @@ async function classifyOrderIntent(text, contactName, modelParam = null, provide
     const { provider: defaultProvider } = await getProviderConfig(null);
     const provider = providerOverride || defaultProvider;
 
-    if (provider === 'openrouter') {
-        const apiKey = await db.getSetting('openrouter_api_key', '');
-        return await openrouterService.classifyOrderIntent(text, contactName, apiKey, modelParam);
-    } else if (provider === 'ollama') {
-        const apiKey = await db.getSetting('ollama_api_key', '');
-        return await ollamaService.classifyOrderIntent(text, contactName, apiKey, modelParam);
-    } else if (provider === 'openai') {
-        const apiKey = await resolveNvidiaKey(modelParam);
-        const nvidiaModels = getNvidiaModels();
-        let baseURL = await db.getSetting('openai_base_url', nvidiaModels.NVIDIA_BASE_URL);
-        const modelDef = nvidiaModels.getModelDef(modelParam);
-        if (modelDef && modelDef.provider === 'together') {
-            baseURL = 'https://api.together.xyz/v1';
+    try {
+        if (provider === 'openrouter') {
+            const apiKey = await db.getSetting('openrouter_api_key', '');
+            if (!apiKey && !process.env.OPENROUTER_API_KEY) throw new Error('OpenRouter API key not configured');
+            return await openrouterService.classifyOrderIntent(text, contactName, apiKey, modelParam);
+        } else if (provider === 'ollama') {
+            const apiKey = await db.getSetting('ollama_api_key', '');
+            return await ollamaService.classifyOrderIntent(text, contactName, apiKey, modelParam);
+        } else if (provider === 'openai') {
+            const apiKey = await resolveNvidiaKey(modelParam);
+            if (!apiKey) throw new Error('OpenAI/NVIDIA API key not configured');
+            const nvidiaModels = getNvidiaModels();
+            let baseURL = await db.getSetting('openai_base_url', nvidiaModels.NVIDIA_BASE_URL);
+            const modelDef = nvidiaModels.getModelDef(modelParam);
+            if (modelDef && modelDef.provider === 'together') {
+                baseURL = 'https://api.together.xyz/v1';
+            }
+            return await openaiService.classifyOrderIntent(text, contactName, apiKey, baseURL, modelParam);
+        } else {
+            return await geminiService.classifyOrderIntent(text, contactName, modelParam);
         }
-        return await openaiService.classifyOrderIntent(text, contactName, apiKey, baseURL, modelParam);
-    } else {
+    } catch (err) {
+        console.error(`[aiController] Fallback sur Gemini pour classifyOrderIntent suite à l'erreur (${provider}) :`, err.message);
         return await geminiService.classifyOrderIntent(text, contactName, modelParam);
     }
 }
@@ -126,8 +140,6 @@ async function chatWithAgent(personaId, message, imageParams, attachments, promp
         }
 
         // Only append pdfText if not using Gemini, since Gemini reads PDFs natively when passed as attachments
-        // But for simplicity, we can just append it for all or conditionally.
-        // Wait, if it's Gemini, we pass the attachments array directly to Gemini service.
         if (pdfText && provider !== 'gemini') {
             processedMessage += pdfText;
         }
@@ -139,103 +151,20 @@ async function chatWithAgent(personaId, message, imageParams, attachments, promp
         }
     }
 
-    if (provider === 'cli') {
-        const externalAgentRunner = require('./services/externalAgentRunner');
-        const cliCommand = modelOverride || 'gemini';
-        const result = await externalAgentRunner.executeExternalCli({
-            command: cliCommand,
-            input: processedMessage,
-            args: []
-        });
-        if (!result.success) {
-            throw new Error(result.error || `Échec d'exécution CLI '${cliCommand}'`);
-        }
-        return { response: result.stdout || result.stderr || '' };
-    } else if (provider === 'openrouter') {
-        const apiKey = await db.getSetting('openrouter_api_key', '');
-        let effectiveAgent = dbAgent;
-        if (modelOverride) {
-            if (effectiveAgent) {
-                effectiveAgent.model_override = modelOverride;
-            } else {
-                const orchestrator = require('./agents/orchestrator');
-                const p = orchestrator.getPersona(personaId) || orchestrator.getPersona('creative');
-                effectiveAgent = { model_override: modelOverride, system_instruction: p.systemInstruction, response_format: orchestrator.requiresJsonFormat(personaId) ? 'json' : promptFormat };
-            }
-        }
-        return await openrouterService.chatWithAgent(personaId, processedMessage, processedImageParams, promptFormat, apiKey, effectiveAgent, messages, currentTasks, isRealTime);
-    } else if (provider === 'ollama') {
-        const apiKey = await db.getSetting('ollama_api_key', '');
-        let effectiveAgent = dbAgent;
-        if (modelOverride) {
-            if (effectiveAgent) {
-                effectiveAgent.model_override = modelOverride;
-            } else {
-                const orchestrator = require('./agents/orchestrator');
-                const p = orchestrator.getPersona(personaId) || orchestrator.getPersona('creative');
-                effectiveAgent = { model_override: modelOverride, system_instruction: p.systemInstruction, response_format: orchestrator.requiresJsonFormat(personaId) ? 'json' : promptFormat };
-            }
-        }
-        return await ollamaService.chatWithAgent(personaId, processedMessage, processedImageParams, promptFormat, effectiveAgent, apiKey, messages, currentTasks, isRealTime);
-    } else if (provider === 'openai') {
-        let selectedModel = modelOverride || dbAgent?.model_override || await db.getSetting('default_chat_model', '');
-        const nvidiaModels = getNvidiaModels();
-        
-        // Auto-select a vision model if the user provided an image but the selected model is text-only
-        let def = nvidiaModels.getModelDef(selectedModel);
-        if (processedImageParams && processedImageParams.data) {
-            if (!def || def.type !== 'vision') {
-                const visionModel = nvidiaModels.getDefaultVisionModel();
-                if (visionModel) {
-                    selectedModel = visionModel.id;
-                    def = visionModel;
-                }
-            }
-        }
-        
-        const apiKey = await resolveNvidiaKey(selectedModel);
-        let baseURL = await db.getSetting('openai_base_url', nvidiaModels.NVIDIA_BASE_URL);
-        if (def && def.provider === 'together') {
-            baseURL = 'https://api.together.xyz/v1';
-        }
-        
-        // Pass the modelOverride down by merging into a faux dbAgent if needed
-        let effectiveAgent = dbAgent;
-        if (selectedModel) {
-            const overrideDef = getNvidiaModels().getModelDef(selectedModel);
-            // Allow override only if it's a valid chat/vision model
-            if (overrideDef && (overrideDef.type === 'text' || overrideDef.type === 'vision')) {
-                if (effectiveAgent) {
-                    effectiveAgent.model_override = selectedModel;
-                } else {
-                    const orchestrator = require('./agents/orchestrator');
-                    const p = orchestrator.getPersona(personaId) || orchestrator.getPersona('creative');
-                    effectiveAgent = { 
-                        model_override: selectedModel, 
-                        system_instruction: p.systemInstruction, 
-                        response_format: orchestrator.requiresJsonFormat(personaId) ? 'json' : promptFormat 
-                    };
-                }
-            }
-        }
-        return await openaiService.chatWithAgent(personaId, processedMessage, processedImageParams, promptFormat, apiKey, baseURL, effectiveAgent);
-    } else {
-        let effectiveAgent = dbAgent;
-        if (modelOverride) {
-            if (effectiveAgent) {
-                effectiveAgent.model_override = modelOverride;
-            } else {
-                const orchestrator = require('./agents/orchestrator');
-                const p = orchestrator.getPersona(personaId) || orchestrator.getPersona('creative');
-                effectiveAgent = { 
-                    model_override: modelOverride, 
-                    system_instruction: p.systemInstruction, 
-                    response_format: orchestrator.requiresJsonFormat(personaId) ? 'json' : promptFormat 
-                };
-            }
-        }
-        return await geminiService.chatWithAgent(personaId, processedMessage, processedImageParams, attachments, promptFormat, effectiveAgent, messages, currentTasks, isRealTime);
-    }
+    const { executeAgentWithFallback } = require('./services/agentFallbackRouter');
+    return await executeAgentWithFallback({
+        personaId,
+        message: processedMessage,
+        imageParams: processedImageParams,
+        attachments,
+        promptFormat,
+        messages,
+        currentTasks,
+        isRealTime,
+        modelOverride,
+        providerOverride: provider,
+        dbAgent
+    });
 }
 
 async function generateImage(prompt, aspectRatio, imageParams, editMode, mode, providerOverride = null, imageModelOverride = null) {

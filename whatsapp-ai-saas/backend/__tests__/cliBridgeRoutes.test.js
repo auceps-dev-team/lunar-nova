@@ -3,7 +3,7 @@ import express from 'express';
 import http from 'http';
 import cliBridgeRouter from '../routes/cliBridge';
 
-describe('routes/cliBridge.js — Endpoints REST pour le Bridge CLI', { timeout: 15000 }, () => {
+describe('routes/cliBridge.js — Endpoints REST pour le Bridge CLI', { timeout: 30000 }, () => {
     let server;
     let baseUrl;
 

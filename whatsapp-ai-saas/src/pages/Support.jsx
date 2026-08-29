@@ -48,6 +48,17 @@ const Support = () => {
 
     const changelog = [
         {
+            version: 'v1.47.0',
+            date: '2026-08-29',
+            changes: [
+                'Routage Agentique Intelligent & Résilience Multi-Canal : sélection libre de la solution d\'appel LLM dans les Réglages (Auto-Fallback Recommandé, API Cloud, CLI Machine Local, ou Protocole MCP)',
+                'Auto-Fallback Transparent & Sans Blocage : en cas de clé API manquante (ex: modèle NVIDIA/Llama sans clé NVIDIA configurée) ou de canal indisponible, le système bascule automatiquement et instantanément sur la solution opérationnelle (Gemini API, Google Gemini CLI local v0.57.0, Claude Code v2.1.250, etc.)',
+                'Suppression des erreurs bloquantes dans Chat IA : élimination totale des messages parasites "Error: API key not configured" lorsque des solutions alternatives sont disponibles sur la machine',
+                'Nouveau service agentFallbackRouter : moteur modulaire d\'orchestration et d\'évaluation en temps réel de la disponibilité des canaux',
+                'Nouvel endpoint GET /api/settings/channels-status et affichage interactif des badges de statut en direct dans les Réglages'
+            ]
+        },
+        {
             version: 'v1.46.1',
             date: '2026-08-29',
             changes: [
