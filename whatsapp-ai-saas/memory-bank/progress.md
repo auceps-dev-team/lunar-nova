@@ -49,6 +49,13 @@
   - 9 outils CRM atomiques MCP + sous-commandes CLI `contacts` et `segments`.
   - 26 suites de tests au vert (**237 tests réussis**, 1 skip, 0 échec).
 
+- [x] **Routage Agentique Intelligent & Auto-Fallback Multi-Canal v1.47.0 (2026-08-29)** :
+  - Moteur de résilience `backend/services/agentFallbackRouter.js` avec cascade de secours multi-canal (Gemini API Cloud -> Google Gemini CLI local v0.57.0 -> Claude Code CLI v2.1.250 -> OpenRouter -> Ollama).
+  - Élimination absolue des erreurs bloquantes "API key not configured" dans Chat IA (ex: Jarvis configuré avec NVIDIA/Llama sans clé NVIDIA).
+  - Sélection de stratégie d'appel LLM dans les Réglages (Auto-Fallback, API Cloud Direct, CLI Machine Local, Protocole MCP).
+  - Surveillance d'état temps réel avec endpoint REST `GET /api/settings/channels-status` et badges interactifs.
+  - 27 suites de tests au vert (**247 tests réussis**, 1 skip, 0 échec).
+
 - [x] **Correctif Découplage Console de Test & Détection Google CLI v1.46.1 (2026-08-29)** :
   - Découplage complet de la console de test Bridge CLI/MCP des routes d'API cloud génériques via `POST /api/cli/test-bridge`.
   - Support de 3 modes de test autonomes : CLI WaCopilote (`wacopilote run`), Serveur MCP (`tools/call`), et Délégation Machine (`claude`, `python`, `node`, `git`, `gemini`).

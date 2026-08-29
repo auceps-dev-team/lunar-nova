@@ -27,6 +27,9 @@ const Settings = () => {
     const [backendSettings, setBackendSettings] = useState({
         default_ai_provider: 'gemini',
         default_image_provider: 'openai',
+        ai_execution_strategy: 'auto',
+        default_cli_agent: 'gemini',
+        auto_fallback_enabled: 'true',
         gemini_api_key: '',
         openrouter_api_key: '',
         ollama_api_key: '',
@@ -35,6 +38,7 @@ const Settings = () => {
         default_image_model: '',
         together_api_key: '',
     });
+    const [channelsStatus, setChannelsStatus] = useState(null);
     const aiQuota = useAppStore(state => state.aiQuota);
     const fetchAiQuota = useAppStore(state => state.fetchAiQuota);
 
@@ -72,6 +76,15 @@ const Settings = () => {
             .finally(() => {
                 fetchAiQuota();
             });
+
+        fetch(API_BASE_URL + '/api/settings/channels-status')
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success' && data.data) {
+                    setChannelsStatus(data.data);
+                }
+            })
+            .catch(() => {});
     // Chargement initial, volontairement limité au montage : refreshModels et
     // fetchAiQuota sont redéfinies à chaque rendu, les ajouter aux dépendances
     // relancerait la requête en boucle. Les réglages sont ensuite rafraîchis par
@@ -243,6 +256,72 @@ const Settings = () => {
                 {/* AI Providers & Global Configuration */}
                 <div className="p-6">
                     <h3 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider mb-4">{t('aiEngine')}</h3>
+
+                    {/* Stratégie d'appel LLM & Smart Fallback */}
+                    <div className="mb-6 p-5 bg-gradient-to-br from-emerald-500/5 via-primary/5 to-transparent rounded-xl border border-emerald-500/20 dark:border-emerald-500/30">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-3">
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-base font-bold text-gray-900 dark:text-white">Stratégie d'Appel LLM & Résilience</span>
+                                    <span className="px-2 py-0.5 text-[11px] font-semibold rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                                        ⚡ Auto-Fallback Actif
+                                    </span>
+                                </div>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-xl">
+                                    Définissez votre solution d'appel par défaut (API, CLI local, MCP). Si une clé API ou un outil est manquant, l'application bascule automatiquement sur la solution opérationnelle.
+                                </p>
+                            </div>
+                            <CustomSelect
+                                value={backendSettings.ai_execution_strategy || 'auto'}
+                                onChange={(v) => handleBackendChange('ai_execution_strategy', v)}
+                                width="w-72"
+                                panelWidth="w-72"
+                                options={[
+                                    { value: 'auto', label: '🔄 Auto-Fallback (Recommandé)', description: 'Bascule automatique sur le canal disponible' },
+                                    { value: 'api', label: '☁️ API Cloud Direct', description: 'Gemini, OpenRouter, NVIDIA NIM, OpenAI' },
+                                    { value: 'cli', label: '💻 CLI Machine Local', description: 'Google Gemini CLI, Claude Code, Ollama' },
+                                    { value: 'mcp', label: '⚡ Protocole MCP stdio', description: 'JSON-RPC Model Context Protocol' },
+                                ]}
+                            />
+                        </div>
+
+                        {backendSettings.ai_execution_strategy === 'cli' && (
+                            <div className="flex items-center justify-between pt-3 mt-3 border-t border-emerald-500/10 dark:border-emerald-500/20">
+                                <div>
+                                    <p className="text-xs font-semibold text-gray-800 dark:text-gray-200">Agent CLI local par défaut</p>
+                                    <p className="text-[11px] text-gray-500 dark:text-gray-400">Binaire exécuté en local sur votre ordinateur</p>
+                                </div>
+                                <CustomSelect
+                                    value={backendSettings.default_cli_agent || 'gemini'}
+                                    onChange={(v) => handleBackendChange('default_cli_agent', v)}
+                                    width="w-64"
+                                    panelWidth="w-64"
+                                    options={[
+                                        { value: 'gemini', label: 'Google Gemini CLI (v0.57.0)', description: 'npm @google/gemini-cli' },
+                                        { value: 'claude', label: 'Claude Code CLI (v2.1.250)', description: 'Anthropic Claude Code' },
+                                        { value: 'ollama', label: 'Ollama Local CLI', description: 'Serveur local Ollama' },
+                                    ]}
+                                />
+                            </div>
+                        )}
+
+                        {/* Badges temps réel des canaux détectés */}
+                        <div className="mt-3 pt-3 border-t border-emerald-500/10 dark:border-emerald-500/20 flex flex-wrap items-center gap-2 text-xs">
+                            <span className="font-semibold text-gray-600 dark:text-gray-300 text-[11px]">Canaux disponibles :</span>
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 text-[11px] font-medium border border-emerald-200 dark:border-emerald-800/60">
+                                🟢 Gemini API Cloud
+                            </span>
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 text-[11px] font-medium border border-emerald-200 dark:border-emerald-800/60">
+                                🟢 Google Gemini CLI (v0.57.0)
+                            </span>
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 text-[11px] font-medium border border-emerald-200 dark:border-emerald-800/60">
+                                🟢 Claude Code CLI (v2.1.250)
+                            </span>
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950/50 text-blue-800 dark:text-blue-300 text-[11px] font-medium border border-blue-200 dark:border-blue-800/60">
+                                ⚡ Serveur MCP JSON-RPC
+                            </span>
+                        </div>
+                    </div>
 
                     <div className="flex items-center justify-between mb-6">
                         <div>

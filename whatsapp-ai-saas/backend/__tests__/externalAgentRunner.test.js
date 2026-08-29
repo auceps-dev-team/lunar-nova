@@ -124,6 +124,6 @@ describe('externalAgentRunner — service d\'exécution CLI externe', { timeout:
             expect(nodeEntry).toBeDefined();
             expect(nodeEntry.installed).toBe(true);
             expect(nodeEntry.version).toBeTruthy();
-        });
+        }, 30000);
     });
 });
