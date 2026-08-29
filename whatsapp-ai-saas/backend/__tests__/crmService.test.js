@@ -4,6 +4,9 @@ import * as crmService from '../services/crmService';
 
 describe('crmService — CRUD Contacts et Segments (SQLite en mémoire)', () => {
     beforeAll(async () => {
+        // Base en mémoire : aucune écriture de test ne doit atteindre la base
+        // de développement du projet (même patron que dbMigrations.test.js).
+        db.__setDbFileForTests(':memory:');
         await db.initDB();
     });
 

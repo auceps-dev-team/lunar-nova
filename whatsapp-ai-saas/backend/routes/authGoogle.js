@@ -50,8 +50,12 @@ router.get('/callback', async (req, res) => {
         const tokenData = await tokenResponse.json();
         
         if (!tokenData.access_token) {
+            // Journal complet côté serveur uniquement : la page ouverte par le
+            // navigateur externe est publique — y interpoler la réponse de
+            // Google était à la fois une surface XSS par interpolation et une
+            // fuite du détail de l'erreur OAuth.
             console.error('Google Token error:', tokenData);
-            return res.send(`<h2>Erreur Authentification</h2><p>${JSON.stringify(tokenData)}</p>`);
+            return res.send('<h2>Erreur Authentification</h2><p>Impossible de finaliser l\'authentification Google. Consultez les journaux du backend pour le détail, puis réessayez.</p>');
         }
 
         // Fetch User Info using the new token
