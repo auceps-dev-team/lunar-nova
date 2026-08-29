@@ -37,6 +37,24 @@ function isKeyConfigurationError(str) {
 }
 
 /**
+ * Détecte si une réponse textuelle indique un échec de connexion ou une absence de service.
+ * @param {string} text
+ * @returns {boolean}
+ */
+function isOfflineOrErrorResponse(text) {
+    if (!text || typeof text !== 'string') return true;
+    const lower = text.toLowerCase().trim();
+    return (
+        lower.startsWith('i am currently offline') ||
+        lower.includes('connection error. please try again') ||
+        lower.includes('api key not configured') ||
+        lower.includes('api key not valid') ||
+        lower.includes('error: openai/nvidia api key') ||
+        lower.includes('error: api key not valid')
+    );
+}
+
+/**
  * Récupère l'état de disponibilité en temps réel de tous les canaux LLM (API, CLI, MCP).
  */
 async function getExecutionChannelsStatus() {
@@ -44,9 +62,15 @@ async function getExecutionChannelsStatus() {
     const autoFallback = (await db.getSetting('auto_fallback_enabled', 'true')) !== 'false';
     const defaultCliAgent = await db.getSetting('default_cli_agent', 'gemini');
 
-    const geminiKey = (await db.getSetting('gemini_api_key', '')) || process.env.GEMINI_API_KEY || '';
-    const openrouterKey = (await db.getSetting('openrouter_api_key', '')) || process.env.OPENROUTER_API_KEY || '';
-    const openaiKey = (await db.getSetting('openai_api_key', '')) || process.env.NVIDIA_API_KEY || '';
+    const rawGeminiKey = (await db.getSetting('gemini_api_key', '')) || process.env.GEMINI_API_KEY || '';
+    const hasGeminiKey = Boolean(rawGeminiKey && !rawGeminiKey.includes('your-gemini-api-key') && rawGeminiKey.trim().length > 10);
+
+    const rawOpenrouterKey = (await db.getSetting('openrouter_api_key', '')) || process.env.OPENROUTER_API_KEY || '';
+    const hasOpenrouterKey = Boolean(rawOpenrouterKey && !rawOpenrouterKey.includes('your-openrouter-key') && rawOpenrouterKey.trim().length > 10);
+
+    const rawOpenaiKey = (await db.getSetting('openai_api_key', '')) || process.env.NVIDIA_API_KEY || '';
+    const hasOpenaiKey = Boolean(rawOpenaiKey && !rawOpenaiKey.includes('your-nvidia-key') && rawOpenaiKey.trim().length > 10);
+
     const ollamaKey = (await db.getSetting('ollama_api_key', '')) || '';
 
     let installedClis = [];
@@ -63,9 +87,9 @@ async function getExecutionChannelsStatus() {
         autoFallback,
         defaultCliAgent,
         channels: {
-            geminiApi: Boolean(geminiKey) || true,
-            openrouterApi: Boolean(openrouterKey),
-            openaiApi: Boolean(openaiKey),
+            geminiApi: hasGeminiKey,
+            openrouterApi: hasOpenrouterKey,
+            openaiApi: hasOpenaiKey,
             ollamaApi: true,
             geminiCli: isInstalled('gemini') || isInstalled('gemini-cli'),
             claudeCli: isInstalled('claude'),
@@ -121,22 +145,35 @@ async function invokeSingleProvider({
         let args = [];
         if (cliCommand === 'claude') {
             args = ['-p', fullPrompt];
+        } else if (cliCommand === 'gemini' || cliCommand === 'gemini-cli') {
+            args = ['-p', fullPrompt, '-o', 'text'];
+        } else if (cliCommand === 'ollama') {
+            args = ['run', 'llama3', fullPrompt];
         } else {
             args = [fullPrompt];
         }
 
+        const rawGeminiKey = (await db.getSetting('gemini_api_key', '')) || process.env.GEMINI_API_KEY || '';
+
         const result = await executeExternalCli({
             command: cliCommand,
             args,
-            input: fullPrompt,
-            timeout: 30000
+            input: '',
+            env: {
+                ...process.env,
+                ...(rawGeminiKey ? { GEMINI_API_KEY: rawGeminiKey } : {})
+            },
+            timeout: 35000
         });
 
         if (!result.success && !result.stdout) {
             throw new Error(result.error || `Échec d'exécution du CLI '${cliCommand}'`);
         }
 
-        const textOutput = (result.stdout || result.stderr || '').trim();
+        let textOutput = (result.stdout || result.stderr || '').trim();
+        if (textOutput.startsWith('Warning: no stdin data')) {
+            textOutput = textOutput.replace(/^Warning: no stdin data[^\n]*\n?/, '').trim();
+        }
         return { response: textOutput };
     }
 
@@ -254,30 +291,33 @@ async function executeAgentWithFallback(params) {
     attempts.push({ provider: targetProvider, model: targetModel, reason: 'fournisseur configuré' });
 
     if (autoFallback) {
-        // Si le fournisseur configuré est OpenAI / NVIDIA sans clé, basculer immédiatement sur Gemini
-        if (targetProvider !== 'gemini') {
+        // Si Gemini API a une clé valide et n'est pas le fournisseur cible
+        if (status.channels.geminiApi && targetProvider !== 'gemini') {
             attempts.push({ provider: 'gemini', model: 'gemini-2.5-flash', reason: 'auto-fallback Gemini API' });
         }
 
-        // Si Gemini CLI est installé sur la machine
-        if (status.channels.geminiCli && targetProvider !== 'cli') {
+        // Si Google Gemini CLI est installé sur la machine
+        if (status.channels.geminiCli && (targetProvider !== 'cli' || targetModel !== 'gemini')) {
             attempts.push({ provider: 'cli', model: 'gemini', reason: 'auto-fallback Google Gemini CLI local' });
         }
 
         // Si Claude Code CLI est installé
-        if (status.channels.claudeCli) {
+        if (status.channels.claudeCli && (targetProvider !== 'cli' || targetModel !== 'claude')) {
             attempts.push({ provider: 'cli', model: 'claude', reason: 'auto-fallback Claude Code CLI local' });
         }
 
-        // Si OpenRouter a une clé
+        // Si OpenRouter a une clé valide
         if (status.channels.openrouterApi && targetProvider !== 'openrouter') {
             attempts.push({ provider: 'openrouter', model: null, reason: 'auto-fallback OpenRouter API' });
         }
 
-        // Repli ultime Gemini
+        // Si le fournisseur configuré était Gemini mais sans clé ou a échoué, basculer sur Gemini CLI
         if (targetProvider === 'gemini') {
             if (status.channels.geminiCli) {
-                attempts.push({ provider: 'cli', model: 'gemini', reason: 'repli Gemini CLI' });
+                attempts.push({ provider: 'cli', model: 'gemini', reason: 'auto-fallback Google Gemini CLI local' });
+            }
+            if (status.channels.claudeCli) {
+                attempts.push({ provider: 'cli', model: 'claude', reason: 'auto-fallback Claude Code CLI local' });
             }
         }
     }
@@ -300,15 +340,12 @@ async function executeAgentWithFallback(params) {
                 dbAgent
             });
 
-            if (result && typeof result === 'object' && result.error && isKeyConfigurationError(result.error)) {
-                console.error(`[SmartFallback] ${attempt.reason} (${attempt.provider}) a échoué (clé non configurée). Bascule automatique...`);
-                lastError = new Error(result.error);
-                continue;
-            }
+            const respText = (result && typeof result.response === 'string') ? result.response : '';
 
-            if (result && typeof result.response === 'string' && isKeyConfigurationError(result.response)) {
-                console.error(`[SmartFallback] ${attempt.reason} (${attempt.provider}) réponse rejetée (clé non configurée). Bascule automatique...`);
-                lastError = new Error(result.response);
+            if (!result || isOfflineOrErrorResponse(respText) || (result.error && isKeyConfigurationError(result.error))) {
+                const errDetail = result?.error || respText || 'Réponse vide ou hors-ligne';
+                console.error(`[SmartFallback] ${attempt.reason} (${attempt.provider}) non concluant (${errDetail}). Bascule sur le canal suivant...`);
+                lastError = new Error(errDetail);
                 continue;
             }
 
