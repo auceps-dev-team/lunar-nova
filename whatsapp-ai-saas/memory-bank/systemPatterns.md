@@ -35,3 +35,12 @@
    - **Serveur MCP Standardisé** : Passerelle JSON-RPC 2.0 sur flux `stdio` (`backend/mcp/wacopiloteMcpServer.js`) exposant les outils d'agents, de commandes et de propositions produits HITL (`wp_pending_actions`) directement aux IDEs agentiques (Claude Code, Cursor, Antigravity).
    - **Outbound Execution & Security Sandboxing** : Exécuteur de sous-processus sécurisé (`backend/services/externalAgentRunner.js`) avec validation par liste blanche stricte (`DEFAULT_ALLOWED_COMMANDS`), assainissement des arguments pour prévenir les injections shell, et plafonnement des temps d'exécution (timeout).
 
+9. **Mandatory Versioning & Commit Protocol (Universal Rule across all projects)**:
+   - **Semantic Version Bump**:
+     - `+0.1.0` pour tout changement majeur ou important (nouvelles fonctionnalités structurantes, refonte architecturale, nouveaux modules / outils).
+     - `+0.0.1` pour tout fix ou changement mineur mais important (bugfixes, patchs de stabilité, fiabilisation d'intégration).
+     - Aucun bump pour la maintenance interne pure (ajustements CI isolés, doc pure).
+   - **Full Project Synchronization**: La version doit être répercutée de manière synchrone sur `package.json`, `backend/package.json`, `build/installer.iss`, `README.md`, `src/pages/Support.jsx`, `src/components/CliAgentBridgeSettings.jsx`, et le Memory Bank.
+   - **Changelog Tracking**: Chaque nouvelle version doit obligatoirement être documentée dans la liste `changelog` de `src/pages/Support.jsx`.
+   - **Docs & Memory Bank**: Le `README.md` et les 5 fichiers du Memory Bank doivent refléter l'état exact du projet avant tout commit.
+

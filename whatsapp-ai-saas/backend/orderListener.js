@@ -46,7 +46,7 @@ async function processMessage(instanceId, contact, text) {
     const msgId = `msg_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     
     // Phase 22: Log & Emit EVERY message
-    console.log(`\n------------------------------------------------------\n[IOL Flux] 📩 Nouveau message de [${redactContact(contact)}] : ${redactMessage(text)}`);
+    console.error(`\n------------------------------------------------------\n[IOL Flux] 📩 Nouveau message de [${redactContact(contact)}] : ${redactMessage(text)}`);
     
     const messageEvent = {
         id: msgId,
@@ -60,23 +60,23 @@ async function processMessage(instanceId, contact, text) {
 
     // Continue with Order Detection Pipeline
     if (!quickKeywordCheck(text)) {
-        console.log(`[IOL Pipeline] ℹ️ Message ignoré (pas de mot-clé de commande)`);
+        console.error(`[IOL Pipeline] ℹ️ Message ignoré (pas de mot-clé de commande)`);
         return;
     }
     
-    console.log(`[IOL Pipeline] ✅ [${redactContact(contact)}] Potentielle commande détectée. Analyse IA en cours...`);
+    console.error(`[IOL Pipeline] ✅ [${redactContact(contact)}] Potentielle commande détectée. Analyse IA en cours...`);
     const orderRadarModel = await db.getSetting('order_radar_model', '');
     const classif = await aiController.classifyOrderIntent(text, contact, orderRadarModel || null);
 
     if (!classif || !classif.is_order || classif.confidence < 0.5) {
-        console.log(`[IOL Pipeline] ❌ Rejeté par l'IA (Pas une commande ou confiance trop faible).`);
+        console.error(`[IOL Pipeline] ❌ Rejeté par l'IA (Pas une commande ou confiance trop faible).`);
         return;
     }
     
-    console.log(`[IOL Pipeline] 🎯 INTENTION CONFIRMÉE : ${classif.order_type} (Confiance: ${Math.round(classif.confidence*100)}%)`);
+    console.error(`[IOL Pipeline] 🎯 INTENTION CONFIRMÉE : ${classif.order_type} (Confiance: ${Math.round(classif.confidence*100)}%)`);
     // Le résumé est produit par l'IA à partir du message : il en reprend le contenu.
-    console.log(`[IOL Pipeline] 📝 Résumé : ${redactMessage(classif.summary)}`);
-    console.log(`[IOL Pipeline] 🚀 Signature en base de données...`);
+    console.error(`[IOL Pipeline] 📝 Résumé : ${redactMessage(classif.summary)}`);
+    console.error(`[IOL Pipeline] 🚀 Signature en base de données...`);
     
     // L'enregistrement en base n'a pas de valeur de retour exploitable ; seul
     // compte qu'il se termine avant l'émission de l'événement.
@@ -156,22 +156,22 @@ async function attachObserver(instanceId) {
         // Wait for WhatsApp to be fully loaded
         try {
             await targetPage.waitForSelector('#pane-side', { timeout: 15000 });
-            console.log(`[IOL] ✅ WhatsApp UI loaded. Ready to inject observer.`);
+            console.error(`[IOL] ✅ WhatsApp UI loaded. Ready to inject observer.`);
         } catch {
-            console.log(`[IOL] ⚠️ Timeout waiting for WhatsApp UI, attempting to inject anyway...`);
+            console.error(`[IOL] ⚠️ Timeout waiting for WhatsApp UI, attempting to inject anyway...`);
         }
 
         // Inject observer bridge safely (catch if already exposed after server restart)
         try {
             await targetPage.exposeFunction('onNewWaMessage', (contact, text) => {
-                console.log(`\n======================================================\n[IOL DOM Bridge] 📥 Message reçu de l'interface : [${redactContact(contact)}] ${redactMessage(text)}`);
+                console.error(`\n======================================================\n[IOL DOM Bridge] 📥 Message reçu de l'interface : [${redactContact(contact)}] ${redactMessage(text)}`);
                 processMessage(instanceId, contact, text);
             });
         } catch {}
         
         try {
             await targetPage.exposeFunction('onIolDebug', (msg) => {
-                console.log(`[IOL Background] ${msg}`);
+                console.error(`[IOL Background] ${msg}`);
             });
         } catch {}
 

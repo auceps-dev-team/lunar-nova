@@ -35,10 +35,10 @@ router.get('/goafrica-metadata', (req, res) => {
 // en process.
 router.post('/goafrica-update-metadata', async (req, res) => {
     try {
-        console.log('[Prospection] Régénération de la structure GoAfrica...');
+        console.error('[Prospection] Régénération de la structure GoAfrica...');
         const { generateStructure } = require('../scripts/fetchGoAfricaStructure');
         const result = await generateStructure();
-        console.log(`[Prospection] Structure régénérée : ${result.categories} catégories.`);
+        console.error(`[Prospection] Structure régénérée : ${result.categories} catégories.`);
         res.json({
             success: true,
             message: `Structure mise à jour : ${result.categories} catégories.`,
@@ -55,7 +55,7 @@ router.post('/goafrica-update-metadata', async (req, res) => {
 router.post('/search', async (req, res) => {
     const { source = 'google' } = req.body || {};
     try {
-        console.log(`[Prospection] Recherche en cours: "${req.body.query}" | Source: ${source} | Pages: ${req.body.pages || 1}`);
+        console.error(`[Prospection] Recherche en cours: "${req.body.query}" | Source: ${source} | Pages: ${req.body.pages || 1}`);
         const { count, leads } = await prospectionService.search(req.body);
         res.json({ success: true, count, leads });
     } catch (error) {
@@ -97,7 +97,7 @@ router.post('/search-stream', (req, res) => {
 
     // Listen to scraper progress events
     const onProgress = (data) => {
-        console.log('[Prospection/SSE] Sending progress:', data.phase);
+        console.error('[Prospection/SSE] Sending progress:', data.phase);
         sendEvent('progress', data);
     };
     googleMapScraper.on('progress', onProgress);
@@ -106,13 +106,13 @@ router.post('/search-stream', (req, res) => {
     req.on('close', () => {
         // Only remove if the request was actually aborted before finishing
         if (!res.writableEnded) {
-            console.log('[Prospection/SSE] Client disconnected or request closed, checking if aborted...');
+            console.error('[Prospection/SSE] Client disconnected or request closed, checking if aborted...');
             // In some Node versions, 'close' fires early. Let's just rely on .finally() to clean up.
         }
     });
 
     // Run the search
-    console.log(`[Prospection/SSE] Streaming search: "${query}" | Source: ${source}`);
+    console.error(`[Prospection/SSE] Streaming search: "${query}" | Source: ${source}`);
     
     if (source === 'google') {
         googleMapScraper.search(query, ignoreLandlines, quantity, duration, zone, knownLinks)

@@ -2,10 +2,10 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { MCP_TOOLS, handleToolCall } from '../mcp/wacopiloteMcpServer';
 import db from '../db';
 
-describe('wacopiloteMcpServer — Serveur MCP standard', () => {
+describe('wacopiloteMcpServer — Serveur MCP standard', { timeout: 30000 }, () => {
     beforeAll(async () => {
         await db.initDB();
-    });
+    }, 30000);
 
     it('expose la liste des outils MCP avec leurs schémas de validation', () => {
         expect(Array.isArray(MCP_TOOLS)).toBe(true);

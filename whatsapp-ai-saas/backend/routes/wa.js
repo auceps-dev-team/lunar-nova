@@ -294,7 +294,7 @@ router.put('/contacts/bulk-update', async (req, res) => {
         const values = [segmentId || null, ...contactIds];
         const result = await pool.query(query, values);
 
-        console.log(`[WA] Bulk updated ${result.rowCount} contacts`);
+        console.error(`[WA] Bulk updated ${result.rowCount} contacts`);
         res.json({ status: 'success', data: result.rows, updatedCount: result.rowCount });
     } catch (err) {
         console.error('[WA] Error bulk updating contacts:', err);
@@ -320,7 +320,7 @@ router.put('/contacts/bulk-update-list', async (req, res) => {
         const values = [listId || null, ...contactIds];
         const result = await pool.query(query, values);
 
-        console.log(`[WA] Bulk updated lists for ${result.rowCount} contacts`);
+        console.error(`[WA] Bulk updated lists for ${result.rowCount} contacts`);
         res.json({ status: 'success', data: result.rows, updatedCount: result.rowCount });
     } catch (err) {
         console.error('[WA] Error bulk updating lists:', err);
@@ -336,7 +336,7 @@ router.put('/contacts/:id', async (req, res) => {
             'UPDATE wa_contacts SET name = $1, phone = $2, list_id = $3, segment_id = $4, email = $5, address = $6 WHERE id = $7 RETURNING *',
             [name, phone, list_id || null, segment_id || null, email || null, address || null, req.params.id]
         );
-        console.log(`[WA] Updated contact ${req.params.id}`);
+        console.error(`[WA] Updated contact ${req.params.id}`);
         res.json({ status: 'success', data: result.rows[0] });
     } catch (err) {
         // Fallback: if email/address columns don't exist yet
@@ -346,7 +346,7 @@ router.put('/contacts/:id', async (req, res) => {
                     'UPDATE wa_contacts SET name = $1, phone = $2, list_id = $3, segment_id = $4 WHERE id = $5 RETURNING *',
                     [name, phone, list_id || null, segment_id || null, req.params.id]
                 );
-                console.log(`[WA] Updated contact ${req.params.id} (legacy mode)`);
+                console.error(`[WA] Updated contact ${req.params.id} (legacy mode)`);
                 res.json({ status: 'success', data: result.rows[0] });
             } catch (err2) {
                 console.error(`[WA] Error updating contact:`, err2);
@@ -371,7 +371,7 @@ router.delete('/contacts/bulk-delete', async (req, res) => {
 
         const result = await pool.query(query, contactIds);
 
-        console.log(`[WA] Bulk deleted ${result.rowCount} contacts`);
+        console.error(`[WA] Bulk deleted ${result.rowCount} contacts`);
         res.json({ status: 'success', deletedCount: result.rowCount });
     } catch (err) {
         console.error('[WA] Error bulk deleting contacts:', err);
@@ -445,7 +445,7 @@ router.post('/verify-contact', async (req, res) => {
     };
 
     const startTime = Date.now();
-    const logTime = (msg) => console.log(`[Verifier] [${((Date.now() - startTime) / 1000).toFixed(1)}s] ${msg}`);
+    const logTime = (msg) => console.error(`[Verifier] [${((Date.now() - startTime) / 1000).toFixed(1)}s] ${msg}`);
 
     let browser;
     try {

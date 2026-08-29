@@ -48,6 +48,15 @@ const Support = () => {
 
     const changelog = [
         {
+            version: 'v1.45.1',
+            date: '2026-08-29',
+            changes: [
+                'Auto-résolution de la base de données : le CLI et le serveur MCP détectent et partagent désormais automatiquement la base applicative installée (%APPDATA%/WaCopilote) avec son trousseau de clés API réelles',
+                'Déchiffrement transparent des secrets système : accès sécurisé à la clé maître scellée par safeStorage (Windows DPAPI / macOS / Linux) pour les processus Node autonomes (CLI et MCP)',
+                'Immunité stdio JSON-RPC : redirection stricte de tous les journaux de scrapers, routes et services vers stderr, garantissant un canal stdout 100 % pur pour les clients MCP et agents externes'
+            ]
+        },
+        {
             version: 'v1.45.0',
             date: '2026-08-28',
             changes: [

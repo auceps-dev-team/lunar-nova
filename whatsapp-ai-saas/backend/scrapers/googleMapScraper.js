@@ -21,7 +21,7 @@ class GoogleMapScraper extends EventEmitter {
         if (this._sessionCache[key]) {
             const session = this._sessionCache[key];
             if ((now - session.createdAt) > SESSION_TTL_MS) {
-                console.log(`[GoogleMapScraper] Session expired for "${key}" (>1h). Starting fresh.`);
+                console.error(`[GoogleMapScraper] Session expired for "${key}" (>1h). Starting fresh.`);
                 delete this._sessionCache[key];
             } else {
                 session.lastUsed = now;
@@ -39,7 +39,7 @@ class GoogleMapScraper extends EventEmitter {
                     oldestTime = this._sessionCache[k].lastUsed;
                 }
             }
-            console.log(`[GoogleMapScraper] LRU eviction: removing session "${oldestKey}"`);
+            console.error(`[GoogleMapScraper] LRU eviction: removing session "${oldestKey}"`);
             delete this._sessionCache[oldestKey];
         }
 
@@ -57,10 +57,10 @@ class GoogleMapScraper extends EventEmitter {
         if (query) {
             const key = this._cacheKey(query, zone);
             delete this._sessionCache[key];
-            console.log(`[GoogleMapScraper] Session cleared for "${key}"`);
+            console.error(`[GoogleMapScraper] Session cleared for "${key}"`);
         } else {
             this._sessionCache = {};
-            console.log('[GoogleMapScraper] All sessions cleared.');
+            console.error('[GoogleMapScraper] All sessions cleared.');
         }
     }
 
@@ -70,7 +70,7 @@ class GoogleMapScraper extends EventEmitter {
      * @param {object} data    // Helper pour envoyer les événements
      */
     _emitProgress(phase, data) {
-        console.log(`[GoogleMapScraper] EMITTING PROGRESS: ${phase}`);
+        console.error(`[GoogleMapScraper] EMITTING PROGRESS: ${phase}`);
         this.emit('progress', { phase, ...data });
     }
 
@@ -90,10 +90,10 @@ class GoogleMapScraper extends EventEmitter {
 
         const isResume = session.scrapedLinks.size > 0;
         if (isResume) {
-            console.log(`[GoogleMapScraper] ♻ Resuming session for "${searchQuery}" — ${session.scrapedLinks.size} links already known`);
+            console.error(`[GoogleMapScraper] ♻ Resuming session for "${searchQuery}" — ${session.scrapedLinks.size} links already known`);
             this._emitProgress('info', { message: `Reprise de session — ${session.scrapedLinks.size} leads déjà connus` });
         } else {
-            console.log(`[GoogleMapScraper] 🆕 New session for "${searchQuery}" | max: ${quantity} leads | max duration: ${duration}min`);
+            console.error(`[GoogleMapScraper] 🆕 New session for "${searchQuery}" | max: ${quantity} leads | max duration: ${duration}min`);
             this._emitProgress('info', { message: `Nouvelle recherche: "${searchQuery}"` });
         }
 
@@ -162,7 +162,7 @@ class GoogleMapScraper extends EventEmitter {
                     if (allDiscoveredLinks.size === prevSize) {
                         noNewLinksCount++;
                         if (noNewLinksCount >= 3) {
-                            console.log('[GoogleMapScraper] No more new results after 3 scroll attempts.');
+                            console.error('[GoogleMapScraper] No more new results after 3 scroll attempts.');
                             break;
                         }
                     } else {
@@ -178,12 +178,12 @@ class GoogleMapScraper extends EventEmitter {
 
                     const endMarker = await page.$('span.HlvSq');
                     if (endMarker) {
-                        console.log('[GoogleMapScraper] End of list reached.');
+                        console.error('[GoogleMapScraper] End of list reached.');
                         break;
                     }
                 }
             } catch {
-                console.log('[GoogleMapScraper] Feed not found. Checking if single place page...');
+                console.error('[GoogleMapScraper] Feed not found. Checking if single place page...');
                 const currentUrl = page.url();
                 if (currentUrl.includes('/maps/place/')) {
                     allDiscoveredLinks.add(currentUrl);
@@ -194,7 +194,7 @@ class GoogleMapScraper extends EventEmitter {
             const linksToProcess = newLinks.slice(0, quantity);
             const skippedCount = allDiscoveredLinks.size - newLinks.length;
 
-            console.log(`[GoogleMapScraper] Discovered ${allDiscoveredLinks.size} total | ${skippedCount} known | ${linksToProcess.length} new`);
+            console.error(`[GoogleMapScraper] Discovered ${allDiscoveredLinks.size} total | ${skippedCount} known | ${linksToProcess.length} new`);
 
             this._emitProgress('extract', {
                 message: `Extraction de ${linksToProcess.length} nouveaux leads...`,
@@ -211,7 +211,7 @@ class GoogleMapScraper extends EventEmitter {
             for (let i = 0; i < linksToProcess.length; i++) {
                 const link = linksToProcess[i];
                 if ((Date.now() - startTime) > durationMs) {
-                    console.log(`[GoogleMapScraper] Max duration reached. ${leads.length}/${linksToProcess.length}`);
+                    console.error(`[GoogleMapScraper] Max duration reached. ${leads.length}/${linksToProcess.length}`);
                     this._emitProgress('info', { message: `Durée max atteinte. ${leads.length} leads extraits.` });
                     break;
                 }
@@ -300,7 +300,7 @@ class GoogleMapScraper extends EventEmitter {
                     if (ignoreLandlines && phone) {
                         const country = detectCountry(phone);
                         if (country && isLandline(phone, country)) {
-                            console.log(`[GoogleMapScraper] Numéro fixe ignoré (${country})`);
+                            console.error(`[GoogleMapScraper] Numéro fixe ignoré (${country})`);
                             session.scrapedLinks.add(link);
                             continue;
                         }
@@ -310,7 +310,7 @@ class GoogleMapScraper extends EventEmitter {
                     session.totalExtracted++;
                     leads.push({ name, phone: phone || '', address: address || '', website: website || '', link });
 
-                    console.log(`[GoogleMapScraper] ✓ ${leads.length}/${linksToProcess.length} — ${name} | ${phone || 'No phone'}`);
+                    console.error(`[GoogleMapScraper] ✓ ${leads.length}/${linksToProcess.length} — ${name} | ${phone || 'No phone'}`);
 
                 } catch (e) {
                     console.error(`[GoogleMapScraper] Error extracting ${link}:`, e.message);
@@ -326,7 +326,7 @@ class GoogleMapScraper extends EventEmitter {
         }
 
         const elapsed = Math.round((Date.now() - startTime) / 1000);
-        console.log(`[GoogleMapScraper] Done. ${leads.length} NEW leads in ${elapsed}s. Session total: ${session.totalExtracted}.`);
+        console.error(`[GoogleMapScraper] Done. ${leads.length} NEW leads in ${elapsed}s. Session total: ${session.totalExtracted}.`);
         this._emitProgress('done', {
             message: `Terminé ! ${leads.length} nouveaux leads en ${elapsed}s`,
             leadsCount: leads.length,

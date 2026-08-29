@@ -705,9 +705,15 @@ async function handleToolCall(name, args) {
  * Démarre le serveur MCP en écoute sur stdio selon la spécification JSON-RPC 2.0.
  */
 async function startMcpServer() {
+    // Redirection stricte de console.log vers stderr pendant toute l'exécution du serveur MCP.
+    // Garantit l'immunité absolue contre la pollution du canal JSON-RPC sur stdout.
+    console.log = (...args) => {
+        console.error(...args);
+    };
+
     const rl = readline.createInterface({
         input: process.stdin,
-        output: process.stdout,
+        output: null,
         terminal: false
     });
 

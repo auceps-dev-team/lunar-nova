@@ -28,7 +28,7 @@ redisClient.on('error', (err) => {
 redisClient.on('connect', () => {
     isRedisConnected = true;
     hasLoggedError = false; // Reset so reconnection success is visible
-    console.log('[Redis] Connected for session caching.');
+    console.error('[Redis] Connected for session caching.');
 });
 
 redisClient.on('reconnecting', () => {

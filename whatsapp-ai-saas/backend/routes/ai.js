@@ -77,7 +77,7 @@ router.post('/ai/copilot', aiLimiter, async (req, res) => {
 
         const cached = await getCachedProposals(cacheKey);
         if (cached) {
-            console.log(`[Cache Hit] Returning cached proposals for ${chatContext.contactName}`);
+            console.error(`[Cache Hit] Returning cached proposals for ${chatContext.contactName}`);
             return res.json({
                 status: 'success',
                 cached: true,
@@ -86,7 +86,7 @@ router.post('/ai/copilot', aiLimiter, async (req, res) => {
         }
 
         // Generate via AI Controller
-        console.log(`[Cache Miss] Generating new proposals for ${chatContext.contactName}`);
+        console.error(`[Cache Miss] Generating new proposals for ${chatContext.contactName}`);
         const proposalsObj = await aiController.generateProposals(chatContext, model, provider);
         const proposals = proposalsObj.proposed_replies || [];
         

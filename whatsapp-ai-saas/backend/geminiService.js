@@ -345,10 +345,10 @@ async function generateImage(prompt, configAspectRatio = '1:1', imageParams = nu
         try {
             let finalPrompt = prompt;
             if (editMode) {
-                console.log(`[generateImage] Pure edit mode active. Using raw prompt: ${prompt}`);
+                console.error(`[generateImage] Pure edit mode active. Using raw prompt: ${prompt}`);
             } else {
                 const template = PROMPT_TEMPLATES[mode] || PROMPT_TEMPLATES.product;
-                console.log(`[generateImage] Image reference received — using mode: ${mode} (aspect: ${dims.label})`);
+                console.error(`[generateImage] Image reference received — using mode: ${mode} (aspect: ${dims.label})`);
                 finalPrompt = template(prompt, dims);
             }
 
@@ -400,7 +400,7 @@ async function generateImage(prompt, configAspectRatio = '1:1', imageParams = nu
         } catch (error) {
             console.error("Gemini Image Edit Error:", error);
             // Fallback to text-image below
-            console.log('[generateImage] Edit mode failed, falling back to text-to-image...');
+            console.error('[generateImage] Edit mode failed, falling back to text-to-image...');
         }
     }
 
