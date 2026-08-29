@@ -48,6 +48,17 @@ const Support = () => {
 
     const changelog = [
         {
+            version: 'v1.48.1',
+            date: '2026-08-29',
+            changes: [
+                'Correctif — Dépendance manquante rétablie : dompurify (assainissement du chat, de l\'éditeur et des fiches produits, introduit en v1.47.2) n\'était pas déclaré dans package.json — une installation propre (CI, nouvelle machine) échouait au build. C\'est désormais une dépendance explicite',
+                'Performance — Export PDF natif : l\'éditeur de documents (AiWriter) exporte désormais ses PDF via le moteur Chromium intégré d\'Electron (même canal que les factures) au lieu d\'embarquer html2pdf.js — l\'application est allégée d\'environ 1 Mo téléchargé à chaque visite de la page',
+                'Qualité — Mesure de couverture : la CI exécute désormais Vitest avec la couverture (rapport console + artifact lcov), volontairement sans seuil bloquant — `npm run test:coverage` en local',
+                'Qualité — Le smoke E2E Electron (démarrage complet application + backend) est fourni pour l\'intégration continue : job `e2e-smoke` prêt dans le workflow GitHub Actions, à publier par l\'équipe éditrice (permission `workflows` requise)',
+                'Note : l\'export PDF des documents utilise le format A4 natif du moteur d\'impression Chromium (auparavant Letter via html2canvas)'
+            ]
+        },
+        {
             version: 'v1.48.0',
             date: '2026-08-29',
             changes: [

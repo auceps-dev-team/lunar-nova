@@ -80,3 +80,6 @@ graphify-out/
 # L'appli sert data/goafricaStructure.json (suivi) ; pour régénérer la structure,
 # re-capturer la page annuaire GoAfrica Togo puis lancer scripts/fetchGoAfricaStructure.js.
 backend/goafrica-tg-annuaire.html
+
+# Rapports de couverture Vitest (lot C5)
+coverage/
