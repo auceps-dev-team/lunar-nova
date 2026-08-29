@@ -48,6 +48,17 @@ const Support = () => {
 
     const changelog = [
         {
+            version: 'v1.46.0',
+            date: '2026-08-29',
+            changes: [
+                'Raccordement Pipeline / Segments : support complet des segments nommés ou par ID dans le pipeline de prospection (run --auto, save-contacts, API et MCP)',
+                'Réaffectation intelligente des doublons CRM : les leads déjà existants en base voient leurs informations (nom, adresse, segment, liste) automatiquement rafraîchies et sont réintégrés dans la suite du pipeline',
+                'Outils CRM Atomiques MCP : exposition complète des outils Model Context Protocol pour la gestion fine des segments et contacts (list_segments, create_segment, delete_segment, list_contacts, get_contact, create_contact, update_contact, delete_contact, assign_contacts_to_segment)',
+                'Commandes CLI CRM : ajout des sous-commandes \'wacopilote contacts\' et \'wacopilote segments\' avec filtrage, pagination et assignation par lot',
+                'Sortie propre des commandes CLI : terminaison instantanée des processus autonomes sans attente résiduelle des timers de base de données'
+            ]
+        },
+        {
             version: 'v1.45.1',
             date: '2026-08-29',
             changes: [

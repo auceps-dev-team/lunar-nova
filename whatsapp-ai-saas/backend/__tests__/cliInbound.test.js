@@ -121,6 +121,53 @@ describe('bin/wacopilote.js — Point d\'entrée CLI Inbound', { timeout: 30000 
         expect(Array.isArray(parsed.cards)).toBe(true);
     });
 
+    it('pipeline save-contacts avec --segment-name et --list-name via stdin', async () => {
+        const { stdout: createOut } = await runCli(['pipeline', 'create', '--brief', 'brief test cli', '--json']);
+        const { run } = JSON.parse(createOut.slice(createOut.indexOf('{')));
+        const leadsJson = JSON.stringify([{ name: 'Lead CLI Segment', phone: '0707070799', address: 'Abidjan' }]);
+        const { code, stdout } = await runCli(
+            ['pipeline', 'save-contacts', String(run.id), '--segment-name', 'Segment CLI', '--list-name', 'Liste CLI', '--json'],
+            leadsJson
+        );
+        expect(code).toBe(0);
+        const parsed = JSON.parse(stdout.slice(stdout.indexOf('{')));
+        expect(parsed.contacts).toBeDefined();
+        expect(parsed.contacts.length).toBeGreaterThanOrEqual(1);
+    }, 20000);
+
+    it('segments create puis list --json', async () => {
+        const { code: cCode, stdout: cOut } = await runCli(['segments', 'create', '--name', 'Segment CLI Test', '--json']);
+        expect(cCode).toBe(0);
+        const { segment } = JSON.parse(cOut.slice(cOut.indexOf('{')));
+        expect(segment.name).toBe('Segment CLI Test');
+
+        const { code: lCode, stdout: lOut } = await runCli(['segments', 'list', '--json']);
+        expect(lCode).toBe(0);
+        const { segments } = JSON.parse(lOut.slice(lOut.indexOf('{')));
+        expect(segments.some(s => s.id === segment.id)).toBe(true);
+    });
+
+    it('contacts create, list, assign puis delete --json', async () => {
+        const { code: cCode, stdout: cOut } = await runCli([
+            'contacts', 'create',
+            '--phone', '0799887766',
+            '--name', 'Contact CLI Test',
+            '--address', 'Cocody Danga',
+            '--json'
+        ]);
+        expect(cCode).toBe(0);
+        const { contact } = JSON.parse(cOut.slice(cOut.indexOf('{')));
+        expect(contact.phone).toBe('0799887766');
+
+        const { code: lCode, stdout: lOut } = await runCli(['contacts', 'list', '--search', '0799887766', '--json']);
+        expect(lCode).toBe(0);
+        const { contacts } = JSON.parse(lOut.slice(lOut.indexOf('{')));
+        expect(contacts.length).toBeGreaterThanOrEqual(1);
+
+        const { code: dCode } = await runCli(['contacts', 'delete', String(contact.id), '--json']);
+        expect(dCode).toBe(0);
+    });
+
     it('rejette une commande inconnue avec code de sortie 1', async () => {
         const { code, stderr } = await runCli(['unknown_subcommand_xyz']);
         expect(code).toBe(1);

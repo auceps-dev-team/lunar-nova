@@ -167,6 +167,53 @@ describe('Flux CLI/MCP bout-en-bout (subprocess réels)', { timeout: 20000 }, ()
         expect(cards.cards[0].draft_message).toBe('Bonjour depuis le flux MCP');
     });
 
+    it('save_pipeline_contacts via MCP crée un segment et réaffecte les contacts', async () => {
+        const run = await runCli(['pipeline', 'create', '--brief', 'Flux segment CLI->MCP', '--json']);
+        const { run: createdRun } = parseCliJson(run.stdout);
+
+        const saved = await session.callTool('save_pipeline_contacts', {
+            runId: createdRun.id,
+            leads: [{ name: 'Lead Flow P1', phone: '0700000099', address: 'Abidjan Plateau' }],
+            segmentName: 'Segment Flow MCP'
+        });
+        expect(saved.contacts).toHaveLength(1);
+        expect(saved.contacts[0].segment_id).toBeDefined();
+
+        // Réaffectation doublon
+        const savedAgain = await session.callTool('save_pipeline_contacts', {
+            runId: createdRun.id,
+            leads: [{ name: 'Lead Flow P1 Re-visite', phone: '0700000099', address: 'Abidjan Cocody' }],
+            segmentName: 'Segment Flow MCP 2'
+        });
+        expect(savedAgain.reassignedCount).toBe(1);
+        expect(savedAgain.contacts).toHaveLength(1);
+        expect(savedAgain.contacts[0].address).toBe('Abidjan Cocody');
+    });
+
+    it('un contact créé via le CLI est visible via les tools MCP list_contacts et get_contact', async () => {
+        const segRes = await session.callTool('create_segment', { name: 'Segment Flow Cross' });
+        expect(segRes.segment.id).toBeDefined();
+
+        const created = await runCli([
+            'contacts', 'create',
+            '--phone', '0700112233',
+            '--name', 'Lead Cross Process',
+            '--segment-id', String(segRes.segment.id),
+            '--json'
+        ]);
+        expect(created.code).toBe(0);
+        const { contact } = parseCliJson(created.stdout);
+
+        const fetched = await session.callTool('get_contact', { id: contact.id });
+        expect(fetched.contact.name).toBe('Lead Cross Process');
+        expect(fetched.contact.segment_id).toBe(segRes.segment.id);
+
+        const list = await session.callTool('list_contacts', { segmentId: segRes.segment.id });
+        expect(list.contacts.some(c => c.id === contact.id)).toBe(true);
+
+        await session.callTool('delete_contact', { id: contact.id });
+    });
+
     it('wordpress_propose_action échoue proprement (sans planter la session) sur une connexion inconnue', async () => {
         await expect(
             session.callTool('wordpress_propose_action', { connectionId: 999999, prompt: 'test' })
