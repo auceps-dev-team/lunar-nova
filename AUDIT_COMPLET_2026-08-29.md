@@ -167,6 +167,55 @@ Les 7 messages de commit ont été confrontés au contenu réel des diffs — **
 
 La livraison v1.45.1 → v1.47.0 apporte **deux briques fonctionnelles majeures réellement bien conçues** (CRM unifié, routage agentique à cascade) et poursuit l'hygiène technique (stdio, chemins applicatifs). Mais la **dette de vérification s'accumule** : aucun des 5 constats de la révision 1 n'a été traité, trois nouveaux défauts bloquants pour la CI sont introduits (dont un défaut produit réel de troncature stdout) et six erreurs de lint subsistent. **La priorité n'est pas d'ajouter des fonctionnalités mais de passer une itération entièrement dédiée à la remise au vert (plan P0, effort total estimé < une demi-journée).**
 
+## 9. Annexe — Conformité du plan d'implémentation v1.47.0 (vérification plan ↔ code)
+
+> À la demande de l'auteur, le plan d'implémentation (« Système de Routage Agentique Intelligent & Auto-Fallback Multi-Canal ») a été confronté **engagement par engagement** au code réellement livré. Chaque verdict s'appuie sur une preuve de fichier/ligne ou une exécution.
+
+### 9.1 Matrice de conformité
+
+| # | Engagement du plan | Réalité mesurée | Verdict |
+|---|---|---|---|
+| 1 | `agentFallbackRouter.js` : analyse temps réel des canaux **API** (Gemini DB/env, OpenRouter DB, NVIDIA/OpenAI DB/env, Ollama) | `getExecutionChannelsStatus()` — détection clé par clé, garde anti-placeholder | ✅ Conforme |
+| 2 | Analyse des canaux **CLI** (`gemini`, `claude`, `ollama`, `node`, `python`) | Via `detectInstalledClis()` + chemins de secours Windows (v1.46.1) | ✅ Conforme |
+| 3 | Analyse du canal **MCP** | **Aucun flag MCP** dans l'objet `channels` ; seule mention = commentaire (ligne 58) | ❌ **Absent** |
+| 4 | Stratégie **`MCP`** exécutable (« Priorité au protocole MCP stdio ») | Pas de branche `provider === 'mcp'` dans `invokeSingleProvider` ; `executeAgentWithFallback` ne traite que `strategy === 'cli'` → **sélectionner MCP dans l'UI exécute silencieusement le fournisseur API par défaut (Gemini)** | ❌ **Absent + piège UX** (→ **N7**) |
+| 5 | Cascade « intelligente » `executeWithSmartFallback` | Cascade réelle et bien conçue, mais nommée `executeAgentWithFallback` | ⚠️ Conforme (nom différent) |
+| 6 | `aiController` : raccord de `chatWithAgent`, `generateProposals`, `classifyOrderIntent` **au routeur** | Seul `chatWithAgent` passe par le routeur (ligne 154) ; `generateProposals` et `classifyOrderIntent` ont un simple try/catch avec repli Gemini **inline** (pas de cascade CLI, pas d'évaluation de canaux) | ⚠️ Partiel (1/3) |
+| 7 | Réglages `ai_execution_strategy` / `default_cli_agent` / `auto_fallback_enabled` | Lis/écrits via le KV générique, valeurs par défaut côté UI, consommés par le routeur | ✅ Conforme |
+| 8 | Routes settings : endpoint de statut des canaux | `GET /api/settings/channels-status` présent et testé (fichier réel `settings_and_agents.js`, le plan disait `settings.js`) | ✅ Conforme |
+| 9 | `Settings.jsx` : sélecteur Auto / API / CLI / MCP | 4 options conformes au plan + sélecteur CLI par défaut conditionnel | ✅ Conforme |
+| 10 | `Settings.jsx` : « **Badges visuels en temps réel** indiquant les canaux prêts à l'emploi » | **Badges codés en dur** (toujours 🟢 Gemini API, 🟢 Gemini CLI v0.57.0, 🟢 Claude v2.1.250, ⚡ MCP) : `channelsStatus` est bien récupéré (`setChannelsStatus`, ligne 84) mais **jamais rendu** (variable inutilisée → erreur ESLint N3). Les badges affichent « disponible » même sans aucune clé ni binaire | ❌ **Trompeur** (→ **N8**) |
+| 11 | `CliAgentBridgeSettings.jsx` : « Affichage de la stratégie globale sélectionnée et synchronisation directe » | **Aucune référence** à `ai_execution_strategy` dans ce composant (seul un `isLoading` inutilisé, ligne 13) | ❌ **Absent** |
+| 12 | Tests : T1 NVIDIA sans clé → repli Gemini sans erreur | Présent — mais sans mock : exige une vraie clé Gemini → **échoue en CI** (cf. N2) | ⚠️ Partiel |
+| 13 | Tests : T2 mode CLI + `gemini` → exécution via binaire local | **Absent** (aucun test de la stratégie CLI) | ❌ **Absent** |
+| 14 | Tests : T3 mode CLI + binaire inexistant → repli API | **Absent** | ❌ **Absent** |
+| 15 | Tests : T4 respect de la stratégie imposée | **Absent** (la stratégie est lue, jamais testée comportementalement) | ❌ **Absent** |
+| 16 | Validation : « `npx vitest run` 100 % au vert » | **4 échecs mesurés** (N1, N2 ×2, C1) — critère non tenu | ❌ Non atteint |
+| 17 | Versionnage v1.47.0 propagé (packages, installer.iss, Support.jsx, README, memory-bank) | Tout à 1.47.0 **sauf** README racine et `index.html` (badge 1.43.0, cf. C3) | ⚠️ Presque complet |
+
+**Bilan de conformité : 6 ✅ · 3 ⚠️ · 7 ❌ — soit ≈ 60 % des engagements du plan réellement livrés.** Le cœur de valeur (cascade de repli API↔CLI, détection de canaux, réglages, sélecteur UI) est bien là ; ce sont les périphéries promises (MCP, badges dynamiques, 3 tests sur 4, synchronisation du composant bridge) qui manquent.
+
+### 9.2 Nouveaux constats dérivés de cette vérification
+
+#### 🔴 N7 — Le sélecteur « ⚡ Protocole MCP stdio » est un no-op silencieux
+* **Preuve :** `Settings.jsx:283` propose l'option `mcp` ; `agentFallbackRouter.js` ne contient aucun traitement de cette valeur (ni canal, ni branche d'invocation). Si un utilisateur choisit MCP, l'exécution part silencieusement sur le fournisseur API par défaut.
+* **Impact :** promesse UI non tenue + diagnostic utilisateur impossible (aucun message, aucun log indiquant la déviation). Le changelog `Support.jsx` (« sélection libre … ou Protocole MCP ») est donc **partiellement inexact**.
+* **Recommandation :** soit implémenter le canal MCP (in-process `handleToolCall('call_agent', …)` du serveur stdio est déjà disponible), soit retirer l'option du sélecteur jusqu'à livraison, et afficher un avertissement si la valeur existe en base.
+
+#### 🟠 N8 — Badges de canaux « temps réel » en réalité statiques (et changelog inexact)
+* **Preuve :** badges en dur dans `Settings.jsx` (~lignes 303-322) ; `channelsStatus` jamais lu ; `Support.jsx` v1.47.0 annonce « affichage interactif des badges de statut en direct ».
+* **Impact :** l'utilisateur voit « 🟢 Gemini API Cloud » même sans clé configurée — fausse confiance, à rebours de l'objectif du routeur. Exception notable : le badge « ⚡ Auto-Fallback Actif » est également inconditionnel, y compris quand `auto_fallback_enabled=false`.
+* **Recommandation :** brancher les badges sur `channelsStatus.channels` (états vert/gris + version réelle remontée par `detectInstalledClis`, plutôt que les versions figées v0.57.0/v2.1.250 codées en dur dans les libellés). Effort : ~20 lignes, la donnée est déjà chargée.
+
+#### 🟠 N9 — 3 des 4 tests promis par le plan sont absents
+* **Preuve :** `agentFallback.test.js` = 6 tests, aucun ne couvre la stratégie CLI (T2), le repli binaire inexistant (T3) ni le respect de la stratégie imposée (T4).
+* **Impact :** les chemins de code les plus neufs du routeur (sélection de stratégie, invocation CLI, cascade inversée) sont **non régressés** ; c'est précisément ce qui aurait détecté N7.
+* **Recommandation :** compléter T2–T4 avec des mocks (`vi.mock` de `executeExternalCli`/`geminiService` — l'import `vi` déjà présent mais inutilisé dans le fichier montre que c'était l'intention initiale). Effort : ~60 lignes.
+
+### 9.3 Synthèse de l'annexe
+
+Le plan a été **globalement suivi dans sa colonne vertébrale** (routeur, réglages, endpoint, sélecteur, versionnage) mais **sous-livré sur ses périphéries** : le canal MCP promis n'existe pas (et son option UI est activable en produisant un comportement non documenté), les badges « temps réel » sont des éléments statiques trompeurs, la synchronisation de `CliAgentBridgeSettings.jsx` est absente, et 3 des 4 tests d'assurance annoncés n'ont pas été écrits — ce qui explique que la validation finale « 100 % au vert » du plan n'ait pas pu être atteinte (4 échecs mesurés, cf. § 3.1). Les points N7–N9 s'ajoutent au plan d'action : **implémenter ou retirer MCP (N7) et brancher les badges (N8) sont les deux actions à plus forte valeur perçue utilisateur ; N9 sécurise l'ensemble.**
+
 ---
 
 ---

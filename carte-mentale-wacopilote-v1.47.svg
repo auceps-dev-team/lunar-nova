@@ -54,7 +54,7 @@
 <text x="1992" y="712" font-size="15.5" fill="#e2e8f0">isKeyConfigurationError : 8 motifs · garde anti-boucle</text>
 <rect x="1956" y="734" rx="9" width="520" height="37" fill="#16233d" stroke="#a78bfa" stroke-opacity="0.45" stroke-width="1.5"/>
 <circle cx="1976" cy="752.5" r="4.5" fill="#a78bfa"/>
-<text x="1992" y="758" font-size="15.5" fill="#e2e8f0">27 personas · NVIDIA NIM 53 modèles · Ollama local</text>
+<text x="1992" y="758" font-size="15.5" fill="#e2e8f0">⚠ N7 : option « MCP » UI non câblée (no-op → Gemini)</text>
 <rect x="1956" y="780" rx="9" width="520" height="37" fill="#16233d" stroke="#a78bfa" stroke-opacity="0.45" stroke-width="1.5"/>
 <circle cx="1976" cy="798.5" r="4.5" fill="#a78bfa"/>
 <text x="1992" y="804" font-size="15.5" fill="#e2e8f0">⚠ 2 tests cascade appellent les vraies API (N2)</text>
@@ -105,7 +105,7 @@
 <text x="1992" y="1732" font-size="15.5" fill="#e2e8f0">N3 · MOYEN — 6 erreurs ESLint no-unused-vars (CI rouge)</text>
 <rect x="1956" y="1754" rx="9" width="520" height="37" fill="#16233d" stroke="#f87171" stroke-opacity="0.45" stroke-width="1.5"/>
 <circle cx="1976" cy="1772.5" r="4.5" fill="#f87171"/>
-<text x="1992" y="1778" font-size="15.5" fill="#e2e8f0">C1-C4 · PERSISTENT — portabilité, AiWriter, docs racine, OAuth</text>
+<text x="1992" y="1778" font-size="15.5" fill="#e2e8f0">C1-C4 persistants · N7-N9 : MCP no-op, badges figés, tests absents</text>
 <rect x="1956" y="1800" rx="9" width="520" height="37" fill="#16233d" stroke="#f87171" stroke-opacity="0.45" stroke-width="1.5"/>
 <circle cx="1976" cy="1818.5" r="4.5" fill="#f87171"/>
 <text x="1992" y="1824" font-size="15.5" fill="#e2e8f0">C5 · INFO — dette technique inchangée (pages &gt; 700 l., etc.)</text>
