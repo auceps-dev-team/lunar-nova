@@ -140,7 +140,7 @@ function isBinaryInPath(cmd) {
             } else {
                 resolve(false);
             }
-        }, 800);
+        }, 2500);
 
         p.on('close', (code) => {
             clearTimeout(timer);
@@ -197,7 +197,7 @@ async function detectInstalledClis() {
             const check = await executeExternalCli({
                 command: item.name,
                 args: [item.flag],
-                timeout: 3000,
+                timeout: 8000,
                 skipAllowanceCheck: true
             });
 
