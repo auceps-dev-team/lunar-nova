@@ -49,6 +49,13 @@
   - 9 outils CRM atomiques MCP + sous-commandes CLI `contacts` et `segments`.
   - 26 suites de tests au vert (**237 tests réussis**, 1 skip, 0 échec).
 
+- [x] **Complétion fonctionnalité v1.47 — Lot 3 (canal MCP, UI stratégies, tests) v1.48.0 (2026-08-29)** :
+  - N7 — Routeur agentique (`agentFallbackRouter.js`) : le serveur MCP local devient un canal d'exécution à part entière — canal `mcpServer` (disponibilité par `require.resolve`, coût nul), branche `provider === 'mcp'` qui appelle le tool `call_agent` du serveur stdio **en process** (même surface que Cursor/Claude Code), stratégie `mcp` explicite et repli final MCP dans la cascade automatique. Garde anti-récursion module-level (`fallbackInFlight`) : l'appel imbriqué `call_agent → chatWithAgent → routeur` s'exécute directement sur le fournisseur par défaut (`mcp` forcé `gemini` en réentrée).
+  - N8 — UI : badges dynamiques des 8 canaux d'exécution sur la page Réglages (état réel + versions CLI détectées, rafraîchis au montage et après sauvegarde), pastille « Repli automatique » reflétant le réglage réel, et bandeau de stratégie synchronisé dans le panneau Bridge CLI (lecture + modification instantanée via `PUT /api/settings`).
+  - N9 — Nouvelle suite `agentFallbackStrategies.test.js` (T2-T5) : stratégie CLI exécutée via le binaire local, binaire interdit → repli API Gemini, stratégie `api` imposée jamais déléguée au CLI, canal MCP avec garde de réentrée. Substitutions par namespace (convention du projet, pas de `vi.mock` sur le CJS inliné — deux instances de module constatées sinon) ; base `:memory:` dédiée.
+  - Suite : **28 fichiers, 248 tests réussis, 0 échec, 3 skip** ; ESLint 0 ; build Vite OK ; base de dev jamais créée par les tests ; smoke CLI (`list-agents --json`) et MCP (`initialize` + `tools/list`) OK.
+  - Documentation : README racine (fonctionnalité stratégies d'exécution + couverture 251/28), Support.jsx v1.48.0.
+
 - [x] **Traitement audit révision 2 — Lot 2 (sécurité & robustesse) v1.47.2 (2026-08-29)** :
   - C2 — AiWriter : DOMPurify (`SANITIZE_EDITOR`, allowlist éditeur riche) sur les deux points d'entrée externe du HTML — chargement d'un document et génération IA ; `onInput` volontairement non ré-assaini (détruirait le curseur) car le DOM n'est peuplé que par ces chemins assainis ou l'édition locale.
   - C4 — Callback OAuth Google : message d'erreur générique côté page publique, détail de la réponse Google relégué au journal serveur (surface XSS par interpolation supprimée).

@@ -48,6 +48,17 @@ const Support = () => {
 
     const changelog = [
         {
+            version: 'v1.48.0',
+            date: '2026-08-29',
+            changes: [
+                'Fonctionnalité — Canal MCP complet : le serveur MCP local (outil call_agent, même surface que Cursor/Claude Code) devient un canal d\'exécution à part entière du routeur agentique — sélectionnable comme stratégie principale, utilisé en dernier repli automatique et exposé dans les indicateurs de canaux',
+                'Fonctionnalité — Stratégie d\'exécution modifiable depuis le panneau Bridge CLI (Réglages → Agents CLI) : le bandeau de stratégie (Auto / API / CLI / MCP) est désormais synchronisé en direct avec la page Réglages, sans quitter le panneau',
+                'Interface — Badges de canaux dynamiques sur la page Réglages : les 8 canaux (API Gemini/OpenRouter/OpenAI-NVIDIA, Ollama, CLI Gemini/Claude/Ollama, serveur MCP) affichent leur état réel de disponibilité avec les versions de CLI détectées, rafraîchis à l\'ouverture et après sauvegarde',
+                'Indicateur — Pastille « Repli automatique » dynamique : elle reflète l\'état réel du réglage (actif/désactivé) au lieu d\'un libellé statique',
+                'Qualité — Nouvelle suite de tests des stratégies du routeur agentique (CLI, repli sur API, respect de la stratégie imposée, canal MCP avec garde anti-récursion) : 4 tests déterministes sans clé ni réseau'
+            ]
+        },
+        {
             version: 'v1.47.2',
             date: '2026-08-29',
             changes: [

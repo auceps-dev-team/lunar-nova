@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/auceps-dev-team/lunar-nova"><img src="https://img.shields.io/badge/version-1.47.2-blue.svg" alt="Version 1.47.2" /></a>
+  <a href="https://github.com/auceps-dev-team/lunar-nova"><img src="https://img.shields.io/badge/version-1.48.0-blue.svg" alt="Version 1.48.0" /></a>
   <a href="whatsapp-ai-saas/LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue.svg" alt="License AGPL-3.0" /></a>
   <a href="#-open-source"><img src="https://img.shields.io/badge/open%20source-oui-brightgreen.svg" alt="Open Source" /></a>
   <a href="#-pourquoi-wacopilote-"><img src="https://img.shields.io/badge/Made%20in-%F0%9F%87%A8%F0%9F%87%BE%20C%C3%B4te%20d'Ivoire-orange.svg" alt="Made in Côte d'Ivoire" /></a>
@@ -134,6 +134,7 @@ npm run start:all
 
 - **Environnement Desktop Natif** : Application Electron multiplateforme (Windows, macOS, Linux) intégrée avec stockage sécurisé et processus backend managé.
 - **Routage Multi-LLM Dynamique** : Support natif de Google Gemini (Flash, Pro, Vision), NVIDIA NIM API (Llama 3.3 70B, Qwen 2.5, Gemma 2), OpenRouter, Together AI et Ollama (Llama 3 local, Mistral).
+- **Stratégies d'exécution IA & repli automatique** *(complété en v1.48.0)* : chaque appel agentique passe par un routeur unique qui sélectionne le canal selon la stratégie choisie — `auto`, `api` (fournisseurs cloud), `cli` (agents locaux Gemini CLI / Claude Code / Ollama) ou `mcp` (serveur MCP local, outil `call_agent`, le même chemin que Cursor / Claude Code). En cas d'échec du canal principal, une cascade de replis ordonnée (API Gemini → CLI locaux → OpenRouter → serveur MCP) prend le relais, désactivable. La disponibilité réelle des 8 canaux est affichée en direct dans Réglages (badges avec versions de CLI détectées) et la stratégie se change depuis la page Réglages comme depuis le panneau Bridge CLI.
 - **Écouteur & Automate WhatsApp** : Analyse des conversations WhatsApp en direct via Playwright (`orderListener.js`), capture des commandes et réponse autonome des agents.
 - **Prospection Lead Mining B2B** : Scrapers intégrés pour Annuaire CI, GoAfrica et recherche Google Places API avec géolocalisation et extraction de coordonnées.
 - **Studio Photo & Retouche IA** : Remplacement de fond produit, inpainting, retouche via IA (Together AI Qwen / Flux), et exportation de fiches produits.
@@ -282,7 +283,7 @@ npm run lint
 npm run build
 ```
 
-**État réel de la couverture (v1.47.1).** **247 tests** répartis dans **27 suites** couvrent aujourd'hui les zones qui cassent en production : chiffrement des secrets (`secretStore`, 11 tests), extraction JSON des réponses LLM (`llmJson`, 18), numérotation (`phoneRules` 20 + `phoneFormat` 13), migrations SQLite (5), parité i18n des 4 langues (3), CLI entrant (`cliInbound`, 13) et flux CLI/MCP bout-en-bout (`cliMcpFlow`, 6), routage agentique (`agentFallback`, 6 — les tests d'intégration réels s'ignorent proprement sans clé API), CRM (`crmService`, 6), parseurs de scrapers (14), comparaison de versions de l'updater (14), etc. Le gros du code reste non testé, et c'est la contribution la plus utile qu'on puisse apporter au projet. Les zones encore à couvrir :
+**État réel de la couverture (v1.48.0).** **251 tests** répartis dans **28 suites** couvrent aujourd'hui les zones qui cassent en production : chiffrement des secrets (`secretStore`, 11 tests), extraction JSON des réponses LLM (`llmJson`, 18), numérotation (`phoneRules` 20 + `phoneFormat` 13), migrations SQLite (5), parité i18n des 4 langues (3), CLI entrant (`cliInbound`, 13) et flux CLI/MCP bout-en-bout (`cliMcpFlow`, 6), routage agentique (`agentFallback`, 6 — les tests d'intégration réels s'ignorent proprement sans clé API ; `agentFallbackStrategies`, 4 — mécanique des stratégies CLI/API/MCP et repli, déterministe et sans clé), CRM (`crmService`, 6), parseurs de scrapers (14), comparaison de versions de l'updater (14), etc. Le gros du code reste non testé, et c'est la contribution la plus utile qu'on puisse apporter au projet. Les zones encore à couvrir :
 
 - les chemins d'appel réseau des adaptateurs LLM (`backend/*Service.js`) ;
 - l'extraction DOM des scrapers (`backend/scrapers/`), qui tourne dans `page.evaluate()` et reste à sortir pour être testable ;
