@@ -55,7 +55,9 @@ const Support = () => {
                 'Auto-Fallback Transparent & Sans Blocage : en cas de clé API manquante (ex: modèle NVIDIA/Llama sans clé NVIDIA configurée) ou de canal indisponible, le système bascule automatiquement et instantanément sur la solution opérationnelle (Gemini API, Google Gemini CLI local v0.57.0, Claude Code v2.1.250, etc.)',
                 'Suppression des erreurs bloquantes dans Chat IA : élimination totale des messages parasites "Error: API key not configured" lorsque des solutions alternatives sont disponibles sur la machine',
                 'Nouveau service agentFallbackRouter : moteur modulaire d\'orchestration et d\'évaluation en temps réel de la disponibilité des canaux',
-                'Nouvel endpoint GET /api/settings/channels-status et affichage interactif des badges de statut en direct dans les Réglages'
+                'Nouvel endpoint GET /api/settings/channels-status et affichage interactif des badges de statut en direct dans les Réglages',
+                'Suppression du bruit console & SecretStore : limitation de l\'avertissement de déchiffrement à une seule émission par session et propagation propre des erreurs de configuration sans stack traces superflues',
+                'Optimisation des sous-processus CLI : fermeture immédiate de stdin lors des invocations headless pour éliminer les délais résiduels (passage de 3,5s à moins de 0,5s)'
             ]
         },
         {
