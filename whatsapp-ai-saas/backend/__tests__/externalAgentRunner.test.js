@@ -44,6 +44,8 @@ describe('externalAgentRunner — service d\'exécution CLI externe', { timeout:
             expect(allowedSet).toBeInstanceOf(Set);
             expect(allowedSet.has('node')).toBe(true);
             expect(allowedSet.has('gemini')).toBe(true);
+            expect(allowedSet.has('gcloud')).toBe(true);
+            expect(allowedSet.has('google-genai')).toBe(true);
         });
 
         it('bloque les binaires système dangereux ou non autorisés', async () => {

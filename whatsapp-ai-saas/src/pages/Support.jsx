@@ -48,6 +48,16 @@ const Support = () => {
 
     const changelog = [
         {
+            version: 'v1.46.1',
+            date: '2026-08-29',
+            changes: [
+                'Bridge CLI & MCP autonome : découplage complet de la console de test des routes d\'API cloud génériques via le nouvel endpoint dédié /api/cli/test-bridge',
+                'Support multi-mode de test du Bridge : test direct par sous-processus CLI (wacopilote run), par protocole MCP (tools/call), et par délégation aux outils de la machine (Claude Code, Python, Node, Git, etc.)',
+                'Détection étendue des outils système : intégration de Google Cloud SDK (gcloud) et google-genai dans la liste blanche de sécurité et l\'inspection automatique',
+                'Résolution robuste des chemins Windows : prise en compte des répertoires d\'installation standards (%LOCALAPPDATA%, %APPDATA%/npm, .local/bin) pour les binaires système'
+            ]
+        },
+        {
             version: 'v1.46.0',
             date: '2026-08-29',
             changes: [
