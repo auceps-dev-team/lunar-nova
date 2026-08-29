@@ -38,9 +38,9 @@ const Settings = () => {
         default_image_model: '',
         together_api_key: '',
     });
-    // Statut temps réel des canaux LLM — seul le setter est câblé ici ; la
-    // valeur sera consommée par les badges dynamiques prévus en v1.48.0.
-    const [, setChannelsStatus] = useState(null);
+    // Statut temps réel des canaux LLM (GET /api/settings/channels-status) —
+    // consommé par les badges de la section « Stratégie d'Appel LLM ».
+    const [channelsStatus, setChannelsStatus] = useState(null);
     const aiQuota = useAppStore(state => state.aiQuota);
     const fetchAiQuota = useAppStore(state => state.fetchAiQuota);
 
@@ -58,6 +58,20 @@ const Settings = () => {
     const [secretsSet, setSecretsSet] = useState({});
     const secretPlaceholder = (key, emptyHint = 'placeholderApiKey') =>
         (secretsSet[key] ? t('apiKeyConfigured') : t(emptyHint));
+
+    // Rafraîchit l'état temps réel des canaux LLM (badges de la section
+    // « Stratégie d'Appel ») — appelé au montage et après chaque sauvegarde,
+    // car l'installation/suppression d'une clé ou d'un CLI change cet état.
+    const refreshChannelsStatus = () => {
+        fetch(API_BASE_URL + '/api/settings/channels-status')
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success' && data.data) {
+                    setChannelsStatus(data.data);
+                }
+            })
+            .catch(() => {});
+    };
 
     useEffect(() => {
         fetch(API_BASE_URL + '/api/settings')
@@ -79,14 +93,7 @@ const Settings = () => {
                 fetchAiQuota();
             });
 
-        fetch(API_BASE_URL + '/api/settings/channels-status')
-            .then(res => res.json())
-            .then(data => {
-                if (data.status === 'success' && data.data) {
-                    setChannelsStatus(data.data);
-                }
-            })
-            .catch(() => {});
+        refreshChannelsStatus();
     // Chargement initial, volontairement limité au montage : refreshModels et
     // fetchAiQuota sont redéfinies à chaque rendu, les ajouter aux dépendances
     // relancerait la requête en boucle. Les réglages sont ensuite rafraîchis par
@@ -162,6 +169,8 @@ const Settings = () => {
             // immediately see the new provider/model without a full app restart.
             setZustandBackendSettings(backendSettings);
             fetchGlobalModels();
+            // Les clés changées, l'état des canaux aussi : rafraîchir les badges.
+            refreshChannelsStatus();
 
             showAppNotification(t('successSettingsSaved'), "success");
         } catch (err) {
@@ -265,8 +274,13 @@ const Settings = () => {
                             <div>
                                 <div className="flex items-center gap-2">
                                     <span className="text-base font-bold text-gray-900 dark:text-white">Stratégie d'Appel LLM & Résilience</span>
-                                    <span className="px-2 py-0.5 text-[11px] font-semibold rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                                        ⚡ Auto-Fallback Actif
+                                    {/* Reflète la vraie valeur du réglage (auto_fallback_enabled), pas un état figé. */}
+                                    <span className={`px-2 py-0.5 text-[11px] font-semibold rounded-full border ${
+                                        backendSettings.auto_fallback_enabled !== 'false'
+                                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                                            : 'bg-gray-100 text-gray-500 dark:bg-gray-900/60 dark:text-gray-400 border-gray-200 dark:border-gray-800'
+                                    }`}>
+                                        {backendSettings.auto_fallback_enabled !== 'false' ? '⚡ Auto-Fallback Actif' : '⛔ Auto-Fallback Désactivé'}
                                     </span>
                                 </div>
                                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-xl">
@@ -307,21 +321,39 @@ const Settings = () => {
                             </div>
                         )}
 
-                        {/* Badges temps réel des canaux détectés */}
+                        {/* Badges temps réel des canaux détectés (GET /api/settings/channels-status).
+                            Vert = canal prêt ; gris = clé manquante ou binaire absent. Les versions
+                            CLI affichées sont celles réellement détectées sur la machine. */}
                         <div className="mt-3 pt-3 border-t border-emerald-500/10 dark:border-emerald-500/20 flex flex-wrap items-center gap-2 text-xs">
                             <span className="font-semibold text-gray-600 dark:text-gray-300 text-[11px]">Canaux disponibles :</span>
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 text-[11px] font-medium border border-emerald-200 dark:border-emerald-800/60">
-                                🟢 Gemini API Cloud
-                            </span>
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 text-[11px] font-medium border border-emerald-200 dark:border-emerald-800/60">
-                                🟢 Google Gemini CLI (v0.57.0)
-                            </span>
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 text-[11px] font-medium border border-emerald-200 dark:border-emerald-800/60">
-                                🟢 Claude Code CLI (v2.1.250)
-                            </span>
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950/50 text-blue-800 dark:text-blue-300 text-[11px] font-medium border border-blue-200 dark:border-blue-800/60">
-                                ⚡ Serveur MCP JSON-RPC
-                            </span>
+                            {(() => {
+                                const cliVersion = (cmd) => channelsStatus?.installedClis?.find(c => c.command === cmd && c.installed)?.version || null;
+                                const badges = [
+                                    { ready: !!channelsStatus?.channels.geminiApi, label: 'Gemini API Cloud' },
+                                    { ready: !!channelsStatus?.channels.openrouterApi, label: 'OpenRouter API' },
+                                    { ready: !!channelsStatus?.channels.openaiApi, label: 'NVIDIA NIM / OpenAI' },
+                                    { ready: true, label: 'Ollama (local)' },
+                                    { ready: !!channelsStatus?.channels.geminiCli, label: `Google Gemini CLI${cliVersion('gemini') ? ` (${cliVersion('gemini')})` : ''}` },
+                                    { ready: !!channelsStatus?.channels.claudeCli, label: `Claude Code CLI${cliVersion('claude') ? ` (${cliVersion('claude')})` : ''}` },
+                                    { ready: !!channelsStatus?.channels.ollamaCli, label: 'Ollama CLI' },
+                                    { ready: !!channelsStatus?.channels.mcpServer, label: 'Serveur MCP JSON-RPC' },
+                                ];
+                                if (!channelsStatus) {
+                                    return <span className="text-[11px] text-gray-400 dark:text-gray-500">détection en cours…</span>;
+                                }
+                                return badges.map(b => (
+                                    <span
+                                        key={b.label}
+                                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border ${
+                                            b.ready
+                                                ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60'
+                                                : 'bg-gray-100 dark:bg-gray-900/60 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-800 line-through'
+                                        }`}
+                                    >
+                                        {b.ready ? '🟢' : '⚪'} {b.label}
+                                    </span>
+                                ));
+                            })()}
                         </div>
                     </div>
 

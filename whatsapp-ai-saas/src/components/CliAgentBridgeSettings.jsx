@@ -10,6 +10,10 @@ const CliAgentBridgeSettings = () => {
 
     const [statusData, setStatusData] = useState(null);
     const [mcpConfigData, setMcpConfigData] = useState(null);
+    // Stratégie d'exécution IA (partagée avec la page Réglages) — affichée et
+    // modifiable directement depuis ce panneau (synchronisation directe).
+    const [strategyInfo, setStrategyInfo] = useState(null);
+    const [isSavingStrategy, setIsSavingStrategy] = useState(false);
     // isLoading jamais lu : seul le passage à false en fin de chargement est
     // utile aujourd'hui. Réintroduire la valeur si un état de chargement
     // conditionnel est un jour affiché.
@@ -29,9 +33,10 @@ const CliAgentBridgeSettings = () => {
 
     const loadCliStatus = async () => {
         try {
-            const [statusRes, mcpRes] = await Promise.all([
+            const [statusRes, mcpRes, channelsRes] = await Promise.all([
                 fetch(API_BASE_URL + '/api/cli/status'),
-                fetch(API_BASE_URL + '/api/cli/mcp-config')
+                fetch(API_BASE_URL + '/api/cli/mcp-config'),
+                fetch(API_BASE_URL + '/api/settings/channels-status')
             ]);
             if (statusRes.ok) {
                 const sData = await statusRes.json();
@@ -41,11 +46,38 @@ const CliAgentBridgeSettings = () => {
                 const mData = await mcpRes.json();
                 setMcpConfigData(mData);
             }
+            if (channelsRes.ok) {
+                const cData = await channelsRes.json();
+                if (cData.status === 'success' && cData.data) {
+                    setStrategyInfo(cData.data);
+                }
+            }
         } catch (err) {
             console.error('[CliBridgeUI] Erreur chargement status CLI:', err);
         } finally {
             setIsLoading(false);
             setIsRefreshing(false);
+        }
+    };
+
+    // Change la stratégie d'exécution IA depuis ce panneau : persistance
+    // immédiate via PUT /api/settings (même clé que la page Réglages).
+    const handleChangeStrategy = async (value) => {
+        setIsSavingStrategy(true);
+        try {
+            const res = await fetch(API_BASE_URL + '/api/settings', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ai_execution_strategy: value })
+            });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            setStrategyInfo(prev => ({ ...(prev || {}), strategy: value }));
+            showAppNotification?.('success', `Stratégie d'exécution IA mise à jour : ${value}.`);
+        } catch (err) {
+            console.error('[CliBridgeUI] Erreur mise à jour stratégie:', err);
+            showAppNotification?.('error', 'Impossible de mettre à jour la stratégie d\'exécution.');
+        } finally {
+            setIsSavingStrategy(false);
         }
     };
 
@@ -129,6 +161,32 @@ const CliAgentBridgeSettings = () => {
                     <RefreshCw size={13} className={isRefreshing ? 'animate-spin' : ''} />
                     {isRefreshing ? (t('detecting') || 'Inspection...') : (t('rescanSystem') || 'Réinspecter le système')}
                 </button>
+            </div>
+
+            {/* Stratégie d'exécution IA — synchronisation directe avec les Réglages.
+                Même clé (`ai_execution_strategy`) que la section « Stratégie d'Appel LLM »
+                de la page Réglages : un changement ici est immédiatement persisté
+                (PUT /api/settings) et y sera visible au prochain rendu. */}
+            <div className="px-6 py-3 border-b border-gray-100 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-900/40 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-xs">
+                    <span className="font-semibold text-gray-700 dark:text-gray-200">Stratégie d'exécution IA :</span>
+                    <span className="text-gray-500 dark:text-gray-400">
+                        {strategyInfo
+                            ? `${{ auto: 'Auto-Fallback (Recommandé)', api: 'API Cloud Direct', cli: `CLI Machine Local (${strategyInfo.defaultCliAgent || 'gemini'})`, mcp: 'Protocole MCP stdio' }[strategyInfo.strategy] || strategyInfo.strategy}${strategyInfo.autoFallback ? ' · auto-fallback actif' : ' · auto-fallback désactivé'}`
+                            : 'détection en cours…'}
+                    </span>
+                </div>
+                <select
+                    value={strategyInfo?.strategy || 'auto'}
+                    disabled={isSavingStrategy || !strategyInfo}
+                    onChange={(e) => handleChangeStrategy(e.target.value)}
+                    className="px-2 py-1 text-xs rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 disabled:opacity-50"
+                >
+                    <option value="auto">🔄 Auto-Fallback (Recommandé)</option>
+                    <option value="api">☁️ API Cloud Direct</option>
+                    <option value="cli">💻 CLI Machine Local</option>
+                    <option value="mcp">⚡ Protocole MCP stdio</option>
+                </select>
             </div>
 
             <div className="p-6 space-y-8">

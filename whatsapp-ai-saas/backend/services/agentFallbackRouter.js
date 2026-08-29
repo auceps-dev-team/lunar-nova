@@ -1,5 +1,8 @@
 const db = require('../db');
-const { detectInstalledClis, executeExternalCli } = require('./externalAgentRunner');
+// Accès par namespace (et non déstructuré) : permet aux tests de substituer
+// ces fonctions à chaud (convention du projet — cf. nvidiaModels.test.js,
+// contactAgent.test.js : pas de vi.mock sur les modules CommonJS inlinés).
+const externalAgentRunner = require('./externalAgentRunner');
 
 // Services IA
 const geminiService = require('../geminiService');
@@ -73,12 +76,23 @@ async function getExecutionChannelsStatus() {
 
     let installedClis = [];
     try {
-        installedClis = await detectInstalledClis();
+        installedClis = await externalAgentRunner.detectInstalledClis();
     } catch {
         installedClis = [];
     }
 
     const isInstalled = (cmd) => Boolean(installedClis.find(c => c.command === cmd && c.installed));
+
+    // Le serveur MCP est livré avec l'application (même arborescence) : le
+    // canal est disponible dès que le module se résout — vérification à coût
+    // nul plutôt qu'un `true` aveugle.
+    let mcpServerAvailable = false;
+    try {
+        require.resolve('../mcp/wacopiloteMcpServer');
+        mcpServerAvailable = true;
+    } catch {
+        mcpServerAvailable = false;
+    }
 
     return {
         strategy,
@@ -91,7 +105,8 @@ async function getExecutionChannelsStatus() {
             ollamaApi: true,
             geminiCli: isInstalled('gemini') || isInstalled('gemini-cli'),
             claudeCli: isInstalled('claude'),
-            ollamaCli: isInstalled('ollama')
+            ollamaCli: isInstalled('ollama'),
+            mcpServer: mcpServerAvailable
         },
         installedClis
     };
@@ -116,6 +131,29 @@ async function invokeSingleProvider({
     let effectiveAgent = dbAgent;
     const orchestrator = require('../agents/orchestrator');
     const persona = orchestrator.getPersona(personaId) || orchestrator.getPersona('copilot') || orchestrator.getPersona('creative');
+
+    // ── 0. Exécution MCP (serveur local in-process) ──
+    // La stratégie « mcp » emprunte exactement le chemin produit des clients
+    // MCP externes (Cursor, Claude Code) : le tool `call_agent` du serveur
+    // stdio, appelé ici en process. La garde de réentrance du routeur
+    // transforme l'appel imbriqué (call_agent → chatWithAgent → routeur) en
+    // exécution directe du fournisseur par défaut — voir executeAgentWithFallback.
+    if (provider === 'mcp') {
+        const { handleToolCall } = require('../mcp/wacopiloteMcpServer');
+        const result = await handleToolCall('call_agent', {
+            agent: personaId,
+            prompt: message,
+            provider: null,
+            model: model || null
+        });
+        const response = (result && typeof result.response === 'string')
+            ? result.response
+            : JSON.stringify(result ?? null);
+        if (!response || isOfflineOrErrorResponse(response)) {
+            throw new Error(`Le canal MCP n'a pas produit de réponse exploitable pour '${personaId}'.`);
+        }
+        return { response };
+    }
 
     if (model) {
         if (effectiveAgent) {
@@ -153,7 +191,7 @@ async function invokeSingleProvider({
 
         const rawGeminiKey = (await db.getSetting('gemini_api_key', '')) || process.env.GEMINI_API_KEY || '';
 
-        const result = await executeExternalCli({
+        const result = await externalAgentRunner.executeExternalCli({
             command: cliCommand,
             args,
             input: '',
@@ -254,7 +292,59 @@ async function invokeSingleProvider({
 /**
  * Exécute un appel agentique avec cascade de repli intelligente.
  */
+// Garde de réentrance : le canal MCP re-passe par aiController.chatWithAgent
+// (c'est exactement le chemin qu'empruntent les clients MCP externes). Sans
+// cette garde, une stratégie « mcp » bouclerait à l'infini :
+// routeur → MCP → chatWithAgent → routeur → … En réentrée, le routeur
+// délègue l'exécution directe au fournisseur par défaut configuré.
+let fallbackInFlight = false;
+
 async function executeAgentWithFallback(params) {
+    const {
+        personaId,
+        message,
+        imageParams,
+        attachments,
+        promptFormat,
+        messages = null,
+        currentTasks = null,
+        isRealTime = false,
+        modelOverride = null,
+        providerOverride = null,
+        dbAgent = null
+    } = params;
+
+    if (fallbackInFlight) {
+        let directProvider = providerOverride
+            || (dbAgent && dbAgent.provider_override)
+            || await db.getSetting('default_ai_provider', 'gemini');
+        // Ceinture et bretelles : un fournisseur « mcp » résolu en réentrée
+        // retomberait dans handleToolCall → boucle. Force un fournisseur API.
+        if (directProvider === 'mcp') directProvider = 'gemini';
+        return invokeSingleProvider({
+            provider: directProvider,
+            model: modelOverride || (dbAgent && dbAgent.model_override) || null,
+            personaId,
+            message,
+            imageParams,
+            attachments,
+            promptFormat,
+            messages,
+            currentTasks,
+            isRealTime,
+            dbAgent
+        });
+    }
+
+    fallbackInFlight = true;
+    try {
+        return await runFallbackCascade(params);
+    } finally {
+        fallbackInFlight = false;
+    }
+}
+
+async function runFallbackCascade(params) {
     const {
         personaId,
         message,
@@ -280,6 +370,11 @@ async function executeAgentWithFallback(params) {
     if (strategy === 'cli') {
         targetProvider = 'cli';
         targetModel = status.defaultCliAgent || 'gemini';
+    } else if (strategy === 'mcp') {
+        // Stratégie « mcp » : passer par le tool call_agent du serveur local,
+        // le même chemin que les clients MCP externes.
+        targetProvider = 'mcp';
+        targetModel = modelOverride || null;
     }
 
     // Construction de la cascade ordonnée de tentatives
@@ -317,6 +412,13 @@ async function executeAgentWithFallback(params) {
             if (status.channels.claudeCli) {
                 attempts.push({ provider: 'cli', model: 'claude', reason: 'auto-fallback Claude Code CLI local' });
             }
+        }
+
+        // Dernier repli : le serveur MCP local (tool call_agent, même surface
+        // que les clients externes). En réentrée, il exécute le fournisseur
+        // par défaut via la garde du routeur.
+        if (status.channels.mcpServer && targetProvider !== 'mcp') {
+            attempts.push({ provider: 'mcp', model: null, reason: 'auto-fallback serveur MCP local' });
         }
     }
 
