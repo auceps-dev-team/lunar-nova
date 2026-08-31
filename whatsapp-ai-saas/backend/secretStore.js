@@ -133,9 +133,9 @@ app.whenReady().then(() => {
         } catch {}
     }
 
-    // 3. Repli sur le fichier master-key du projet s'il existe
+    // 3. Repli sur le fichier master-key du projet s'il existe (uniquement hors USER_DATA_PATH isolé)
     const workspacePlain = path.join(__dirname, '..', 'master-key');
-    if (fs.existsSync(workspacePlain)) {
+    if (!process.env.USER_DATA_PATH && fs.existsSync(workspacePlain)) {
         try {
             const content = fs.readFileSync(workspacePlain, 'utf8').trim();
             if (/^[0-9a-f]{64}$/i.test(content)) {

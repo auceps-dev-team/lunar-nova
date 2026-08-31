@@ -21,7 +21,9 @@ const binPath = path.resolve(__dirname, '../../bin/wacopilote.cjs');
 const testUserDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'wacopilote-cli-mcp-'));
 const isolatedEnv = { ...process.env, USER_DATA_PATH: testUserDataDir };
 afterAll(() => {
-    fs.rmSync(testUserDataDir, { recursive: true, force: true });
+    try {
+        fs.rmSync(testUserDataDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 150 });
+    } catch {}
 });
 
 function runCli(args = []) {
