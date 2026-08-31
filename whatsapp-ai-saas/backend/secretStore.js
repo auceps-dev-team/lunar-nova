@@ -167,6 +167,14 @@ function encrypt(plaintext) {
 }
 
 let hasWarnedDecryptionFailure = false;
+// C4 : une fois qu'un déchiffrement a échoué dans ce processus, la clé maître
+// résolue ne correspond plus aux secrets stockés — c'est structurel (la clé
+// est fixée au chargement du module), pas ponctuel. L'état est donc mémorisé
+// et exposé à l'UI via GET /api/settings/channels-status pour afficher une
+// bannière invitant à ressaisir les clés, au lieu du symptôme trompeur
+// « champ vide / clé non configurée ».
+let decryptionDegraded = false;
+let decryptionFailedAt = null;
 
 /**
  * Déchiffre une valeur. Une valeur non préfixée est renvoyée telle quelle : les
@@ -194,8 +202,19 @@ function decrypt(value) {
             console.error('[SecretStore] Déchiffrement impossible (clé maître absente ou modifiée) :', err.message);
             hasWarnedDecryptionFailure = true;
         }
+        decryptionDegraded = true;
+        decryptionFailedAt = decryptionFailedAt || new Date().toISOString();
         return '';
     }
 }
 
-module.exports = { encrypt, decrypt, isEncrypted, keyFilePath, PREFIX, resolveUserDataDir };
+/**
+ * État de dégradation du déchiffrement pour CE processus (C4).
+ * `degraded` passe à true dès qu'une valeur `enc:v1:` n'a pas pu être
+ * déchiffrée ; l'horodatage conserve la première occurrence.
+ */
+function getDecryptionStatus() {
+    return { degraded: decryptionDegraded, failedAt: decryptionFailedAt };
+}
+
+module.exports = { encrypt, decrypt, isEncrypted, keyFilePath, PREFIX, resolveUserDataDir, getDecryptionStatus };
