@@ -1,5 +1,17 @@
 # Active Context: WaCopilote
 
+- **v1.48.5** — Correctif SQLite ON CONFLICT (Contacts / Prospection & Leads Google Maps) (+0.0.1) :
+  - **Index Unique Partiel & Migration v8 (`backend/db.js`)** :
+    - Résolution de l'erreur `SQLITE_ERROR: ON CONFLICT clause does not match any PRIMARY KEY or UNIQUE constraint` survenue lors de l'import en masse de leads Google Maps / prospection.
+    - Création de l'index unique partiel `CREATE UNIQUE INDEX IF NOT EXISTS idx_wa_contacts_phone_unique ON wa_contacts(phone) WHERE phone IS NOT NULL AND phone != ''`.
+    - Migration de schéma v8 assurant la déduplication préalable et la création de l'index sur les bases locales existantes.
+  - **Tests & Assurance Qualité** : 28 suites de tests au vert (**263 tests réussis**, 0 échec), test d'intégration de migration v8 et requêtes `ON CONFLICT (phone)` validé dans `dbMigrations.test.js`.
+- **v1.48.4** — Pré-vol Intelligent & Traçabilité Crypto (C6, C7) (+0.0.1) :
+  - Pré-vol discret de disponibilité réelle Gemini CLI et traçabilité de régénération de clé maître dans SecretStore.
+- **v1.48.3** — Bannière Alerte Déchiffrement & Déduplication UI (C4, C5) (+0.0.1) :
+  - Bannière ambre en cas de dégradation des secrets et déduplication du sélecteur de stratégie dans les Paramètres.
+- **v1.48.2** — Fiabilisation Workspace Trust, Stderr & Timeout Crypto (C1, C2, C3) (+0.0.1) :
+  - Observabilité stderr, timeout 15s safeStorage et `GEMINI_CLI_TRUST_WORKSPACE: 'true'` scopé à Gemini CLI.
 - **v1.47.0** — Routage Agentique Intelligent & Auto-Fallback Multi-Canal (+0.1.0) :
   - **Moteur de Routage Résilient (`backend/services/agentFallbackRouter.js`)** :
     - Fournit `executeAgentWithFallback`, `getExecutionChannelsStatus` et `isKeyConfigurationError`.

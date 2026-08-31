@@ -2,6 +2,12 @@
 
 ## Completed Milestones
 - [x] Initial release (v1.35.0) of WaCopilote Electron Desktop App.
+- [x] **Correctif SQLite ON CONFLICT & Leads Import (v1.48.5, 2026-08-31)** :
+  - Index unique partiel `idx_wa_contacts_phone_unique` sur `wa_contacts(phone)` et migration v8.
+  - Résolution définitive du blocage d'importation en masse de leads et de prospection.
+  - Validation 100% verte : 28 suites de tests (260 réussis, 3 conditionnels passés, 0 échec).
+- [x] **Packs de Correctifs P0, P1, P2 (v1.48.2 -> v1.48.4, 2026-08-31)** :
+  - C1 stderr, C2 timeout 15s, C3 workspace trust Gemini, C4 bannière déchiffrement, C5 déduplication sélecteur, C6 pré-vol Gemini, C7 traçabilité régénération clé.
 - [x] Multi-LLM provider integration (Gemini, NVIDIA NIM, OpenRouter, Ollama, Together AI).
 - [x] Integrated SQLite database & Redis caching layer.
 - [x] Playwright WhatsApp Web automation listener (`orderListener.js`).

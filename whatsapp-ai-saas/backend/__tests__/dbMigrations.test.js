@@ -29,7 +29,34 @@ describe('db.js — migrations de schéma (SQLite en mémoire)', () => {
         expect(ok).toBe(true);
 
         const v = await db.pool.query('SELECT MAX(version) as v FROM schema_version');
-        expect(v.rows[0].v).toBe(7);
+        expect(v.rows[0].v).toBe(8);
+    });
+
+    it.runIf(sqlite3Available)('permet les requêtes INSERT ... ON CONFLICT (phone) sur wa_contacts sans erreur de contrainte', async () => {
+        // Premier insert
+        await db.pool.query(`
+            INSERT INTO wa_contacts (name, phone, segment_id, list_id, email, address) 
+            VALUES ($1, $2, $3, $4, $5, $6)
+            ON CONFLICT (phone) WHERE phone IS NOT NULL AND phone != ''
+            DO UPDATE SET 
+                name = COALESCE(NULLIF(EXCLUDED.name, ''), wa_contacts.name),
+                segment_id = COALESCE(EXCLUDED.segment_id, wa_contacts.segment_id)
+        `, ['ONG Test 1', '22507010203', null, null, 'test1@ong.ci', 'Abidjan']);
+
+        // Deuxième insert (conflit de numéro -> mise à jour)
+        await db.pool.query(`
+            INSERT INTO wa_contacts (name, phone, segment_id, list_id, email, address) 
+            VALUES ($1, $2, $3, $4, $5, $6)
+            ON CONFLICT (phone) WHERE phone IS NOT NULL AND phone != ''
+            DO UPDATE SET 
+                name = COALESCE(NULLIF(EXCLUDED.name, ''), wa_contacts.name),
+                segment_id = COALESCE(EXCLUDED.segment_id, wa_contacts.segment_id)
+        `, ['ONG Test 1 Mis à jour', '22507010203', 1, null, 'test1@ong.ci', 'Abidjan']);
+
+        const res = await db.pool.query('SELECT * FROM wa_contacts WHERE phone = $1', ['22507010203']);
+        expect(res.rows.length).toBe(1);
+        expect(res.rows[0].name).toBe('ONG Test 1 Mis à jour');
+        expect(res.rows[0].segment_id).toBe(1);
     });
 
     it.runIf(sqlite3Available)('crée les tables attendues par les routes', async () => {
