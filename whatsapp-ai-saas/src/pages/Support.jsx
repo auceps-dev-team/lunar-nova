@@ -48,6 +48,14 @@ const Support = () => {
 
     const changelog = [
         {
+            version: 'v1.48.5',
+            date: '2026-08-31',
+            changes: [
+                'Correctif — Import en masse & Prospection (SQLite ON CONFLICT) : ajout de l\'index unique partiel sur wa_contacts(phone) et migration de schéma v8. Résout l\'erreur "SQLITE_ERROR: ON CONFLICT clause does not match any PRIMARY KEY or UNIQUE constraint" lors de l\'import des leads Google Maps et de l\'enregistrement des contacts de prospection',
+                'Fiabilité CRM : garantie d\'idempotence et réaffectation transparente des contacts existants lors des imports et pipelines automatiques'
+            ]
+        },
+        {
             version: 'v1.48.4',
             date: '2026-08-31',
             changes: [

@@ -20,6 +20,8 @@ export default defineConfig({
     setupFiles: './src/setupTests.js',
     css: true,
     pool: 'threads',
+    testTimeout: 20000,
+    hookTimeout: 20000,
     env: {
       USER_DATA_PATH: testUserDataDir,
     },

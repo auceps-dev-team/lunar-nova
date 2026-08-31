@@ -185,6 +185,8 @@ async function runInitDB() {
                 status VARCHAR(50) DEFAULT 'unverified',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_wa_contacts_phone_unique 
+            ON wa_contacts(phone) WHERE phone IS NOT NULL AND phone != '';
         `);
 
         // Migration for the Phase 14: Add 'status' to existing table if it doesn't exist
@@ -366,6 +368,14 @@ async function runInitDB() {
         await migrateTo(7, [
             "ALTER TABLE quotes ADD COLUMN invoice_number VARCHAR(100)",
             "ALTER TABLE quotes ADD COLUMN data TEXT NOT NULL DEFAULT '{}'"
+        ]);
+
+        // Migration v8 : Déduplication et index unique partiel sur wa_contacts(phone)
+        // requis pour que les clauses ON CONFLICT (phone) WHERE phone IS NOT NULL AND phone != ''
+        // fonctionnent sans lever SQLITE_ERROR.
+        await migrateTo(8, [
+            "DELETE FROM wa_contacts WHERE phone IS NOT NULL AND phone != '' AND id NOT IN (SELECT MAX(id) FROM wa_contacts WHERE phone IS NOT NULL AND phone != '' GROUP BY phone)",
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_wa_contacts_phone_unique ON wa_contacts(phone) WHERE phone IS NOT NULL AND phone != ''"
         ]);
 
         // Doit tourner après la création de toutes les tables, et avant que la
