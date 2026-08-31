@@ -13,7 +13,6 @@ const CliAgentBridgeSettings = () => {
     // Stratégie d'exécution IA (partagée avec la page Réglages) — affichée et
     // modifiable directement depuis ce panneau (synchronisation directe).
     const [strategyInfo, setStrategyInfo] = useState(null);
-    const [isSavingStrategy, setIsSavingStrategy] = useState(false);
     // isLoading jamais lu : seul le passage à false en fin de chargement est
     // utile aujourd'hui. Réintroduire la valeur si un état de chargement
     // conditionnel est un jour affiché.
@@ -60,26 +59,12 @@ const CliAgentBridgeSettings = () => {
         }
     };
 
-    // Change la stratégie d'exécution IA depuis ce panneau : persistance
-    // immédiate via PUT /api/settings (même clé que la page Réglages).
-    const handleChangeStrategy = async (value) => {
-        setIsSavingStrategy(true);
-        try {
-            const res = await fetch(API_BASE_URL + '/api/settings', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ai_execution_strategy: value })
-            });
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            setStrategyInfo(prev => ({ ...(prev || {}), strategy: value }));
-            showAppNotification?.('success', `Stratégie d'exécution IA mise à jour : ${value}.`);
-        } catch (err) {
-            console.error('[CliBridgeUI] Erreur mise à jour stratégie:', err);
-            showAppNotification?.('error', 'Impossible de mettre à jour la stratégie d\'exécution.');
-        } finally {
-            setIsSavingStrategy(false);
-        }
-    };
+    // Stratégie d'exécution IA : ce panneau n'en est plus un point de
+    // modification (C5, v1.48.3) — le contrôle vit uniquement dans la section
+    // « Stratégie d'Appel LLM & Résilience » de la page Réglages. Le second
+    // sélecteur écrivait la même clé (`ai_execution_strategy`) depuis un état
+    // local indépendant, qui pouvait afficher une valeur périmée — voire
+    // contredire le sélecteur principal à l'écran. Seule la lecture reste.
 
     useEffect(() => {
         loadCliStatus();
@@ -163,10 +148,11 @@ const CliAgentBridgeSettings = () => {
                 </button>
             </div>
 
-            {/* Stratégie d'exécution IA — synchronisation directe avec les Réglages.
-                Même clé (`ai_execution_strategy`) que la section « Stratégie d'Appel LLM »
-                de la page Réglages : un changement ici est immédiatement persisté
-                (PUT /api/settings) et y sera visible au prochain rendu. */}
+            {/* Stratégie d'exécution IA — état en LECTURE SEULE (C5, v1.48.3).
+                Le contrôle de cette stratégie vit uniquement dans la section
+                « Stratégie d'Appel LLM & Résilience » en haut de la page
+                Réglages (même clé `ai_execution_strategy`, un seul point
+                d'écriture, plus de désynchronisation d'état local). */}
             <div className="px-6 py-3 border-b border-gray-100 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-900/40 flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2 text-xs">
                     <span className="font-semibold text-gray-700 dark:text-gray-200">Stratégie d'exécution IA :</span>
@@ -176,17 +162,9 @@ const CliAgentBridgeSettings = () => {
                             : 'détection en cours…'}
                     </span>
                 </div>
-                <select
-                    value={strategyInfo?.strategy || 'auto'}
-                    disabled={isSavingStrategy || !strategyInfo}
-                    onChange={(e) => handleChangeStrategy(e.target.value)}
-                    className="px-2 py-1 text-xs rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 disabled:opacity-50"
-                >
-                    <option value="auto">🔄 Auto-Fallback (Recommandé)</option>
-                    <option value="api">☁️ API Cloud Direct</option>
-                    <option value="cli">💻 CLI Machine Local</option>
-                    <option value="mcp">⚡ Protocole MCP stdio</option>
-                </select>
+                <span className="text-[11px] italic text-gray-400 dark:text-gray-500">
+                    Se règle dans la section « Stratégie d'Appel LLM &amp; Résilience » en haut de cette page
+                </span>
             </div>
 
             <div className="p-6 space-y-8">

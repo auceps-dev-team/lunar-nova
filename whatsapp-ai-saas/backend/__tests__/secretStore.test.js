@@ -1,14 +1,14 @@
 // @vitest-environment node
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, vi } from 'vitest';
 
 // La clé maître est fixée avant l'import : secretStore la résout au chargement du
 // module et, sans elle, écrirait un fichier de clé dans l'arborescence du projet.
 process.env.WACOPILOTE_MASTER_KEY = 'a'.repeat(64);
 
-let encrypt, decrypt, isEncrypted, PREFIX;
+let encrypt, decrypt, isEncrypted, PREFIX, getDecryptionStatus;
 
 beforeAll(async () => {
-    ({ encrypt, decrypt, isEncrypted, PREFIX } = await import('../secretStore.js'));
+    ({ encrypt, decrypt, isEncrypted, PREFIX, getDecryptionStatus } = await import('../secretStore.js'));
 });
 
 describe('secretStore', () => {
@@ -72,5 +72,30 @@ describe('secretStore', () => {
     it('préserve les mots de passe d\'application WordPress (espaces compris)', () => {
         const secret = 'abcd EFGH ijkl MNOP qrst UVWX';
         expect(decrypt(encrypt(secret))).toBe(secret);
+    });
+
+    // C4 : l'échec de déchiffrement doit être OBSERVABLE (bannière UI via
+    // GET /api/settings/channels-status), pas seulement une ligne stderr et
+    // un champ vide indiscernable de « clé non configurée ».
+    it('rapporte la dégradation après un échec de déchiffrement (C4)', () => {
+        const tampered = encrypt('valeur-sensible').slice(0, -6) + 'AAAAAA';
+        expect(decrypt(tampered)).toBe('');
+        const status = getDecryptionStatus();
+        expect(status.degraded).toBe(true);
+        // L'horodatage conserve la PREMIÈRE occurrence (une clé maître ne
+        // re-matche pas par magie : l'état est structurel pour le processus).
+        expect(typeof status.failedAt).toBe('string');
+        expect(Number.isNaN(Date.parse(status.failedAt))).toBe(false);
+    });
+
+    it('un module sans aucun échec ne se déclare pas dégradé (C4)', async () => {
+        vi.resetModules();
+        const fresh = await import('../secretStore.js');
+        const status = fresh.getDecryptionStatus();
+        expect(status.degraded).toBe(false);
+        expect(status.failedAt).toBeNull();
+        // Un déchiffrement réussi ne déclenche pas la dégradation.
+        expect(fresh.decrypt(fresh.encrypt('ok'))).toBe('ok');
+        expect(fresh.getDecryptionStatus().degraded).toBe(false);
     });
 });

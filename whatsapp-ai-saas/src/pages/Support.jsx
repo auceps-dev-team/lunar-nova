@@ -48,6 +48,15 @@ const Support = () => {
 
     const changelog = [
         {
+            version: 'v1.48.3',
+            date: '2026-08-31',
+            changes: [
+                'Correctif — Alertes de clés illisibles : lorsque la clé maître de chiffrement locale ne correspond plus aux clés enregistrées (mise à jour, restauration ou copie des données), les champs apparaissaient simplement vides comme si aucune clé n\'existait. La page Réglages affiche désormais une bannière d\'avertissement explicite invitant à ressaisir les clés (elles sont rechiffrées automatiquement à l\'enregistrement)',
+                'Correctif — Réglages : la stratégie d\'exécution IA n\'est plus proposée deux fois sur la même page. Le sélecteur dupliqué du panneau Bridge CLI (dont l\'état local pouvait contredire le sélecteur principal) devient un libellé d\'état en lecture seule ; le réglage se fait uniquement dans la section « Stratégie d\'Appel LLM & Résilience »',
+                'Hygiène — Déduplication de la clé de traduction « selectAgent » présente deux fois dans chacune des quatre langues (le comportement est inchangé : la seconde définition avait déjà préséance à l\'exécution)'
+            ]
+        },
+        {
             version: 'v1.48.2',
             date: '2026-08-31',
             changes: [

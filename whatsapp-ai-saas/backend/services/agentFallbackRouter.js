@@ -94,10 +94,21 @@ async function getExecutionChannelsStatus() {
         mcpServerAvailable = false;
     }
 
+    // C4 : les lectures de clés ci-dessus (db.getSetting → decrypt) ont pu
+    // échouer silencieusement si la clé maître ne correspond plus aux secrets
+    // stockés — sans cela, les canaux API apparaissent simplement « sans clé »
+    // et l'utilisateur ne sait pas qu'il doit ressaisir ses clés. L'état de
+    // dégradation du chiffrement remonte avec le statut des canaux.
+    const { getDecryptionStatus } = require('../secretStore');
+    const decryption = getDecryptionStatus();
+
     return {
         strategy,
         autoFallback,
         defaultCliAgent,
+        // C4 : true = au moins un secret stocké est illisible pour ce processus.
+        secretsDegraded: decryption.degraded,
+        secretsDegradedAt: decryption.failedAt,
         channels: {
             geminiApi: hasGeminiKey,
             openrouterApi: hasOpenrouterKey,

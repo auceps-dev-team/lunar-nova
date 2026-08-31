@@ -49,6 +49,13 @@
   - 9 outils CRM atomiques MCP + sous-commandes CLI `contacts` et `segments`.
   - 26 suites de tests au vert (**237 tests réussis**, 1 skip, 0 échec).
 
+- [x] **Correctifs P1 — observabilité chiffrement & déduplication UI v1.48.3 (2026-08-31)** :
+  - C4 — Alertes secrets illisibles : `secretStore.js` mémorise la dégradation (état + horodatage de la première occurrence, `getDecryptionStatus()`), `getExecutionChannelsStatus()` l'expose (`secretsDegraded`, `secretsDegradedAt`) et la page Réglages affiche une bannière ambre invitant à ressaisir les clés (rafraîchie au montage et après sauvegarde). Symptôme corrigé : les clés existantes en base apparaissaient « non configurées » (champs vides) sans explication après une perte de clé maître.
+  - C5 — Déduplication du sélecteur de stratégie : le panneau Bridge CLI n'héberge plus un second sélecteur de `ai_execution_strategy` (état local indépendant → valeurs contradictoires possibles à l'écran) ; il affiche l'état en lecture seule + renvoi vers la section « Stratégie d'Appel LLM & Résilience », seul point d'écriture.
+  - Hygiène i18n — la clé `selectAgent` était dupliquée dans chacune des 4 locales (la seconde définition avait déjà préséance à l'exécution — comportement inchangé) ; dédupliquée au ré-encodage. 2 clés ajoutées (`secretsDegradedTitle`/`secretsDegradedText` × fr/en/es/ar, parité 1188 ✔).
+  - Tests : +2 (`secretStore.test.js`) — dégradation rapportée après échec, module vierge non dégradé.
+  - Suite : **28 fichiers, 255 tests : 252 réussis, 0 échec, 3 skips conditionnels** ; ESLint 0/0 ; build Vite OK (8,3 s).
+
 - [x] **Correctifs P0 — diagnostic croisé « Gemini CLI injojnable » v1.48.2 (2026-08-31)** :
   - C1 — Observabilité : `agentFallbackRouter.js` remonte désormais la dernière ligne de `stderr` du binaire externe (bornée à 300 caractères) dans l'erreur du canal CLI — auparavant capturée puis jetée, la raison réelle (authentification, workspace trust, version Node) n'apparaissait pas dans les journaux du SmartFallback.
   - C2 — Robustesse clé maître : timeout du helper de déchiffrement safeStorage porté de 5 s à 15 s (`secretStore.js`) — au démarrage à froid (antivirus, disque occupé), le dépassement silencieux provoquait la régénération de la clé maître, rendant tous les secrets illisibles (« Unsupported state or unable to authenticate data ») jusqu'à ressaisie.

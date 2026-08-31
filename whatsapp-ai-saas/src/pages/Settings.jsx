@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Trash2 } from 'lucide-react';
+import { Trash2, AlertTriangle } from 'lucide-react';
 import useAppStore from '../store';
 import { useTranslation } from 'react-i18next';
 import UpdateManager from '../components/UpdateManager';
@@ -267,6 +267,21 @@ const Settings = () => {
                 {/* AI Providers & Global Configuration */}
                 <div className="p-6">
                     <h3 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider mb-4">{t('aiEngine')}</h3>
+
+                    {/* C4 — Bannière de dégradation du chiffrement : au moins un
+                        secret stocké est illisible (clé maître changée/perdue).
+                        Symptôme trompeur sinon : champs vides / « sans clé »
+                        alors que les clés existent en base. Rafraîchi au montage
+                        et après chaque sauvegarde (refreshChannelsStatus). */}
+                    {channelsStatus?.secretsDegraded && (
+                        <div className="mb-6 p-4 rounded-xl border border-amber-300 bg-amber-50 dark:border-amber-500/40 dark:bg-amber-950/40 flex items-start gap-3">
+                            <AlertTriangle size={20} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                            <div>
+                                <p className="text-sm font-bold text-amber-900 dark:text-amber-200">{t('secretsDegradedTitle')}</p>
+                                <p className="text-xs text-amber-800 dark:text-amber-300 mt-1 leading-relaxed">{t('secretsDegradedText')}</p>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Stratégie d'appel LLM & Smart Fallback */}
                     <div className="mb-6 p-5 bg-gradient-to-br from-emerald-500/5 via-primary/5 to-transparent rounded-xl border border-emerald-500/20 dark:border-emerald-500/30">
