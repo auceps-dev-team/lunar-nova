@@ -147,7 +147,7 @@ Scénario de collision confirmé si : base présente dans les DEUX, ou `.enc` pr
 
 ### Phase 3 — Correctifs à programmer dans une future version (description, non appliqués)
 
-> **✅ Statut application (2026-08-31) :** **C1 + C2 + C3 appliqués en v1.48.2** et **C4 + C5 appliqués en v1.48.3** (branche `arena/01a057ee-lunar-nova`) — validation à chaque lot : tests 0 échec (253 puis 255) · ESLint 0/0 · build Vite OK · bump + changelog Support.jsx + memory-bank. **C6→C7 restent à planifier** (P2).
+> **✅ Statut application (2026-08-31) :** **les 7 correctifs C1→C7 sont appliqués** — C1+C2+C3 (v1.48.2), C4+C5 (v1.48.3), C6+C7 (v1.48.4), branche `arena/01a057ee-lunar-nova` — validation à chaque lot : tests 0 échec (253 → 255 → 262) · ESLint 0/0 · build Vite OK · bump + changelog Support.jsx + memory-bank à chaque fois. **Plan fermé.**
 
 | # | Correctif | Fichier:ligne | Nature | Priorité |
 |---|---|---|---|---|

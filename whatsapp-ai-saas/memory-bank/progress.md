@@ -49,6 +49,13 @@
   - 9 outils CRM atomiques MCP + sous-commandes CLI `contacts` et `segments`.
   - 26 suites de tests au vert (**237 tests réussis**, 1 skip, 0 échec).
 
+- [x] **Correctifs P2 — pré-vol Gemini & traçabilité clé maître v1.48.4 (2026-08-31)** :
+  - C6 — Pré-vol d'authentification/trust Gemini (`externalAgentRunner.js`) : `detectInstalledClis` attache aux entrées gemini/gemini-cli une `readiness` issue d'un pré-vol miroir du routeur (`-p ping -o text`, `GEMINI_CLI_TRUST_WORKSPACE=true`, clé de base si lisible), classifiée par famille de cause (trust / auth / délai / dernière ligne stderr) par `classifyGeminiProbeResult` (pur, testé sans spawn). Cache dédié 5 min ; strictement informationnel (badges Réglages + carte Bridge en ambre « non authentifié », détail au survol) — la cascade tente toujours le canal.
+  - C7 — Traçabilité de régénération de clé maître (`secretStore.js`) : le dernier repli de `loadOrCreateMasterKey` journalise un événement horodaté + motif, et `getDecryptionStatus()` expose `generatedAt`/`generatedReason`. Vérifié en conditions réelles : dossier de données vierge → trace complète dans le journal du service.
+  - Régression attrapée par la boucle de validation : la première version de C7 plaçait les `let` d'état APRÈS l'appel module-level `loadOrCreateMasterKey()` → TDZ `ReferenceError` qui tuait le CLI spawné (14 tests cliInbound/cliMcpFlow rouges). Déclarations remontées avant tout appel — les tests de spawn réel du projet sont exactement le filet prévu pour ce cas.
+  - Tests : +7 (5 `externalAgentRunner` — classifieur ×4 + pré-vol injectable/cache/args, 2 `secretStore` — trace de génération avec répertoire vierge, absence de trace avec clé d'env).
+  - Suite : **28 fichiers, 262 tests : 259 réussis, 0 échec, 3 skips conditionnels** ; ESLint 0/0 ; build Vite OK (8,1 s) ; CLI réel exit 0.
+
 - [x] **Correctifs P1 — observabilité chiffrement & déduplication UI v1.48.3 (2026-08-31)** :
   - C4 — Alertes secrets illisibles : `secretStore.js` mémorise la dégradation (état + horodatage de la première occurrence, `getDecryptionStatus()`), `getExecutionChannelsStatus()` l'expose (`secretsDegraded`, `secretsDegradedAt`) et la page Réglages affiche une bannière ambre invitant à ressaisir les clés (rafraîchie au montage et après sauvegarde). Symptôme corrigé : les clés existantes en base apparaissaient « non configurées » (champs vides) sans explication après une perte de clé maître.
   - C5 — Déduplication du sélecteur de stratégie : le panneau Bridge CLI n'héberge plus un second sélecteur de `ai_execution_strategy` (état local indépendant → valeurs contradictoires possibles à l'écran) ; il affiche l'état en lecture seule + renvoi vers la section « Stratégie d'Appel LLM & Résilience », seul point d'écriture.

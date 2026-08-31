@@ -98,4 +98,45 @@ describe('secretStore', () => {
         expect(fresh.decrypt(fresh.encrypt('ok'))).toBe('ok');
         expect(fresh.getDecryptionStatus().degraded).toBe(false);
     });
+
+    // C7 : la GÉNÉRATION d'une nouvelle clé maître (dernier repli) est l'événement
+    // amont qui rend tous les secrets existants illisibles — elle doit laisser
+    // une trace consultable (horodatage + motif), pas seulement un fichier neuf.
+    it('trace la régénération de la clé maître avec motif (C7)', async () => {
+        const fs = await import('fs');
+        const os = await import('os');
+        const path = await import('path');
+        vi.resetModules();
+
+        const prevKey = process.env.WACOPILOTE_MASTER_KEY;
+        const prevData = process.env.USER_DATA_PATH;
+        // Répertoire vierge : aucune clé résoluble → dernier repli (génération).
+        const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'waco-keytrace-'));
+        delete process.env.WACOPILOTE_MASTER_KEY;
+        process.env.USER_DATA_PATH = dir;
+        try {
+            const fresh = await import('../secretStore.js');
+            const status = fresh.getDecryptionStatus();
+            expect(status.generatedAt).toBeTruthy();
+            expect(Number.isNaN(Date.parse(status.generatedAt))).toBe(false);
+            expect(status.generatedReason).toMatch(/aucune clé maître résoluble/);
+            // Le module fonctionne normalement avec la clé fraîchement générée.
+            expect(fresh.decrypt(fresh.encrypt('ok'))).toBe('ok');
+        } finally {
+            if (prevKey !== undefined) process.env.WACOPILOTE_MASTER_KEY = prevKey;
+            else delete process.env.WACOPILOTE_MASTER_KEY;
+            if (prevData !== undefined) process.env.USER_DATA_PATH = prevData;
+            else delete process.env.USER_DATA_PATH;
+        }
+    });
+
+    it('un module chargé avec la clé d\'env n\'a rien généré (C7)', async () => {
+        vi.resetModules();
+        // WACOPILOTE_MASTER_KEY est posée en tête de fichier : la résolution
+        // s'arrête à la première étape, sans passer par la génération.
+        const fresh = await import('../secretStore.js');
+        const status = fresh.getDecryptionStatus();
+        expect(status.generatedAt).toBeNull();
+        expect(status.generatedReason).toBeNull();
+    });
 });

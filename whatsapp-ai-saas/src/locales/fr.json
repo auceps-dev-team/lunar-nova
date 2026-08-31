@@ -1182,6 +1182,7 @@
   "outboundCliHeading": "2. Outils & CLI Détectés sur votre Machine",
   "outboundCliExplanation": "WaCopilote inspecte votre environnement local pour déléguer des tâches complexes aux agents autonomes ou utilitaires installés.",
   "notDetected": "Non détecté",
+  "cliProbeNotReady": "non authentifié",
   "cliTestHeading": "3. Console de Test Rapide du Bridge",
   "testPrompt": "Prompt d'essai :",
   "running": "Exécution...",
