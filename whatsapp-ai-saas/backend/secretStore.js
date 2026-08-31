@@ -88,7 +88,15 @@ app.whenReady().then(() => {
                     const { execFileSync } = require('child_process');
                     const out = execFileSync(electronBinary, [helperScript, sealedPath, baseDir], {
                         encoding: 'utf8',
-                        timeout: 5000,
+                        // 15 s (C2) : au démarrage à froid (antivirus Windows,
+                        // disque saturé), le binaire Electron peut dépasser les
+                        // 5 s initiales. Un timeout trop court laissait le
+                        // déchiffrement échouer silencieusement, puis la clé
+                        // maître était RÉGÉNÉRÉE au repli — rendant tous les
+                        // secrets existants illisibles (« Unsupported state or
+                        // unable to authenticate data »). 15 s de pire cas au
+                        // démarrage valent mieux qu'une base de secrets perdue.
+                        timeout: 15000,
                         windowsHide: true,
                         stdio: ['ignore', 'pipe', 'ignore']
                     }).trim();

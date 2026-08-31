@@ -48,6 +48,15 @@ const Support = () => {
 
     const changelog = [
         {
+            version: 'v1.48.2',
+            date: '2026-08-31',
+            changes: [
+                'Correctif — Fiabilité du canal Gemini CLI en arrière-plan : depuis le durcissement de sécurité de @google/gemini-cli (0.39.1+), le mode non interactif refusait de démarrer si le dossier de travail n\'était pas déclaré de confiance (« workspace trust »), même avec une clé valide — le repli automatique tombait donc systématiquement sur Claude. La variable GEMINI_CLI_TRUST_WORKSPACE est désormais passée au sous-processus Gemini (variable d\'environnement préférée au flag --skip-trust, que les versions 0.38.x d\'avant le durcissement rejettent comme argument inconnu) ; elle est ignorée sans effet par les autres CLI et les anciennes versions',
+                'Correctif — Robustesse du déchiffrement des clés au démarrage : le délai accordé au helper de déchiffrement de la clé maître passe de 5 à 15 secondes — sur un démarrage à froid (antivirus, disque occupé), le délai initial pouvait être dépassé, la clé maître était alors régénérée en silence et toutes les clés API enregistrées devenaient illisibles (« Unsupported state or unable to authenticate data ») jusqu\'à leur ressaisie',
+                'Correctif — Diagnostic des échecs CLI : la dernière ligne de la sortie d\'erreur du binaire externe (raison réelle : authentification, confiance du dossier, version de Node…) est désormais remontée dans le journal du routeur de repli au lieu d\'un message générique « Échec d\'exécution du CLI »'
+            ]
+        },
+        {
             version: 'v1.48.1',
             date: '2026-08-29',
             changes: [
