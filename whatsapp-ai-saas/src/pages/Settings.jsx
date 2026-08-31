@@ -343,12 +343,18 @@ const Settings = () => {
                             <span className="font-semibold text-gray-600 dark:text-gray-300 text-[11px]">Canaux disponibles :</span>
                             {(() => {
                                 const cliVersion = (cmd) => channelsStatus?.installedClis?.find(c => c.command === cmd && c.installed)?.version || null;
+                                // C6 : le pré-vol Gemini (auth + trust) distingue « installé »
+                                // de « installé et réellement utilisable en arrière-plan ».
+                                // Ambre = binaire présent mais pré-vol en échec (détail au
+                                // survol) ; la cascade de repli tente le canal quoi qu'il en soit.
+                                const geminiEntry = channelsStatus?.installedClis?.find(c => (c.command === 'gemini' || c.command === 'gemini-cli') && c.installed);
+                                const geminiWarn = !!(geminiEntry?.readiness && geminiEntry.readiness.ready === false);
                                 const badges = [
                                     { ready: !!channelsStatus?.channels.geminiApi, label: 'Gemini API Cloud' },
                                     { ready: !!channelsStatus?.channels.openrouterApi, label: 'OpenRouter API' },
                                     { ready: !!channelsStatus?.channels.openaiApi, label: 'NVIDIA NIM / OpenAI' },
                                     { ready: true, label: 'Ollama (local)' },
-                                    { ready: !!channelsStatus?.channels.geminiCli, label: `Google Gemini CLI${cliVersion('gemini') ? ` (${cliVersion('gemini')})` : ''}` },
+                                    { ready: !!channelsStatus?.channels.geminiCli, warn: geminiWarn, warnDetail: geminiEntry?.readiness?.detail, label: `Google Gemini CLI${cliVersion('gemini') ? ` (${cliVersion('gemini')})` : ''}` },
                                     { ready: !!channelsStatus?.channels.claudeCli, label: `Claude Code CLI${cliVersion('claude') ? ` (${cliVersion('claude')})` : ''}` },
                                     { ready: !!channelsStatus?.channels.ollamaCli, label: 'Ollama CLI' },
                                     { ready: !!channelsStatus?.channels.mcpServer, label: 'Serveur MCP JSON-RPC' },
@@ -359,13 +365,16 @@ const Settings = () => {
                                 return badges.map(b => (
                                     <span
                                         key={b.label}
+                                        title={b.warnDetail || undefined}
                                         className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border ${
-                                            b.ready
-                                                ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60'
-                                                : 'bg-gray-100 dark:bg-gray-900/60 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-800 line-through'
+                                            !b.ready
+                                                ? 'bg-gray-100 dark:bg-gray-900/60 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-800 line-through'
+                                                : b.warn
+                                                    ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800/60'
+                                                    : 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60'
                                         }`}
                                     >
-                                        {b.ready ? '🟢' : '⚪'} {b.label}
+                                        {b.warn ? '🟡' : b.ready ? '🟢' : '⚪'} {b.label}{b.warn ? ` — ${t('cliProbeNotReady')}` : ''}
                                     </span>
                                 ));
                             })()}

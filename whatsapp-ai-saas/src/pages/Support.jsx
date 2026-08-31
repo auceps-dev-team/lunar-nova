@@ -48,6 +48,14 @@ const Support = () => {
 
     const changelog = [
         {
+            version: 'v1.48.4',
+            date: '2026-08-31',
+            changes: [
+                'Correctif — Indicateur de disponibilité réel de Gemini CLI : l\'indicateur des Réglages confirmait seulement que le binaire était installé (la commande --version réussit sans aucune authentification). Un pré-vol discret exécute désormais la même invocation que le moteur de repli et signale en ambre « installé mais non authentifié » lorsque l\'arrière-plan ne répondra pas (authentification absente ou dossier non déclaré de confiance) — détail de la cause au survol. Purement informatif : la cascade de repli tente toujours le canal',
+                'Diagnostic — La génération d\'une nouvelle clé maître de chiffrement (l\'événement qui rend illisibles les clés déjà enregistrées) laisse désormais une trace horodatée dans le journal du service avec son motif (clé scellée absente, helper de déchiffrement trop lent, répertoire de données changé) — consultable également par l\'état des canaux'
+            ]
+        },
+        {
             version: 'v1.48.3',
             date: '2026-08-31',
             changes: [

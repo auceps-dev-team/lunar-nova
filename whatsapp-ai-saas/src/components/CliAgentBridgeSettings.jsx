@@ -269,6 +269,17 @@ const CliAgentBridgeSettings = () => {
                                 <span className={`text-[10px] truncate ${cli.installed ? 'text-emerald-700 dark:text-emerald-300 font-medium' : 'text-gray-400 dark:text-gray-500'}`}>
                                     {cli.installed ? (cli.version || 'Installé') : (t('notDetected') || 'Non détecté')}
                                 </span>
+                                {/* C6 : pré-vol Gemini — binaire présent mais arrière-plan non
+                                    confirmé (authentification / confiance du dossier). Détail
+                                    (stderr classifié) au survol. Autres CLI : pas de pré-vol. */}
+                                {cli.installed && cli.readiness && cli.readiness.ready === false && (
+                                    <span
+                                        title={cli.readiness.detail || undefined}
+                                        className="mt-1 self-start inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60"
+                                    >
+                                        ⚠ {t('cliProbeNotReady')}
+                                    </span>
+                                )}
                             </div>
                         ))}
                     </div>

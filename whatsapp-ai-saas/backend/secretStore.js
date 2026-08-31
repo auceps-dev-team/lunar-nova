@@ -24,6 +24,15 @@ const PREFIX = 'enc:v1:';
 const IV_BYTES = 12;
 const TAG_BYTES = 16;
 
+// C7 : traçabilité de la GÉNÉRATION d'une nouvelle clé maître (dernier repli
+// de loadOrCreateMasterKey, appelé au chargement du module — d'où la
+// déclaration ici, avant tout appel). C'est l'événement qui rend silencieusement
+// illisibles tous les secrets chiffrés existants ; sans trace, sa cause
+// (dossier de données perdu, helper de déchiffrement trop lent, changement de
+// machine) restait indiagnosticable a posteriori.
+let masterKeyGeneratedAt = null;
+let masterKeyGeneratedReason = null;
+
 function resolveUserDataDir() {
     if (process.env.USER_DATA_PATH) {
         return process.env.USER_DATA_PATH;
@@ -137,6 +146,14 @@ app.whenReady().then(() => {
 
     // 4. Génération d'une nouvelle clé si rien n'existe
     const generated = crypto.randomBytes(32).toString('hex');
+    // C7 : trace horodatée + motif — une régénération rend illisibles tous les
+    // secrets chiffrés existants ; sans cette trace, la cause (clé .enc perdue,
+    // helper safeStorage trop lent, répertoire de données changé) était
+    // invisible jusqu'au constat « Unsupported state or unable to
+    // authenticate data » côté decrypt().
+    masterKeyGeneratedAt = new Date().toISOString();
+    masterKeyGeneratedReason = 'aucune clé maître résoluble : WACOPILOTE_MASTER_KEY absente, master-key.enc absent ou indéchiffrable, master-key absent du répertoire de données et du dossier projet';
+    console.error(`[SecretStore] ${masterKeyGeneratedAt} — NOUVELLE clé maître générée dans '${plainPath}' (${masterKeyGeneratedReason}). Si des secrets chiffrés existent en base, ils seront illisibles jusqu'à leur ressaisie (ils seront alors rechiffrés avec cette clé).`);
     try {
         fs.mkdirSync(path.dirname(plainPath), { recursive: true });
         fs.writeFileSync(plainPath, generated, { encoding: 'utf8', flag: 'wx', mode: 0o600 });
@@ -212,9 +229,17 @@ function decrypt(value) {
  * État de dégradation du déchiffrement pour CE processus (C4).
  * `degraded` passe à true dès qu'une valeur `enc:v1:` n'a pas pu être
  * déchiffrée ; l'horodatage conserve la première occurrence.
+ * `generatedAt`/`generatedReason` (C7) sont renseignés si CE processus a dû
+ * générer une nouvelle clé maître — l'événement amont qui explique une
+ * dégradation ultérieure.
  */
 function getDecryptionStatus() {
-    return { degraded: decryptionDegraded, failedAt: decryptionFailedAt };
+    return {
+        degraded: decryptionDegraded,
+        failedAt: decryptionFailedAt,
+        generatedAt: masterKeyGeneratedAt,
+        generatedReason: masterKeyGeneratedReason
+    };
 }
 
 module.exports = { encrypt, decrypt, isEncrypted, keyFilePath, PREFIX, resolveUserDataDir, getDecryptionStatus };

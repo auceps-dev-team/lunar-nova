@@ -216,11 +216,20 @@ async function detectInstalledClis(forceRefresh = false) {
 
             if (check.success) {
                 const versionOutput = (check.stdout || check.stderr || '').trim().split('\n')[0];
-                return {
+                const entry = {
                     command: item.name,
                     installed: true,
                     version: versionOutput || 'Installé'
                 };
+                // C6 : pour la famille gemini, `--version` réussit sans aucune
+                // authentification — le badge « installé » ne garantissait pas
+                // que le canal répondrait en headless (verrous auth + trust du
+                // diagnostic 2026-08-31). Pré-vol informationnel : n'influence
+                // ni la cascade de repli ni les canaux signalés disponibles.
+                if (item.name === 'gemini' || item.name === 'gemini-cli') {
+                    entry.readiness = await probeGeminiReadiness({ forceRefresh });
+                }
+                return entry;
             }
             return {
                 command: item.name,
@@ -239,6 +248,98 @@ async function detectInstalledClis(forceRefresh = false) {
     cachedClis = results;
     lastClisCheckTime = now;
     return results;
+}
+
+// ── Pré-vol d'authentification Gemini CLI (C6) ──────────────────────────────
+// `gemini --version` ne nécessite AUCUNE authentification : un binaire détecté
+// ne prouvait pas que le canal répondrait en headless (`-p`), qui bute sur deux
+// verrous indépendants — authentification absente (ni clé d'env ni OAuth en
+// cache) et dossier de travail non déclaré de confiance (depuis le durcissement
+// GHSA-wpqr-6v78-jr5g). Le pré-vol exécute exactement l'invocation du routeur
+// (`-p ping -o text`, trust accordé par env) et classe le résultat pour les
+// badges des Réglages. Strictement informationnel : la cascade de repli tente
+// toujours le canal (une tentative est peu coûteuse et l'état peut changer).
+const GEMINI_PROBE_TTL_MS = 5 * 60 * 1000; // cache propre : la détection est appelée à chaque ouverture de Réglages
+let geminiProbeCache = null; // { ready, detail, checkedAt }
+
+/**
+ * Classe le résultat d'un pré-vol Gemini en état affichable. Pure — testée
+ * unitairement sans aucun spawn.
+ *
+ * @param {{success?: boolean, exitCode?: number|null, stdout?: string, stderr?: string, error?: string}} result
+ * @returns {{ready: boolean, detail: string|null}}
+ */
+function classifyGeminiProbeResult(result) {
+    if (!result) return { ready: false, detail: 'Pré-vol non exécuté.' };
+    if (result.success && (result.stdout || '').trim()) return { ready: true, detail: null };
+
+    const raw = `${result.error || ''}\n${result.stderr || ''}`.trim();
+    const lastLine = raw.split('\n').map((l) => l.trim()).filter(Boolean).pop()
+        || `échec (code de sortie ${result.exitCode ?? '?'})`;
+    const lower = raw.toLowerCase();
+
+    // Classement par famille de cause (l'ordre compte : trust avant auth,
+    // car le message d'auth peut apparaître dans l'aide au trust).
+    if (lower.includes('trusted directory') || lower.includes('untrusted workspace')) {
+        return { ready: false, detail: 'dossier de travail non déclaré de confiance' };
+    }
+    if (lower.includes('délai') || lower.includes('timeout')) {
+        return { ready: false, detail: `délai dépassé au pré-vol (${lastLine.slice(0, 120)})` };
+    }
+    if (lower.includes('api key') || lower.includes('unauthenticated') || lower.includes('authentication') || lower.includes('quota')) {
+        return { ready: false, detail: 'authentification absente ou refusée' };
+    }
+    return { ready: false, detail: lastLine.slice(0, 200) };
+}
+
+/**
+ * Exécute le pré-vol Gemini (auth + trust) avec son propre cache de 5 min.
+ *
+ * @param {object} [options]
+ * @param {boolean} [options.forceRefresh=false] Force un nouveau pré-vol (bouton « Réinspecter »)
+ * @param {Function} [options.executor] Injecteur de test (défaut : executeExternalCli)
+ * @param {Function} [options.getKey] Injecteur de test (défaut : db.getSetting('gemini_api_key'))
+ * @returns {Promise<{ready: boolean, detail: string|null, checkedAt: number}>}
+ */
+async function probeGeminiReadiness({
+    forceRefresh = false,
+    executor = executeExternalCli,
+    getKey = () => db.getSetting('gemini_api_key', '')
+} = {}) {
+    const now = Date.now();
+    if (!forceRefresh && geminiProbeCache && now - geminiProbeCache.checkedAt < GEMINI_PROBE_TTL_MS) {
+        return geminiProbeCache;
+    }
+
+    let key = '';
+    try {
+        key = (await getKey()) || '';
+    } catch {
+        key = '';
+    }
+
+    let result;
+    try {
+        // Même invocation que le routeur (agentFallbackRouter, canal gemini) :
+        // le pré-vol doit voir ce que verrait un vrai appel — dont le trust
+        // accordé par env (C3), sinon il échouerait pour la mauvaise raison.
+        result = await executor({
+            command: 'gemini',
+            args: ['-p', 'ping', '-o', 'text'],
+            input: '',
+            env: {
+                ...process.env,
+                ...(key ? { GEMINI_API_KEY: key } : {}),
+                GEMINI_CLI_TRUST_WORKSPACE: 'true'
+            },
+            timeout: 15000
+        });
+    } catch (err) {
+        result = { success: false, exitCode: null, stdout: '', stderr: '', error: String(err?.message || err) };
+    }
+
+    geminiProbeCache = { ...classifyGeminiProbeResult(result), checkedAt: now };
+    return geminiProbeCache;
 }
 
 /**
@@ -387,5 +488,7 @@ module.exports = {
     getAllowedCommands,
     isCommandAllowed,
     detectInstalledClis,
+    classifyGeminiProbeResult,
+    probeGeminiReadiness,
     executeExternalCli
 };

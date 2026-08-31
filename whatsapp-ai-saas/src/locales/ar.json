@@ -1182,6 +1182,7 @@
   "outboundCliHeading": "2. الأدوات و CLI المكتشفة على جهازك",
   "outboundCliExplanation": "يفحص WaCopilote بيئتك المحلية لتفويض المهام المعقدة للوكلاء المستقلين أو الأدوات المثبتة.",
   "notDetected": "غير مكتشف",
+  "cliProbeNotReady": "غير مُصادَق عليه",
   "cliTestHeading": "3. وحدة الاختبار السريع للجسر",
   "testPrompt": "نص التجربة:",
   "running": "جارٍ التنفيذ...",
