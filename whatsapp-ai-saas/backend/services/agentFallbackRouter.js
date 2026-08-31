@@ -191,19 +191,40 @@ async function invokeSingleProvider({
 
         const rawGeminiKey = (await db.getSetting('gemini_api_key', '')) || process.env.GEMINI_API_KEY || '';
 
+        // Workspace Trust (C3) : depuis le durcissement GHSA-wpqr-6v78-jr5g
+        // (gemini-cli 0.39.1+), le mode headless refuse un dossier de travail
+        // non trusté (FatalUntrustedWorkspaceError) même avec une clé valide.
+        // On passe la VARIABLE D'ENVIRONNEMENT et non le flag --skip-trust :
+        // les gemini-cli 0.38.x rejettent ce flag inconnu (« Unknown arguments:
+        // skip-trust », exit non nul) et brûleraient toute la cascade, tandis
+        // que la variable est ignorée silencieusement par les versions qui
+        // n'en ont pas besoin. Scopée au seul canal gemini : le cwd d'exécution
+        // est le dossier contrôlé de l'application, pas un dépôt arbitraire.
+        const isGeminiCli = cliCommand === 'gemini' || cliCommand === 'gemini-cli';
+
         const result = await externalAgentRunner.executeExternalCli({
             command: cliCommand,
             args,
             input: '',
             env: {
                 ...process.env,
-                ...(rawGeminiKey ? { GEMINI_API_KEY: rawGeminiKey } : {})
+                ...(rawGeminiKey ? { GEMINI_API_KEY: rawGeminiKey } : {}),
+                ...(isGeminiCli ? { GEMINI_CLI_TRUST_WORKSPACE: 'true' } : {})
             },
             timeout: 35000
         });
 
         if (!result.success && !result.stdout) {
-            throw new Error(result.error || `Échec d'exécution du CLI '${cliCommand}'`);
+            // Observabilité (C1) : stderr porte la raison réelle de l'échec du
+            // binaire (authentification Gemini, workspace non trusté, Node
+            // trop ancien…). Auparavant capturé puis jeté : seul un message
+            // générique remontait, masquant le diagnostic. La dernière ligne
+            // non vide est généralement l'erreur ; bornée à 300 caractères.
+            const stderrHint = ((result.stderr || '').trim().split('\n').filter(Boolean).pop()) || '';
+            const detail = result.error
+                || (stderrHint ? `CLI '${cliCommand}' : ${stderrHint.slice(0, 300)}` : '')
+                || `Échec d'exécution du CLI '${cliCommand}'`;
+            throw new Error(detail);
         }
 
         let textOutput = (result.stdout || result.stderr || '').trim();

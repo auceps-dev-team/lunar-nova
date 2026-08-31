@@ -147,6 +147,8 @@ Scénario de collision confirmé si : base présente dans les DEUX, ou `.enc` pr
 
 ### Phase 3 — Correctifs à programmer dans une future version (description, non appliqués)
 
+> **✅ Statut application (2026-08-31, v1.48.2) :** **C1 + C2 + C3 appliqués** (branche `arena/01a057ee-lunar-nova`) avec 2 tests de non-régression T6/T7 (`agentFallbackStrategies.test.js`) — validation complète : **253 tests, 0 échec** · ESLint 0/0 · build Vite OK · bump 1.48.2 via `bump_version.sh` + changelog Support.jsx + memory-bank. **C4→C7 restent à planifier** (P1/P2).
+
 | # | Correctif | Fichier:ligne | Nature | Priorité |
 |---|---|---|---|---|
 | C1 | Inclure `stderr` dans l'erreur propagée : `throw new Error(result.error || result.stderr?.slice(0,300) || \`Échec d'exécution...\`)` | `agentFallbackRouter.js:206` | 1 ligne, observabilité | **P0** — débloque tout diagnostic futur |

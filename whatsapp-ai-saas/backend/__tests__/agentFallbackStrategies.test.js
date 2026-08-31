@@ -119,4 +119,42 @@ describe('agentFallbackRouter — stratégies d\'exécution (T2-T5, substitution
         expect(geminiService.chatWithAgent).toHaveBeenCalledTimes(1);
         expect(externalAgentRunner.executeExternalCli).not.toHaveBeenCalled();
     });
+
+    it('T6 — un échec du CLI externe remonte la raison stderr et passe le trust Gemini (v1.48.2)', async () => {
+        // C1 : la dernière ligne de stderr du binaire doit figurer dans
+        // l'erreur propagée (auparavant capturée puis jetée — seul un message
+        // générique « Échec d'exécution du CLI » remontait, masquant la cause).
+        // C3 : GEMINI_CLI_TRUST_WORKSPACE doit être passé au canal gemini
+        // (headless refusé sur dossier non trusté depuis gemini-cli 0.39.1+).
+        externalAgentRunner.executeExternalCli = vi.fn(async () => ({
+            success: false, exitCode: 1, stdout: '',
+            stderr: 'Gemini CLI is not running in a trusted directory.\nTo proceed, either use --skip-trust, set GEMINI_CLI_TRUST_WORKSPACE=true, or trust this directory in interactive mode.',
+            executionTimeMs: 4
+        }));
+        await db.setSetting('ai_execution_strategy', 'cli');
+        await db.setSetting('default_cli_agent', 'gemini');
+        await db.setSetting('auto_fallback_enabled', 'false');
+
+        await expect(executeAgentWithFallback({ personaId: 'copywriter', message: 'Bonjour' }))
+            .rejects.toThrow(/GEMINI_CLI_TRUST_WORKSPACE=true/);
+
+        const callArg = externalAgentRunner.executeExternalCli.mock.calls[0][0];
+        expect(callArg.command).toBe('gemini');
+        expect(callArg.env.GEMINI_CLI_TRUST_WORKSPACE).toBe('true');
+    });
+
+    it('T7 — le trust workspace reste scopé au canal gemini (aucune variable pour claude)', async () => {
+        externalAgentRunner.executeExternalCli = vi.fn(async () => ({
+            success: true, exitCode: 0, stdout: 'Réponse Claude (mock)', stderr: '', executionTimeMs: 3
+        }));
+        await db.setSetting('ai_execution_strategy', 'cli');
+        await db.setSetting('default_cli_agent', 'claude');
+        await db.setSetting('auto_fallback_enabled', 'false');
+
+        const result = await executeAgentWithFallback({ personaId: 'copywriter', message: 'Bonjour' });
+
+        expect(result.response).toBe('Réponse Claude (mock)');
+        const callArg = externalAgentRunner.executeExternalCli.mock.calls[0][0];
+        expect(callArg.env.GEMINI_CLI_TRUST_WORKSPACE).toBeUndefined();
+    });
 });
