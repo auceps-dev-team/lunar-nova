@@ -48,6 +48,14 @@ const Support = () => {
 
     const changelog = [
         {
+            version: 'v1.48.6',
+            date: '2026-09-14',
+            changes: [
+                'Sécurité — Mise à jour des dépendances : 23 vulnérabilités connues ramenées à 4. Côté application, la chaîne de téléchargement des binaires Electron (@electron/get, extract-zip/yauzl) passe en version corrigée et Electron en 40.10.6 ; côté service, Puppeteer (moteur d\'automatisation WhatsApp Web) passe en 24.43.1 et Express en 4.22.3',
+                'Note — Les 4 vulnérabilités restantes exigent un changement de version majeur (Electron 41+, puppeteer-core 25+) qui touche au moteur Chromium et à l\'automatisation WhatsApp : elles sont traitées séparément, avec validation manuelle du parcours de connexion'
+            ]
+        },
+        {
             version: 'v1.48.5',
             date: '2026-08-31',
             changes: [
