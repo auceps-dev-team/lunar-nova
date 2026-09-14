@@ -29,7 +29,7 @@ describe('db.js — migrations de schéma (SQLite en mémoire)', () => {
         expect(ok).toBe(true);
 
         const v = await db.pool.query('SELECT MAX(version) as v FROM schema_version');
-        expect(v.rows[0].v).toBe(8);
+        expect(v.rows[0].v).toBe(9);
     });
 
     it.runIf(sqlite3Available)('permet les requêtes INSERT ... ON CONFLICT (phone) sur wa_contacts sans erreur de contrainte', async () => {
@@ -65,9 +65,15 @@ describe('db.js — migrations de schéma (SQLite en mémoire)', () => {
         for (const table of [
             'copilot_logs', 'app_settings', 'ai_agents', 'ai_documents',
             'wa_contacts', 'wa_contact_lists', 'wa_segments', 'wa_message_logs',
-            'detected_orders', 'wp_connections', 'pipeline_runs', 'pipeline_cards', 'quotes'
+            'detected_orders', 'pipeline_runs', 'pipeline_cards', 'quotes'
         ]) {
             expect(names).toContain(table);
+        }
+
+        // Pont WordPress retiré en v1.49.0 : la migration v9 supprime ses
+        // tables, y compris sur les bases qui les avaient déjà.
+        for (const dropped of ['wp_connections', 'wp_pending_actions']) {
+            expect(names).not.toContain(dropped);
         }
     });
 
@@ -92,9 +98,9 @@ describe('db.js — migrations de schéma (SQLite en mémoire)', () => {
         const again = await db.initDB();
         expect(again).toBe(true);
 
-        // La colonne de la migration v6 existe bien (doublon → « already
+        // La colonne de la migration v7 existe bien (doublon → « already
         // exists » ignoré, pas d'échec).
-        const cols = await db.pool.query('SELECT wp_username FROM wp_connections LIMIT 1');
+        const cols = await db.pool.query('SELECT invoice_number FROM quotes LIMIT 1');
         expect(cols).toBeDefined();
     });
 

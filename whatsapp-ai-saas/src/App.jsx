@@ -38,9 +38,6 @@ const ContactAdd = React.lazy(() => import('./pages/whatsapp/ContactAdd'));
 const ContactImport = React.lazy(() => import('./pages/whatsapp/ContactImport'));
 import { useGlobalOrderListener } from './hooks/useGlobalOrderListener';
 
-// Placeholder Pages for Phase 2
-const WordPressBridge = React.lazy(() => import('./pages/WordPressBridge'));
-
 import useAppStore from './store';
 import { API_BASE_URL } from './config';
 import './styles/global.css';
@@ -328,7 +325,6 @@ function AppContent() {
                   <Route path="/wa/contacts/edit/:id" element={<ContactAdd />} />
                   <Route path="/wa/contacts/import" element={<ContactImport />} />
                   <Route path="/support" element={<Support />} />
-                  <Route path="/wordpress" element={<WordPressBridge />} />
                     </Routes>
                   </Suspense>
                 </ErrorBoundary>

@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/auceps-dev-team/lunar-nova"><img src="https://img.shields.io/badge/version-1.48.6-blue.svg" alt="Version 1.48.6" /></a>
+  <a href="https://github.com/auceps-dev-team/lunar-nova"><img src="https://img.shields.io/badge/version-1.49.0-blue.svg" alt="Version 1.49.0" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue.svg" alt="License AGPL-3.0" /></a>
   <a href="#-open-source"><img src="https://img.shields.io/badge/open%20source-oui-brightgreen.svg" alt="Open Source" /></a>
   <a href="#-pourquoi-wacopilote-"><img src="https://img.shields.io/badge/Made%20in-%F0%9F%87%A8%F0%9F%87%BE%20C%C3%B4te%20d'Ivoire-orange.svg" alt="Made in Côte d'Ivoire" /></a>
@@ -29,7 +29,6 @@
 - [Bridge CLI & Protocoles Agentiques (MCP)](#-bridge-cli--protocoles-agentiques-mcp)
 - [Automatisation WhatsApp & Engine Playwright](#-automatisation-whatsapp--engine-playwright)
 - [Studio Photo IA & Génération de Catalogue](#-studio-photo-ia--génération-de-catalogue)
-- [Pont WordPress & WooCommerce](#-pont-wordpress--woocommerce)
 - [Prospection & Mining de Leads B2B](#-prospection--mining-de-leads-b2b)
 - [Sécurité & Audit de Protection](#-sécurité--audit-de-protection)
 - [Tests & Analyse Statique](#-tests--analyse-statique)
@@ -72,7 +71,6 @@ Là où les outils traditionnels se limitent à de simples chatbots rigides ou �
 - 📱 **Automation WhatsApp Intelligente** : Détectez les intentions d'achat et traquez les commandes WhatsApp en temps réel grâce à notre moteur headless Playwright/Puppeteer.
 - 📷 **Studio Photo Produit Virtuel** : Générez des visuels de produits haut de gamme, supprimez les arrières-plans, réalisez des "Photo Shoots" virtuels et composez vos catalogues en quelques clics.
 - 🔍 **Prospection & Extraction de Leads** : Extrayez automatiquement des données d'entreprises ciblées depuis **Google Places**, **Annuaire CI** et **GoAfrica** pour alimenter vos campagnes WhatsApp.
-- 🌐 **Pont WordPress & WooCommerce** : Synchronisez de façon bidirectionnelle vos produits, stocks, commandes et articles rédigés par l'IA.
 
 ---
 
@@ -141,7 +139,6 @@ npm run start:all
 - **Gestionnaire de Contacts & Segmentation** : Importation de contacts CSV/Excel, gestion des listes de diffusion, segmentation et ciblage pour campagnes WhatsApp.
 - **Créateur de Devis & Factures PDF** : Génération instantanée de devis/factures téléchargeables en PDF (`InvoiceBuilder.jsx`) avec calcul de taxes et personnalisation d'entreprise.
 - **Copywriter IA Multilingue** : Génération de posts réseaux sociaux, accroches publicitaires, broadcasts WhatsApp et articles de blog optimisés SEO.
-- **Connecteur WordPress / WooCommerce** : Extension WordPress officielle (`wacopilote-bridge-v2.0.0.zip`) permettant l'import/export de catalogues produits et la synchronisation des commandes.
 - **Analytique & Suivi des Coûts** : Suivi granulaire des tokens consommés, calcul des coûts par requête, logs d'erreurs et tableaux Recharts interactifs.
 
 ---
@@ -209,7 +206,7 @@ WaCopilote intègre un moteur de résilience agentique (`backend/services/agentF
 
 ## 💻 Bridge CLI & Protocoles Agentiques (MCP)
 
-À partir de la **version 1.44.0**, WaCopilote intègre une architecture **CLI bidirectionnelle** et un serveur **Model Context Protocol (MCP)** complet permettant une interopérabilité totale avec vos terminaux, scripts d'automatisation, et IDEs agentiques (Claude Code, Cursor, Antigravity, VS Code). La **version 1.45.0** étend cette surface à (quasi) toutes les actions métier : prospection, listes de contacts, plannings (Kanban), documents, génération photo, devis, instances WhatsApp et gouvernance WordPress.
+À partir de la **version 1.44.0**, WaCopilote intègre une architecture **CLI bidirectionnelle** et un serveur **Model Context Protocol (MCP)** complet permettant une interopérabilité totale avec vos terminaux, scripts d'automatisation, et IDEs agentiques (Claude Code, Cursor, Antigravity, VS Code). La **version 1.45.0** étend cette surface à (quasi) toutes les actions métier : prospection, listes de contacts, plannings (Kanban), documents, génération photo, devis et instances WhatsApp.
 
 ### 1. Contrôle Inbound : Pilotez WaCopilote depuis votre Terminal
 
@@ -252,11 +249,6 @@ npx wacopilote photo generate --agent photoshoot --prompt "Robe d'été rouge" -
 npx wacopilote quotes create --client-name "Boutique X" --data '{"items":[{"description":"Robe","qty":2,"price":15000}]}'
 npx wacopilote quotes export-pdf 5 --out ./devis-5.pdf
 
-# WordPress — gouvernance HITL : toute écriture exige une approbation humaine explicite
-npx wacopilote wordpress propose --connection 1 --prompt "Crée un article sur nos soldes d'été"
-npx wacopilote wordpress actions --connection 1
-npx wacopilote wordpress approve --connection 1 --action 42
-
 # Instances WhatsApp déjà connectées (la création d'une nouvelle instance reste
 # un scan QR humain dans l'app — non automatisable côté CLI)
 npx wacopilote instances list --json
@@ -289,11 +281,10 @@ Ajoutez simplement la configuration suivante dans votre `claude_desktop_config.j
 - **Documents** : `list_documents`, `get_document`, `create_document`, `update_document`, `delete_document`.
 - **Photo** : `generate_photo`.
 - **Devis** : `list_quotes`, `get_quote`, `create_quote`, `update_quote`, `export_quote_pdf`.
-- **WordPress (gouvernance HITL — validation humaine obligatoire)** : `wordpress_propose_action`, `wordpress_list_actions`, `wordpress_approve_action`, `wordpress_reject_action`, `wordpress_list_products`, `wordpress_list_orders`.
 - **Instances WhatsApp** : `list_instances`, `open_whatsapp_chat` (pilotage d'une instance déjà authentifiée — la création d'une nouvelle instance reste une action humaine).
-- **Commandes** : `get_orders`, `create_product_proposal`.
+- **Commandes** : `get_orders`.
 
-> **Gouvernance des actions à risque** : toute action d'écriture qui modifie un état externe (publication WordPress, création de produit) passe par un flux `propose` → `approve`/`reject` — jamais d'exécution automatique. Les actions de lecture/génération (recherche, texte, image, devis) restent autonomes.
+> **Gouvernance des actions à risque** : l'envoi effectif d'un message WhatsApp reste une action humaine — le CLI et le MCP ouvrent la conversation sur une instance déjà authentifiée, ils ne l'envoient pas à votre place. Les actions de lecture/génération (recherche, texte, image, devis) restent autonomes.
 
 **Fiabilité du flux CLI/MCP.** `backend/__tests__/cliMcpFlow.test.js` ouvre une vraie session MCP sur `stdio` (subprocess `wacopilote mcp`, protocole JSON-RPC réel — pas un appel de fonction en process) et vérifie bout en bout : la pureté du flux `stdout` sur toute une session (aucune ligne non-JSON, condition nécessaire pour tout client MCP strict), la cohérence des données entre le CLI et le MCP lancés comme deux process indépendants (même base SQLite), et la résilience de la session après l'échec d'un appel d'outil.
 
@@ -322,20 +313,7 @@ Transformez des photos de produits amateurs en visuels E-Commerce de classe mond
 
 - **Remplacement d'Arrière-Plan** : Détourage automatique du produit et génération d'un décor de studio réaliste (ex: table en marbre, podium en bois, plage, intérieur moderne).
 - **Inpainting & Retouche Produit** : Correction des imperfections et ajout d'éléments décoratifs à la demande via prompts textuels.
-- **Exportation Multi-Formats** : Génération de fiches catalogues structurées compatibles avec WooCommerce et les réseaux sociaux.
-
----
-
-## 🌐 Pont WordPress & WooCommerce
-
-Le dossier `wordpress-plugin/wacopilote-bridge` contient l'extension officielle WordPress permettant de connecter votre site E-Commerce à WaCopilote.
-
-### Fonctionnalités du Bridge WordPress (v2.0.0) :
-- **Export de Produits** : Transférez les produits créés dans WaCopilote directement dans votre catalogue WooCommerce.
-- **Mise à Jour des Stocks & Prix** : Synchronisez les états de stocks et les tarifs depuis le bureau WaCopilote.
-- **Publication d'Articles de Blog** : Rédigez des articles optimisés SEO avec l'IA et publiez-les directement sur WordPress.
-- **Authentification par Application Passwords** : le pont s'authentifie via le mécanisme natif WordPress (WP 5.6+) en HTTPS, sans token maison ni clé partagée.
-- **Gouvernance humaine (HITL)** : l'agent IA ne fait que soumettre des propositions ; toute écriture en base exige l'approbation d'un administrateur depuis le back-office WordPress.
+- **Exportation Multi-Formats** : Génération de fiches catalogues structurées, prêtes à partager sur WhatsApp et les réseaux sociaux.
 
 ---
 
@@ -361,11 +339,9 @@ Vos conversations, vos contacts et vos clés d'API ne quittent jamais votre mach
 4. **Isolation du renderer Electron** : `contextIsolation` activé, `nodeIntegration` désactivé, passerelle IPC réduite à une liste explicite de fonctions.
 5. **CORS restreint** et **limitation de débit** en trois niveaux : plafond global, plafond serré sur les opérations lourdes (scraping, envoi au catalogue) et plafond dédié aux routes d'inférence LLM.
 6. **Validation des entrées** par `Zod` sur les routes d'agents.
-7. **Gouvernance humaine du pont WordPress** : l'agent IA ne peut que *proposer* des modifications ; leur exécution exige une approbation explicite d'un administrateur du site.
+7. **Chiffrement des secrets au repos** *(v1.37.0)* : les clés d'API et les jetons OAuth sont chiffrés en **AES-256-GCM** dans la base SQLite. La clé maître ne réside jamais dans la base qu'elle protège : elle est scellée par le magasin de secrets du système d'exploitation via `safeStorage` (DPAPI sous Windows, Trousseau sous macOS, libsecret sous Linux) et n'est transmise au backend qu'au démarrage. Copier `database.sqlite` sur une autre machine ne suffit donc pas à en extraire les secrets. Les bases antérieures sont migrées automatiquement au premier lancement.
 
-8. **Chiffrement des secrets au repos** *(v1.37.0)* : les clés d'API et les mots de passe d'application WordPress sont chiffrés en **AES-256-GCM** dans la base SQLite. La clé maître ne réside jamais dans la base qu'elle protège : elle est scellée par le magasin de secrets du système d'exploitation via `safeStorage` (DPAPI sous Windows, Trousseau sous macOS, libsecret sous Linux) et n'est transmise au backend qu'au démarrage. Copier `database.sqlite` sur une autre machine ne suffit donc pas à en extraire les secrets. Les bases antérieures sont migrées automatiquement au premier lancement.
-
-9. **Journaux expurgés par défaut** *(v1.40.2)* : le moteur de détection de commandes journalisait le texte intégral des messages WhatsApp et le nom des contacts, dans un fichier que le gabarit de signalement de bug demande justement de joindre aux issues publiques. Seules la longueur du message et l'initiale du contact y figurent désormais. Relancer le backend avec `WACOPILOTE_LOG_MESSAGES=1` rétablit les traces complètes pour un diagnostic ponctuel.
+8. **Journaux expurgés par défaut** *(v1.40.2)* : le moteur de détection de commandes journalisait le texte intégral des messages WhatsApp et le nom des contacts, dans un fichier que le gabarit de signalement de bug demande justement de joindre aux issues publiques. Seules la longueur du message et l'initiale du contact y figurent désormais. Relancer le backend avec `WACOPILOTE_LOG_MESSAGES=1` rétablit les traces complètes pour un diagnostic ponctuel.
 
 **Limites connues, à corriger**
 
@@ -520,7 +496,6 @@ whatsapp-ai-saas/
 │   │   └── whatsapp/       → Sous-pages dédiées aux flux WhatsApp (Contacts, Orders, Segments)
 │   ├── services/           → Client API et authentification côté renderer
 │   └── store.js            → State management Zustand (store unique persisté)
-├── wordpress-plugin/       → Plugin WaCopilote Bridge (source + archive v2.0.0)
 ├── LICENSE                 → GNU AGPL-3.0
 ├── package.json            → Configuration du workspace racine & scripts npm
 ├── vite.config.js          → Configuration du bundler Vite 7
@@ -534,7 +509,8 @@ whatsapp-ai-saas/
 - [x] **Q1 2026** : Publication de WaCopilote v1.35.0 (Electron Desktop + Multi-LLM Gemini / NVIDIA NIM / Ollama).
 - [x] **Q2 2026** : Intégration du Studio Photo IA (Remplacement de fond produit) & Prospection Annuaire CI / GoAfrica.
 - [x] **Q3 2026** : **Passage en open source sous AGPL-3.0** (v1.36.0) et durcissement de la sécurité du backend local.
-- [x] **Q3 2026** : Chiffrement au repos des clés d'API et des identifiants WordPress (v1.37.0).
+- [x] **Q3 2026** : Chiffrement au repos des clés d'API et des jetons OAuth (v1.37.0).
+- [x] **Q3 2026** : Recentrage du produit sur la gestion multi-comptes WhatsApp — retrait complet du pont WordPress / WooCommerce (v1.49.0).
 - [ ] **Q3 2026** : Couverture de tests sur les scrapers, les adaptateurs LLM et les migrations de schéma.
 - [ ] **Q4 2026** : Support de WhatsApp Multi-Appareils Cloud API & fallback Baileys direct sans navigateur.
 - [ ] **2027** : Assistant IA vocal WhatsApp (transcription & réponse vocale temps réel) et version Web SaaS synchronisée.
@@ -613,8 +589,6 @@ Ce programme est distribué dans l'espoir qu'il sera utile, mais SANS AUCUNE
 GARANTIE ; sans même la garantie implicite de QUALITÉ MARCHANDE ou d'ADÉQUATION
 À UN USAGE PARTICULIER. Voir la GNU Affero General Public License pour plus de détails.
 ```
-
-**Exception :** le plugin `wordpress-plugin/wacopilote-bridge/` reste sous **GPL-2.0-or-later**, comme l'exige l'écosystème WordPress. La clause « or later » le rend compatible avec l'AGPL-3.0 du reste du dépôt.
 
 **Licence commerciale.** L'AGPL impose de publier le code de toute version modifiée que vous redistribuez ou exposez comme service. Si votre contexte l'interdit — intégration dans une solution propriétaire, revente en marque blanche — écrivez-nous pour une licence commerciale.
 

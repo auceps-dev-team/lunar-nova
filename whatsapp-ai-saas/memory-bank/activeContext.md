@@ -1,5 +1,12 @@
 # Active Context: WaCopilote
 
+- **v1.49.0** — Retrait du module WordPress & recentrage produit (+0.1.0) :
+  - **Périmètre supprimé** : `backend/routes/wordpress.js`, `backend/services/wordpressService.js`, `backend/agents/personas/wordpress_agent.js`, `src/pages/WordPressBridge.jsx`, `src/components/wordpress/` (9 composants), `wordpress-plugin/` (plugin GPL-2.0 + archive v2.0.0) et les deux documents de conception du pont dans `docs/`.
+  - **Points de raccordement fermés** : montage `/api/wp` (et le middleware `multer` qui ne servait qu'à lui — dépendance désinstallée), 7 outils MCP (`create_product_proposal` + les 6 `wordpress_*`, soit 40 → 33), commande CLI `wordpress`, route `/wordpress` et entrée de barre latérale, 127 clés i18n par langue (× 4).
+  - **Migration de schéma v9** : `DROP TABLE wp_pending_actions` puis `wp_connections`. Les tables ne sont pas seulement retirées du schéma de création — elles sont supprimées des bases existantes, car elles contenaient les mots de passe d'application des sites clients. La migration v6 (colonnes App Password) disparaît du code : son numéro reste consommé pour ne pas rejouer de migration sur les bases installées.
+  - **Persona restant à ne pas confondre** : `copywriter` s'appelle aussi « Jarvis » (SDR Senior) et n'a rien à voir avec le pont. Seul « Jarvis WP » (`wordpress_agent`) est parti — 27 → 26 personas.
+  - **Dépendances** : Electron 40.10.6 → **41.10.7** (Chromium 146, correctif de l'advisory `allow-popups` via OpenURL) et puppeteer-core 24.43.1 → **25.11.0**. Les scrapers utilisent Playwright, pas Puppeteer : seul le pilotage CDP de WhatsApp Web (`connect({ browserURL })`) est concerné. **0 vulnérabilité** racine et backend.
+  - **Tests** : 28 suites au vert, 258 réussis / 3 ignorés. Les 2 tests disparus sont exactement les deux cas WordPress ; `dbMigrations` vérifie désormais que `wp_connections`/`wp_pending_actions` sont **absentes** après `initDB()`, et le test de résilience de session MCP s'appuie sur `prospect_leads` au lieu de `wordpress_propose_action`.
 - **v1.48.5** — Correctif SQLite ON CONFLICT (Contacts / Prospection & Leads Google Maps) (+0.0.1) :
   - **Index Unique Partiel & Migration v8 (`backend/db.js`)** :
     - Résolution de l'erreur `SQLITE_ERROR: ON CONFLICT clause does not match any PRIMARY KEY or UNIQUE constraint` survenue lors de l'import en masse de leads Google Maps / prospection.

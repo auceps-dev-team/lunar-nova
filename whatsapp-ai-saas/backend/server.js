@@ -16,7 +16,7 @@ const db = require('./db');
 const app = express();
 const PORT = process.env.PORT || process.env.BACKEND_PORT || 3000;
 // Boucle locale uniquement : sans cet hôte explicite, Node écoute sur 0.0.0.0 et
-// expose toute l'API (clés LLM, contacts, identifiants WordPress) au réseau local.
+// expose toute l'API (clés LLM, contacts, historiques WhatsApp) au réseau local.
 const HOST = process.env.BACKEND_HOST || '127.0.0.1';
 
 // Update process.env if main process sends new secrets (electron-store)
@@ -95,19 +95,6 @@ app.use('/api/prospection', heavyLimiter, prospectionRouter);
 // --- Agentic Pipeline (Prospection -> Contacts -> Antoine -> Clarisse/Kanban) ---
 const pipelineRouter = require('./routes/pipeline');
 app.use('/api/pipeline', pipelineRouter);
-
-// --- WordPress Bridge (Phase 30) ---
-const wordpressRouter = require('./routes/wordpress');
-const multer = require('multer');
-const multerMemory = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
-// Apply multer only on the media upload route (all other wp routes use JSON)
-app.use('/api/wp', (req, res, next) => {
-    if (req.path.endsWith('/media/upload') && req.method === 'POST') {
-        return multerMemory.single('file')(req, res, next);
-    }
-    next();
-});
-app.use('/api/wp', wordpressRouter);
 
 const documentsRouter = require('./routes/documents');
 app.use('/api/documents', documentsRouter);

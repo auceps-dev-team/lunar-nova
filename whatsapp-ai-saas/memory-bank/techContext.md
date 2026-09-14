@@ -34,7 +34,6 @@
 │   └── services/       # API Client services
 ├── public/             # Static assets (Logos, icons, default assets)
 ├── docs/               # Technical documentation
-├── wordpress-plugin/   # WordPress bridge plugin
 └── package.json        # Root workspace configuration & scripts
 ```
 

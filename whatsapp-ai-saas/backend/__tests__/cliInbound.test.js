@@ -64,12 +64,11 @@ describe('bin/wacopilote.js — Point d\'entrée CLI Inbound', { timeout: 30000 
         expect(stdout).toContain('pipeline');
         expect(stdout).toContain('documents');
         expect(stdout).toContain('photo');
-        expect(stdout).toContain('wordpress');
         expect(stdout).toContain('quotes');
         expect(stdout).toContain('instances');
     });
 
-    it('list-agents --json renvoie la liste complète des 27 personas', async () => {
+    it('list-agents --json renvoie la liste complète des 26 personas', async () => {
         const { code, stdout } = await runCli(['list-agents', '--json']);
         expect(code).toBe(0);
         const jsonStart = stdout.indexOf('{');

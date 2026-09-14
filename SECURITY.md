@@ -36,7 +36,7 @@ Ce que nous protégeons, et comment :
 | Lecture de l'API locale par un autre programme de la machine | Token d'authentification requis sur toutes les routes |
 | Vol de la base par copie de fichier | Secrets chiffrés en AES-256-GCM, clé maître scellée par le magasin du système |
 | Exfiltration via le renderer | `contextIsolation` activé, `nodeIntegration` désactivé, passerelle IPC restreinte |
-| Écriture non désirée sur un site WordPress | L'agent IA ne peut que proposer ; l'exécution exige une approbation humaine |
+| Envoi non désiré d'un message WhatsApp | Le CLI et le MCP ouvrent la conversation sur une instance authentifiée ; l'envoi reste une action humaine |
 
 Les limites connues sont documentées dans la section Sécurité du
 [README](whatsapp-ai-saas/README.md#-sécurité--audit-de-protection).

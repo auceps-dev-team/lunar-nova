@@ -271,25 +271,10 @@ async function runInitDB() {
             "ALTER TABLE ai_agents ADD COLUMN model_override VARCHAR(100) DEFAULT NULL"
         ]);
 
-        // WordPress Bridge (Phase 30) — v2.0 uses App Passwords
-        await client.query(`
-            CREATE TABLE IF NOT EXISTS wp_connections (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                site_url TEXT NOT NULL,
-                wp_username TEXT NOT NULL DEFAULT '',
-                app_password TEXT NOT NULL DEFAULT '',
-                token TEXT DEFAULT '',
-                is_active INTEGER DEFAULT 1,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-        `);
-
-        // Migration v2.0: add App Password columns to existing tables
-        await migrateTo(6, [
-            "ALTER TABLE wp_connections ADD COLUMN wp_username TEXT NOT NULL DEFAULT ''",
-            "ALTER TABLE wp_connections ADD COLUMN app_password TEXT NOT NULL DEFAULT ''"
-        ]);
+        // Note : la version 6 du schéma créait les tables du pont WordPress,
+        // retiré en v1.49.0 (voir la migration 9 qui les supprime). Le numéro
+        // reste consommé pour ne pas rejouer une migration sur les bases
+        // existantes.
 
         // Phase 32: Agentic Pipeline (Prospection -> Contacts -> Antoine -> Clarisse/Kanban)
         await client.query(`
@@ -314,17 +299,6 @@ async function runInitDB() {
                 stage VARCHAR(50) DEFAULT 'new',
                 draft_message TEXT,
                 notes TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-        `);
-
-        await client.query(`
-            CREATE TABLE IF NOT EXISTS wp_pending_actions (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                action_type VARCHAR(50) NOT NULL,
-                payload TEXT NOT NULL,
-                status VARCHAR(50) DEFAULT 'pending_review',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
@@ -376,6 +350,15 @@ async function runInitDB() {
         await migrateTo(8, [
             "DELETE FROM wa_contacts WHERE phone IS NOT NULL AND phone != '' AND id NOT IN (SELECT MAX(id) FROM wa_contacts WHERE phone IS NOT NULL AND phone != '' GROUP BY phone)",
             "CREATE UNIQUE INDEX IF NOT EXISTS idx_wa_contacts_phone_unique ON wa_contacts(phone) WHERE phone IS NOT NULL AND phone != ''"
+        ]);
+
+        // Migration v9 : retrait du pont WordPress. Les tables sont supprimées
+        // plutôt que laissées en place — elles contenaient les mots de passe
+        // d'application des sites clients, qu'il n'y a plus aucune raison de
+        // conserver une fois la fonctionnalité retirée.
+        await migrateTo(9, [
+            "DROP TABLE IF EXISTS wp_pending_actions",
+            "DROP TABLE IF EXISTS wp_connections"
         ]);
 
         // Doit tourner après la création de toutes les tables, et avant que la
@@ -502,20 +485,6 @@ async function encryptLegacySecrets(client) {
             row.setting_key
         ]);
         migrated++;
-    }
-
-    try {
-        const connections = await client.query('SELECT id, app_password FROM wp_connections');
-        for (const row of connections.rows) {
-            if (!row.app_password || isEncrypted(row.app_password)) continue;
-            await client.query('UPDATE wp_connections SET app_password = $1 WHERE id = $2', [
-                encrypt(row.app_password),
-                row.id
-            ]);
-            migrated++;
-        }
-    } catch {
-        // Table absente sur une base très ancienne : rien à migrer.
     }
 
     if (migrated > 0) {

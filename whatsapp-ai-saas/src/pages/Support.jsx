@@ -48,6 +48,16 @@ const Support = () => {
 
     const changelog = [
         {
+            version: 'v1.49.0',
+            date: '2026-09-14',
+            changes: [
+                'Retrait du module WordPress / WooCommerce. La page Pont WordPress, l\'agent Jarvis WP, le plugin de site et les commandes associées disparaissent. WaCopilote se recentre sur ce pour quoi il est utilisé : gérer plusieurs comptes WhatsApp et la communication qui va avec',
+                'Vos données WordPress sont effacées, pas laissées en place : les sites enregistrés et leurs mots de passe d\'application sont supprimés de la base locale au premier démarrage de cette version. C\'est irréversible — si vous utilisiez encore le pont, notez vos identifiants avant de mettre à jour',
+                'Sécurité — Electron passe en 41.10.7 (moteur Chromium 146) et Puppeteer en 25.11.0. Les 4 dernières vulnérabilités connues des dépendances sont corrigées : le décompte tombe à zéro, côté application comme côté service',
+                'Allègement — l\'interface embarque 127 libellés et un écran de moins dans chacune des 4 langues ; le serveur MCP expose 33 outils au lieu de 40, et la ligne de commande une commande de moins'
+            ]
+        },
+        {
             version: 'v1.48.6',
             date: '2026-09-14',
             changes: [

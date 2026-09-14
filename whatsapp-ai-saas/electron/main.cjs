@@ -29,8 +29,8 @@ function loadOrCreateApiToken(baseDir) {
 let apiToken = null;
 
 /**
- * Clé maître servant à chiffrer les secrets stockés en base (clés d'API, mots de
- * passe d'application WordPress).
+ * Clé maître servant à chiffrer les secrets stockés en base (clés d'API des
+ * fournisseurs LLM, jetons OAuth).
  *
  * Elle est scellée par safeStorage, qui s'appuie sur le magasin de secrets du
  * système : DPAPI sous Windows, Trousseau sous macOS, libsecret sous Linux. La

@@ -1,6 +1,10 @@
 # Project Progress: WaCopilote
 
 ## Completed Milestones
+- [x] **Retrait du module WordPress & recentrage produit (v1.49.0, 2026-09-14)** :
+  - Suppression complète du pont WordPress/WooCommerce (routes, service, persona, page, composants, plugin, outils MCP, commande CLI, i18n) ; migration de schéma v9 supprimant `wp_connections` et `wp_pending_actions` des bases existantes.
+  - Electron 41.10.7 et puppeteer-core 25.11.0 : **0 vulnérabilité** connue sur les deux espaces de travail (23 au début du cycle).
+  - 28 suites au vert (258 réussis, 3 ignorés), ESLint 0, build Vite OK.
 - [x] Initial release (v1.35.0) of WaCopilote Electron Desktop App.
 - [x] **Correctif SQLite ON CONFLICT & Leads Import (v1.48.5, 2026-08-31)** :
   - Index unique partiel `idx_wa_contacts_phone_unique` sur `wa_contacts(phone)` et migration v8.
