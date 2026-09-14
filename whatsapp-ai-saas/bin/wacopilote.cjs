@@ -71,7 +71,7 @@ function printHelp() {
   node bin/wacopilote.cjs <commande> [options]
 
 \x1b[1mCOMMANDES DISPONIBLES :\x1b[0m
-  \x1b[36mlist-agents\x1b[0m                      Lister les 27 personas IA configurés
+  \x1b[36mlist-agents\x1b[0m                      Lister les 26 personas IA configurés
   \x1b[36mrun\x1b[0m                              Exécuter un agent IA avec un prompt
   \x1b[36mprospect search\x1b[0m                  Recherche de leads ad-hoc (Google Maps, GoAfrica, Annuaire CI)
   \x1b[36mpipeline create|prospect|save-contacts|generate-messages|organize|cards|run\x1b[0m
@@ -79,8 +79,6 @@ function printHelp() {
   \x1b[36mdocuments list|get|create|update|delete\x1b[0m
                                    Gérer les documents texte générés par l'IA
   \x1b[36mphoto generate\x1b[0m                  Générer une photo produit/mannequin (persona + image)
-  \x1b[36mwordpress propose|actions|approve|reject|products|orders|stats\x1b[0m
-                                   Gouvernance HITL WordPress (validation humaine obligatoire)
   \x1b[36mquotes list|get|create|update|delete|export-pdf\x1b[0m
                                    Gérer les devis (export PDF autonome, via Chromium headless)
   \x1b[36mcontacts list|get|create|update|delete|assign\x1b[0m
@@ -119,8 +117,6 @@ function printHelp() {
   $ wacopilote pipeline cards --run-id 3 --json
   $ wacopilote documents create --title "Argumentaire" --content "..." --json
   $ wacopilote photo generate --agent photoshoot --prompt "Robe d'été rouge" --out ./photo.png
-  $ wacopilote wordpress propose --connection 1 --prompt "Crée un article sur nos soldes d'été"
-  $ wacopilote wordpress approve --connection 1 --action 42
   $ wacopilote quotes create --client-name "Boutique X" --data '{"items":[{"description":"Robe","qty":2,"price":15000}]}'
   $ wacopilote quotes export-pdf 5 --out ./devis-5.pdf
   $ wacopilote instances list --json
@@ -130,7 +126,7 @@ function printHelp() {
 }
 
 /**
- * Commande `list-agents` : Liste l'ensemble des 27 personas.
+ * Commande `list-agents` : Liste l'ensemble des 26 personas.
  */
 async function handleListAgents(args) {
     const isJson = args.includes('--json');
@@ -603,89 +599,6 @@ async function handlePhoto(args) {
 }
 
 /**
- * Commande `wordpress` : gouvernance HITL (propose -> approve/reject) + lecture seule.
- * Toute écriture réelle sur le site WordPress du client exige une commande
- * `approve` explicite, exécutée par un humain — jamais automatique.
- */
-async function handleWordpress(args) {
-    const subCommand = args[0];
-    const opts = parseNamedArgs(args.slice(1));
-    const isJson = opts.json === true;
-    const connectionId = opts.connection;
-
-    if (!connectionId && subCommand !== 'help') {
-        console.error(`\x1b[31mErreur : --connection <id> est obligatoire.\x1b[0m`);
-        process.exit(1);
-    }
-
-    await db.initDB();
-    const wordpressService = require('../backend/services/wordpressService');
-
-    try {
-        switch (subCommand) {
-            case 'propose': {
-                const prompt = opts.prompt || (await readStdin());
-                if (!prompt) {
-                    console.error(`\x1b[31mErreur : --prompt <texte> est obligatoire (ou via stdin).\x1b[0m`);
-                    process.exit(1);
-                }
-                const result = await wordpressService.proposeFromPrompt(connectionId, prompt);
-                printJsonOrError(isJson, result);
-                return;
-            }
-            case 'actions': {
-                const data = await wordpressService.listActions(connectionId, opts.status || 'pending_review');
-                printJsonOrError(isJson, { data });
-                return;
-            }
-            case 'approve': {
-                if (!opts.action) {
-                    console.error(`\x1b[31mErreur : --action <actionId> est obligatoire.\x1b[0m`);
-                    process.exit(1);
-                }
-                const data = await wordpressService.execute(connectionId, opts.action);
-                printJsonOrError(isJson, { data });
-                return;
-            }
-            case 'reject': {
-                if (!opts.action) {
-                    console.error(`\x1b[31mErreur : --action <actionId> est obligatoire.\x1b[0m`);
-                    process.exit(1);
-                }
-                const data = await wordpressService.reject(connectionId, opts.action);
-                printJsonOrError(isJson, { data });
-                return;
-            }
-            case 'products': {
-                const data = await wordpressService.listProducts(connectionId, opts);
-                printJsonOrError(isJson, { data });
-                return;
-            }
-            case 'orders': {
-                const data = await wordpressService.listOrders(connectionId, opts.limit || 15);
-                printJsonOrError(isJson, { data });
-                return;
-            }
-            case 'stats': {
-                const data = await wordpressService.getStats(connectionId);
-                printJsonOrError(isJson, { data });
-                return;
-            }
-            default:
-                console.error(`\x1b[31mSous-commande 'wordpress' inconnue : '${subCommand}'. Utilisez propose, actions, approve, reject, products, orders, stats.\x1b[0m`);
-                process.exit(1);
-        }
-    } catch (err) {
-        if (isJson) {
-            console.error(JSON.stringify({ success: false, error: err.message }, null, 2));
-        } else {
-            console.error(`\x1b[31mErreur WordPress : ${err.message}\x1b[0m`);
-        }
-        process.exit(1);
-    }
-}
-
-/**
  * Commande `quotes` : CRUD sur les devis + export PDF (Chromium headless
  * autonome, voir invoiceService.renderPdf).
  */
@@ -865,11 +778,6 @@ async function main() {
 
     if (command === 'photo') {
         await handlePhoto(rawArgs.slice(1));
-        return;
-    }
-
-    if (command === 'wordpress') {
-        await handleWordpress(rawArgs.slice(1));
         return;
     }
 

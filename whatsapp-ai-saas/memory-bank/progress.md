@@ -1,6 +1,10 @@
 # Project Progress: WaCopilote
 
 ## Completed Milestones
+- [x] **Retrait du module WordPress & recentrage produit (v1.49.0, 2026-09-14)** :
+  - Suppression complète du pont WordPress/WooCommerce (routes, service, persona, page, composants, plugin, outils MCP, commande CLI, i18n) ; migration de schéma v9 supprimant `wp_connections` et `wp_pending_actions` des bases existantes.
+  - Electron 41.10.7 et puppeteer-core 25.11.0 : **0 vulnérabilité** connue sur les deux espaces de travail (23 au début du cycle).
+  - 28 suites au vert (258 réussis, 3 ignorés), ESLint 0, build Vite OK.
 - [x] Initial release (v1.35.0) of WaCopilote Electron Desktop App.
 - [x] **Correctif SQLite ON CONFLICT & Leads Import (v1.48.5, 2026-08-31)** :
   - Index unique partiel `idx_wa_contacts_phone_unique` sur `wa_contacts(phone)` et migration v8.
@@ -73,7 +77,7 @@
   - C1 — Observabilité : `agentFallbackRouter.js` remonte désormais la dernière ligne de `stderr` du binaire externe (bornée à 300 caractères) dans l'erreur du canal CLI — auparavant capturée puis jetée, la raison réelle (authentification, workspace trust, version Node) n'apparaissait pas dans les journaux du SmartFallback.
   - C2 — Robustesse clé maître : timeout du helper de déchiffrement safeStorage porté de 5 s à 15 s (`secretStore.js`) — au démarrage à froid (antivirus, disque occupé), le dépassement silencieux provoquait la régénération de la clé maître, rendant tous les secrets illisibles (« Unsupported state or unable to authenticate data ») jusqu'à ressaisie.
   - C3 — Workspace Trust : `GEMINI_CLI_TRUST_WORKSPACE=true` injecté dans l'environnement du **seul canal gemini** (variable d'env, pas `--skip-trust` — rejeté par gemini-cli 0.38.x comme argument inconnu, issue openclaw #74749 ; durcissement d'origine : GHSA-wpqr-6v78-jr5g, CVSS 10.0). Depuis gemini-cli 0.39.1+, le mode headless `-p` refuse un cwd non trusté (`FatalUntrustedWorkspaceError`) même avec clé valide — le repli tombait systématiquement sur Claude.
-  - Racine diagnostiquée en croisant les logs `start:all` de l'utilisateur : clé maître régénérée → `gemini_api_key` indéchiffrable → GEMINI_API_KEY non injectée + verrou trust → double échec gemini → secours Claude. Détail complet et correctifs restants (C4-C7) : `PLAN_CORRECTIFS_2026-08-31.md`.
+  - Racine diagnostiquée en croisant les logs `start:all` de l'utilisateur : clé maître régénérée → `gemini_api_key` indéchiffrable → GEMINI_API_KEY non injectée + verrou trust → double échec gemini → secours Claude. Les correctifs restants C4-C7 ont été livrés en v1.48.3 et v1.48.4 ; le plan de correctifs qui les décrivait a été retiré du dépôt avec les autres documents d’audit en v1.49.0.
   - Tests T6/T7 (`agentFallbackStrategies.test.js`) : remontée du stderr d'échec + présence du trust pour gemini, absence pour claude (scoping).
   - Version 1.48.2 via `bump_version.sh` (package.json ×2 + lockfiles, README ×2, index.html, installer.iss, gabarit bug) ; changelog Support.jsx v1.48.2 ; compteur README racine 253 tests.
   - Suite : **28 fichiers, 253 tests : 250 réussis, 0 échec, 3 skips conditionnels** ; ESLint 0/0 ; build Vite OK (8,1 s).

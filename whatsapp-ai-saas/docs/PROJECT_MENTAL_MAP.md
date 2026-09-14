@@ -1,7 +1,7 @@
 # 🧠 Carte Mentale & Architecture Globale : WaCopilote (v1.45.0)
 
 ## 📌 Vue d'Ensemble
-**WaCopilote** est une suite logicielle SaaS Desktop & Agentique d'entreprise (Electron 40 + React 19 + Node.js 20 Express) conçue pour automatiser les flux de vente et de prospection WhatsApp, la génération d'images/catalogue IA, la facturation/devis, le bridge WordPress HITL (Human-in-the-Loop) et le pilotage bidirectionnel par agents IA externes (Claude Code, Cursor, Antigravity) via CLI et MCP (Model Context Protocol).
+**WaCopilote** est une suite logicielle SaaS Desktop & Agentique d'entreprise (Electron 40 + React 19 + Node.js 20 Express) conçue pour automatiser les flux de vente et de prospection WhatsApp, la génération d'images/catalogue IA, la facturation/devis, la gestion multi-comptes WhatsApp et le pilotage bidirectionnel par agents IA externes (Claude Code, Cursor, Antigravity) via CLI et MCP (Model Context Protocol).
 
 ---
 
@@ -37,14 +37,13 @@ mindmap
         prospectionService (Google Maps, GoAfrica, Annuaire CI)
         documentsService (CRUD ai_documents)
         invoiceService (CRUD quotes, Export PDF Headless)
-        wordpressService (HITL Propose, Approve, Reject, Stats)
         waInstancesService (Miroir SQLite des instances)
         externalAgentRunner (Sandbox CLI spawn sécurisé)
     Pilotage Externe & Agentique
       CLI Inbound bin/wacopilote.cjs
         list-agents, run --agent
         prospect search, pipeline run --auto
-        documents, photo generate, wordpress HITL
+        documents, photo generate
         quotes create/export-pdf, instances
       Serveur MCP Stdio backend/mcp/wacopiloteMcpServer.js
         JSON-RPC 2.0 Stdio
@@ -87,12 +86,11 @@ flowchart TB
             SRV_PROS["prospectionService"]
             SRV_DOCS["documentsService"]
             SRV_INV["invoiceService (Playwright Headless PDF)"]
-            SRV_WP["wordpressService (HITL Gouvernance)"]
             SRV_WA["waInstancesService"]
             SRV_CLI["externalAgentRunner (Whitelisted Spawn)"]
         end
 
-        subgraph AI_GATEWAY["🧠 Passerelle Multi-LLM (27 Personas)"]
+        subgraph AI_GATEWAY["🧠 Passerelle Multi-LLM (26 Personas)"]
             GEMINI["Google Gemini API"]
             OPENROUTER["OpenRouter API"]
             NVIDIA["NVIDIA NIM"]
@@ -102,9 +100,8 @@ flowchart TB
     end
 
     subgraph DATA_LAYER["💾 Persistance & Automatisation"]
-        SQLITE[("SQLite 3 (database.sqlite)\nMigrations v1->v7 + SecretStore")]
+        SQLITE[("SQLite 3 (database.sqlite)\nMigrations v1->v9 + SecretStore")]
         REDIS[("Redis Cache / Rate Limiting")]
-        WP_REMOTE["🌐 Site WordPress Client (Plugin Bridge)"]
         SCRAPERS["🔍 Scrapers (Google Maps, GoAfrica, Annuaire CI)"]
     end
 
@@ -122,7 +119,6 @@ flowchart TB
     SERVICES_LAYER --> AI_GATEWAY
     SERVICES_LAYER --> SQLITE
     SERVICES_LAYER --> REDIS
-    SERVICES_LAYER --> WP_REMOTE
     SERVICES_LAYER --> SCRAPERS
 ```
 
@@ -143,4 +139,3 @@ flowchart TB
 | `electron/` | Gestion du cycle de vie de l'application desktop, remote debugging CDP et updater. |
 | `src/` | Interface utilisateur React 19, Zustand store, composants Radix/Tailwind, i18n FR/EN/ES/AR. |
 | `docs/` | Documentation technique, schémas d'architecture et spécifications des ponts. |
-| `wordpress-plugin/` | Plugin WordPress officiel pour la synchronisation e-commerce et le bridge HITL. |

@@ -178,13 +178,13 @@ const CliAgentBridgeSettings = () => {
                     </div>
 
                     <p className="text-xs text-gray-600 dark:text-gray-400 mb-4 leading-relaxed">
-                        {t('inboundCliExplanation') || 'Le binaire `wacopilote` permet d\'invoquer les 27 agents directement depuis n\'importe quel terminal, script bash/powershell, ou d\'intégrer WaCopilote dans vos outils agentiques via le standard MCP (Model Context Protocol).'}
+                        {t('inboundCliExplanation') || 'Le binaire `wacopilote` permet d\'invoquer les 26 agents directement depuis n\'importe quel terminal, script bash/powershell, ou d\'intégrer WaCopilote dans vos outils agentiques via le standard MCP (Model Context Protocol).'}
                     </p>
 
                     {/* Commandes Clés */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
                         {[
-                            { id: 'list', title: t('cmdListTitle') || 'Lister les 27 agents', cmd: 'node bin/wacopilote.cjs list-agents' },
+                            { id: 'list', title: t('cmdListTitle') || 'Lister les 26 agents', cmd: 'node bin/wacopilote.cjs list-agents' },
                             { id: 'run', title: t('cmdRunTitle') || 'Appeler un agent', cmd: 'node bin/wacopilote.cjs run --agent copywriter --prompt "Ton prompt ici"' },
                             { id: 'pipe', title: t('cmdPipeTitle') || 'Piping Unix / Fichier', cmd: 'cat brief.txt | node bin/wacopilote.cjs run --agent outbound_strategist --json' },
                             { id: 'mcp', title: t('cmdMcpTitle') || 'Serveur MCP stdio', cmd: 'node bin/wacopilote.cjs mcp' }

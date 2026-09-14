@@ -213,7 +213,7 @@
 
       <div class="badges">
         <span class="badge accent">Open source — AGPL-3.0</span>
-        <span class="badge">Version 1.48.4</span>
+        <span class="badge">Version 1.49.0</span>
         <span class="badge">Windows · macOS · Linux</span>
         <span class="badge">🇨🇮 Conçu à Abidjan</span>
       </div>
@@ -274,9 +274,9 @@
           <p>Extraction de leads depuis Google Places, Annuaire CI et GoAfrica, convertis en contacts en un clic.</p>
         </div>
         <div class="card">
-          <h3>🌐 Pont WordPress &amp; WooCommerce</h3>
-          <p>Publication de produits et d'articles, avec approbation humaine obligatoire : l'IA propose, un
-            administrateur valide.</p>
+          <h3>👥 Gestion multi-comptes</h3>
+          <p>Plusieurs comptes WhatsApp dans une même fenêtre, chacun dans sa session isolée, avec ses
+            contacts, ses segments et son agent.</p>
         </div>
         <div class="card">
           <h3>📊 Observabilité des coûts</h3>
@@ -378,14 +378,13 @@ npm run start:all</code></pre>
           « configurée / non configurée ».</li>
         <li>Le renderer Electron est isolé (<code>contextIsolation</code> activé, <code>nodeIntegration</code>
           désactivé) et n'expose qu'une liste explicite de fonctions.</li>
-        <li>Sur WordPress, l'agent IA ne peut que <em>proposer</em> : toute écriture exige l'approbation d'un
-          administrateur.</li>
       </ul>
 
       <div class="callout honest" style="margin-top:24px">
-        <p><strong>Ce qui n'est pas encore fait.</strong> Les clés d'API et les mots de passe d'application
-          WordPress sont encore stockés en clair dans la base SQLite locale. Le chiffrement au repos est la
-          prochaine priorité, et c'est écrit noir sur blanc dans le README plutôt que passé sous silence.</p>
+        <p><strong>Ce qui n'est pas encore fait.</strong> La couverture de tests reste faible sur une grande
+          partie du code, et si le magasin de secrets du système est indisponible (Linux sans keyring), la clé
+          maître retombe sur un fichier local. C'est écrit noir sur blanc dans le README plutôt que passé sous
+          silence.</p>
       </div>
     </div>
   </section>

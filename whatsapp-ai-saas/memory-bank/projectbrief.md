@@ -9,7 +9,7 @@ WaCopilote is an enterprise-grade Desktop application (Electron + React + Node.j
 3. **AI Photo Studio & Catalog Management**: Virtual photo shoots, product image background removal, inpainting, and automated catalog structuring.
 4. **Lead Scraping & Directory Mining**: Web scrapers for business directories (e.g. Annuaire CI, GoAfrica) and Google Places integration.
 5. **Observability & Dashboard**: Real-time token usage, cost tracking, latency metrics, and agent performance tracking.
-6. **WordPress & WooCommerce Integration**: Synchronize catalog data and agent actions directly with WordPress sites.
+6. **Multi-Account WhatsApp Management**: Run several WhatsApp accounts side by side, each in its own isolated session, with its own contacts, segments and agent.
 
 ## Target Audience
 - African & Global E-Commerce Businesses & Merchants

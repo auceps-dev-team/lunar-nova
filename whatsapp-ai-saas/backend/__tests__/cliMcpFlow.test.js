@@ -132,7 +132,7 @@ describe('Flux CLI/MCP bout-en-bout (subprocess réels)', { timeout: 60000 }, ()
         const names = response.result.tools.map(t => t.name);
         expect(names.length).toBeGreaterThanOrEqual(30);
         for (const domain of ['prospect_leads', 'run_pipeline', 'create_document', 'generate_photo',
-            'wordpress_propose_action', 'create_quote', 'list_instances']) {
+            'create_quote', 'list_instances']) {
             expect(names).toContain(domain);
         }
     });
@@ -228,9 +228,9 @@ describe('Flux CLI/MCP bout-en-bout (subprocess réels)', { timeout: 60000 }, ()
         await session.callTool('delete_contact', { id: contact.id });
     });
 
-    it('wordpress_propose_action échoue proprement (sans planter la session) sur une connexion inconnue', async () => {
+    it('un outil qui rejette ses arguments échoue proprement, sans planter la session', async () => {
         await expect(
-            session.callTool('wordpress_propose_action', { connectionId: 999999, prompt: 'test' })
+            session.callTool('prospect_leads', {})
         ).rejects.toThrow();
 
         // La session doit rester utilisable après une erreur d'outil.

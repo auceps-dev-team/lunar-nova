@@ -1,7 +1,7 @@
 {
   "name": "wacopilote",
   "private": true,
-  "version": "1.48.5",
+  "version": "1.49.0",
   "license": "AGPL-3.0-only",
   "main": "electron/main.cjs",
   "type": "module",
@@ -64,7 +64,7 @@
     "autoprefixer": "^10.4.27",
     "concurrently": "^9.2.1",
     "cross-env": "^10.1.0",
-    "electron": "^40.6.1",
+    "electron": "^41.10.7",
     "electron-builder": "^26.8.1",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",

@@ -9,7 +9,7 @@ const pkg = require('../../package.json');
 const MCP_TOOLS = [
     {
         name: 'list_agents',
-        description: 'Lister l\'ensemble des 27 personas IA configurés dans WaCopilote avec leurs rôles, compétences et formats attendus.',
+        description: 'Lister l\'ensemble des 26 personas IA configurés dans WaCopilote avec leurs rôles, compétences et formats attendus.',
         inputSchema: {
             type: 'object',
             properties: {},
@@ -54,20 +54,6 @@ const MCP_TOOLS = [
                 }
             },
             required: []
-        }
-    },
-    {
-        name: 'create_product_proposal',
-        description: 'Créer une proposition de fiche produit WooCommerce / WordPress avec validation humaine (HITL).',
-        inputSchema: {
-            type: 'object',
-            properties: {
-                title: { type: 'string', description: 'Nom du produit' },
-                price: { type: 'string', description: 'Prix du produit' },
-                description: { type: 'string', description: 'Description complète ou argumentaire' },
-                category: { type: 'string', description: 'Catégorie du produit' }
-            },
-            required: ['title', 'price', 'description']
         }
     },
     {
@@ -235,78 +221,6 @@ const MCP_TOOLS = [
                 model: { type: 'string', description: 'Modèle image optionnel spécifique' }
             },
             required: ['prompt']
-        }
-    },
-    {
-        name: 'wordpress_propose_action',
-        description: 'Analyser un prompt en langage naturel (persona wordpress_agent) et soumettre les actions WordPress résultantes en attente de validation humaine (HITL) — jamais exécuté automatiquement.',
-        inputSchema: {
-            type: 'object',
-            properties: {
-                connectionId: { type: 'number', description: 'Identifiant de la connexion WordPress' },
-                prompt: { type: 'string', description: "Requête en langage naturel (ex: 'crée une fiche produit pour...')" }
-            },
-            required: ['connectionId', 'prompt']
-        }
-    },
-    {
-        name: 'wordpress_list_actions',
-        description: "Lister les propositions d'action WordPress en attente (ou selon un autre statut).",
-        inputSchema: {
-            type: 'object',
-            properties: {
-                connectionId: { type: 'number', description: 'Identifiant de la connexion WordPress' },
-                status: { type: 'string', description: "Statut à filtrer (défaut: 'pending_review')" }
-            },
-            required: ['connectionId']
-        }
-    },
-    {
-        name: 'wordpress_approve_action',
-        description: "Approuver et exécuter une proposition d'action WordPress en attente. Exige que ce tool soit invoqué explicitement par un humain — aucune approbation automatique.",
-        inputSchema: {
-            type: 'object',
-            properties: {
-                connectionId: { type: 'number', description: 'Identifiant de la connexion WordPress' },
-                actionId: { type: 'number', description: "Identifiant de l'action à approuver" }
-            },
-            required: ['connectionId', 'actionId']
-        }
-    },
-    {
-        name: 'wordpress_reject_action',
-        description: "Rejeter une proposition d'action WordPress en attente, sans l'exécuter.",
-        inputSchema: {
-            type: 'object',
-            properties: {
-                connectionId: { type: 'number', description: 'Identifiant de la connexion WordPress' },
-                actionId: { type: 'number', description: "Identifiant de l'action à rejeter" }
-            },
-            required: ['connectionId', 'actionId']
-        }
-    },
-    {
-        name: 'wordpress_list_products',
-        description: 'Lister les produits WooCommerce du site WordPress connecté (lecture seule).',
-        inputSchema: {
-            type: 'object',
-            properties: {
-                connectionId: { type: 'number', description: 'Identifiant de la connexion WordPress' },
-                search: { type: 'string', description: 'Filtre de recherche optionnel' }
-            },
-            required: ['connectionId']
-        }
-    },
-    {
-        name: 'wordpress_list_orders',
-        description: 'Lister les commandes WooCommerce récentes du site WordPress connecté (lecture seule).',
-        inputSchema: {
-            type: 'object',
-            properties: {
-                connectionId: { type: 'number', description: 'Identifiant de la connexion WordPress' },
-                limit: { type: 'number', description: 'Nombre maximal de résultats (défaut: 15)' }
-            },
-            required: ['connectionId']
         }
     },
     {
@@ -546,21 +460,6 @@ async function handleToolCall(name, args) {
             return { orders: result.rows || [], count: result.rows ? result.rows.length : 0 };
         }
 
-        case 'create_product_proposal': {
-            await db.initDB();
-            const { title, price, description, category } = args || {};
-            const actionPayload = JSON.stringify({ title, price, description, category: category || 'Général' });
-            const result = await db.pool.query(
-                `INSERT INTO wp_pending_actions (action_type, payload, status) VALUES ($1, $2, 'pending_review') RETURNING id`,
-                ['create_product', actionPayload]
-            );
-            return {
-                success: true,
-                message: 'Proposition de produit enregistrée avec succès en attente de validation humaine (HITL).',
-                actionId: result.rows && result.rows[0] ? result.rows[0].id : null
-            };
-        }
-
         case 'prospect_leads': {
             const { query, source, zone, quantity } = args || {};
             if (!query) {
@@ -697,60 +596,6 @@ async function handleToolCall(name, args) {
                 throw new Error(generationResponse.error);
             }
             return { agent: agentId, structuredPrompt, imageBytes: generationResponse.imageBytes };
-        }
-
-        case 'wordpress_propose_action': {
-            const { connectionId, prompt } = args || {};
-            if (!connectionId || !prompt) {
-                throw new Error("Les arguments 'connectionId' et 'prompt' sont obligatoires.");
-            }
-            await db.initDB();
-            const wordpressService = require('../services/wordpressService');
-            return await wordpressService.proposeFromPrompt(connectionId, prompt);
-        }
-
-        case 'wordpress_list_actions': {
-            const { connectionId, status } = args || {};
-            if (!connectionId) throw new Error("L'argument 'connectionId' est obligatoire.");
-            await db.initDB();
-            const wordpressService = require('../services/wordpressService');
-            return { data: await wordpressService.listActions(connectionId, status || 'pending_review') };
-        }
-
-        case 'wordpress_approve_action': {
-            const { connectionId, actionId } = args || {};
-            if (!connectionId || !actionId) {
-                throw new Error("Les arguments 'connectionId' et 'actionId' sont obligatoires.");
-            }
-            await db.initDB();
-            const wordpressService = require('../services/wordpressService');
-            return { data: await wordpressService.execute(connectionId, actionId) };
-        }
-
-        case 'wordpress_reject_action': {
-            const { connectionId, actionId } = args || {};
-            if (!connectionId || !actionId) {
-                throw new Error("Les arguments 'connectionId' et 'actionId' sont obligatoires.");
-            }
-            await db.initDB();
-            const wordpressService = require('../services/wordpressService');
-            return { data: await wordpressService.reject(connectionId, actionId) };
-        }
-
-        case 'wordpress_list_products': {
-            const { connectionId, ...query } = args || {};
-            if (!connectionId) throw new Error("L'argument 'connectionId' est obligatoire.");
-            await db.initDB();
-            const wordpressService = require('../services/wordpressService');
-            return { data: await wordpressService.listProducts(connectionId, query) };
-        }
-
-        case 'wordpress_list_orders': {
-            const { connectionId, limit } = args || {};
-            if (!connectionId) throw new Error("L'argument 'connectionId' est obligatoire.");
-            await db.initDB();
-            const wordpressService = require('../services/wordpressService');
-            return { data: await wordpressService.listOrders(connectionId, limit || 15) };
         }
 
         case 'list_quotes': {

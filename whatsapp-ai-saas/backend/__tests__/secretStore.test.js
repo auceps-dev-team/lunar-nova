@@ -69,7 +69,7 @@ describe('secretStore', () => {
         expect(decrypt(encrypt(secret))).toBe(secret);
     });
 
-    it('préserve les mots de passe d\'application WordPress (espaces compris)', () => {
+    it('préserve un secret contenant des espaces sans les altérer', () => {
         const secret = 'abcd EFGH ijkl MNOP qrst UVWX';
         expect(decrypt(encrypt(secret))).toBe(secret);
     });

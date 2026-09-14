@@ -3,8 +3,8 @@ const fs = require('fs');
 const path = require('path');
 
 /**
- * Chiffrement au repos des secrets stockés en base (clés d'API, mots de passe
- * d'application WordPress).
+ * Chiffrement au repos des secrets stockés en base (clés d'API des
+ * fournisseurs LLM, jetons OAuth).
  *
  * AES-256-GCM : confidentialité + authentification. Une valeur altérée en base
  * fait échouer le déchiffrement au lieu de produire silencieusement du contenu
