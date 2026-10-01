@@ -45,9 +45,17 @@ describe('wacopiloteMcpServer — Serveur MCP standard', { timeout: 30000 }, () 
             const key = Object.keys(result).find(k => Array.isArray(result[k]));
             expect(key, `${name} devrait renvoyer un tableau`).toBeDefined();
         }
-        // Timeout explicite (> défaut 5000ms) : 4 accès DB séquentiels sur la
-        // base réelle, sensibles à la contention sous le pool forks à process
-        // unique (singleFork: true) quand d'autres suites tournent en parallèle.
+        // Timeout explicite (> défaut 5000 ms) : 4 accès DB séquentiels.
+        //
+        // TEST INTERMITTENT, CAUSE NON ÉTABLIE. L'ancien commentaire l'imputait à
+        // la contention sous un pool `forks` à processus unique ; la configuration
+        // utilise `threads`, et le 1er octobre 2026 ce test a dépassé son délai
+        // (61 s) en tournant SEUL, puis est passé deux fois de suite seul (4 s,
+        // 5 s). Hors Vitest, les quatre mêmes appels prennent moins de 2,5 s.
+        // L'audit du 29/09 l'avait vu échouer en suite complète. Piste non
+        // vérifiée : ce fichier importe `db` et le serveur MCP en ESM, ce que la
+        // convention du projet proscrit (deux instances de `db` sur un même
+        // fichier SQLite — cf. agentFallbackStrategies.test.js).
     }, 15000);
 
     it('handleToolCall("save_pipeline_contacts") prend en charge segmentName et listName', async () => {

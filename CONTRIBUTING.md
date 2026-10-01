@@ -166,6 +166,15 @@ Deux points de vigilance propres à ce projet, à garder en tête en contribuant
 - **Les données de prospection sont des données personnelles.** Ne commitez
   jamais de dump de page scrapée, même à titre de fixture, sans l'avoir vidé de
   toute coordonnée réelle.
+- **En développement, la clé maître est en clair à côté de la base.** Selon la
+  façon dont vous lancez le projet, `database.sqlite`, `master-key` et
+  `api-token` peuvent être créés à la racine de `whatsapp-ai-saas/`. Ils sont
+  ignorés par git, mais une copie du dossier (synchronisation cloud, sauvegarde,
+  clé USB) emporte la base **et** la clé qui la déchiffre : le chiffrement au
+  repos ne protège plus rien sur cette copie. Excluez le dépôt de toute
+  synchronisation, et n'y mettez pas de vraies clés d'API ni de vrais contacts.
+  L'application installée, elle, scelle la clé maître avec le magasin de secrets
+  du système (`master-key.enc`, via `safeStorage`).
 
 ---
 
