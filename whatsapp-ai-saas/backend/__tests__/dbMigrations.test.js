@@ -29,7 +29,22 @@ describe('db.js — migrations de schéma (SQLite en mémoire)', () => {
         expect(ok).toBe(true);
 
         const v = await db.pool.query('SELECT MAX(version) as v FROM schema_version');
-        expect(v.rows[0].v).toBe(9);
+        expect(v.rows[0].v).toBe(10);
+    });
+
+    it.runIf(sqlite3Available)('detected_orders porte l\'origine de la commande, « text » par défaut (v10)', async () => {
+        await db.initDB();
+        await db.pool.query(
+            "INSERT INTO detected_orders (instance_id, contact_name, message_text) VALUES ('wa-test', 'X', 'ancienne ligne')"
+        );
+        await db.pool.query(
+            "INSERT INTO detected_orders (instance_id, contact_name, message_text, source) VALUES ('wa-test', 'Y', 'vocal', 'voice')"
+        );
+
+        const r = await db.pool.query(
+            "SELECT message_text, source FROM detected_orders WHERE instance_id = 'wa-test' ORDER BY id"
+        );
+        expect(r.rows.map((x) => x.source)).toEqual(['text', 'voice']);
     });
 
     it.runIf(sqlite3Available)('permet les requêtes INSERT ... ON CONFLICT (phone) sur wa_contacts sans erreur de contrainte', async () => {

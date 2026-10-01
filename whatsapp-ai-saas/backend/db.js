@@ -361,6 +361,14 @@ async function runInitDB() {
             "DROP TABLE IF EXISTS wp_connections"
         ]);
 
+        // Migration v10 : origine d'une commande détectée. Une commande peut
+        // désormais venir d'une note vocale transcrite ; la distinguer du texte
+        // tapé permet de relire la transcription avec la prudence qu'elle
+        // mérite. Les lignes existantes viennent toutes du texte.
+        await migrateTo(10, [
+            "ALTER TABLE detected_orders ADD COLUMN source VARCHAR(20) DEFAULT 'text'"
+        ]);
+
         // Doit tourner après la création de toutes les tables, et avant que la
         // moindre route ne lise un secret.
         await encryptLegacySecrets(client);

@@ -1,6 +1,13 @@
 # Project Progress: WaCopilote
 
 ## Completed Milestones
+- [x] **Notes vocales WhatsApp (v1.50.0, 2026-10-01)** :
+  - Extraction sans clic via le modèle de message, transcription locale (faster-whisper small) ou Gemini, file d’attente asynchrone, réinjection dans le pipeline de détection, origine `voice` persistée (migration v10). Désactivé par défaut.
+  - Restant : validation en direct de la détection côté page ; bascule d’activation dans l’interface Réglages ; portage du moteur local vers onnxruntime-node pour se passer de Python en production.
+- [x] **Raccordement Serveur MCP WaCopilote à Antigravity IDE (2026-09-16)** :
+  - Déclaration du serveur MCP `wacopilote` dans `~/.gemini/config/mcp_config.json`, `~/.gemini/antigravity-ide/mcp_config.json` et `.agents/mcp_config.json`.
+  - Génération et synchronisation des 33 schémas d'outils JSON dans `~/.gemini/antigravity-ide/mcp/wacopilote/`.
+  - Tests d'invocation STDIO et compatibilité validés.
 - [x] **Retrait du module WordPress & recentrage produit (v1.49.0, 2026-09-14)** :
   - Suppression complète du pont WordPress/WooCommerce (routes, service, persona, page, composants, plugin, outils MCP, commande CLI, i18n) ; migration de schéma v9 supprimant `wp_connections` et `wp_pending_actions` des bases existantes.
   - Electron 41.10.7 et puppeteer-core 25.11.0 : **0 vulnérabilité** connue sur les deux espaces de travail (23 au début du cycle).

@@ -67,6 +67,7 @@ export default defineConfig([
       'backend/routes/catalog.js',
       'backend/routes/wa.js',
       'backend/services/waInstancesService.js',
+      'backend/diagnostics/**/*.cjs',
       'backend/server.js',
       'backend/extract_goafrica.js',
       'backend/fetch_card_website.js',

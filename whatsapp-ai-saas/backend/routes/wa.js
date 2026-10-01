@@ -410,6 +410,52 @@ router.post('/open-chat', async (req, res) => {
     }
 });
 
+/**
+ * POST /api/wa/voice-notes/transcribe
+ *
+ * Extrait la note vocale affichée (la plus récente par défaut) et la transcrit.
+ *
+ * Existe parce que la clé d'API est chiffrée par la clé maître que seul le
+ * processus Electron détient : aucun script autonome ne peut transcrire, et ce
+ * chemin est le seul qui passe par un secret réellement déchiffrable.
+ *
+ * Le corps de la réponse porte la transcription ; les journaux, eux, restent
+ * expurgés (transcriptionService s'en charge).
+ */
+router.post('/voice-notes/transcribe', async (req, res) => {
+    const { instance_id, message_id, language_hint, engine } = req.body || {};
+    try {
+        const voiceNoteService = require('../services/voiceNoteService');
+        const transcriptionService = require('../services/transcriptionService');
+
+        const note = await voiceNoteService.extractVoiceNote({
+            instanceId: instance_id,
+            messageId: message_id
+        });
+
+        const result = await transcriptionService.transcribe({
+            audio: note.audio,
+            mimeType: note.mimeType,
+            languageHint: language_hint,
+            engine
+        });
+
+        res.json({
+            status: 'success',
+            messageId: note.messageId,
+            bytes: note.bytes,
+            durationSec: note.durationSec,
+            mimeType: note.mimeType,
+            ...result
+        });
+    } catch (err) {
+        // L'échec est nommé : un vocal qu'on n'a pas su lire ne doit jamais
+        // ressembler à un vocal sans parole.
+        console.error('[VoiceNote] Échec de transcription :', err.message);
+        res.status(err.statusCode || 500).json({ error: err.message, reason: err.reason || null });
+    }
+});
+
 router.post('/verify-contact', async (req, res) => {
     const { instance_id, contact_id, phone, country_code } = req.body;
 

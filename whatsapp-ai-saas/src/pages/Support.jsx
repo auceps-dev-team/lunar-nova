@@ -48,6 +48,16 @@ const Support = () => {
 
     const changelog = [
         {
+            version: 'v1.50.0',
+            date: '2026-10-01',
+            changes: [
+                'Nouveauté — Notes vocales : les vocaux reçus sur WhatsApp peuvent désormais être transcrits puis analysés exactement comme un message tapé, pour qu\'une commande passée à la voix ne passe plus inaperçue. Désactivé par défaut (réglage voice_notes_transcription) : chaque vocal coûte du calcul ou des jetons, et cette dépense ne se déclenche pas sans votre accord',
+                'Deux moteurs au choix : whisper-local, entièrement hors ligne et sans clé d\'API (environ 2,7 fois la durée du vocal sur un ordinateur ordinaire, mesuré avec le modèle small), ou Gemini via l\'API. Les vocaux que vous envoyez vous-même ne sont jamais transcrits',
+                'Les commandes détectées dans un vocal sont marquées comme telles : une transcription est une reconstruction, à relire avec la prudence qu\'elle mérite',
+                'Les vocaux sont transcrits un par un, en arrière-plan : la détection des messages tapés n\'attend jamais la fin d\'une transcription'
+            ]
+        },
+        {
             version: 'v1.49.0',
             date: '2026-09-14',
             changes: [
