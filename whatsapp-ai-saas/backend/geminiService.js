@@ -545,10 +545,73 @@ async function classifyOrderIntent(text, contactName, modelParam) {
     }
 }
 
+/**
+ * Transcrit un extrait audio. Utilisé pour les notes vocales WhatsApp, que
+ * l'observateur de commandes ne sait pas lire (elles ne portent pas de texte).
+ *
+ * Contrairement à classifyOrderIntent, cette fonction **lève** en cas d'échec
+ * au lieu de renvoyer un repli vide : une transcription ratée silencieusement
+ * se confondrait avec un vocal sans parole, et le vocal disparaîtrait du flux
+ * sans que personne ne le sache. L'appelant décide quoi en faire.
+ *
+ * @param {Buffer|string} audio  octets, ou base64 (préfixe `data:` toléré)
+ * @param {string} mimeType      ex. 'audio/ogg; codecs=opus'
+ * @param {object} [options]
+ * @param {string} [options.model]         modèle à utiliser
+ * @param {string} [options.languageHint]  langue attendue, guide le modèle
+ * @returns {Promise<{ text: string, language: string|null, model: string }>}
+ */
+async function transcribeAudio(audio, mimeType, options = {}) {
+    if (!audio) throw new Error('transcribeAudio : aucun audio fourni.');
+    if (!mimeType) throw new Error('transcribeAudio : mimeType obligatoire.');
+
+    const base64 = Buffer.isBuffer(audio)
+        ? audio.toString('base64')
+        : String(audio).includes(',') ? String(audio).split(',')[1] : String(audio);
+
+    if (!base64) throw new Error('transcribeAudio : audio vide après normalisation.');
+
+    const targetModel = options.model || 'gemini-2.5-flash';
+    const { client } = await getGeminiClient('text', targetModel);
+
+    const hint = options.languageHint
+        ? ` L'audio est probablement en ${options.languageHint}.`
+        : '';
+
+    const response = await client.models.generateContent({
+        model: targetModel,
+        contents: [{
+            role: 'user',
+            parts: [
+                { inlineData: { data: base64, mimeType } },
+                {
+                    text: `Transcris cet audio mot à mot.${hint} Réponds en JSON strict `
+                        + `{"text": "<transcription>", "language": "<code ISO 639-1>"}. `
+                        + `Si l'audio ne contient aucune parole intelligible, renvoie `
+                        + `{"text": "", "language": null}. N'ajoute ni commentaire ni traduction.`
+                }
+            ]
+        }],
+        config: { responseMimeType: 'application/json' }
+    });
+
+    const parsed = parseLlmJson(response.text, null);
+    if (!parsed || typeof parsed.text !== 'string') {
+        throw new Error('transcribeAudio : réponse du modèle inexploitable.');
+    }
+
+    return {
+        text: parsed.text,
+        language: parsed.language || null,
+        model: targetModel
+    };
+}
+
 module.exports = {
     generateProposals,
     chatWithAgent,
     generateImage,
     listModels,
-    classifyOrderIntent
+    classifyOrderIntent,
+    transcribeAudio
 };

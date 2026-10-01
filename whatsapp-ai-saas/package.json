@@ -1,7 +1,7 @@
 {
   "name": "wacopilote",
   "private": true,
-  "version": "1.49.0",
+  "version": "1.50.0",
   "license": "AGPL-3.0-only",
   "main": "electron/main.cjs",
   "type": "module",
@@ -90,6 +90,9 @@
       "!backend/__tests__/**/*",
       "!**/*.test.js",
       "package.json"
+    ],
+    "asarUnpack": [
+      "backend/scripts/**"
     ],
     "publish": {
       "provider": "github",

@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/auceps-dev-team/lunar-nova"><img src="https://img.shields.io/badge/version-1.49.0-blue.svg" alt="Version 1.49.0" /></a>
+  <a href="https://github.com/auceps-dev-team/lunar-nova"><img src="https://img.shields.io/badge/version-1.50.0-blue.svg" alt="Version 1.50.0" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue.svg" alt="License AGPL-3.0" /></a>
   <a href="#-open-source"><img src="https://img.shields.io/badge/open%20source-oui-brightgreen.svg" alt="Open Source" /></a>
   <a href="#-pourquoi-wacopilote-"><img src="https://img.shields.io/badge/Made%20in-%F0%9F%87%A8%F0%9F%87%BE%20C%C3%B4te%20d'Ivoire-orange.svg" alt="Made in Côte d'Ivoire" /></a>
@@ -304,6 +304,17 @@ Le module WhatsApp (`backend/orderListener.js` et `backend/routes/wa.js`) permet
 2. **Écouteur de Commandes (`Order Listener`)** : Analyse syntaxique des messages entrants pour identifier les intentions d'achat (mots-clés, références produits, quantités).
 3. **Réponse Automatisée par Agent IA** : Injection du contexte produit et génération d'une réponse naturelle de conseiller commercial.
 4. **Gestionnaire de Contacts & Listes** : Importation de répertoires d'entreprises, segmentation par tags, et historique des conversations.
+5. **Notes vocales** *(v1.50.0, désactivé par défaut)* : les vocaux entrants sont extraits par le modèle de message de WhatsApp Web plutôt que par un clic sur lecture (qui les marquerait comme écoutés chez l'expéditeur — l'absence de tout accusé côté `downloadMedia()` n'a, elle, pas encore été vérifiée), transcrits, puis passés au même pipeline de détection que les messages tapés. Deux moteurs : `whisper-local` (faster-whisper, 100 % hors ligne, aucune clé, ~2,7 × le temps réel en `small` sur un CPU ordinaire) et `gemini` (API). Les commandes issues d'un vocal sont marquées `source = 'voice'` dans `detected_orders`.
+
+   ```bash
+   # Moteur local : versions épinglées (PyAV 19 casse faster-whisper 1.2.1)
+   pip install -r backend/scripts/requirements-whisper.txt
+   # Interpréteur dédié (facultatif, sinon `python` du PATH) — variable posée au lancement
+   set WACOPILOTE_WHISPER_PYTHON=C:\chemin\vers\venv\Scripts\python.exe
+   # Activation (réglages, via l'API locale authentifiée)
+   #   voice_notes_transcription = on
+   #   transcription_engine      = whisper-local | gemini
+   ```
 
 ---
 

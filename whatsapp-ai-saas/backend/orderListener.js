@@ -7,6 +7,26 @@ const sseClients = new Map();
 const activeObservers = new Set();
 const browserConnections = new Map();
 
+// File des notes vocales : extraction immédiate, transcription à part, puis
+// réinjection dans processMessage. Créée à la demande — les services de
+// transcription ne sont chargés que si un vocal arrive réellement.
+let voiceQueue = null;
+function getVoiceQueue() {
+    if (voiceQueue) return voiceQueue;
+    const { createVoiceNoteQueue } = require('./services/voiceNoteQueue');
+    const voiceNoteService = require('./services/voiceNoteService');
+    const transcriptionService = require('./services/transcriptionService');
+
+    voiceQueue = createVoiceNoteQueue({
+        isEnabled: async () => (await db.getSetting('voice_notes_transcription', 'off')) === 'on',
+        extract: (job) => voiceNoteService.extractVoiceNoteFromPage(job.page, job.messageId),
+        transcribe: ({ audio, mimeType }) => transcriptionService.transcribe({ audio, mimeType }),
+        onTranscribed: (job, result) =>
+            processMessage(job.instanceId, job.contact, result.text, { source: 'voice' })
+    });
+    return voiceQueue;
+}
+
 // Keyword Dictionary (FR, EN, Nouchi)
 const KEYWORDS = [
     'commander', 'commande', 'je veux', 'acheter', 'prix', 'tarif', 'combien',
@@ -40,20 +60,28 @@ function pushEvent(instanceId, orderEvent) {
     });
 }
 
-async function processMessage(instanceId, contact, text) {
+/**
+ * @param {object} [meta]
+ * @param {'text'|'voice'} [meta.source] origine du texte. 'voice' signale une
+ *        transcription de note vocale : le pipeline est le même, mais le texte
+ *        est une reconstruction, pas ce que le client a tapé.
+ */
+async function processMessage(instanceId, contact, text, meta = {}) {
     if (!text) return;
 
+    const source = meta.source === 'voice' ? 'voice' : 'text';
     const msgId = `msg_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-    
+
     // Phase 22: Log & Emit EVERY message
-    console.error(`\n------------------------------------------------------\n[IOL Flux] 📩 Nouveau message de [${redactContact(contact)}] : ${redactMessage(text)}`);
-    
+    console.error(`\n------------------------------------------------------\n[IOL Flux] 📩 Nouveau message${source === 'voice' ? ' (vocal transcrit)' : ''} de [${redactContact(contact)}] : ${redactMessage(text)}`);
+
     const messageEvent = {
         id: msgId,
         type: 'message_received',
         instanceId,
         contactName: contact,
         messageText: text,
+        source,
         timestamp: new Date().toISOString()
     };
     pushEvent(instanceId, messageEvent);
@@ -81,32 +109,33 @@ async function processMessage(instanceId, contact, text) {
     // L'enregistrement en base n'a pas de valeur de retour exploitable ; seul
     // compte qu'il se termine avant l'émission de l'événement.
     const [, agentReply] = await Promise.all([
-        logOrderToDb(instanceId, contact, text, classif),
+        logOrderToDb(instanceId, contact, text, classif, source),
         transferToAgent(contact, text)
     ]);
-    
+
     const orderEvent = {
         id: msgId, // Reuse same ID for linked events
         type: 'order_detected',
         instanceId,
         contactName: contact,
         messageText: text,
+        source,
         classification: classif,
         agentReply,
         timestamp: new Date().toISOString()
     };
-    
+
     pushEvent(instanceId, orderEvent);
 }
 
 // Logic to Save Order to DB
-async function logOrderToDb(instanceId, contact, text, classif) {
+async function logOrderToDb(instanceId, contact, text, classif, source = 'text') {
     try {
         const query = `
-            INSERT INTO detected_orders (instance_id, contact_name, message_text, order_type, confidence, summary)
-            VALUES ($1, $2, $3, $4, $5, $6)
+            INSERT INTO detected_orders (instance_id, contact_name, message_text, order_type, confidence, summary, source)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
         `;
-        const values = [instanceId, contact, text, classif.order_type, classif.confidence, classif.summary];
+        const values = [instanceId, contact, text, classif.order_type, classif.confidence, classif.summary, source];
         await db.pool.query(query, values);
     } catch (e) {
         console.error('[IOL DB] Save Error:', e.message);
@@ -172,6 +201,16 @@ async function attachObserver(instanceId) {
         try {
             await targetPage.exposeFunction('onIolDebug', (msg) => {
                 console.error(`[IOL Background] ${msg}`);
+            });
+        } catch {}
+
+        // Notes vocales entrantes. Le rappel rend la main tout de suite : la
+        // page n'attend rien, et l'extraction puis la transcription suivent
+        // leur cours dans la file.
+        try {
+            await targetPage.exposeFunction('onNewWaVoiceNote', (contact, messageId) => {
+                const page = targetPage;
+                void getVoiceQueue().submit({ instanceId, contact, messageId, page });
             });
         } catch {}
 
@@ -268,9 +307,55 @@ async function attachObserver(instanceId) {
 
             // 2. Specialized Mutation Observer for Active Chat
             window.__iol_observer = new MutationObserver((mutations) => {
+                // Note vocale (message `ptt`). Traitée AVANT l'extraction de
+                // texte : sans ce détour, les ancrages [data-id] et role="row"
+                // attrapent la ligne et en tirent comme « texte » ce qui s'y
+                // affiche (durée, heure), que le filtre par mots-clés rejette —
+                // le vocal se perdait sans bruit.
+                //
+                // Mesuré le 19/09/2026 sur une instance réelle : l'ancre
+                // [data-testid="ptt-status"] et l'identifiant porté par
+                // [data-testid="conv-msg-<id>"]. Le nom du contact, en revanche,
+                // n'a pas été mesuré pour les vocaux : on tente le bouton
+                // d'auteur puis l'en-tête de conversation, avec un repli neutre.
+                const handleVoiceNote = (msg) => {
+                    const row = (msg.closest && msg.closest('div[role="row"]')) || msg;
+                    if (!row.querySelector || !row.querySelector('[data-testid="ptt-status"]')) return false;
+
+                    // Un vocal sortant est envoyé par le commerçant lui-même :
+                    // ce n'est pas une commande, et la transcrire coûterait
+                    // ~30 s de processeur pour rien.
+                    const idEl = (row.matches && row.matches('[data-id]')) ? row : row.querySelector('[data-id]');
+                    const dataId = idEl ? (idEl.getAttribute('data-id') || '') : '';
+                    if (dataId.startsWith('true_')) return true;
+
+                    const convEl = row.querySelector('[data-testid^="conv-msg-"]');
+                    const messageId = convEl ? convEl.getAttribute('data-testid').replace('conv-msg-', '') : '';
+                    if (!messageId) return true;
+
+                    const key = 'ptt|' + messageId;
+                    if (window.__iol_seen.has(key)) return true;
+                    window.__iol_seen.add(key);
+
+                    let contact = 'Client (Actif)';
+                    const author = row.querySelector('[data-testid="author"]');
+                    const authorName = author ? (author.getAttribute('aria-label') || author.innerText || '').trim() : '';
+                    const header = document.querySelector('#main header span[title]');
+                    if (authorName) contact = authorName;
+                    else if (header && header.getAttribute('title')) contact = header.getAttribute('title');
+
+                    window.onIolDebug('[Observer] Note vocale entrante détectée');
+                    if (typeof window.onNewWaVoiceNote === 'function') {
+                        window.onNewWaVoiceNote(contact, messageId);
+                    }
+                    return true;
+                };
+
                 const processMessageNode = (msg) => {
                     if (!msg) return;
                     try {
+                        if (handleVoiceNote(msg)) return;
+
                         const preTextNode = msg.hasAttribute('data-pre-plain-text') ? msg : msg.querySelector('[data-pre-plain-text]');
                         const preText = preTextNode ? (preTextNode.getAttribute('data-pre-plain-text') || '') : '';
                         let contact = 'Client (Actif)';

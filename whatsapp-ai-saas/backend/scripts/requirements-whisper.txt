@@ -1,0 +1,15 @@
+# Moteur de transcription locale (whisperTranscribe.py) — moteur « whisper-local ».
+#
+#   pip install -r backend/scripts/requirements-whisper.txt
+#
+# Puis, si cet interpréteur n'est pas le `python` du PATH, lancer WaCopilote
+# avec WACOPILOTE_WHISPER_PYTHON=<chemin vers python.exe>.
+
+faster-whisper==1.2.1
+
+# faster-whisper 1.2.1 ne borne pas sa dépendance à PyAV, et PyAV 19.0.0 a
+# retiré l'argument `metadata_errors` qu'il passe à av.open(). Mesuré le
+# 1er octobre 2026 : une installation neuve tire av 19.0.0 et toute
+# transcription échoue (« open() got an unexpected keyword argument
+# 'metadata_errors' ») ; avec av 18.1.0 elle aboutit.
+av>=18,<19
