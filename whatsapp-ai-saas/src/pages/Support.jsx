@@ -48,6 +48,16 @@ const Support = () => {
 
     const changelog = [
         {
+            version: 'v1.50.2',
+            date: '2026-10-01',
+            changes: [
+                'Correctif — Modifier un agent personnalisé échouait à chaque fois avec une erreur : vos changements de nom, de consigne ou de modèle sont désormais bien enregistrés. Cause : la traduction des requêtes vers la base locale décalait les paramètres répétés',
+                'Correctif — L\'outil MCP get_orders, qui donne aux assistants IA externes les commandes WhatsApp détectées, échouait à chaque appel. Il renvoie désormais les commandes réellement enregistrées, avec leur origine (texte ou note vocale)',
+                'Maintenance — Le serveur MCP, la ligne de commande et l\'état de l\'interface sont réorganisés par domaine, sans aucun changement de comportement : vérifié outil par outil, commande par commande et réglage par réglage',
+                'Sécurité — Les fichiers temporaires de la base locale, qui peuvent contenir des contacts, ne peuvent plus être ajoutés par erreur au code partagé'
+            ]
+        },
+        {
             version: 'v1.50.1',
             date: '2026-10-01',
             changes: [

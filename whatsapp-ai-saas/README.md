@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/auceps-dev-team/lunar-nova"><img src="https://img.shields.io/badge/version-1.50.1-blue.svg" alt="Version 1.50.1" /></a>
+  <a href="https://github.com/auceps-dev-team/lunar-nova"><img src="https://img.shields.io/badge/version-1.50.2-blue.svg" alt="Version 1.50.2" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue.svg" alt="License AGPL-3.0" /></a>
   <a href="#-open-source"><img src="https://img.shields.io/badge/open%20source-oui-brightgreen.svg" alt="Open Source" /></a>
   <a href="#-pourquoi-wacopilote-"><img src="https://img.shields.io/badge/Made%20in-%F0%9F%87%A8%F0%9F%87%BE%20C%C3%B4te%20d'Ivoire-orange.svg" alt="Made in Côte d'Ivoire" /></a>
@@ -485,8 +485,10 @@ La configuration ESLint distingue désormais les trois environnements du dépôt
 whatsapp-ai-saas/
 ├── backend/                → Serveur backend Express.js & Services d'IA
 │   ├── agents/             → Moteurs et prompts des agents IA autonomes
-│   │   └── personas/       → Définitions des 27 personas d'agents
-│   ├── routes/             → Routes API Express (AI, WA, Catalog, Prospection, WP)
+│   │   └── personas/       → Définitions des 26 personas d'agents
+│   ├── mcp/                → Serveur MCP stdio (wacopiloteMcpServer.js) et outils par domaine (tools/)
+│   ├── routes/             → Routes API Express (AI, WA, Catalog, Prospection, Pipeline, Documents, Devis, CLI, Système)
+│   ├── services/           → Services métier (pipeline, CRM, devis, transcription, notes vocales…)
 │   ├── __tests__/          → Tests unitaires backend (Vitest)
 │   ├── scrapers/           → Modules de scraping (Annuaire CI, GoAfrica, Google Places)
 │   ├── aiController.js     → Contrôleur centralisé des requêtes IA
@@ -496,6 +498,7 @@ whatsapp-ai-saas/
 │   ├── orderListener.js    → Moteur de détection des commandes WhatsApp
 │   ├── redisClient.js      → Client de mise en cache Redis
 │   └── server.js           → Point d'entrée de l'application Express
+├── bin/                    → CLI wacopilote (commands/ par domaine, lib/ partagée)
 ├── build/                  → Ressources d'empaquetage (licence installeur, script NSIS)
 ├── docs/                   → Documentation d'architecture & notes de conception
 ├── electron/               → Processus principal Electron & IPC (main.cjs, preload.cjs)
@@ -508,7 +511,8 @@ whatsapp-ai-saas/
 │   ├── pages/              → Vues principales (Dashboard, AiChat, PhotoShoot, Prospection...)
 │   │   └── whatsapp/       → Sous-pages dédiées aux flux WhatsApp (Contacts, Orders, Segments)
 │   ├── services/           → Client API et authentification côté renderer
-│   └── store.js            → State management Zustand (store unique persisté)
+│   ├── state/              → Slices du store Zustand, par domaine
+│   └── store.js            → Store Zustand unique : assemble les slices, porte la persistance
 ├── LICENSE                 → GNU AGPL-3.0
 ├── package.json            → Configuration du workspace racine & scripts npm
 ├── vite.config.js          → Configuration du bundler Vite 7

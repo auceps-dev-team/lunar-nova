@@ -54,7 +54,29 @@ const pool = {
         const db = await getDb();
 
         // 1. Convert PostgreSQL positional parameters ($1, $2) to SQLite's (?)
-        let sqliteText = text.replace(/\$\d+/g, '?');
+        //
+        // En PostgreSQL, `$n` désigne le n-ième paramètre, quelle que soit sa
+        // position dans la requête et même s'il revient plusieurs fois. Cet
+        // adaptateur remplaçait chaque `$n` par `?` en gardant les paramètres
+        // dans l'ordre d'origine : un placeholder répété recevait la valeur
+        // suivante (ou NULL), et des placeholders hors d'ordre échangeaient
+        // leurs valeurs — sans aucune erreur.
+        //
+        // Mesuré le 1er octobre 2026 : POST /api/agents (« ON CONFLICT DO UPDATE
+        // SET name = $2, … ») échouait à CHAQUE modification d'un agent
+        // personnalisé existant (« NOT NULL constraint failed: ai_agents.name »).
+        // Les paramètres sont donc réordonnés selon le numéro de chaque `$n`.
+        // Sur les requêtes aux placeholders déjà ordonnés ($1, $2, …, $k) —
+        // toutes les autres au 01/10/2026 —, le résultat est identique.
+        let sqliteParams = params;
+        let sqliteText = text;
+        if (/\$\d+/.test(text)) {
+            sqliteParams = [];
+            sqliteText = text.replace(/\$(\d+)/g, (_, n) => {
+                sqliteParams.push(params[Number(n) - 1]);
+                return '?';
+            });
+        }
 
         // 2. Postgres specific type adjustments for CREATE TABLE
         sqliteText = sqliteText.replace(/SERIAL PRIMARY KEY/gi, 'INTEGER PRIMARY KEY AUTOINCREMENT');
@@ -64,10 +86,10 @@ const pool = {
         const isSelect = sqliteText.trim().toUpperCase().startsWith('SELECT') || sqliteText.toUpperCase().includes('RETURNING');
 
         if (isSelect) {
-            const rows = await db.all(sqliteText, params);
+            const rows = await db.all(sqliteText, sqliteParams);
             return { rows, rowCount: rows.length };
         } else {
-            const result = await db.run(sqliteText, params);
+            const result = await db.run(sqliteText, sqliteParams);
             return { rows: [], lastID: result.lastID, changes: result.changes, rowCount: result.changes };
         }
     },
