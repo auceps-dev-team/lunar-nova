@@ -10,14 +10,8 @@ const openrouterService = require('../openrouterService');
 const ollamaService = require('../ollamaService');
 const openaiService = require('../openaiService');
 
-function getNvidiaModels() {
-    try {
-        delete require.cache[require.resolve('../nvidiaModels')];
-    } catch {
-        // ignore
-    }
-    return require('../nvidiaModels');
-}
+// Clés et URL des fournisseurs : résolution commune avec aiController.
+const { resolveProviderCredentials } = require('./providerCredentials');
 
 /**
  * Détecte si une chaîne d'erreur correspond à un problème de clé API manquante ou invalide.
@@ -246,11 +240,9 @@ async function invokeSingleProvider({
     }
 
     // ── 2. Exécution OpenRouter ──
+    // Clés et URL : résolution commune avec aiController (providerCredentials).
     if (provider === 'openrouter') {
-        const apiKey = await db.getSetting('openrouter_api_key', '');
-        if (!apiKey && !process.env.OPENROUTER_API_KEY) {
-            throw new Error('OpenRouter API key not configured in settings.');
-        }
+        const { apiKey } = await resolveProviderCredentials('openrouter', model);
         return await openrouterService.chatWithAgent(
             personaId,
             message,
@@ -266,7 +258,7 @@ async function invokeSingleProvider({
 
     // ── 3. Exécution Ollama ──
     if (provider === 'ollama') {
-        const apiKey = await db.getSetting('ollama_api_key', '');
+        const { apiKey } = await resolveProviderCredentials('ollama', model);
         return await ollamaService.chatWithAgent(
             personaId,
             message,
@@ -282,19 +274,8 @@ async function invokeSingleProvider({
 
     // ── 4. Exécution OpenAI / NVIDIA ──
     if (provider === 'openai') {
-        const nvidiaModels = getNvidiaModels();
         const selectedModel = model || dbAgent?.model_override || (await db.getSetting('default_chat_model', ''));
-        const apiKey = await nvidiaModels.resolveKey(selectedModel, db.getSetting.bind(db));
-
-        if (!apiKey) {
-            throw new Error('OpenAI/NVIDIA API key not configured in settings.');
-        }
-
-        let baseURL = await db.getSetting('openai_base_url', nvidiaModels.NVIDIA_BASE_URL);
-        const def = nvidiaModels.getModelDef(selectedModel);
-        if (def && def.provider === 'together') {
-            baseURL = 'https://api.together.xyz/v1';
-        }
+        const { apiKey, baseURL } = await resolveProviderCredentials('openai', selectedModel);
 
         return await openaiService.chatWithAgent(
             personaId,

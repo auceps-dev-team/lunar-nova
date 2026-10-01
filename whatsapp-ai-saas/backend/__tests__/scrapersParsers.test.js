@@ -9,6 +9,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 
 const annuaire = require('../scrapers/parsers/annuaireCi');
 const goAfrica = require('../scrapers/parsers/goAfrica');
+const googleMaps = require('../scrapers/parsers/googleMaps');
 
 describe('parsers/annuaireCi — resolveQueryLocation (pur)', () => {
     it('sépare la ville de la catégorie et construit l\'URL du répertoire', () => {
@@ -189,5 +190,71 @@ describe('parsers/goAfrica — extraction DOM', () => {
         expect(goAfrica.COUNTRY_NAMES.ci).toBe("Côte d'Ivoire");
         expect(goAfrica.COUNTRY_NAMES.tg).toBe('Togo');
         expect(Object.keys(goAfrica.COUNTRY_NAMES).length).toBeGreaterThanOrEqual(15);
+    });
+});
+
+describe('parsers/googleMaps — extraction d\'une fiche (R2)', () => {
+    beforeEach(() => {
+        document.body.innerHTML = '';
+    });
+
+    it('lit nom, téléphone, site et adresse, et nettoie téléphone et glyphe d\'icône', () => {
+        document.body.innerHTML = `
+            <h1> Boutique Wax Cocody </h1>
+            <button data-item-id="phone:tel:+2250707070707">+225 07 07 07 07 07</button>
+            <a data-item-id="authority" href="https://boutique-wax.ci/">boutique-wax.ci</a>
+            <button data-item-id="address">\uE0C8\u200B Rue des Jardins, Abidjan</button>
+        `;
+        expect(googleMaps.extractPlaceDetails()).toEqual({
+            name: 'Boutique Wax Cocody',
+            phone: '+2250707070707',
+            website: 'https://boutique-wax.ci/',
+            address: 'Rue des Jardins, Abidjan'
+        });
+    });
+
+    it('lit le téléphone dans aria-label quand le bouton n\'a pas de texte', () => {
+        document.body.innerHTML = `
+            <h1>Pressing Plateau</h1>
+            <button aria-label="Téléphone: +225 27 20 21 22 23"></button>
+        `;
+        expect(googleMaps.extractPlaceDetails().phone).toBe('+2252720212223');
+    });
+
+    it('lit l\'adresse dans aria-label, sans le préfixe « Adresse: »', () => {
+        document.body.innerHTML = `
+            <h1>Pressing Plateau</h1>
+            <button aria-label="Adresse: Boulevard de la République, Plateau"></button>
+        `;
+        expect(googleMaps.extractPlaceDetails().address).toBe('Boulevard de la République, Plateau');
+    });
+
+    it('respecte l\'ordre des sélecteurs : data-item-id avant aria-label', () => {
+        document.body.innerHTML = `
+            <h1>X</h1>
+            <button aria-label="Phone: +33 1 00 00 00 00">+33 1 00 00 00 00</button>
+            <button data-item-id="phone:tel:+2250101010101">01 01 01 01 01</button>
+        `;
+        expect(googleMaps.extractPlaceDetails().phone).toBe('0101010101');
+    });
+
+    it('prend le site par aria-label « Site Web » à défaut de data-item-id', () => {
+        document.body.innerHTML = `<h1>X</h1><a aria-label="Site Web: exemple" href="https://exemple.ci">exemple</a>`;
+        expect(googleMaps.extractPlaceDetails().website).toBe('https://exemple.ci');
+    });
+
+    it('rend un nom vide hors d\'une fiche, et des champs vides sans données', () => {
+        document.body.innerHTML = '<div>Résultats</div>';
+        expect(googleMaps.extractPlaceDetails()).toEqual({ name: '', phone: '', website: '', address: '' });
+    });
+
+    it('préfère innerText quand le navigateur le fournit — le texte masqué ne remonte pas', () => {
+        // jsdom n'implémente pas innerText ; on simule ici ce que rend un vrai
+        // navigateur, où le texte d'un élément masqué n'y figure pas.
+        document.body.innerHTML = `<h1>Visible<span style="display:none"> masqué</span></h1>`;
+        const h1 = document.querySelector('h1');
+        expect(h1.textContent).toBe('Visible masqué');
+        Object.defineProperty(h1, 'innerText', { get: () => 'Visible' });
+        expect(googleMaps.extractPlaceDetails().name).toBe('Visible');
     });
 });

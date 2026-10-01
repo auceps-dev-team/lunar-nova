@@ -8,7 +8,6 @@ dotenv.config({ quiet: true });
 const express = require('express');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
-const puppeteer = require('puppeteer-core');
 const orderListener = require('./orderListener');
 const { requireApiToken } = require('./apiAuth');
 const db = require('./db');
@@ -40,6 +39,17 @@ if (process.parentPort) {
 // token Bearer reste obligatoire sur toutes les routes, c'est elle la barrière.
 const allowedOrigins = ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:3000', 'http://127.0.0.1:3000', 'null'];
 
+// Origine refusée : réponse 403 nette. Auparavant le middleware cors levait une
+// erreur, qu'Express transformait en 500 avec trace de pile dans le journal —
+// n'importe quelle page web pouvait ainsi remplir les journaux à volonté.
+app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    if (origin && !allowedOrigins.includes(origin)) {
+        return res.status(403).json({ error: 'Origine non autorisée.' });
+    }
+    next();
+});
+
 app.use(cors({
     origin: function (origin, callback) {
         if (!origin || allowedOrigins.includes(origin)) {
@@ -50,14 +60,23 @@ app.use(cors({
     }
 }));
 
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
-
 // Toute l'API est authentifiée. Enregistré avant les routers pour couvrir aussi
 // ceux montés plus bas (y compris orderListener.registerRoutes en fin de fichier).
 // Le preflight CORS est traité et terminé par le middleware cors ci-dessus, il
 // n'atteint donc jamais cette vérification.
+//
+// Et AVANT l'analyse des corps. Mesuré le 1er octobre 2026 : placée après, un
+// JSON malformé sans jeton renvoyait 400 (le corps était lu avant le contrôle),
+// et 20 Mo envoyés sans jeton étaient analysés en 0,22 s avant le 401 — contre
+// 0,004 s pour 10 octets. L'origine `null` étant autorisée (renderer en
+// file://), une iframe sandboxée de n'importe quel site pouvait le déclencher,
+// sans limite de débit puisque le limiteur vient après l'authentification.
+// requireApiToken ne lit que les en-têtes, le chemin et la query : rien ne
+// l'oblige à attendre le corps.
 app.use(requireApiToken);
+
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Plafond global. Le service n'écoute que sur la boucle locale et exige un
 // token : il ne s'agit donc pas de se protéger d'un tiers, mais d'empêcher
@@ -125,178 +144,10 @@ app.use('/api/wa', waRouter);
 const cliBridgeRouter = require('./routes/cliBridge');
 app.use('/api/cli', cliBridgeRouter);
 
-
-const configLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 100,
-    message: { error: 'Too many requests' }
-});
-
-// API route to get config for frontend
-app.get('/api/config', configLimiter, (req, res) => {
-    res.json({
-        googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || ''
-    });
-});
-
-// API route to get WhatsApp instances status
-app.get('/api/instances', async (req, res) => {
-    let browser = null;
-    try {
-        // To avoid Protocol error (Browser.getVersion), we MUST connect to the browser root, not a specific page target
-        // L'appel sert de contrôle de disponibilité du point CDP : la réponse
-        // elle-même n'est pas exploitée, seul son aboutissement compte.
-        const fetch = (await import('node-fetch')).default;
-        await fetch('http://127.0.0.1:8315/json/version');
-
-        // Connect to the root browser CDP endpoint
-        browser = await puppeteer.connect({ browserURL: 'http://127.0.0.1:8315', defaultViewport: null });
-        const targets = await browser.targets();
-
-        let activeInstancesCount = 0;
-
-        for (const target of targets) {
-            if (target.url().includes('web.whatsapp.com') && target.type() === 'webview') {
-                const page = await target.page();
-                if (page) {
-                    activeInstancesCount++;
-
-                    try {
-                        // Listen to basic WhatsApp DOM events (incoming messages)
-                        await page.evaluate(() => {
-                            if (window.whatsAppObserverAttached) return;
-                            window.whatsAppObserverAttached = true;
-
-                            console.error('[Orchestrator] Attached DOM Observer for new messages');
-                            const observer = new MutationObserver((mutations) => {
-                                mutations.forEach((mutation) => {
-                                    if (mutation.addedNodes.length) {
-                                        mutation.addedNodes.forEach((node) => {
-                                            if (node.nodeType === Node.ELEMENT_NODE && node.outerHTML.includes('message-in')) {
-                                                console.error('[Orchestrator Event] New incoming message detected!');
-                                            }
-                                        });
-                                    }
-                                });
-                            });
-                            if (document.body) {
-                                observer.observe(document.body, { childList: true, subtree: true });
-                            } else {
-                                console.error('[Orchestrator] document.body not available for observation');
-                            }
-                        }).catch(err => {
-                            if (err && err.message && !err.message.includes('Execution context was destroyed')) {
-                                console.error('Failed to attach observer:', err);
-                            }
-                        });
-                    } catch (err) {
-                        if (err && err.message && !err.message.includes('Execution context was destroyed')) {
-                            console.error('Error attaching observer to page:', err);
-                        }
-                    }
-                }
-            }
-        }
-
-        // Don't close the browser connecting just the contexts, leave it or close the connection properly
-        browser.disconnect();
-
-        res.json({
-            status: 'success',
-            active_instances: activeInstancesCount,
-            message: 'Connected to Electron CDP successfully',
-        });
-
-    } catch (error) {
-        if (browser) browser.disconnect();
-        console.error('CDP Connection Error:', error);
-        res.status(500).json({
-            status: 'error',
-            message: 'Failed to connect to Orchestrator CDP. Is the Electron app running and is node-fetch installed?'
-        });
-    }
-});
-
-// Endpoint to extract WhatsApp chat context strictly in READ-ONLY mode
-app.get('/api/context/:instance_id', async (req, res) => {
-    const { instance_id } = req.params;
-
-    let browser = null;
-    try {
-        // Connect Puppeteer directly to the Electron remote debugging port
-        browser = await puppeteer.connect({ browserURL: 'http://127.0.0.1:8315', defaultViewport: null });
-
-        const targets = browser.targets();
-        let targetPage = null;
-
-        // Iterate through all targets to find the exact WhatsApp Web instance
-        for (const target of targets) {
-            if (target.url().includes('web.whatsapp.com') && target.type() === 'webview') {
-                try {
-                    const page = await target.page();
-                    if (page) {
-                        const pageInstanceId = await page.evaluate(() => window.__whatsapp_instance_id).catch(() => null);
-                        if (pageInstanceId === instance_id) {
-                            targetPage = page;
-                            break;
-                        }
-                    }
-                } catch { }
-            }
-        }
-
-        if (!targetPage) {
-            browser.disconnect();
-            return res.status(404).json({ error: 'WhatsApp instance found in targets but not assigned the expected Webview instance_id.' });
-        }
-
-        // Extremely safe DOM Parsing: no clicks, no interactions.
-        // We only extract the text content from the active conversation panel.
-        const chatContext = await targetPage.evaluate(() => {
-            const result = {
-                contactName: 'Unknown',
-                messages: []
-            };
-
-            // WhatsApp structurally keeps the active chat header here
-            const headerTitle = document.querySelector('header span[dir="auto"]');
-            if (headerTitle) {
-                result.contactName = headerTitle.textContent;
-            }
-
-            // Extract the last 15 visible messages
-            const messageNodes = Array.from(document.querySelectorAll('div.message-in, div.message-out')).slice(-15);
-
-            messageNodes.forEach(node => {
-                const textNode = node.querySelector('.selectable-text');
-                const timeNode = node.querySelector('[data-icon="msg-time"]');
-
-                if (textNode) {
-                    result.messages.push({
-                        sender: node.classList.contains('message-in') ? result.contactName : 'You',
-                        text: textNode.textContent,
-                        // Time is usually adjacent to the metadata block
-                        time: timeNode ? timeNode.parentElement.textContent : 'Unknown'
-                    });
-                }
-            });
-
-            return result;
-        });
-
-        res.json({
-            status: 'success',
-            instance_id,
-            context: chatContext
-        });
-
-    } catch (error) {
-        console.error('Context Extraction Error:', error);
-        res.status(500).json({ error: 'Failed to extract chat context safely. Exception: ' + error.message });
-    } finally {
-        if (browser) browser.disconnect();
-    }
-});
+// /api/config, /api/instances et /api/context/:instance_id : autrefois déclarées
+// en ligne ici (constat R7 de l’audit du 29/09/2026), déplacées sans changement.
+const systemRouter = require('./routes/system');
+app.use('/api', systemRouter);
 
 // Phase 21: Intelligent Order Listener
 orderListener.registerRoutes(app);

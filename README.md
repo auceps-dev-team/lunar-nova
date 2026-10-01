@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/auceps-dev-team/lunar-nova"><img src="https://img.shields.io/badge/version-1.50.0-blue.svg" alt="Version 1.50.0" /></a>
+  <a href="https://github.com/auceps-dev-team/lunar-nova"><img src="https://img.shields.io/badge/version-1.50.1-blue.svg" alt="Version 1.50.1" /></a>
   <a href="whatsapp-ai-saas/LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue.svg" alt="License AGPL-3.0" /></a>
   <a href="#-open-source"><img src="https://img.shields.io/badge/open%20source-oui-brightgreen.svg" alt="Open Source" /></a>
   <a href="#-pourquoi-wacopilote-"><img src="https://img.shields.io/badge/Made%20in-%F0%9F%87%A8%F0%9F%87%BE%20C%C3%B4te%20d'Ivoire-orange.svg" alt="Made in Côte d'Ivoire" /></a>
@@ -253,6 +253,8 @@ Vos conversations, vos contacts et vos clés d'API ne quittent jamais votre mach
 9. **Assainissement DOMPurify sur toutes les surfaces IA** *(complété en v1.47.2)* : chaque HTML produit par un LLM est assaini avant rendu — chat (`AiChat`) et, depuis v1.47.2, l'éditeur de documents (`AiWriter`) au chargement comme à la génération. Une injection de prompt ne peut plus produire de HTML actif dans le renderer. La page d'erreur du callback OAuth Google n'interpole plus la réponse du fournisseur (message générique, détail en journal serveur uniquement) *(v1.47.2)*.
 
 10. **Déchiffrement safeStorage sans écriture dans l'application** *(v1.47.2)* : le helper de déchiffrement de la clé maître (utilisé par le CLI/MCP quand la clé est scellée par le système) est écrit dans le répertoire temporaire du système plutôt que dans le dossier du backend — il reste donc opérationnel en build packagé, où `app.asar` est en lecture seule.
+
+**Renforcé en v1.50.1** — le jeton d'authentification est vérifié avant toute lecture du corps des requêtes (un corps volumineux sans jeton était auparavant lu en entier avant d'être refusé) ; l'interface packagée applique une politique de sécurité du contenu (CSP) qui n'autorise que les scripts de l'application et de la connexion Google — vérifiée sans violation sur les 24 écrans, un script tiers injecté en témoin étant bien bloqué ; une origine web non autorisée reçoit un 403 propre plutôt qu'une erreur 500.
 
 **Limites connues, à corriger**
 

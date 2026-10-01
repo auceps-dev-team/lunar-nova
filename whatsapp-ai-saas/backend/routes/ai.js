@@ -43,11 +43,10 @@ router.post('/test-model', aiLimiter, async (req, res) => {
     }
 });
 
-// Debug: return nvidia model definition (hot-loaded)
+// Debug: return nvidia model definition
 router.get('/debug/nvidia-model', aiLimiter, async (req, res) => {
     try {
         const id = req.query.id;
-        try { delete require.cache[require.resolve('../nvidiaModels')]; } catch {}
         const nm = require('../nvidiaModels');
         const def = nm.getModelDef(id);
         res.json({ status: 'success', model: def });
