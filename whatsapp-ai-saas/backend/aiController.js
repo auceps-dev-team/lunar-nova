@@ -2,16 +2,18 @@ const geminiService = require('./geminiService');
 const openrouterService = require('./openrouterService');
 const ollamaService = require('./ollamaService');
 const openaiService = require('./openaiService');
-// nvidiaModels may be edited at runtime; load dynamically to pick changes without restart
-function getNvidiaModels() {
-    try {
-        delete require.cache[require.resolve('./nvidiaModels')];
-    } catch {
-        // ignore
-    }
-    return require('./nvidiaModels');
-}
+// Chargé une fois. Ce module était autrefois purgé du cache à chaque appel
+// (« edited at runtime ») pour qu'une modification de la liste des modèles soit
+// vue sans relancer le serveur. Vérifié le 1er octobre 2026 : aucune valeur n'y
+// est figée au chargement — les clés sont lues dans les réglages et process.env
+// à l'appel, dans resolveKey — et en version packagée le fichier est en lecture
+// seule dans app.asar. Le rechargement ne servait donc qu'au développeur qui
+// édite la liste ; il coûtait la réévaluation de ~790 lignes à chaque appel LLM.
+// Modifier MODELS demande désormais de relancer le backend, comme tout module.
+const nvidiaModels = require('./nvidiaModels');
+const getNvidiaModels = () => nvidiaModels;
 const db = require('./db');
+const { resolveProviderCredentials } = require('./services/providerCredentials');
 
 /**
  * Résolution de clé NVIDIA à 3 niveaux :
@@ -38,72 +40,61 @@ async function getProviderConfig(personaId = null) {
     return { provider, dbAgent };
 }
 
+/**
+ * Adaptateurs des tâches de texte « à un coup » (propositions de réponse,
+ * classification de commande), par fournisseur. Ils ne font que traduire
+ * l'ordre des arguments, propre à chaque service ; la résolution des clés et
+ * des URL est commune (providerCredentials) — constat R6 de l'audit.
+ *
+ * Les services sont appelés par espace de noms, à l'appel : les tests peuvent
+ * ainsi les substituer (convention du projet).
+ */
+const TEXT_TASKS = {
+    generateProposals: {
+        openrouter: (c, [ctx, model]) => openrouterService.generateProposals(ctx, model, c.apiKey),
+        ollama: (c, [ctx, model]) => ollamaService.generateProposals(ctx, model, c.apiKey),
+        openai: (c, [ctx, model]) => openaiService.generateProposals(ctx, model, c.apiKey, c.baseURL),
+        gemini: (c, [ctx, model]) => geminiService.generateProposals(ctx, model)
+    },
+    classifyOrderIntent: {
+        openrouter: (c, [text, contact, model]) => openrouterService.classifyOrderIntent(text, contact, c.apiKey, model),
+        ollama: (c, [text, contact, model]) => ollamaService.classifyOrderIntent(text, contact, c.apiKey, model),
+        openai: (c, [text, contact, model]) => openaiService.classifyOrderIntent(text, contact, c.apiKey, c.baseURL, model),
+        gemini: (c, [text, contact, model]) => geminiService.classifyOrderIntent(text, contact, model)
+    }
+};
+
+/**
+ * Exécute une tâche de texte sur le fournisseur voulu. Un fournisseur inconnu
+ * passe par Gemini ; une clé manquante ou un échec de l'adaptateur aussi, avec
+ * une trace dans le journal — comportement figé par aiControllerRouting.test.js.
+ */
+async function runTextTask(task, provider, modelParam, args) {
+    const adapters = TEXT_TASKS[task];
+    try {
+        const run = adapters[provider] || adapters.gemini;
+        const credentials = await resolveProviderCredentials(provider, modelParam);
+        return await run(credentials, args);
+    } catch (err) {
+        console.error(`[aiController] Fallback sur Gemini pour ${task} suite à l'erreur (${provider}) :`, err.message);
+        return await adapters.gemini({}, args);
+    }
+}
+
 async function generateProposals(chatContext, modelParam, providerOverride = null) {
     const { provider: defaultProvider } = await getProviderConfig(null);
-    const provider = providerOverride || defaultProvider;
-
-    try {
-        if (provider === 'openrouter') {
-            const apiKey = await db.getSetting('openrouter_api_key', '');
-            if (!apiKey && !process.env.OPENROUTER_API_KEY) throw new Error('OpenRouter API key not configured');
-            return await openrouterService.generateProposals(chatContext, modelParam, apiKey);
-        } else if (provider === 'ollama') {
-            const apiKey = await db.getSetting('ollama_api_key', '');
-            return await ollamaService.generateProposals(chatContext, modelParam, apiKey);
-        } else if (provider === 'openai') {
-            const apiKey = await resolveNvidiaKey(modelParam);
-            if (!apiKey) throw new Error('OpenAI/NVIDIA API key not configured');
-            const nvidiaModels = getNvidiaModels();
-            let baseURL = await db.getSetting('openai_base_url', nvidiaModels.NVIDIA_BASE_URL);
-            const modelDef = nvidiaModels.getModelDef(modelParam);
-            if (modelDef && modelDef.provider === 'together') {
-                baseURL = 'https://api.together.xyz/v1';
-            }
-            return await openaiService.generateProposals(chatContext, modelParam, apiKey, baseURL);
-        } else {
-            return await geminiService.generateProposals(chatContext, modelParam);
-        }
-    } catch (err) {
-        console.error(`[aiController] Fallback sur Gemini pour generateProposals suite à l'erreur (${provider}) :`, err.message);
-        return await geminiService.generateProposals(chatContext, modelParam);
-    }
+    return runTextTask('generateProposals', providerOverride || defaultProvider, modelParam, [chatContext, modelParam]);
 }
 
 /**
  * classifyOrderIntent — classification structurée à un seul message pour
  * l'agent "Order Radar" (détection d'intention d'achat / commande directe).
- * Même branchement par provider que generateProposals, pour que le classificateur
- * respecte le provider/clé réellement configurés au lieu d'appeler un SDK en dur.
+ * Même routage que generateProposals, pour que le classificateur respecte le
+ * fournisseur et la clé réellement configurés au lieu d'appeler un SDK en dur.
  */
 async function classifyOrderIntent(text, contactName, modelParam = null, providerOverride = null) {
     const { provider: defaultProvider } = await getProviderConfig(null);
-    const provider = providerOverride || defaultProvider;
-
-    try {
-        if (provider === 'openrouter') {
-            const apiKey = await db.getSetting('openrouter_api_key', '');
-            if (!apiKey && !process.env.OPENROUTER_API_KEY) throw new Error('OpenRouter API key not configured');
-            return await openrouterService.classifyOrderIntent(text, contactName, apiKey, modelParam);
-        } else if (provider === 'ollama') {
-            const apiKey = await db.getSetting('ollama_api_key', '');
-            return await ollamaService.classifyOrderIntent(text, contactName, apiKey, modelParam);
-        } else if (provider === 'openai') {
-            const apiKey = await resolveNvidiaKey(modelParam);
-            if (!apiKey) throw new Error('OpenAI/NVIDIA API key not configured');
-            const nvidiaModels = getNvidiaModels();
-            let baseURL = await db.getSetting('openai_base_url', nvidiaModels.NVIDIA_BASE_URL);
-            const modelDef = nvidiaModels.getModelDef(modelParam);
-            if (modelDef && modelDef.provider === 'together') {
-                baseURL = 'https://api.together.xyz/v1';
-            }
-            return await openaiService.classifyOrderIntent(text, contactName, apiKey, baseURL, modelParam);
-        } else {
-            return await geminiService.classifyOrderIntent(text, contactName, modelParam);
-        }
-    } catch (err) {
-        console.error(`[aiController] Fallback sur Gemini pour classifyOrderIntent suite à l'erreur (${provider}) :`, err.message);
-        return await geminiService.classifyOrderIntent(text, contactName, modelParam);
-    }
+    return runTextTask('classifyOrderIntent', providerOverride || defaultProvider, modelParam, [text, contactName, modelParam]);
 }
 
 async function chatWithAgent(personaId, message, imageParams, attachments, promptFormat, messages = null, currentTasks = null, isRealTime = false, modelOverride = null, providerOverride = null) {

@@ -66,6 +66,7 @@ export default defineConfig([
       'backend/scrapers/**/*.js',
       'backend/routes/catalog.js',
       'backend/routes/wa.js',
+      'backend/routes/system.js',
       'backend/services/waInstancesService.js',
       'backend/diagnostics/**/*.cjs',
       'backend/server.js',

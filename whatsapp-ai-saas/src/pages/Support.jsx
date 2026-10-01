@@ -48,6 +48,17 @@ const Support = () => {
 
     const changelog = [
         {
+            version: 'v1.50.1',
+            date: '2026-10-01',
+            changes: [
+                'Sécurité — Le service local vérifie désormais votre jeton d\'authentification avant de lire le contenu d\'une requête. Auparavant, un envoi volumineux sans jeton était entièrement lu, puis seulement refusé',
+                'Sécurité — L\'interface applique une politique de sécurité du contenu : seuls les scripts de l\'application et de la connexion Google peuvent s\'y exécuter. Vérifié sans aucun blocage sur les 24 écrans',
+                'Une origine web non autorisée reçoit maintenant un refus net, au lieu d\'une erreur interne qui encombrait le journal',
+                'Fiabilité — Les échanges avec Gemini et avec les modèles OpenAI/NVIDIA, ainsi que le choix du fournisseur, sont désormais couverts par des tests automatiques',
+                'Maintenance — Les clés et adresses des fournisseurs d\'IA sont résolues en un seul endroit (elles l\'étaient en trois) ; extraction des fiches Google Maps simplifiée et testée ; retrait d\'une dépendance inutilisée'
+            ]
+        },
+        {
             version: 'v1.50.0',
             date: '2026-10-01',
             changes: [

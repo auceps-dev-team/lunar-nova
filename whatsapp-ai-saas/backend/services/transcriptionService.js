@@ -155,23 +155,17 @@ function registerEngine(name, fn) {
 }
 
 /**
- * Lecture du réglage, isolée derrière une indirection remplaçable.
+ * `db.getSetting` est appelé par espace de noms, au moment de l'appel — jamais
+ * déstructuré au chargement — pour que les tests puissent le substituer.
  *
- * Mesuré le 19 septembre 2026 : sous Vitest, un test qui fait
- * `import db from '../db'` et ce module qui fait `require('../db')` ne
- * partagent pas la même instance — un réglage écrit par le test est invisible
- * ici (relevé : « sonde » côté test, « (ABSENT) » côté service). `vi.mock`
- * n'intercepte pas non plus ce `require`. Cette couture suit le précédent
- * `db.__setDbFileForTests` déjà en place dans le projet.
+ * C'est la convention du projet (cf. agentFallbackStrategies.test.js) : sous
+ * Vitest, un `import` ESM dans le test et le `require` de ce module donnent deux
+ * instances de `../db` — constaté une première fois sur le routeur agentique, et
+ * de nouveau le 19 septembre 2026 ici (un réglage écrit par le test restait
+ * invisible au service). Le test passe donc par `require('../db')` et substitue
+ * `getSetting` ; `vi.mock` n'intercepte pas ces modules CommonJS inlinés.
  */
-let readSetting = (key, defaultValue) => db.getSetting(key, defaultValue);
-
-/** Réservé aux tests : remplace le lecteur de réglages. */
-function __setSettingReaderForTests(fn) {
-    readSetting = typeof fn === 'function'
-        ? fn
-        : (key, defaultValue) => db.getSetting(key, defaultValue);
-}
+const readSetting = (key, defaultValue) => db.getSetting(key, defaultValue);
 
 async function resolveEngineName(requested) {
     if (requested) return requested;
@@ -248,7 +242,6 @@ async function transcribe({ audio, mimeType, languageHint, engine, model } = {})
 
 module.exports = {
     transcribe,
-    __setSettingReaderForTests,
     toUnpackedPath,
     registerEngine,
     listEngines,

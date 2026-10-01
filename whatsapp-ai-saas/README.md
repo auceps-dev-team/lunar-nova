@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/auceps-dev-team/lunar-nova"><img src="https://img.shields.io/badge/version-1.50.0-blue.svg" alt="Version 1.50.0" /></a>
+  <a href="https://github.com/auceps-dev-team/lunar-nova"><img src="https://img.shields.io/badge/version-1.50.1-blue.svg" alt="Version 1.50.1" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue.svg" alt="License AGPL-3.0" /></a>
   <a href="#-open-source"><img src="https://img.shields.io/badge/open%20source-oui-brightgreen.svg" alt="Open Source" /></a>
   <a href="#-pourquoi-wacopilote-"><img src="https://img.shields.io/badge/Made%20in-%F0%9F%87%A8%F0%9F%87%BE%20C%C3%B4te%20d'Ivoire-orange.svg" alt="Made in Côte d'Ivoire" /></a>
@@ -353,6 +353,8 @@ Vos conversations, vos contacts et vos clés d'API ne quittent jamais votre mach
 7. **Chiffrement des secrets au repos** *(v1.37.0)* : les clés d'API et les jetons OAuth sont chiffrés en **AES-256-GCM** dans la base SQLite. La clé maître ne réside jamais dans la base qu'elle protège : elle est scellée par le magasin de secrets du système d'exploitation via `safeStorage` (DPAPI sous Windows, Trousseau sous macOS, libsecret sous Linux) et n'est transmise au backend qu'au démarrage. Copier `database.sqlite` sur une autre machine ne suffit donc pas à en extraire les secrets. Les bases antérieures sont migrées automatiquement au premier lancement.
 
 8. **Journaux expurgés par défaut** *(v1.40.2)* : le moteur de détection de commandes journalisait le texte intégral des messages WhatsApp et le nom des contacts, dans un fichier que le gabarit de signalement de bug demande justement de joindre aux issues publiques. Seules la longueur du message et l'initiale du contact y figurent désormais. Relancer le backend avec `WACOPILOTE_LOG_MESSAGES=1` rétablit les traces complètes pour un diagnostic ponctuel.
+
+**Renforcé en v1.50.1** — le jeton d'authentification est vérifié avant toute lecture du corps des requêtes (un corps volumineux sans jeton était auparavant lu en entier avant d'être refusé) ; l'interface packagée applique une politique de sécurité du contenu (CSP) qui n'autorise que les scripts de l'application et de la connexion Google — vérifiée sans violation sur les 24 écrans, un script tiers injecté en témoin étant bien bloqué ; une origine web non autorisée reçoit un 403 propre plutôt qu'une erreur 500.
 
 **Limites connues, à corriger**
 

@@ -1,28 +1,25 @@
 import { describe, it, expect, beforeEach, afterAll, vi } from 'vitest';
-import {
+
+// Convention du projet (cf. agentFallbackStrategies.test.js) : tout passe par
+// require(), comme dans le module testé. Un `import` ESM de `../db` donnerait
+// une seconde instance, et un réglage écrit ici resterait invisible au service
+// (constaté de nouveau le 19 septembre 2026). On substitue `getSetting` par
+// espace de noms : les réglages viennent d'une table locale, aucune base n'est
+// touchée et aucun ordre d'exécution n'est imposé.
+const db = require('../db');
+const {
     transcribe,
     registerEngine,
     listEngines,
-    __setSettingReaderForTests,
     toUnpackedPath,
     MAX_AUDIO_BYTES
-} from '../services/transcriptionService';
+} = require('../services/transcriptionService');
 
-// Les réglages sont servis par une table locale plutôt que par la base.
-//
-// Mesuré le 19 septembre 2026 : sous Vitest, un test qui fait
-// `import db from '../db'` et un service qui fait `require('../db')` ne
-// partagent pas la même instance — un réglage écrit par le test est invisible
-// au service (relevé : « sonde » côté test, « (ABSENT) » côté service), et
-// `vi.mock('../db')` n'intercepte pas ce require non plus. La couture
-// `__setSettingReaderForTests` contourne le problème et rend ces tests
-// indépendants de toute base : aucun fichier touché, aucun ordre imposé.
 const settings = new Map();
+const realGetSetting = db.getSetting;
+db.getSetting = async (key, def = null) => (settings.has(key) ? settings.get(key) : def);
 
-__setSettingReaderForTests(async (key, def = null) =>
-    (settings.has(key) ? settings.get(key) : def));
-
-afterAll(() => { __setSettingReaderForTests(null); });
+afterAll(() => { db.getSetting = realGetSetting; });
 
 const OGG = Buffer.from('OggS\u0000\u0002pseudo-audio pour les tests');
 

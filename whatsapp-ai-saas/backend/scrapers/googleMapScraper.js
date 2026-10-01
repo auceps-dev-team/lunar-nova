@@ -1,6 +1,7 @@
 const { chromium } = require('playwright');
 const EventEmitter = require('events');
 const { isLandline, detectCountry } = require('./phoneRules');
+const { extractPlaceDetails } = require('./parsers/googleMaps');
 
 const MAX_SESSIONS = 10;
 const SESSION_TTL_MS = 60 * 60 * 1000; // 1 hour
@@ -220,7 +221,10 @@ class GoogleMapScraper extends EventEmitter {
                     await page.goto(link, { waitUntil: 'domcontentloaded', timeout: 20000 });
                     await page.waitForTimeout(1500);
 
-                    const name = await page.$eval('h1', el => el.innerText.trim()).catch(() => '');
+                    // Un seul aller-retour : tous les champs sont lus dans la page par le
+                    // parseur partagé (parsers/googleMaps.js, testé sur jsdom), avec les
+                    // mêmes sélecteurs et dans le même ordre qu’avant.
+                    const { name, phone, website, address } = await page.evaluate(extractPlaceDetails);
                     if (!name) {
                         session.scrapedLinks.add(link);
                         continue;
@@ -233,58 +237,6 @@ class GoogleMapScraper extends EventEmitter {
                         total: linksToProcess.length,
                         leadName: name
                     });
-
-                    // Extract phone
-                    let phone = '';
-                    for (const sel of [
-                        'button[data-item-id^="phone:tel:"]',
-                        'a[data-item-id^="phone:tel:"]',
-                        'button[aria-label*="Téléphone"]',
-                        'button[aria-label*="Phone"]',
-                        '[data-tooltip="Copier le numéro de téléphone"]'
-                    ]) {
-                        try {
-                            const el = await page.$(sel);
-                            if (el) {
-                                phone = await el.innerText();
-                                if (phone && phone.trim()) { phone = phone.trim(); break; }
-                                const ariaLabel = await el.getAttribute('aria-label');
-                                if (ariaLabel && ariaLabel.match(/[\d+]/)) {
-                                    phone = ariaLabel.replace(/[^\d+\s]/g, '').trim();
-                                    break;
-                                }
-                            }
-                        } catch {}
-                    }
-
-                    // Extract website
-                    let website = '';
-                    for (const sel of ['a[data-item-id="authority"]', 'a[aria-label*="Site Web"]', 'a[aria-label*="Website"]']) {
-                        try {
-                            const el = await page.$(sel);
-                            if (el) { website = await el.getAttribute('href') || ''; if (website) break; }
-                        } catch {}
-                    }
-
-                    // Extract address
-                    let address = '';
-                    for (const sel of ['button[data-item-id="address"]', 'button[aria-label*="Adresse"]', 'button[aria-label*="Address"]']) {
-                        try {
-                            const el = await page.$(sel);
-                            if (el) {
-                                address = await el.innerText();
-                                if (address && address.trim()) { address = address.trim(); break; }
-                                const ariaLabel = await el.getAttribute('aria-label');
-                                if (ariaLabel) { address = ariaLabel.replace(/^Adresse:\s*/i, '').trim(); break; }
-                            }
-                        } catch {}
-                    }
-
-                    if (address) {
-                        address = address.replace(/^[\s\uE000-\uF8FF\u200B-\u200D\uFEFF]+/, '').trim();
-                    }
-
-                    if (phone) phone = phone.replace(/[^\d+]/g, '');
 
                     // Filter landlines
                     //
