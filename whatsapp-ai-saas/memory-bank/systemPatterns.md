@@ -40,7 +40,7 @@
      - `+0.1.0` pour tout changement majeur ou important (nouvelles fonctionnalités structurantes, refonte architecturale, nouveaux modules / outils).
      - `+0.0.1` pour tout fix ou changement mineur mais important (bugfixes, patchs de stabilité, fiabilisation d'intégration).
      - Aucun bump pour la maintenance interne pure (ajustements CI isolés, doc pure).
-   - **Full Project Synchronization**: La version doit être répercutée de manière synchrone sur `package.json`, `backend/package.json`, `build/installer.iss`, `README.md`, `src/pages/Support.jsx`, `src/components/CliAgentBridgeSettings.jsx`, et le Memory Bank.
+   - **Full Project Synchronization**: La version doit être répercutée de manière synchrone sur `package.json`, `backend/package.json`, `README.md`, `src/pages/Support.jsx`, `src/components/CliAgentBridgeSettings.jsx`, et le Memory Bank.
    - **Changelog Tracking**: Chaque nouvelle version doit obligatoirement être documentée dans la liste `changelog` de `src/pages/Support.jsx`.
    - **Docs & Memory Bank**: Le `README.md` et les 5 fichiers du Memory Bank doivent refléter l'état exact du projet avant tout commit.
 

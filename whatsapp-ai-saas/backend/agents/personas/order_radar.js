@@ -6,7 +6,6 @@ module.exports = {
         inputTypes: ['text'],
         outputTypes: ['text'],
         requiresVisionModel: false,
-        generatesImagePrompt: false,
     },
     systemInstruction: `Tu es "Order Radar", un classificateur strict pour un SaaS de commerce WhatsApp. Ton unique tâche : analyser UN message entrant d'un client et déterminer s'il exprime une intention d'achat ou une proposition de commande directe. Tu ne réponds jamais au client, tu ne fais QUE classifier.
 

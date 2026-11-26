@@ -6,7 +6,6 @@ module.exports = {
         inputTypes: ['text'],
         outputTypes: ['text'],
         requiresVisionModel: false,
-        generatesImagePrompt: false,
     },
   color: "#1DA1F2",
   emoji: "🐦",

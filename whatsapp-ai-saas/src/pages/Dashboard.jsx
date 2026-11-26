@@ -157,7 +157,7 @@ const Dashboard = () => {
             <div style={{ marginBottom: 32, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
                 <div>
                     <h1 style={{ fontSize: 26, fontWeight: 800, color: C.textPrimary, margin: 0, letterSpacing: '-0.5px' }}>
-                        {userProfile?.isAuthenticated && userProfile?.firstName
+                        {userProfile?.firstName
                             ? `${t('welcomeBack')} ${userProfile.firstName} 👋`
                             : `${t('welcomeTitle')} 👋`}
                     </h1>

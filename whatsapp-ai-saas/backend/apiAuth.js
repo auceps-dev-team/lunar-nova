@@ -50,20 +50,10 @@ function isValidToken(provided) {
  */
 const SSE_PATHS = [/^\/api\/orders\/stream\//];
 
-/**
- * Routes nécessairement publiques.
- *
- * Le callback OAuth Google est ouvert par le navigateur externe de l'utilisateur
- * après redirection depuis Google : cette requête ne peut pas porter le token.
- * C'est le fonctionnement normal d'un flux loopback — la protection y repose sur
- * le paramètre `state` et sur le code d'autorisation à usage unique, pas sur le
- * token local. `/status`, lui, est appelé par l'app et reste protégé.
- */
-const PUBLIC_PATHS = [/^\/api\/auth\/google\/callback$/];
-
+// Aucune route publique : la seule exception, le callback OAuth de la
+// connexion Google (ouvert par le navigateur externe, donc sans jeton), a
+// disparu avec cette connexion le 26/11/2026. Toute route exige le jeton.
 function requireApiToken(req, res, next) {
-    if (PUBLIC_PATHS.some((re) => re.test(req.path))) return next();
-
     const header = req.get('authorization') || '';
     let provided = header.startsWith('Bearer ') ? header.slice(7).trim() : '';
 

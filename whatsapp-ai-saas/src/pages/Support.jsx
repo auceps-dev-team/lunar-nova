@@ -48,6 +48,22 @@ const Support = () => {
 
     const changelog = [
         {
+            version: 'v1.51.0',
+            date: '2026-11-26',
+            changes: [
+                'Recentrage — La génération et la retouche d\'images (studio photo, création d\'images, quota d\'images Gemini) sont retirées : WaCopilote se concentre sur WhatsApp multi-comptes et les agents de rédaction. Les réglages d\'image sont effacés à la mise à jour',
+                'Recentrage — La connexion avec un compte Google est retirée pour l\'instant : votre nom et votre entreprise se renseignent directement dans le profil',
+                'Rédaction — Réécriture du passage sélectionné en six modes : améliorer, corriger l\'orthographe, raccourcir, développer, ton message WhatsApp, plus formel. Le texte réécrit remplace bien le passage choisi, même si vous avez cliqué ailleurs pendant la réponse ; si ce passage a été modifié entre-temps, rien n\'est écrasé et le résultat est copié dans le presse-papiers',
+                'Rédaction — Nouveau bouton « Copier pour WhatsApp » : le gras, l\'italique, le barré, les listes et les titres passent au format WhatsApp (*gras*, _italique_)',
+                'Rédaction — Générer dans un document qui contient déjà du texte demande confirmation, et Annuler (Ctrl+Z) rend votre texte en une fois : il était auparavant remplacé sans retour possible. La langue de rédaction suit celle de l\'interface, arabe compris',
+                'Agents — Les agents de rédaction utilisent désormais le modèle choisi dans les Réglages, et ceux qui passent par un assistant en ligne de commande disposent de 2 minutes pour répondre (35 secondes auparavant, souvent trop court). Sur OpenRouter, 322 modèles de conversation classés à tort parmi les modèles d\'image sont de nouveau proposés',
+                'Prospection — La carte s\'affiche dès que votre clé Google Maps est saisie dans les Réglages (nouvelle section Prospection) ; sans clé, ou si le service local ne répond pas, un message l\'explique. Au démarrage, l\'interface attend le service local au lieu d\'échouer',
+                'Mises à jour — Seul l\'installeur principal est téléchargé, et sa taille et son empreinte SHA-256 sont vérifiées avant toute installation',
+                'WhatsApp — Les repères que WaCopilote lit dans WhatsApp Web sont réunis en un seul registre, prêt à être corrigé par un fichier signé quand WhatsApp change, sans réinstaller l\'application',
+                'Correctifs — 17 libellés s\'affichaient sous la forme de leur nom de code (par exemple dans les réglages du pont CLI) ; une notification pouvait disparaître au bout d\'une fraction de seconde ; une copie refusée était annoncée comme réussie'
+            ]
+        },
+        {
             version: 'v1.50.2',
             date: '2026-10-01',
             changes: [

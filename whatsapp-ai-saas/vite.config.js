@@ -13,13 +13,17 @@ import react from '@vitejs/plugin-react'
  * 2026 ; en ajouter une doit renvoyer à un usage réel :
  *   - backend local              : API_BASE_URL (VITE_API_URL), fetch et SSE
  *   - polices Google             : index.html
- *   - connexion Google           : @react-oauth/google (script, style, iframe),
- *                                  userinfo dans Profile.jsx
  *   - carte Google               : iframe d'intégration dans Prospection.jsx
  *                                  (lu dans le code ; non exercé à la mesure,
  *                                  il faut une clé Google Maps pour l'afficher)
- *   - URL data: en fetch         : ImageEditor.jsx convertit des data: en Blob
- *   - images https:              : visuels générés hébergés par les fournisseurs
+ *   - URL data: en fetch         : son seul usage relevé (ImageEditor.jsx) est
+ *                                  parti avec la génération d'image le
+ *                                  26/11/2026 ; conservée tant que l'export
+ *                                  PDF des factures n'a pas été éprouvé sans elle
+ *   - images https:              : avatars et images distantes affichées
+ *
+ * Retirées le 26/11/2026 avec la connexion Google : accounts.google.com
+ * (script, style, iframe, connect) et www.googleapis.com (userinfo).
  *
  * Mesuré le 1er octobre 2026, application packagée, profil isolé : aucune
  * violation sur les 24 routes ; un script tiers injecté en témoin est bien
@@ -39,13 +43,13 @@ function contentSecurityPolicy(apiUrl) {
   const api = new URL(apiUrl).origin
   const directives = {
     'default-src': ["'self'"],
-    'script-src': ["'self'", 'https://accounts.google.com'],
-    'style-src': ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', 'https://accounts.google.com'],
+    'script-src': ["'self'"],
+    'style-src': ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
     'font-src': ["'self'", 'data:', 'https://fonts.gstatic.com'],
     'img-src': ["'self'", 'data:', 'blob:', 'https:'],
     'media-src': ["'self'", 'data:', 'blob:'],
-    'connect-src': ["'self'", api, 'data:', 'blob:', 'https://accounts.google.com', 'https://www.googleapis.com'],
-    'frame-src': ['https://accounts.google.com', 'https://www.google.com'],
+    'connect-src': ["'self'", api, 'data:', 'blob:'],
+    'frame-src': ['https://www.google.com'],
     'worker-src': ["'self'", 'blob:'],
     'object-src': ["'none'"],
     'base-uri': ["'self'"],

@@ -22,14 +22,12 @@ const Topbar = ({ activeInstance, currentTitle }) => {
         if (!currentTitle || currentTitle === '/') return t('whatsappHub');
         if (currentTitle === '/whatsapp-hub') return activeInstance ? activeInstance.name : t('whatsappHub');
         if (currentTitle === '/dashboard') return t('dashboard');
-        if (currentTitle === '/agents') return t('productPhotoTitle');
         if (currentTitle === '/agent-pipeline') return t('agentPipeline');
         if (currentTitle === '/tasks') return t('tasks');
         if (currentTitle === '/invoice-builder') return t('invoiceBuilder');
         if (currentTitle === '/tools') return t('tools');
         if (currentTitle === '/profile') return t('accountStrategy');
         if (currentTitle === '/settings') return t('appSettings');
-        if (currentTitle === '/fashion/photoshoot') return t('photoShootTitle');
         return t('workspace');
     };
 

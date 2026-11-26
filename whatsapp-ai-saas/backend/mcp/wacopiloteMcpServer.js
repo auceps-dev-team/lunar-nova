@@ -2,14 +2,13 @@ const readline = require('readline');
 const pkg = require('../../package.json');
 
 // Outils regroupés par domaine (constat R9 de l’audit du 29/09/2026). L’ordre
-// des domaines reproduit l’ordre d’origine de la liste : `tools/list` renvoie
-// exactement la même séquence qu’avant le découpage.
+// des domaines reproduit l’ordre d’origine de la liste. Le domaine « photo »
+// (generate_photo) a été retiré avec la génération d'image.
 const DOMAINS = [
     require('./tools/agents'),
     require('./tools/orders'),
     require('./tools/pipeline'),
     require('./tools/documents'),
-    require('./tools/photo'),
     require('./tools/quotes'),
     require('./tools/whatsapp'),
     require('./tools/crm')

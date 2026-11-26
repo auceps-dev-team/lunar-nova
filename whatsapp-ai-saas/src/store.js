@@ -41,6 +41,18 @@ const idbStorage = {
     },
 };
 
+// Clés retirées du store mais encore présentes dans l'IndexedDB des
+// installations existantes. Sans ce filtre, persist les réhydraterait puis les
+// réécrirait à chaque sauvegarde, indéfiniment — agentHistory gardait jusqu'à
+// 20 images en base64. Retirées avec la génération d'image.
+export const OBSOLETE_PERSISTED_KEYS = ['agentHistory', 'pendingEditImage', 'aiQuota'];
+
+export const withoutObsoleteKeys = (state) => {
+    const kept = { ...state };
+    for (const key of OBSOLETE_PERSISTED_KEYS) delete kept[key];
+    return kept;
+};
+
 // Global store to share contexts across Phase 2 apps and persist to IndexedDB
 const useAppStore = create(
     persist(
@@ -68,8 +80,11 @@ const useAppStore = create(
             // Persisting it caused the stale update banner to persist even on the latest version.
             partialize: (state) => {
                 const { waAnalysis, updateAvailable, backendSettings, availableModels, ...rest } = state;
-                return rest;
+                return withoutObsoleteKeys(rest);
             },
+            // Ni réhydratées en mémoire : l'état persisté d'avant le retrait
+            // les porte encore.
+            merge: (persisted, current) => ({ ...current, ...withoutObsoleteKeys(persisted || {}) }),
         }
     )
 );

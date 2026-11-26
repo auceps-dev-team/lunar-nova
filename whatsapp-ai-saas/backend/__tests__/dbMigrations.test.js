@@ -29,7 +29,8 @@ describe('db.js — migrations de schéma (SQLite en mémoire)', () => {
         expect(ok).toBe(true);
 
         const v = await db.pool.query('SELECT MAX(version) as v FROM schema_version');
-        expect(v.rows[0].v).toBe(10);
+        // v11 : retrait des réglages de la génération d'image (26/11/2026).
+        expect(v.rows[0].v).toBe(11);
     });
 
     it.runIf(sqlite3Available)('detected_orders porte l\'origine de la commande, « text » par défaut (v10)', async () => {

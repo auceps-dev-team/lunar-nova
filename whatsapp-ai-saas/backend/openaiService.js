@@ -16,90 +16,6 @@ function getClient(apiKey, baseURL) {
     return new OpenAI(config);
 }
 
-/**
- * generateImageWithQwen
- * 
- * Qwen-Image est déployé via Together AI (partenaire NVIDIA Build).
- * - Base URL : https://api.together.xyz/v1
- * - Endpoint : /images/generations  (format OpenAI-compatible)
- * - Model ID  : "Qwen/Qwen-Image"   (majuscules — nom Together AI)
- * 
- * @param {string}  prompt   - Texte décrivant l'image
- * @param {string}  apiKey   - Clé Together AI (nvapi-... fournie par NVIDIA Build)
- * @param {object}  options  - { n, steps, disable_safety_checker }
- */
-/**
- * sanitizePromptForTogether
- * Remplace les termes qui déclenchent le filtre Black Forest Labs / Together AI
- * dans les prompts de shooting photo fashion.
- */
-function sanitizePromptForTogether(prompt) {
-    if (!prompt) return prompt;
-    return prompt
-        // Réduire les références anatomiques excessives
-        .replace(/\bskin tone\b/gi, 'complexion')
-        .replace(/\bbare skin\b/gi, 'fashion look')
-        .replace(/\bgender\b/gi, 'style')
-        .replace(/\b(male|female) model\b/gi, 'fashion model')
-        .replace(/\bbody position\b/gi, 'pose')
-        .replace(/\bbody\b(?! language| suit| wear| of water| scan)/gi, 'figure')
-        .replace(/\bappearance\b/gi, 'look')
-        .replace(/\bDO NOT change the model.*?\n/gi, '')
-        .replace(/MANDATORY CONSTRAINTS \(DO NOT IGNORE\):/gi, 'STYLE DIRECTION:');
-}
-
-async function generateImageWithQwen(prompt, apiKey, options = {}) {
-    const axios = require('axios');
-    const n = options.n || 1;
-    const steps = options.steps || 28;  // 28 steps = meilleure qualité pour fashion
-
-    // Sanitiser le prompt pour éviter le filtre BFL/Together AI
-    const safePrompt = sanitizePromptForTogether(prompt);
-
-    // Together AI — OpenAI-compatible endpoint
-    const TOGETHER_BASE = 'https://api.together.xyz/v1';
-    const endpoint = `${TOGETHER_BASE}/images/generations`;
-
-    // Conformité / risque ToS : désactiver le filtre de sécurité de Together AI
-    // (`disable_safety_checker`) peut enfreindre leurs conditions d'utilisation
-    // et exposer le compte à un avertissement. C'était forcé à `true` sans tenir
-    // compte de l'option transmise — désormais l'appelant décide, avec un défaut
-    // à `true` uniquement pour préserver les shootings fashion/editorial existants.
-    // Préférez `false` dès que le contenu généré n'en a pas besoin.
-    const disableSafetyChecker = options.disable_safety_checker !== undefined
-        ? !!options.disable_safety_checker
-        : true;
-
-    const payload = {
-        model: 'Qwen/Qwen-Image',           // Nom exact sur Together AI
-        prompt: safePrompt || 'Generate a professional fashion product photo',
-        n,
-        steps,
-        response_format: 'b64_json',
-        disable_safety_checker: disableSafetyChecker,
-    };
-
-    if (options.imageParams && options.imageParams.data) {
-        payload.image_url = `data:${options.imageParams.mimeType || 'image/jpeg'};base64,${options.imageParams.data}`;
-        payload.mode = "image-to-image";
-    }
-
-    console.error('[Qwen→Together] POST', endpoint, '| model:', payload.model, '| steps:', steps);
-    console.error('[Qwen→Together] Prompt (sanitized, first 200 chars):', safePrompt?.slice(0, 200));
-
-    const response = await axios.post(endpoint, payload, {
-        headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-        },
-        timeout: 180000     // 3 min — Together AI peut être lent sur la première requête
-    });
-
-    return response.data;
-}
-
-
 async function generateProposals(chatContext, modelParam, apiKey, baseURL) {
     const openai = getClient(apiKey, baseURL);
     if (!openai) {
@@ -166,7 +82,9 @@ async function chatWithAgent(persona, message, imageParams, promptFormat, apiKey
         finalPromptFormat = dbAgent.response_format === 'json' ? 'json' : promptFormat;
         targetModel = dbAgent.model_override;
     } else {
-        const p = orchestrator.getPersona(persona) || orchestrator.getPersona('creative');
+        // Agent inconnu : repli sur le copilote (« creative », l'ancien repli,
+        // est parti avec la génération d'image).
+        const p = orchestrator.getPersona(persona) || orchestrator.getPersona('copilot');
         personaInstruction = p.systemInstruction;
         finalPromptFormat = orchestrator.requiresJsonFormat(persona) ? 'json' : promptFormat;
     }
@@ -253,192 +171,16 @@ async function chatWithAgent(persona, message, imageParams, promptFormat, apiKey
     }
 }
 
-/**
- * Specialized function for Vision and Image Editing via NVIDIA NIM (Qwen etc.)
- * These are chat-based vision models.
- */
-async function analyzeOrEditImage(prompt, imageParams, apiKey, baseURL, modelId) {
-    const openai = getClient(apiKey, baseURL);
-    if (!openai) return { error: "API Key missing." };
-
-    try {
-        // ── Qwen-Image via Together AI ─────────────────────────────────────────
-        // Déployé sur https://api.together.xyz/v1/images/generations
-        // Clé API stockée dans 'together_api_key' en base
-        if (modelId && (modelId.toLowerCase().includes('qwen/qwen-image') || modelId === 'qwen/qwen-image')) {
-
-            const qwenResponse = await generateImageWithQwen(prompt, apiKey, {
-                n: 1,
-                steps: 20,
-                disable_safety_checker: false,
-                imageParams: imageParams,
-            });
-
-            const payload = qwenResponse;
-            let imageBytes = null;
-
-            // Together AI response: { data: [{ b64_json: "...", ... }] }
-            if (payload?.data?.[0]?.b64_json) {
-                imageBytes = payload.data[0].b64_json;
-            }
-            // Fallbacks (NVIDIA /genai/, autres formats)
-            if (!imageBytes && payload?.artifacts?.[0]?.base64) {
-                imageBytes = payload.artifacts[0].base64;
-            }
-            if (!imageBytes) {
-                const firstItem = payload?.data?.[0] || payload?.output?.[0] || payload?.[0];
-                if (firstItem) {
-                    imageBytes = firstItem?.b64_json || firstItem?.b64 || firstItem?.base64 || firstItem?.image || null;
-                }
-            }
-            if (!imageBytes) {
-                imageBytes = payload?.b64_json || payload?.image || null;
-            }
-
-            console.error('[Qwen→Together] Response keys:', Object.keys(payload || {}));
-            if (!imageBytes) {
-                console.error('[Qwen→Together] Full payload:', JSON.stringify(payload));
-                return { error: 'Together AI / Qwen-Image : aucune image retournée. Vérifiez la clé API Together AI et le quota.' };
-            }
-
-            return { success: true, imageBytes };
-        }
-
-
-        // Use true image generation endpoint for stability/SDXL models
-        if (modelId.includes('stable-diffusion') || modelId.includes('sdxl')) {
-            const axios = require('axios');
-            
-            // Si on est sur NVIDIA, l'endpoint est différent du format OpenAI classique
-            if (baseURL && baseURL.includes('nvidia')) {
-                const normalizedBase = baseURL.replace(/\/$/, '');
-                const attemptPost = async (idToUse) => {
-                    return await axios.post(
-                        `${normalizedBase}/vision/${idToUse}`,
-                        {
-                            prompt: prompt || "Generate a fashion photo",
-                            mode: "text-to-image",
-                            model: idToUse,
-                            aspect_ratio: "1:1",
-                            cfg_scale: 5,
-                            seed: 0,
-                            steps: 50,
-                            output_format: "jpeg"
-                        },
-
-                        {
-                            headers: {
-                                'Authorization': `Bearer ${apiKey}`,
-                                'Accept': 'application/json',
-                                'Content-Type': 'application/json'
-                            }
-                        }
-                    );
-                };
-
-                try {
-                    const endpointToUse = `${normalizedBase}/vision/${modelId}`;
-                    console.error(`[NVIDIA] Calling endpoint: ${endpointToUse} | modelId=${modelId} | apiKeyPresent=${!!apiKey}`);
-                    const nvidiaResponse = await attemptPost(modelId);
-                    return {
-                        success: true,
-                        // NVIDIA API returns { image: "base64..." }
-                        imageBytes: nvidiaResponse.data.image
-                    };
-                } catch (err) {
-                    // If the model endpoint returned 404, try dot/underscore variant
-                    const statusCode = err.response && err.response.status;
-                    console.warn(`NVIDIA request failed for model ${modelId}:`, err.response ? err.response.data : err.message);
-                    if (statusCode === 404) {
-                        const alt = modelId.includes('_') ? modelId.replace(/_/g, '.') : modelId.replace(/\./g, '_');
-                        try {
-                            console.error(`Retrying NVIDIA endpoint with alternative model id: ${alt}`);
-                            const altResp = await attemptPost(alt);
-                            return { success: true, imageBytes: altResp.data.image };
-                        } catch (err2) {
-                            console.error(`NVIDIA retry also failed for ${alt}:`, err2.response ? err2.response.data : err2.message);
-                            // fallthrough to error handler below
-                            throw err2;
-                        }
-                    }
-                    throw err;
-                }
-            } else {
-                // Standard OpenAI compatibility
-                const reqPayload = {
-                    model: modelId,
-                    prompt: prompt || "Generate a fashion photo",
-                    n: 1,
-                    size: "1024x1024",
-                    response_format: "b64_json"
-                };
-
-                if (imageParams && imageParams.data) {
-                    reqPayload.image_url = `data:${imageParams.mimeType || 'image/jpeg'};base64,${imageParams.data}`;
-                    reqPayload.mode = "image-to-image";
-                }
-
-                const response = await openai.images.generate(reqPayload);
-                return {
-                    success: true,
-                    imageBytes: response.data[0].b64_json
-                };
-            }
-        }
-
-        // Fallback for chat-based vision models (returns description)
-        const messages = [];
-        if (imageParams && imageParams.data) {
-            messages.push({
-                role: "user",
-                content: [
-                    { type: "text", text: prompt || "Describe or edit this image according to instructions." },
-                    {
-                        type: "image_url",
-                        image_url: { url: `data:${imageParams.mimeType || 'image/png'};base64,${imageParams.data}` }
-                    }
-                ]
-            });
-        } else {
-            messages.push({ role: "user", content: prompt });
-        }
-
-        const response = await openai.chat.completions.create({
-            model: modelId,
-            messages: messages,
-            max_tokens: 1024,
-            stream: false
-        });
-
-        return { 
-            success: true, 
-            description: response.choices[0].message.content,
-            imageBytes: null // Text-only vision models don't return images
-        };
-    } catch (error) {
-        console.error("NVIDIA/OpenAI Image Error:", error.response ? error.response.data : error.message);
-        
-        let errorMsg = error.message;
-        if (error.response && error.response.data) {
-            if (error.response.data.error && error.response.data.error.message) {
-                errorMsg = error.response.data.error.message;
-            } else if (error.response.data.detail) {
-                errorMsg = error.response.data.detail;
-            } else if (typeof error.response.data === 'string') {
-                errorMsg = error.response.data;
-            } else {
-                errorMsg = JSON.stringify(error.response.data);
-            }
-        }
-        
-        return { error: errorMsg };
-    }
-}
+// Modèles d'image d'un fournisseur (diffusion, génération). Depuis le retrait
+// de la génération d'image, ils ne sont plus dans le catalogue : sans ce
+// filtre, un modèle comme Stable Diffusion renvoyé par l'API serait proposé
+// en silence comme modèle de conversation.
+const IMAGE_MODEL_PATTERN = /qwen-image|diffusion|sdxl|flux|dall-?e|imagen|gpt-image/i;
 
 async function listModels(apiKey, baseURL) {
     const openai = getClient(apiKey, baseURL);
 
-    // Construire les listes à partir du catalogue centralisé
+    // Construire la liste à partir du catalogue centralisé
     const catalogChatModels = [
         ...nvidiaModels.getModelsByType('text'),
         ...nvidiaModels.getModelsByType('vision')
@@ -448,17 +190,8 @@ async function listModels(apiKey, baseURL) {
         type: m.type
     }));
 
-    const catalogImageModels = [
-        ...nvidiaModels.getModelsByType('image-generate'),
-        ...nvidiaModels.getModelsByType('image-edit'),
-    ].map(m => ({
-        id: m.id,
-        name: m.name,
-        type: m.type
-    }));
-
     if (!openai) {
-        return { chat: catalogChatModels, image: catalogImageModels };
+        return { chat: catalogChatModels };
     }
 
     try {
@@ -467,9 +200,10 @@ async function listModels(apiKey, baseURL) {
 
         if (response.data && Array.isArray(response.data)) {
             response.data.forEach(m => {
-                // Ignorer les modèles vision/image-edit/image-generate qui sont dans les listes spécifiques
+                // Ignorer les modèles du catalogue autres que texte (déjà listés) et les modèles d'image
                 const inCatalog = nvidiaModels.getModelDef(m.id);
                 if (inCatalog && inCatalog.type !== 'text') return;
+                if (IMAGE_MODEL_PATTERN.test(m.id)) return;
                 // Éviter les doublons avec les modèles prioritaires
                 if (!chatModels.some(pm => pm.id === m.id)) {
                     chatModels.push({ id: m.id, name: m.id, type: 'text' });
@@ -479,16 +213,13 @@ async function listModels(apiKey, baseURL) {
             const others = chatModels.slice(catalogChatModels.length);
             others.sort((a, b) => a.name.localeCompare(b.name));
 
-            return {
-                chat: [...catalogChatModels, ...others],
-                image: catalogImageModels
-            };
+            return { chat: [...catalogChatModels, ...others] };
         }
 
-        return { chat: catalogChatModels, image: catalogImageModels };
+        return { chat: catalogChatModels };
     } catch (error) {
         console.error("OpenAI/NVIDIA Models Error:", error);
-        return { chat: catalogChatModels, image: catalogImageModels };
+        return { chat: catalogChatModels };
     }
 }
 
@@ -529,10 +260,8 @@ async function classifyOrderIntent(text, contactName, apiKey, baseURL, modelPara
 }
 
 module.exports = {
-    sanitizePromptForTogether,
     generateProposals,
     chatWithAgent,
-    analyzeOrEditImage,
     listModels,
     classifyOrderIntent
 };

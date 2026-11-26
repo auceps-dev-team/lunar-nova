@@ -251,6 +251,7 @@ const Sidebar = ({ instances, activeId, onSelect, onAdd, onRemove, onUpdate, cur
     const [editForm, setEditForm] = useState({ name: '', color: '', icon: '' });
     const { t } = useTranslation();
     const userProfile = useAppStore(state => state.userProfile) || {};
+    const hasProfileName = Boolean(userProfile.firstName || userProfile.companyName);
     const waAnalysis = useAppStore(state => state.waAnalysis);
     const resetWaAnalysis = useAppStore(state => state.resetWaAnalysis);
     const updateSettings = useAppStore(state => state.updateSettings);
@@ -435,27 +436,27 @@ const Sidebar = ({ instances, activeId, onSelect, onAdd, onRemove, onUpdate, cur
                 {/* User Profile */}
                 <div className="p-4 border-t border-white/10 mt-auto">
                     <Link to="/profile" className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-white/5 transition-colors cursor-pointer text-white">
+                        {/* Plus de connexion depuis le retrait de Google : le profil
+                            s'affiche dès qu'il porte un nom ou une entreprise. */}
                         <div className="size-10 border-2 border-white/10 rounded-full bg-primary/20 flex flex-col items-center justify-center font-bold text-sm text-primary overflow-hidden shrink-0">
-                            {userProfile.isAuthenticated ? (
-                                userProfile.profilePicture ? (
-                                    <img src={userProfile.profilePicture} alt="Profile" className="w-full h-full object-cover" />
-                                ) : (
-                                    (userProfile.firstName?.[0] || userProfile.companyName?.[0] || 'U').toUpperCase()
-                                )
+                            {userProfile.profilePicture ? (
+                                <img src={userProfile.profilePicture} alt="Profile" className="w-full h-full object-cover" />
+                            ) : hasProfileName ? (
+                                (userProfile.firstName || userProfile.companyName).charAt(0).toUpperCase()
                             ) : (
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
                             )}
                         </div>
                         <div className="flex-1 min-w-0">
-                            {userProfile.isAuthenticated ? (
+                            {hasProfileName ? (
                                 <>
-                                    <p className="text-sm font-medium text-white truncate">{userProfile.firstName ? `${userProfile.firstName} ${userProfile.lastName}` : (userProfile.companyName || 'User')}</p>
-                                    <p className="text-xs text-gray-400 truncate">{userProfile.email || 'SaaS License'}</p>
+                                    <p className="text-sm font-medium text-white truncate">{userProfile.firstName ? `${userProfile.firstName} ${userProfile.lastName || ''}`.trim() : userProfile.companyName}</p>
+                                    <p className="text-xs text-gray-400 truncate">{userProfile.email || userProfile.companyName || ''}</p>
                                 </>
                             ) : (
                                 <>
-                                    <p className="text-sm font-medium text-white truncate">{t('notSignedIn')}</p>
-                                    <p className="text-xs text-gray-400 truncate">{t('signInToAccount')}</p>
+                                    <p className="text-sm font-medium text-white truncate">{t('profileToComplete')}</p>
+                                    <p className="text-xs text-gray-400 truncate">{t('profileToCompleteHint')}</p>
                                 </>
                             )}
                         </div>

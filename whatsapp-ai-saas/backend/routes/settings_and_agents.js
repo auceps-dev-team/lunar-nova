@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { pool, getSetting, setSetting } = require('../db');
+const { pool, setSetting } = require('../db');
 
 // --- Masquage des secrets ---
 // Les clés d'API ne sortent jamais du backend : le GET renvoie une chaîne vide et
@@ -85,25 +85,8 @@ router.get('/settings/channels-status', async (req, res) => {
     }
 });
 
-router.get('/settings/quota', async (req, res) => {
-    try {
-        const key = await getSetting('gemini_api_key', '');
-        const count = parseInt(await getSetting('gemini_image_count', '0')) || 0;
-        const resetDate = await getSetting('gemini_quota_reset_date', '');
-        
-        res.json({
-            status: 'success',
-            data: {
-                hasCustomKey: key !== '',
-                imageUsed: count,
-                imageLimit: 40,
-                resetDate: resetDate
-            }
-        });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
+// GET /settings/quota a été retiré : il ne comptait que les images générées
+// avec la clé Gemini par défaut, et la génération d'image n'existe plus.
 
 router.get('/agents', async (req, res) => {
     try {

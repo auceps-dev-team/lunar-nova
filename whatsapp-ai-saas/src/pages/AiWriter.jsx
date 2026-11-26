@@ -2,17 +2,32 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import useAppStore from '../store';
 import DOMPurify from 'dompurify';
-import { Sparkles, Download, Undo, Redo, Copy, Edit3, AlignLeft, AlignCenter, AlignRight, Bold, Italic, Underline, List } from 'lucide-react';
+import { Sparkles, Download, Undo, Redo, Copy, Edit3, AlignLeft, AlignCenter, AlignRight, Bold, Italic, Underline, List, ChevronDown, MessageCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import CustomSelect from '../components/CustomSelect';
 import { API_BASE_URL } from '../config';
+import { REWRITE_MODES, buildRewritePrompt, cleanRewriteResponse, captureSelectionIn, restoreSelection } from '../utils/rewriteModes';
+import { htmlToWhatsApp } from '../utils/whatsappFormat';
+import { WRITING_LANGUAGES, defaultWritingLanguage } from '../utils/writingLanguages';
+import { createGenerationUndo, isUndoShortcut, isRedoShortcut } from '../utils/generationUndo';
+
+// Copie dans le presse-papiers. Rend faux en cas de refus (fenêtre sans
+// focus, permission) : avant le 26/11/2026 l'échec était ignoré et la
+// notification annonçait une copie qui n'avait pas eu lieu.
+const copyText = async (texte) => {
+    try {
+        await navigator.clipboard.writeText(texte);
+        return true;
+    } catch {
+        return false;
+    }
+};
 
 
 
 const SYSTEM_AGENTS = [
     { id: 'copywriter', name: 'Jarvis - SDR Senior', isSystem: true },
     { id: 'legal', name: 'Legal & Admin', isSystem: true },
-    { id: 'creative', name: 'Creative Visual', isSystem: true },
     { id: 'ella', name: 'Ella - Life Architect', isSystem: true },
     { id: 'copilot', name: 'WhatCopilote', isSystem: true },
     { id: 'brand_guardian', name: 'Brand Guardian', isSystem: true },
@@ -57,7 +72,7 @@ const SANITIZE_EDITOR = (html) => DOMPurify.sanitize(html || '', {
 });
 
 export default function AiWriter() {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const showAppNotification = useAppStore(state => state.showAppNotification);
     const [allAgents, setAllAgents] = useState([]);
 
@@ -65,7 +80,11 @@ export default function AiWriter() {
     const [selectedAgent, setSelectedAgent] = useState('content_creator');
     const [documentTitle, setDocumentTitle] = useState('');
     const [shortDescription, setShortDescription] = useState('');
-    const [language, setLanguage] = useState('English (USA)');
+    // Tant que l'utilisateur n'a pas choisi, la langue de rédaction suit celle
+    // de l'interface — y compris quand elle change page ouverte (premier
+    // lancement : la fenêtre d'accueil fait choisir la langue par-dessus).
+    const [chosenLanguage, setLanguage] = useState(null);
+    const language = chosenLanguage ?? defaultWritingLanguage(i18n.language);
     const [maxLength, setMaxLength] = useState('200');
     const [creativity, setCreativity] = useState('Good');
     const [toneOfVoice, setToneOfVoice] = useState('Professional');
@@ -73,10 +92,33 @@ export default function AiWriter() {
     const [isGenerating, setIsGenerating] = useState(false);
     const [, setEditorContent] = useState(t('untitledDoc'));
     const [showDownloadMenu, setShowDownloadMenu] = useState(false);
+    const [showRewriteMenu, setShowRewriteMenu] = useState(false);
     const [documentId, setDocumentId] = useState(null);
 
     const editorRef = useRef(null);
+    const rewriteMenuRef = useRef(null);
+    // Passage à réécrire, capturé à l'ouverture du menu : { range, text }.
+    const rewriteTarget = useRef(null);
+    const generationUndo = useRef(createGenerationUndo());
     const location = useLocation();
+
+    // Menu de réécriture : fermé par Échap ou par un clic en dehors.
+    useEffect(() => {
+        if (!showRewriteMenu) return undefined;
+        const fermer = (e) => {
+            const dehors = e.type === 'keydown' ? e.key === 'Escape' : !rewriteMenuRef.current?.contains(e.target);
+            if (dehors) {
+                setShowRewriteMenu(false);
+                rewriteTarget.current = null;
+            }
+        };
+        document.addEventListener('keydown', fermer);
+        document.addEventListener('mousedown', fermer);
+        return () => {
+            document.removeEventListener('keydown', fermer);
+            document.removeEventListener('mousedown', fermer);
+        };
+    }, [showRewriteMenu]);
 
     useEffect(() => {
         // Parse docId from URL
@@ -112,6 +154,7 @@ export default function AiWriter() {
                 const safeContent = SANITIZE_EDITOR(data.data.content || '');
                 setDocumentTitle(data.data.title);
                 setEditorContent(safeContent);
+                generationUndo.current.reset();
                 if (editorRef.current) {
                     editorRef.current.innerHTML = safeContent;
                 }
@@ -128,9 +171,51 @@ export default function AiWriter() {
         }
     };
 
+    // Remplacement de tout le contenu par une génération, annulable en une
+    // fois (Annuler, Ctrl+Z) — voir utils/generationUndo.js pour la mesure
+    // qui écarte la pile native.
+    const replaceEditorContent = (html) => {
+        const editeur = editorRef.current;
+        if (!editeur) return;
+        generationUndo.current.replace(editeur, html);
+        setEditorContent(editeur.innerHTML);
+    };
+
+    const handleUndo = () => {
+        if (editorRef.current && generationUndo.current.undo(editorRef.current)) {
+            setEditorContent(editorRef.current.innerHTML);
+            editorRef.current.focus();
+            return;
+        }
+        handleFormat('undo');
+    };
+
+    const handleRedo = () => {
+        if (editorRef.current && generationUndo.current.redo(editorRef.current)) {
+            setEditorContent(editorRef.current.innerHTML);
+            editorRef.current.focus();
+            return;
+        }
+        handleFormat('redo');
+    };
+
+    const handleEditorKeyDown = (e) => {
+        const editeur = e.currentTarget;
+        const fait = (isUndoShortcut(e) && generationUndo.current.undo(editeur))
+            || (isRedoShortcut(e) && generationUndo.current.redo(editeur));
+        if (fait) {
+            e.preventDefault();
+            setEditorContent(editeur.innerHTML);
+        }
+    };
+
     const handleGenerate = async () => {
         if (!documentTitle.trim() && !shortDescription.trim()) {
             showAppNotification(t('errorProvideNameOrDesc'), "error");
+            return;
+        }
+        // Demandé avant l'appel, pas 30 à 60 s plus tard au retour de l'agent.
+        if (editorRef.current?.innerText.trim() && !window.confirm(t('confirmReplaceContent'))) {
             return;
         }
 
@@ -178,10 +263,7 @@ export default function AiWriter() {
                 // peuplement de l'éditeur.
                 text = SANITIZE_EDITOR(text);
 
-                setEditorContent(text);
-                if (editorRef.current) {
-                    editorRef.current.innerHTML = text;
-                }
+                replaceEditorContent(text);
                 showAppNotification(t('successContentGenerated'), "success");
             } else {
                 showAppNotification(t('errorGeneration'), "error");
@@ -285,11 +367,28 @@ export default function AiWriter() {
         }
     };
 
-    const handleRewrite = async () => {
-        const selection = window.getSelection();
-        const selectedText = selection.toString();
+    // Ouverture du menu : le passage est capturé MAINTENANT, pas au retour
+    // de l'agent (voir utils/rewriteModes.js).
+    const toggleRewriteMenu = () => {
+        if (showRewriteMenu) {
+            setShowRewriteMenu(false);
+            rewriteTarget.current = null;
+            return;
+        }
+        const range = captureSelectionIn(editorRef.current);
+        if (!range) {
+            showAppNotification(t('errorSelectTextFirst'), "error");
+            return;
+        }
+        rewriteTarget.current = { range, text: range.toString() };
+        setShowRewriteMenu(true);
+    };
 
-        if (!selectedText || selectedText.trim() === '') {
+    const handleRewrite = async (modeId) => {
+        const cible = rewriteTarget.current;
+        rewriteTarget.current = null;
+        setShowRewriteMenu(false);
+        if (!cible) {
             showAppNotification(t('errorSelectTextFirst'), "error");
             return;
         }
@@ -298,26 +397,32 @@ export default function AiWriter() {
         showAppNotification(t('rewritingInProgress'), "success");
 
         try {
-            const prompt = `Réécris le texte suivant pour l'améliorer, le rendre plus professionnel et percutant. Renvoie UNIQUEMENT le texte réécrit, sans aucune introduction, sans guillemets et sans formatage markdown additionnel:\n\n"${selectedText}"`;
-
             const res = await fetch(API_BASE_URL + '/api/ai/agent', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     persona: selectedAgent,
-                    message: prompt,
+                    message: buildRewritePrompt(modeId, cible.text),
                     promptFormat: 'text'
                 })
             });
 
             const data = await res.json();
+            const newText = cleanRewriteResponse(data.response);
 
-            if (data.response) {
-                let newText = data.response.replace(/```html/g, '').replace(/```/g, '').trim();
-                document.execCommand('insertText', false, newText);
+            if (!newText) {
+                showAppNotification(t('errorRewriting'), "error");
+                return;
+            }
+            const editeur = editorRef.current;
+            editeur?.focus();
+            if (restoreSelection(editeur, cible.range, cible.text) && document.execCommand('insertText', false, newText)) {
                 showAppNotification(t('successTextRewritten'), "success");
             } else {
-                showAppNotification(t('errorRewriting'), "error");
+                // Le passage a été modifié pendant l'attente : rien n'est
+                // écrasé, et la réponse n'est pas perdue pour autant.
+                const copie = await copyText(newText);
+                showAppNotification(t(copie ? 'rewriteTargetChanged' : 'rewriteTargetLost'), "error");
             }
         } catch (err) {
             console.error(err);
@@ -348,11 +453,17 @@ export default function AiWriter() {
         setShowDownloadMenu(false);
     };
 
-    const copyToClipboard = () => {
-        if (editorRef.current) {
-            const text = editorRef.current.innerText;
-            navigator.clipboard.writeText(text);
-            showAppNotification(t('copyToClipboard'), "success");
+    const copyEditor = async (versWhatsApp) => {
+        if (!editorRef.current) return;
+        const texte = versWhatsApp ? htmlToWhatsApp(editorRef.current.innerHTML) : editorRef.current.innerText.trim();
+        if (!texte) {
+            showAppNotification(t('nothingToCopy'), "error");
+            return;
+        }
+        if (await copyText(texte)) {
+            showAppNotification(t(versWhatsApp ? 'copiedForWhatsapp' : 'copiedToClipboard'), "success");
+        } else {
+            showAppNotification(t('copyFailed'), "error");
         }
     };
 
@@ -394,15 +505,11 @@ export default function AiWriter() {
 
                     <div className="grid grid-cols-2 gap-4 mb-5">
                         <div>
-                            <label className="text-xs font-medium text-gray-500 mb-1.5 block">{t('interfaceLang')}</label>
+                            <label className="text-xs font-medium text-gray-500 mb-1.5 block">{t('contentLanguage')}</label>
                             <CustomSelect
                                 value={language}
                                 onChange={setLanguage}
-                                options={[
-                                    { value: 'English (USA)', label: 'English (USA)' },
-                                    { value: 'Français (France)', label: 'Français (France)' },
-                                    { value: 'Español', label: 'Español' },
-                                ]}
+                                options={WRITING_LANGUAGES.map(({ value, label }) => ({ value, label }))}
                             />
                         </div>
                         <div>
@@ -452,7 +559,7 @@ export default function AiWriter() {
                                 <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                                 {t('generating')}
                             </>
-                        ) : t('generateBtn').replace(' (Imagen 4)', '')}
+                        ) : t('generateBtn')}
                     </button>
                 </div>
             </div>
@@ -474,23 +581,26 @@ export default function AiWriter() {
                     <div className="flex w-full flex-wrap items-center gap-3">
                         <div className="flex grow">
                             <div className="flex w-full flex-wrap items-center gap-2">
-                                <button onClick={() => handleFormat('undo')} className="inline-flex h-8 w-8 items-center justify-center rounded-md transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300" title={t('undo')}>
+                                <button onClick={handleUndo} className="inline-flex h-8 w-8 items-center justify-center rounded-md transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300" title={t('undo')}>
                                     <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
                                         <path d="M9 14l-4 -4l4 -4"></path>
                                         <path d="M5 10h11a4 4 0 1 1 0 8h-1"></path>
                                     </svg>
                                 </button>
-                                <button onClick={() => handleFormat('redo')} className="inline-flex h-8 w-8 items-center justify-center rounded-md transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300" title={t('redo')}>
+                                <button onClick={handleRedo} className="inline-flex h-8 w-8 items-center justify-center rounded-md transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300" title={t('redo')}>
                                     <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
                                         <path d="M15 14l4 -4l-4 -4"></path>
                                         <path d="M19 10h-11a4 4 0 1 0 0 8h1"></path>
                                     </svg>
                                 </button>
-                                <button onClick={copyToClipboard} className="inline-flex h-8 w-8 items-center justify-center rounded-md transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300" title={t('copyToClipboard')}>
+                                <button onClick={() => copyEditor(false)} className="inline-flex h-8 w-8 items-center justify-center rounded-md transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300" title={t('copyToClipboard')} aria-label={t('copyToClipboard')}>
                                     <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
                                         <path d="M7 7m0 2.667a2.667 2.667 0 0 1 2.667 -2.667h8.666a2.667 2.667 0 0 1 2.667 2.667v8.666a2.667 2.667 0 0 1 -2.667 2.667h-8.666a2.667 2.667 0 0 1 -2.667 -2.667z"></path>
                                         <path d="M4.012 16.737a2.005 2.005 0 0 1 -1.012 -1.737v-10c0 -1.1 .9 -2 2 -2h10c.75 0 1.158 .385 1.5 1"></path>
                                     </svg>
+                                </button>
+                                <button onClick={() => copyEditor(true)} className="inline-flex h-8 w-8 items-center justify-center rounded-md transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300" title={t('copyForWhatsapp')} aria-label={t('copyForWhatsapp')}>
+                                    <MessageCircle size={20} strokeWidth={2} />
                                 </button>
 
                                 {/* Download Dropdown */}
@@ -560,9 +670,36 @@ export default function AiWriter() {
                         <option value="h3">{t('heading3')}</option>
                     </select>
 
-                    <button onClick={handleRewrite} disabled={isGenerating} className="px-3 py-1.5 flex items-center gap-1.5 text-sm font-medium text-[#0b9f84] hover:bg-[#0b9f84]/10 rounded-md border border-transparent transition mr-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                        <Sparkles size={16} /> {isGenerating ? '...' : t('rewriteBtn')}
-                    </button>
+                    {/* Les boutons du menu ne prennent pas le focus (mousedown
+                        annulé) : la sélection de l'éditeur reste visible. */}
+                    <div className="relative mr-2" ref={rewriteMenuRef}>
+                        <button
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={toggleRewriteMenu}
+                            disabled={isGenerating}
+                            aria-haspopup="menu"
+                            aria-expanded={showRewriteMenu}
+                            className="px-3 py-1.5 flex items-center gap-1.5 text-sm font-medium text-[#0b9f84] hover:bg-[#0b9f84]/10 rounded-md border border-transparent transition disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <Sparkles size={16} /> {isGenerating ? '...' : t('rewriteBtn')} <ChevronDown size={14} />
+                        </button>
+                        {showRewriteMenu && (
+                            <div role="menu" className="absolute top-full left-0 mt-1 w-56 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg rounded-lg py-1 z-50">
+                                {REWRITE_MODES.map((mode) => (
+                                    <button
+                                        key={mode.id}
+                                        role="menuitem"
+                                        data-rewrite-mode={mode.id}
+                                        onMouseDown={(e) => e.preventDefault()}
+                                        onClick={() => handleRewrite(mode.id)}
+                                        className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                    >
+                                        {t(mode.labelKey)}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
 
                     <div className="w-px h-5 bg-gray-200 mx-1"></div>
 
@@ -587,6 +724,7 @@ export default function AiWriter() {
                     contentEditable
                     suppressContentEditableWarning
                     ref={editorRef}
+                    onKeyDown={handleEditorKeyDown}
                     onInput={(e) => setEditorContent(e.currentTarget.innerHTML)}
                 >
                     <p><br /></p>

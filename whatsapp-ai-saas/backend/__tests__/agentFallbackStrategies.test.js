@@ -143,6 +143,47 @@ describe('agentFallbackRouter — stratégies d\'exécution (T2-T5, substitution
         expect(callArg.env.GEMINI_CLI_TRUST_WORKSPACE).toBe('true');
     });
 
+    // Modèle choisi dans les Paramètres. Mesuré le 26/11/2026 : il ne vivait que
+    // dans l'interface (appSettings.model) ; l'outil de Rédaction, la
+    // prospection, MCP call_agent et le CLI ne l'envoyaient pas, et chaque
+    // adaptateur retombait sur son modèle codé en dur (llama-3.1-8b pour
+    // NVIDIA, llama3 pour Ollama, gemini-2.5-flash pour Gemini).
+    it('T8 — sans modèle précisé, le modèle choisi dans les Paramètres est utilisé', async () => {
+        await db.setSetting('ai_execution_strategy', 'api');
+        await db.setSetting('auto_fallback_enabled', 'false');
+        await db.setSetting('default_ai_provider', 'gemini');
+        await db.setSetting('default_chat_model', 'gemini-2.5-pro');
+
+        await executeAgentWithFallback({ personaId: 'copywriter', message: 'Bonjour' });
+
+        // chatWithAgent(personaId, message, imageParams, attachments, promptFormat, dbAgent, …)
+        expect(geminiService.chatWithAgent.mock.calls[0][5].model_override).toBe('gemini-2.5-pro');
+    });
+
+    it('T9 — un modèle précisé par l\'appel passe avant celui des Paramètres', async () => {
+        await db.setSetting('ai_execution_strategy', 'api');
+        await db.setSetting('auto_fallback_enabled', 'false');
+        await db.setSetting('default_chat_model', 'gemini-2.5-pro');
+
+        await executeAgentWithFallback({ personaId: 'copywriter', message: 'Bonjour', modelOverride: 'gemini-2.5-flash' });
+
+        expect(geminiService.chatWithAgent.mock.calls[0][5].model_override).toBe('gemini-2.5-flash');
+    });
+
+    it('T10 — le modèle des Paramètres ne s\'applique pas à un autre fournisseur que le configuré', async () => {
+        await db.setSetting('ai_execution_strategy', 'api');
+        await db.setSetting('auto_fallback_enabled', 'false');
+        // Fournisseur configuré : OpenRouter, avec un identifiant de modèle OpenRouter.
+        await db.setSetting('default_ai_provider', 'openrouter');
+        await db.setSetting('default_chat_model', 'anthropic/claude-sonnet');
+
+        // L'appel force Gemini : l'identifiant OpenRouter n'a aucun sens pour lui.
+        await executeAgentWithFallback({ personaId: 'copywriter', message: 'Bonjour', providerOverride: 'gemini' });
+
+        expect(geminiService.chatWithAgent.mock.calls[0][5].model_override).toBeUndefined();
+        await db.setSetting('default_ai_provider', 'gemini');
+    });
+
     it('T7 — le trust workspace reste scopé au canal gemini (aucune variable pour claude)', async () => {
         externalAgentRunner.executeExternalCli = vi.fn(async () => ({
             success: true, exitCode: 0, stdout: 'Réponse Claude (mock)', stderr: '', executionTimeMs: 3

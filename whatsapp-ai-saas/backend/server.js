@@ -92,6 +92,12 @@ const globalLimiter = rateLimit({
 });
 app.use(globalLimiter);
 
+// Disponibilité du service, interrogée par le renderer au démarrage
+// (src/services/apiAuth.js) : la fenêtre se charge avant que ce serveur
+// n'écoute, et les premières requêtes échouaient en ERR_CONNECTION_REFUSED
+// (mesuré le 26/11/2026). Authentifiée comme le reste : aucune route publique.
+app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
+
 // Plafond serré sur les opérations lourdes : le scraping ouvre un navigateur et
 // dure des dizaines de secondes, l'envoi au catalogue accepte jusqu'à 50 Mo de
 // base64 et pilote WhatsApp Web.
@@ -103,9 +109,8 @@ const heavyLimiter = rateLimit({
     message: { error: 'Trop de requêtes sur une opération coûteuse. Réessayez dans quelques minutes.' }
 });
 
-// --- Google Auth Loopback ---
-const authGoogleRouter = require('./routes/authGoogle');
-app.use('/api/auth/google', authGoogleRouter);
+// La connexion Google (/api/auth/google, callback loopback) a été retirée le
+// 26/11/2026 — c'était la seule route publique, accessible sans jeton.
 
 // --- Prospection (Google Maps API) ---
 const prospectionRouter = require('./routes/prospection');
@@ -138,6 +143,11 @@ app.use('/api', aiRouter);
 const catalogRouter = require('./routes/catalog');
 app.use('/api/catalog', heavyLimiter, catalogRouter);
 
+// Monté AVANT /api/wa : le routeur WhatsApp ne doit pas prendre « selectors »
+// pour un identifiant.
+const { createWaSelectorsRouter } = require('./routes/waSelectors');
+app.use('/api/wa/selectors', createWaSelectorsRouter());
+
 const waRouter = require('./routes/wa');
 app.use('/api/wa', waRouter);
 
@@ -169,6 +179,8 @@ orderListener.registerRoutes(app);
     const server = app.listen(PORT, HOST, () => {
         console.error(`[Orchestrator] Running on http://${HOST}:${PORT}`);
         console.error(`[Orchestrator] Ready to connect to Electron CDP at port 8315`);
+        // Mise à jour signée des sélecteurs WhatsApp (sans effet sans clé de confiance).
+        require('./wa/waSelectors').scheduleSelectorUpdates();
     });
 
     server.on('error', (e) => {
