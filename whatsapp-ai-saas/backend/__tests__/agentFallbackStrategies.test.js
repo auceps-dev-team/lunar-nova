@@ -197,5 +197,90 @@ describe('agentFallbackRouter — stratégies d\'exécution (T2-T5, substitution
         expect(result.response).toBe('Réponse Claude (mock)');
         const callArg = externalAgentRunner.executeExternalCli.mock.calls[0][0];
         expect(callArg.env.GEMINI_CLI_TRUST_WORKSPACE).toBeUndefined();
+        // S4 : le routeur ne transmet plus process.env, ni la clé Gemini à
+        // claude (une clé est enregistrée depuis T3).
+        expect(callArg.env).toEqual({});
+    });
+
+    // ── S3 : contenu tiers (message WhatsApp, fiche d'annuaire) ─────────────
+    // `untrustedInput` exclut les canaux d'agents locaux (CLI, MCP), qui
+    // ont accès au disque.
+
+    it('S3 — contenu tiers : la stratégie « cli » est ignorée au profit de l\'API', async () => {
+        externalAgentRunner.executeExternalCli = vi.fn(async () => ({
+            success: true, exitCode: 0, stdout: 'NE DOIT PAS ÊTRE APPELÉ', stderr: '', executionTimeMs: 1
+        }));
+        await db.setSetting('ai_execution_strategy', 'cli');
+        await db.setSetting('default_cli_agent', 'claude');
+        await db.setSetting('auto_fallback_enabled', 'false');
+
+        const result = await executeAgentWithFallback({
+            personaId: 'copywriter', message: 'Message client', untrustedInput: true
+        });
+
+        expect(result.response).toBe('Réponse API Gemini (mock)');
+        expect(externalAgentRunner.executeExternalCli).not.toHaveBeenCalled();
+    });
+
+    it('S3 — contenu tiers : la cascade automatique ne tente ni CLI ni MCP', async () => {
+        await db.setSetting('ai_execution_strategy', 'api');
+        await db.setSetting('auto_fallback_enabled', 'true');
+        geminiService.chatWithAgent.mockImplementationOnce(async () => {
+            throw new Error('API Gemini indisponible (mock)');
+        });
+
+        await expect(executeAgentWithFallback({
+            personaId: 'copywriter', message: 'Message client', untrustedInput: true
+        })).rejects.toThrow('API Gemini indisponible (mock)');
+
+        // Sans le filtre, la cascade aurait tenté gemini-cli, claude puis MCP
+        // (lequel rappelle geminiService : un second appel).
+        expect(externalAgentRunner.executeExternalCli).not.toHaveBeenCalled();
+        expect(geminiService.chatWithAgent).toHaveBeenCalledTimes(1);
+    });
+
+    it('S3 — contenu tiers : une cible forcée sur « cli » est remplacée par le fournisseur API', async () => {
+        await db.setSetting('ai_execution_strategy', 'api');
+        await db.setSetting('auto_fallback_enabled', 'false');
+
+        const result = await executeAgentWithFallback({
+            personaId: 'copywriter',
+            message: 'Message client',
+            providerOverride: 'cli',
+            modelOverride: 'claude',
+            untrustedInput: true
+        });
+
+        expect(result.response).toBe('Réponse API Gemini (mock)');
+        expect(externalAgentRunner.executeExternalCli).not.toHaveBeenCalled();
+    });
+
+    it('S3 — contenu tiers : le filtre s\'applique aussi pendant qu\'une autre requête est en cours', async () => {
+        await db.setSetting('ai_execution_strategy', 'api');
+        await db.setSetting('auto_fallback_enabled', 'false');
+        externalAgentRunner.executeExternalCli = vi.fn(async () => ({
+            success: true, exitCode: 0, stdout: 'Réponse Claude (mock)', stderr: '', executionTimeMs: 1
+        }));
+
+        // La première requête lève le drapeau de réentrée de façon synchrone :
+        // la seconde, lancée aussitôt, emprunte le chemin direct.
+        const concurrent = (untrustedInput) => {
+            const first = executeAgentWithFallback({ personaId: 'copywriter', message: 'A' });
+            const second = executeAgentWithFallback({
+                personaId: 'copywriter', message: 'B',
+                providerOverride: 'cli', modelOverride: 'claude', untrustedInput
+            });
+            return Promise.all([first, second]);
+        };
+
+        // Témoin : sans le drapeau, le chemin direct exécute bien le CLI.
+        const [, trusted] = await concurrent(false);
+        expect(trusted.response).toBe('Réponse Claude (mock)');
+        expect(externalAgentRunner.executeExternalCli).toHaveBeenCalledTimes(1);
+
+        externalAgentRunner.executeExternalCli.mockClear();
+        const [, untrusted] = await concurrent(true);
+        expect(untrusted.response).toBe('Réponse API Gemini (mock)');
+        expect(externalAgentRunner.executeExternalCli).not.toHaveBeenCalled();
     });
 });

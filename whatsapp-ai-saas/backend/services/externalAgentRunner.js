@@ -314,7 +314,6 @@ async function probeGeminiReadiness({
             args: ['-p', 'ping', '-o', 'text'],
             input: '',
             env: {
-                ...process.env,
                 ...(key ? { GEMINI_API_KEY: key } : {}),
                 GEMINI_CLI_TRUST_WORKSPACE: 'true'
             },
@@ -328,6 +327,83 @@ async function probeGeminiReadiness({
     return geminiProbeCache;
 }
 
+// ── Environnement des processus lancés ──────────────────────────────────────
+// Un binaire lancé ne reçoit que les variables de ces listes, plus celles que
+// l'appelant passe explicitement. Il recevait auparavant tout process.env :
+// en production, cela incluait WACOPILOTE_MASTER_KEY (la clé qui déchiffre
+// tous les secrets stockés), les clés d'API de tous les fournisseurs, et toute
+// variable injectée via l'IPC store-set (PATH, NODE_OPTIONS…).
+
+// Variables nécessaires au fonctionnement d'un programme ordinaire : résolution
+// des binaires, profil utilisateur (où les CLI rangent leur configuration et
+// leur authentification, p. ex. ~/.claude, ~/.gemini), fichiers temporaires,
+// langue, et réseau d'entreprise (proxy, autorités de certification).
+// Comparées en majuscules : Windows écrit indifféremment Path ou PATH.
+const BASE_ENV_KEYS = new Set([
+    'PATH', 'PATHEXT', 'SYSTEMROOT', 'SYSTEMDRIVE', 'WINDIR', 'COMSPEC', 'OS',
+    'PROCESSOR_ARCHITECTURE', 'NUMBER_OF_PROCESSORS',
+    'PROGRAMFILES', 'PROGRAMFILES(X86)', 'PROGRAMW6432', 'PROGRAMDATA',
+    'COMMONPROGRAMFILES', 'COMMONPROGRAMFILES(X86)',
+    'HOME', 'USERPROFILE', 'HOMEDRIVE', 'HOMEPATH', 'APPDATA', 'LOCALAPPDATA',
+    'USER', 'USERNAME', 'LOGNAME', 'SHELL',
+    'XDG_CONFIG_HOME', 'XDG_DATA_HOME', 'XDG_CACHE_HOME', 'XDG_STATE_HOME', 'XDG_RUNTIME_DIR',
+    'TEMP', 'TMP', 'TMPDIR',
+    'LANG', 'LANGUAGE', 'LC_ALL', 'LC_CTYPE', 'TERM', 'TZ',
+    'HTTP_PROXY', 'HTTPS_PROXY', 'NO_PROXY', 'ALL_PROXY',
+    'NODE_EXTRA_CA_CERTS', 'SSL_CERT_FILE', 'SSL_CERT_DIR'
+]);
+
+// Identifiants que l'utilisateur a pu définir lui-même pour un CLI donné. Ils
+// ne sont transmis qu'à ce CLI : la clé Anthropic ne part pas chez Gemini, et
+// inversement.
+const GEMINI_ENV_KEYS = [
+    'GEMINI_API_KEY', 'GOOGLE_API_KEY', 'GOOGLE_CLOUD_PROJECT', 'GOOGLE_CLOUD_LOCATION',
+    'GOOGLE_APPLICATION_CREDENTIALS', 'GOOGLE_GENAI_USE_VERTEXAI'
+];
+const COMMAND_ENV_KEYS = {
+    claude: ['ANTHROPIC_API_KEY', 'ANTHROPIC_AUTH_TOKEN', 'ANTHROPIC_BASE_URL', 'CLAUDE_CONFIG_DIR'],
+    gemini: GEMINI_ENV_KEYS,
+    'gemini-cli': GEMINI_ENV_KEYS,
+    ollama: ['OLLAMA_HOST', 'OLLAMA_MODELS'],
+    aider: ['OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'GEMINI_API_KEY', 'OPENROUTER_API_KEY']
+};
+
+/**
+ * Construit l'environnement d'un processus lancé : variables de base, plus les
+ * identifiants propres à `command`, plus `extra` (fourni par l'appelant, qui
+ * l'emporte).
+ *
+ * @param {string} command Nom assaini du binaire
+ * @param {object} [extra={}] Variables ajoutées explicitement par l'appelant
+ * @returns {object}
+ */
+function buildChildEnv(command, extra = {}) {
+    const allowed = new Set([...BASE_ENV_KEYS, ...(COMMAND_ENV_KEYS[command] || [])]);
+    const childEnv = {};
+    for (const [key, value] of Object.entries(process.env)) {
+        if (value !== undefined && allowed.has(key.toUpperCase())) {
+            childEnv[key] = value;
+        }
+    }
+    return { ...childEnv, ...extra };
+}
+
+/**
+ * Extrait de process.env les variables nommées, pour un appelant qui doit
+ * transmettre un contexte précis (p. ex. le dossier de données au CLI
+ * WaCopilote lancé par la console de test).
+ *
+ * @param {string[]} keys
+ * @returns {object}
+ */
+function pickProcessEnv(keys) {
+    const picked = {};
+    for (const key of keys) {
+        if (process.env[key] !== undefined) picked[key] = process.env[key];
+    }
+    return picked;
+}
+
 /**
  * Exécute un outil ou agent CLI externe de manière sécurisée et isolée.
  *
@@ -337,7 +413,8 @@ async function probeGeminiReadiness({
  * @param {string} [options.input=''] Flux d'entrée stdin à injecter
  * @param {string} [options.cwd] Répertoire de travail
  * @param {number} [options.timeout=60000] Délai d'expiration en millisecondes
- * @param {object} [options.env={}] Variables d'environnement additionnelles
+ * @param {object} [options.env={}] Variables ajoutées à l'environnement de base
+ *   (voir buildChildEnv) — ne jamais y étaler process.env
  * @param {boolean} [options.skipAllowanceCheck=false] Usage interne pour diagnostic de version
  * @returns {Promise<{ success: boolean, exitCode: number|null, stdout: string, stderr: string, executionTimeMs: number, error?: string }>}
  */
@@ -380,11 +457,7 @@ async function executeExternalCli({
         let isTimedOut = false;
         const maxBufferSize = 10 * 1024 * 1024; // 10 Mo max
 
-        // Fusion d'environnement sans fuite de secrets non requis
-        const executionEnv = {
-            ...process.env,
-            ...env
-        };
+        const executionEnv = buildChildEnv(cleanCmd, env);
 
         // cross-spawn résout nativement les .cmd/.bat (npx, npm...) sous Windows
         // sans jamais concaténer les arguments dans une chaîne interprétée par
@@ -476,5 +549,7 @@ module.exports = {
     detectInstalledClis,
     classifyGeminiProbeResult,
     probeGeminiReadiness,
-    executeExternalCli
+    executeExternalCli,
+    buildChildEnv,
+    pickProcessEnv
 };
