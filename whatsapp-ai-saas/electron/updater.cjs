@@ -1,17 +1,30 @@
 const { app, ipcMain, shell } = require('electron');
 const axios = require('axios');
-const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
-const { compareVersions, parseReleaseTag, pickAssetForPlatform } = require('./updateLogic.cjs');
+const { compareVersions, parseReleaseTag, pickAssetForPlatform, parseSha256Digest, downloadVerified } = require('./updateLogic.cjs');
 
 const REPO_URL = 'https://api.github.com/repos/auceps-dev-team/wacopilote-releases/releases/latest';
 
 // Timeouts réseau : l'API GitHub peut être lente ou saturée ; un handler IPC
 // ne doit jamais rester bloqué indéfiniment. Le téléchargement (fichier de
-// ~160 Mo) reçoit une marge plus généreuse.
+// ~150 Mo) reçoit une marge plus généreuse.
 const CHECK_TIMEOUT_MS = 10000;
 const DOWNLOAD_TIMEOUT_MS = 5 * 60 * 1000;
+
+/**
+ * Ce que la dernière vérification a proposé, et ce qui a été téléchargé.
+ *
+ * Le renderer renvoie l'URL à télécharger puis le chemin à installer. Jusqu'au
+ * 26/11/2026, le processus principal acceptait toute URL en github.com et tout
+ * fichier du dossier temporaire : un renderer compromis pouvait lui faire
+ * télécharger puis EXÉCUTER n'importe quel .exe hébergé sur GitHub. Désormais
+ * seul l'installeur proposé par la dernière vérification (dépôt des releases
+ * WaCopilote) se télécharge, et seul le fichier téléchargé et vérifié ici
+ * s'installe.
+ */
+let lastOffer = null;        // { url, size, sha256, version }
+let lastDownloadPath = null; // chemin du dernier installeur vérifié
 
 /**
  * @param {() => Electron.BrowserWindow | undefined} getMainWindow
@@ -49,12 +62,18 @@ module.exports = function setupUpdater(getMainWindow) {
             const cmp = compareVersions(latestVersion, currentVersion);
 
             if (cmp > 0) {
-                // Asset adapté à la plateforme (exe sur Windows, dmg/zip sur
-                // macOS, AppImage/deb sur Linux). Aucun asset pour cette
-                // plateforme → mise à jour signalée sans URL (hasUpdate reste
-                // vrai pour afficher la note de version, mais le bouton de
-                // téléchargement ne sera pas proposé).
+                // Asset adapté à la plateforme (installeur NSIS sur Windows,
+                // dmg/zip sur macOS, AppImage/deb sur Linux). Aucun asset pour
+                // cette plateforme → mise à jour signalée sans URL (hasUpdate
+                // reste vrai pour afficher la note de version, mais le bouton
+                // de téléchargement ne sera pas proposé).
                 const { asset, platform } = pickAssetForPlatform(res.data.assets);
+                lastOffer = asset ? {
+                    url: asset.browser_download_url,
+                    size: Number(asset.size) || null,
+                    sha256: parseSha256Digest(asset.digest),
+                    version: latestVersion,
+                } : null;
                 return {
                     hasUpdate: true,
                     version: latestVersion,
@@ -66,6 +85,7 @@ module.exports = function setupUpdater(getMainWindow) {
                 };
             }
 
+            lastOffer = null;
             const result = { hasUpdate: false, latestVersion, currentVersion };
 
             // Cas « release derrière la version installée » : la comparaison
@@ -89,100 +109,64 @@ module.exports = function setupUpdater(getMainWindow) {
         }
     });
 
-    // 2. TÉLÉCHARGEMENT FLUIDE
+    // 2. TÉLÉCHARGEMENT VÉRIFIÉ
     ipcMain.handle('update:start-download', async (event, url) => {
-        try {
-            const parsedUrl = new URL(url);
-            if (parsedUrl.protocol !== 'https:' || !(parsedUrl.hostname === 'github.com' || parsedUrl.hostname.endsWith('.githubusercontent.com'))) {
-                return { success: false, error: 'Origine de mise à jour non autorisée (doit être https://github.com/...).' };
-            }
-        } catch (e) {
-            return { success: false, error: `URL de mise à jour invalide : ${e.message}` };
+        if (!lastOffer || url !== lastOffer.url) {
+            return { success: false, error: "Ce téléchargement n'a pas été proposé par la dernière vérification des mises à jour. Relancez la vérification." };
         }
 
         // L'extension du fichier temporaire suit l'asset réel (pas toujours
-        // .exe depuis que macOS/Linux sont couverts) — elle est déduite de
-        // l'URL de téléchargement.
+        // .exe depuis que macOS/Linux sont couverts).
         let ext = '.exe';
         try { ext = path.extname(new URL(url).pathname) || '.exe'; } catch { /* URL invalide */ }
         const tempPath = path.join(app.getPath('temp'), `WaCopilote-Update-${Date.now()}${ext}`);
+        lastDownloadPath = null;
 
         try {
             const response = await axios({
                 method: 'GET',
-                url: url,
+                url,
                 responseType: 'stream',
                 timeout: DOWNLOAD_TIMEOUT_MS,
-                // Les assets GitHub redirigent vers le CDN (objects.githubusercontent) ;
-                // axios suit les redirections par défaut. User-Agent explicite.
+                // Les assets GitHub redirigent vers le CDN ; axios suit les
+                // redirections par défaut. User-Agent explicite.
                 headers: { 'User-Agent': `WaCopilote/${app.getVersion()}` },
             });
 
-            const totalLength = parseInt(response.headers['content-length'], 10);
-            let downloaded = 0;
-            let lastPercent = 0;
+            if (!lastOffer.sha256) {
+                console.warn('[Updater] Aucune empreinte SHA-256 publiée pour cet asset : seule la taille est vérifiée.');
+            }
 
-            const writer = fs.createWriteStream(tempPath);
-            response.data.pipe(writer);
-
-            response.data.on('data', (chunk) => {
-                downloaded += chunk.length;
-
-                // Calcul sécurisé du pourcentage
-                let percent = 0;
-                if (totalLength && totalLength > 0) {
-                    percent = Math.round((downloaded / totalLength) * 100);
-                } else {
-                    // Si pas de content-length, on simule une progression lente basée sur des moyennes (environ 40Mo)
-                    // ou on laisse à 0 pour indiquer une activité indéterminée
-                    percent = Math.min(99, Math.round((downloaded / (40 * 1024 * 1024)) * 100));
-                }
-
-                // Throttling: on n'envoie au front que si le pourcentage change
-                if (percent > lastPercent) {
-                    lastPercent = percent;
+            await downloadVerified(response, {
+                dest: tempPath,
+                expectedSize: lastOffer.size,
+                expectedSha256: lastOffer.sha256,
+                onProgress: (percent) => {
                     const win = getMainWindow();
-                    if (win && !win.isDestroyed()) {
-                        win.webContents.send('update:progress', percent);
-                    }
-                }
+                    if (win && !win.isDestroyed()) win.webContents.send('update:progress', percent);
+                },
             });
 
-            return new Promise((resolve, reject) => {
-                writer.on('finish', () => {
-                    // Vérification d'intégrité : un téléchargement interrompu
-                    // (connexion coupée sans erreur) produirait un installeur
-                    // tronqué que NSIS exécuterait sans prévenir.
-                    if (totalLength && downloaded !== totalLength) {
-                        return reject(new Error(`Téléchargement incomplet (${downloaded}/${totalLength} octets).`));
-                    }
-                    resolve({ success: true, filePath: tempPath });
-                });
-                writer.on('error', reject);
-                response.data.on('error', reject);
-            });
-
+            lastDownloadPath = path.resolve(tempPath);
+            return { success: true, filePath: tempPath };
         } catch (error) {
-            // Nettoyage du fichier partiel en cas d'échec
-            try { if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath); } catch { /* ignore */ }
+            // downloadVerified a déjà supprimé un fichier partiel ou douteux.
             return { success: false, error: error.message };
         }
     });
 
     // 3. INSTALLATION / OUVERTURE DE L'ARTEFACT
     ipcMain.handle('update:install', async (event, filePath) => {
-        // Confinement du chemin : doit résider dans le répertoire temporaire de l'application
-        const tempDir = path.resolve(app.getPath('temp'));
-        const resolvedPath = path.resolve(filePath);
-        if (!resolvedPath.startsWith(tempDir)) {
-            return { success: false, error: 'Chemin de fichier d\'installation non sécurisé.' };
+        // Seul le fichier téléchargé et vérifié ci-dessus s'installe.
+        if (!lastDownloadPath || path.resolve(String(filePath || '')) !== lastDownloadPath) {
+            return { success: false, error: "Fichier d'installation inconnu : relancez le téléchargement." };
         }
 
-        // Windows : installeur NSIS lancé en processus détaché, puis
-        // fermeture de l'application pour libérer les fichiers en cours
-        // d'utilisation (« Files in Use »).
+        // Windows : installeur NSIS lancé en processus détaché, en mode
+        // silencieux (/S), puis fermeture de l'application pour libérer les
+        // fichiers en cours d'utilisation (« Files in Use »).
         if (process.platform === 'win32') {
-            const subprocess = spawn(filePath, ['/S', '--force-run'], {
+            const subprocess = spawn(lastDownloadPath, ['/S', '--force-run'], {
                 detached: true,
                 stdio: 'ignore'
             });
@@ -196,10 +180,10 @@ module.exports = function setupUpdater(getMainWindow) {
         // → installateur système) et on laisse l'utilisateur guider
         // l'installation. L'application ne se ferme pas.
         try {
-            if (process.platform === 'linux' && filePath.toLowerCase().endsWith('.appimage')) {
-                fs.chmodSync(filePath, 0o755);
+            if (process.platform === 'linux' && lastDownloadPath.toLowerCase().endsWith('.appimage')) {
+                require('fs').chmodSync(lastDownloadPath, 0o755);
             }
-            const err = await shell.openPath(filePath);
+            const err = await shell.openPath(lastDownloadPath);
             return err
                 ? { success: false, error: err }
                 : { success: true, note: 'open' };

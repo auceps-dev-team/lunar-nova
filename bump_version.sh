@@ -2,9 +2,10 @@
 # bump_version.sh <patch|feature|major>
 #
 # Synchronise la version dans : package.json (racine + backend), les deux
-# package-lock.json, README.md (racine + whatsapp-ai-saas/), index.html,
-# build/installer.iss et le placeholder du gabarit de bug — en partant de la
-# version du package.json racine.
+# package-lock.json, README.md (racine + whatsapp-ai-saas/), index.html et le
+# placeholder du gabarit de bug — en partant de la version du package.json
+# racine. (build/installer.iss n'existe plus : l'installeur Inno Setup a été
+# abandonné le 26/11/2026, seul le NSIS d'electron-builder reste.)
 #
 # Modes (alignés sur CONTRIBUTING.md) :
 #   patch   (alias : mineur) → +0.0.1  correctif notable
@@ -48,17 +49,14 @@ done
 # 3. Page d'accueil (racine du dépôt).
 sed -i -E "s/>Version [0-9.]+</>Version $NEW</" ../index.html
 
-# 4. Installeur Inno Setup.
-sed -i -E "s/#define AppVersion   \"[0-9.]+\"/#define AppVersion   \"$NEW\"/" build/installer.iss
-
-# 5. Placeholder du gabarit de bug (anti-dérive : ne doit plus rester figé).
+# 4. Placeholder du gabarit de bug (anti-dérive : ne doit plus rester figé).
 BUGTPL=../.github/ISSUE_TEMPLATE/bug_report.yml
 if [ -f "$BUGTPL" ]; then
     sed -i -E "s/placeholder: \"[0-9.]+\"/placeholder: \"$NEW\"/" "$BUGTPL"
 fi
 
 # Vérification : plus aucune trace de l'ancienne version dans les fichiers gérés.
-grep -rn "$CUR" ../README.md README.md ../index.html build/installer.iss \
+grep -rn "$CUR" ../README.md README.md ../index.html \
     package.json backend/package.json package-lock.json backend/package-lock.json \
     "$BUGTPL" 2>/dev/null | grep -v "$NEW" || true
 echo "OK -> $NEW"

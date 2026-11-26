@@ -365,7 +365,6 @@ const CliAgentBridgeSettings = () => {
                                             className="w-full text-xs border border-gray-300 dark:border-gray-600 rounded-lg p-2 bg-white dark:bg-gray-700 text-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-primary/50"
                                         >
                                             <option value="copywriter">Jarvis (SDR Senior)</option>
-                                            <option value="creative">Clarisse (DA)</option>
                                             <option value="outbound_strategist">Antoine (Outbound)</option>
                                             <option value="seo_specialist">Romain (SEO)</option>
                                             <option value="growth_hacker">Julien (Growth)</option>

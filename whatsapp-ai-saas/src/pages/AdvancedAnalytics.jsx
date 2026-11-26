@@ -22,7 +22,6 @@ export default function AdvancedAnalytics() {
     const tasks = useAppStore(s => s.tasks) || EMPTY_ARRAY;
     const invoices = useAppStore(s => s.invoices) || EMPTY_ARRAY;
     const instances = useAppStore(s => s.instances) || EMPTY_ARRAY;
-    const agentHistory = useAppStore(s => s.agentHistory) || EMPTY_ARRAY;
     const conversations = useAppStore(s => s.aiChatConversations) || EMPTY_OBJECT;
     const sessions = useAppStore(s => s.aiChatSessions) || EMPTY_OBJECT;
     const copilotCount = useAppStore(s => s.copilotRepliesGenerated) || 0;
@@ -154,7 +153,6 @@ export default function AdvancedAnalytics() {
                         <KPICard icon={Icons.money} label={t('totalRevenue')} value={fmt(totalRevenue)} color={C.primary2} sub={`${invoices.length} ${t('invoicesCount')}`} />
                         <KPICard icon={Icons.checkCircle} label={t('tasksCompleted')} value={`${taskStats.completed}/${taskStats.total}`} color={C.amber} sub={`${pct(taskStats.completed, taskStats.total)}% ${t('completionRate').toLowerCase()}`} />
                         <KPICard icon={Icons.phone} label={t('instances')} value={instances.length} color={C.blue} sub={t('activeInWorkspace')} />
-                        <KPICard icon={Icons.image} label={t('imageGenerations')} value={agentHistory.length} color={C.purple} sub={t('visualAgents')} />
                     </div>
 
                     {/* Revenue mini chart + Task donut */}
@@ -279,7 +277,6 @@ export default function AdvancedAnalytics() {
                         <KPICard icon={Icons.message} label={t('exchangedMessages')} value={totalMessages} color={C.primary} />
                         <KPICard icon={Icons.archive} label={t('archivedSessions')} value={totalSessions} color={C.accent} />
                         <KPICard icon={Icons.users} label={t('usedAgents')} value={Object.keys(conversations).filter(k => (conversations[k]?.length || 0) > 0).length} color={C.blue} />
-                        <KPICard icon={Icons.image} label={t('visualGenerations')} value={agentHistory.length} color={C.purple} />
                     </div>
 
                     <Panel>
@@ -302,50 +299,6 @@ export default function AdvancedAnalytics() {
                         )}
                     </Panel>
 
-                    {/* Agent history table */}
-                    <Panel>
-                        <SectionTitle sub={t('latestProductAnalyses')}>{t('visualGenerationHistory')}</SectionTitle>
-                        {agentHistory.length > 0 ? (
-                            <div style={{ overflowX: 'auto' }}>
-                                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                                    <thead>
-                                        <tr style={{ borderBottom: `2px solid ${C.gray200}` }}>
-                                            {[t('image'), t('product'), t('ambiance'), t('agent'), t('date')].map(h => (
-                                                <th key={h} style={{ textAlign: 'left', padding: '8px 12px', color: C.gray400, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
-                                            ))}
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {agentHistory.slice(0, 10).map(h => (
-                                            <tr key={h.id} style={{ borderBottom: `1px solid ${C.gray100}` }}>
-                                                <td style={{ padding: '8px 12px' }}>
-                                                    {h.image?.data ? (
-                                                        <img src={h.image.data} alt="" style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 6 }} />
-                                                    ) : (
-                                                        <div style={{ width: 36, height: 36, background: C.gray100, borderRadius: 6 }} />
-                                                    )}
-                                                </td>
-                                                <td style={{ padding: '8px 12px', color: C.textPrimary, fontWeight: 600 }}>{h.productType || '—'}</td>
-                                                <td style={{ padding: '8px 12px', color: C.textSecondary }}>{h.targetAmbiance || h.selectedBackground?.name || '—'}</td>
-                                                <td style={{ padding: '8px 12px' }}>
-                                                    <span style={{ background: C.primary + '18', color: C.primary, padding: '2px 8px', borderRadius: 10, fontSize: 11, fontWeight: 600 }}>
-                                                        {h.agentId}
-                                                    </span>
-                                                </td>
-                                                <td style={{ padding: '8px 12px', color: C.gray400, fontSize: 11 }}>
-                                                    {h.date ? new Date(h.date).toLocaleDateString(language === 'en' ? 'en-US' : 'fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        ) : (
-                            <div style={{ textAlign: 'center', padding: '40px 0', color: C.gray400, fontSize: 13 }}>
-                                {t('noImageGenerationSaved')}
-                            </div>
-                        )}
-                    </Panel>
                 </div>
             )}
 

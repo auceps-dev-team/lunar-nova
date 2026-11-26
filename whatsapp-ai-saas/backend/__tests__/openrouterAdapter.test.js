@@ -5,7 +5,37 @@
 // @vitest-environment node
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
-const { generateProposals, chatWithAgent, classifyOrderIntent } = require('../openrouterService');
+const { generateProposals, chatWithAgent, classifyOrderIntent, chatModelsFromCatalog } = require('../openrouterService');
+
+// Tri du catalogue. Formes relevées sur le catalogue public le 26/11/2026 :
+// 477 modèles, 335 « contenant image », 13 seulement générant des images —
+// l'ancien tri excluait 322 modèles de vision de la liste de conversation.
+describe('chatModelsFromCatalog', () => {
+    const catalogue = [
+        { id: 'meta/llama-3.3-70b', name: 'Llama', architecture: { modality: 'text->text', output_modalities: ['text'] } },
+        { id: 'mistralai/pixtral-large-2502', name: 'Pixtral', architecture: { modality: 'text+image->text', output_modalities: ['text'] } },
+        { id: 'google/gemini-4-neon', name: 'Gemini', architecture: { modality: 'text+image+file+audio+video->text', output_modalities: ['text'] } },
+        { id: 'generateur/image', name: 'Image', architecture: { modality: 'text->image', output_modalities: ['image'] } },
+        { id: 'ancien/format', name: 'Ancien', architecture: { modality: 'text+image->text' } },
+        { id: 'ancien/image', name: 'Ancien image', architecture: { modality: 'text->image' } },
+        { id: 'sans/architecture', name: 'Nu' }
+    ];
+    const ids = chatModelsFromCatalog(catalogue).map((m) => m.id);
+
+    it('garde les modèles de vision, qui lisent une image et répondent en texte', () => {
+        expect(ids).toEqual(expect.arrayContaining(['mistralai/pixtral-large-2502', 'google/gemini-4-neon', 'ancien/format']));
+    });
+
+    it('écarte les générateurs d\'image, par output_modalities ou par modality', () => {
+        expect(ids).not.toContain('generateur/image');
+        expect(ids).not.toContain('ancien/image');
+    });
+
+    it('garde un modèle texte, même sans description d\'architecture', () => {
+        expect(ids).toEqual(expect.arrayContaining(['meta/llama-3.3-70b', 'sans/architecture']));
+        expect(ids).toHaveLength(5);
+    });
+});
 
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
@@ -29,7 +59,7 @@ describe('openrouterService.chatWithAgent — contrat HTTP', () => {
     it('envoie Bearer, HTTP-Referer et X-Title sur l\'URL de chat, avec le modèle par défaut', async () => {
         fetchMock.mockResolvedValue({ json: async () => completion('Bonjour !') });
 
-        const result = await chatWithAgent('creative', 'Bonjour', null, 'text', 'sk-or-v1-test');
+        const result = await chatWithAgent('copywriter', 'Bonjour', null, 'text', 'sk-or-v1-test');
 
         expect(fetchMock).toHaveBeenCalledTimes(1);
         const [url, init] = fetchMock.mock.calls[0];
@@ -47,7 +77,7 @@ describe('openrouterService.chatWithAgent — contrat HTTP', () => {
 
     it('respecte model_override de l\'agent en base', async () => {
         fetchMock.mockResolvedValue({ json: async () => completion('ok') });
-        await chatWithAgent('creative', 'salut', null, 'text', 'k', {
+        await chatWithAgent('copywriter', 'salut', null, 'text', 'k', {
             system_instruction: 'Tu es un test.',
             response_format: 'text',
             model_override: 'meta-llama/llama-3.1-8b-instruct'
@@ -65,12 +95,12 @@ describe('openrouterService.chatWithAgent — contrat HTTP', () => {
 
     it("renvoie le message hors-ligne en cas d'erreur renvoyée par l'API", async () => {
         fetchMock.mockResolvedValue({ json: async () => ({ error: { message: 'Insufficient credits' } }) });
-        const result = await chatWithAgent('creative', 'Bonjour', null, 'text', 'k');
+        const result = await chatWithAgent('copywriter', 'Bonjour', null, 'text', 'k');
         expect(result.response).toMatch(/offline|connection error/i);
     });
 
     it('refuse de travailler sans clé API', async () => {
-        const result = await chatWithAgent('creative', 'Bonjour', null, 'text', '');
+        const result = await chatWithAgent('copywriter', 'Bonjour', null, 'text', '');
         expect(result.response).toMatch(/API key not configured/);
         expect(fetchMock).not.toHaveBeenCalled();
     });

@@ -131,7 +131,7 @@ describe('Flux CLI/MCP bout-en-bout (subprocess réels)', { timeout: 60000 }, ()
         const response = await session.call('tools/list', {});
         const names = response.result.tools.map(t => t.name);
         expect(names.length).toBeGreaterThanOrEqual(30);
-        for (const domain of ['prospect_leads', 'run_pipeline', 'create_document', 'generate_photo',
+        for (const domain of ['prospect_leads', 'run_pipeline', 'create_document',
             'create_quote', 'list_instances']) {
             expect(names).toContain(domain);
         }
