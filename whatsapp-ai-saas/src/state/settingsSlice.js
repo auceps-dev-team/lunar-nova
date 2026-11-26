@@ -1,21 +1,14 @@
 import { API_BASE_URL } from '../config';
 
 /**
- * Store — Réglages : application, backend, modèles disponibles, quota IA.
+ * Store — Réglages : application, backend, modèles disponibles.
  *
- * Slice extraite de src/store.js (constat R5 de l’audit du 29/09/2026), à
- * l’identique. Le store reste unique et persisté sous le même nom : voir
- * src/store.js, qui assemble les slices et porte la persistance.
+ * Slice extraite de src/store.js (constat R5 de l’audit du 29/09/2026). Le
+ * store reste unique et persisté sous le même nom : voir src/store.js, qui
+ * assemble les slices et porte la persistance. Le quota d'images (aiQuota) a
+ * disparu avec la génération d'image.
  */
 export const createSettingsSlice = (set, get) => ({
-    aiQuota: {
-        hasCustomKey: false,
-        imageUsed: 0,
-        imageLimit: 40,
-        resetDate: ''
-    },
-
-
     // --- Global Settings ---
     appSettings: {
         theme: 'light',
@@ -24,11 +17,6 @@ export const createSettingsSlice = (set, get) => ({
         allowAiRead: true,
         promptFormat: 'json',
         hasCompletedOnboarding: false,
-        // Masquage volontaire du bandeau de quota par l'utilisateur.
-        // Persisté (appSettings est conservé par partialize) — remplace
-        // l'ancien hack qui réécrivait aiQuota.imageLimit à 99999 dans
-        // l'état persisté, contaminant les sessions suivantes.
-        dismissQuotaBanner: false,
         mainMenuOrder: [],
         // Identifiants des onglets masqués dans la barre latérale.
         // Le masquage n'est que visuel : les routes restent accessibles
@@ -37,17 +25,15 @@ export const createSettingsSlice = (set, get) => ({
     },
 
     // --- Available AI Models ---
-    availableModels: { chat: [], image: [] },
+    // Modèles de conversation seulement : la génération d'image a été retirée.
+    availableModels: { chat: [] },
     setAvailableModels: (models) => set({ availableModels: models }),
 
     // --- Backend Settings (provider, models, API keys) ---
-    // Synced from GET /api/settings and persisted in IndexedDB
-    // so all pages (PhotoShoot, AgentsHub, etc.) can read them without
+    // Synced from GET /api/settings so every page can read them without
     // re-fetching on each mount.
     backendSettings: {
         default_ai_provider: 'gemini',
-        default_image_provider: 'openai', // dédié à la génération d'images (Together AI/NVIDIA)
-        default_image_model: '',
         openai_base_url: 'https://integrate.api.nvidia.com/v1',
         // other keys are populated after fetch
     },
@@ -57,22 +43,6 @@ export const createSettingsSlice = (set, get) => ({
     updateSettings: (updates) => set((state) => ({
         appSettings: { ...state.appSettings, ...updates }
     })),
-
-    fetchAiQuota: async () => {
-        try {
-            const res = await fetch(API_BASE_URL + '/api/settings/quota');
-            if (!res.ok) return;
-            const data = await res.json();
-            if (data.status === 'success') {
-                set({ aiQuota: data.data });
-            }
-        } catch (e) {
-            if (e?.name !== 'AbortError') {
-                console.warn('[Store] Failed to fetch AI Quota (backend offline):', e?.message || e);
-            }
-        }
-    },
-
 
     setBackendSettings: (settings) => set((state) => ({
         backendSettings: { ...state.backendSettings, ...settings }
@@ -95,10 +65,42 @@ export const createSettingsSlice = (set, get) => ({
         }
     },
 
+    /**
+     * Recopie le modèle choisi dans les Paramètres (appSettings.model) côté
+     * backend, sous default_chat_model : c'est lui qu'utilise le routeur pour
+     * tout appel qui ne précise pas de modèle (Rédaction, prospection, MCP,
+     * CLI). Avant le 26/11/2026, ces appels ignoraient ce choix.
+     *
+     * N'écrit que si le modèle figure dans la liste du fournisseur ENREGISTRÉ
+     * (celle que fetchGlobalModels vient de charger) : un identifiant d'un
+     * autre fournisseur ferait échouer les appels.
+     * @returns {Promise<boolean>} vrai si une écriture a eu lieu.
+     */
+    syncDefaultChatModel: async () => {
+        const { appSettings, backendSettings, availableModels } = get();
+        const model = appSettings?.model;
+        if (!model || !(availableModels?.chat || []).some((m) => m.id === model)) return false;
+        if (backendSettings?.default_chat_model === model) return false;
+        try {
+            const res = await fetch(API_BASE_URL + '/api/settings', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ default_chat_model: model })
+            });
+            if (!res.ok) return false;
+            set((state) => ({ backendSettings: { ...state.backendSettings, default_chat_model: model } }));
+            return true;
+        } catch (e) {
+            if (e?.name !== 'AbortError') {
+                console.warn('[Store] Failed to sync default chat model:', e?.message || e);
+            }
+            return false;
+        }
+    },
+
     fetchGlobalModels: async () => {
         const state = get();
-        const chatProvider  = state.backendSettings.default_ai_provider  || 'gemini';
-        const imageProvider = state.backendSettings.default_image_provider || chatProvider;
+        const chatProvider = state.backendSettings.default_ai_provider || 'gemini';
 
         let apiKey = undefined;
         let baseURL = undefined;
@@ -110,7 +112,6 @@ export const createSettingsSlice = (set, get) => ({
         }
 
         try {
-            // 1. Fetch chat models (selon chatProvider)
             const chatRes = await fetch(`${API_BASE_URL}/api/ai/models`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -120,47 +121,24 @@ export const createSettingsSlice = (set, get) => ({
             const chatData = await chatRes.json();
 
             let newChat = [];
-            let newImage = [];
-
             if (chatData.status === 'success' && chatData.models) {
                 if (chatData.models.chat) {
                     newChat = chatData.models.chat;
-                    newImage = chatData.models.image || [];
                 } else if (Array.isArray(chatData.models)) {
                     newChat = chatData.models;
                 }
             }
 
-            // 2. Si imageProvider ≠ chatProvider, fetch les modèles image séparément
-            if (imageProvider && imageProvider !== chatProvider) {
-                try {
-                    const imgRes = await fetch(`${API_BASE_URL}/api/ai/models`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ provider: imageProvider })
-                    });
-                    if (imgRes.ok) {
-                        const imgData = await imgRes.json();
-                        if (imgData.status === 'success' && imgData.models?.image) {
-                            newImage = imgData.models.image;
-                        }
-                    }
-                } catch (e) {
-                    console.warn('[Store] Failed to fetch image models:', e);
-                }
-            }
-
             // Sécurité additionnelle : nettoyer les emojis résiduels des noms
             const cleanName = (str) => (str || '').replace(/^[\u2700-\u27BF\u1F000-\u1F9FF\u2600-\u26FF]\s*/, '');
-            newChat  = newChat.map(m => ({ ...m, name: cleanName(m.name) }));
-            newImage = newImage.map(m => ({ ...m, name: cleanName(m.name) }));
+            newChat = newChat.map(m => ({ ...m, name: cleanName(m.name) }));
 
-            set({ availableModels: { chat: newChat, image: newImage } });
+            set({ availableModels: { chat: newChat } });
         } catch (e) {
             if (e?.name !== 'AbortError') {
                 console.warn('[Store] Failed to fetch global models (backend offline):', e?.message || e);
             }
-            set({ availableModels: { chat: [], image: [] } });
+            set({ availableModels: { chat: [] } });
         }
     },
 });

@@ -42,6 +42,7 @@
  */
 
 const puppeteer = require('puppeteer-core');
+const { getSelectorRegistry, inPageSelectors } = require('../wa/waSelectors');
 
 const CDP_URL = process.env.WACOPILOTE_CDP_URL || 'http://localhost:8315';
 
@@ -57,9 +58,11 @@ const DOWNLOAD_TIMEOUT_MS = 15000;
  * vide ambiguë.
  */
 /* eslint-disable no-undef */
-async function extractInPage(messageId, timeoutMs) {
-    const rows = Array.from(document.querySelectorAll('div[role="row"]'))
-        .filter((r) => r.querySelector('[data-testid="ptt-status"]'));
+// `sel` : sélecteurs préparés dans la page par inPageSelectors (wa/waSelectors.js).
+// Le préfixe `conv-msg-` reste écrit ici : il est lu, pas seulement cherché.
+async function extractInPage(messageId, timeoutMs, sel) {
+    const rows = Array.from(document.querySelectorAll(sel.S.messageRow))
+        .filter((r) => r.querySelector(sel.S.voiceStatus));
 
     if (rows.length === 0) return { ok: false, raison: 'AUCUN_VOCAL_VISIBLE' };
 
@@ -168,7 +171,13 @@ const RAISONS = {
  * @throws  avec un message explicite (propriétés `statusCode` et `reason`)
  */
 async function extractVoiceNoteFromPage(page, messageId) {
-    const res = await page.evaluate(extractInPage, messageId || null, DOWNLOAD_TIMEOUT_MS);
+    const sel = await page.evaluateHandle(inPageSelectors, getSelectorRegistry().forPage());
+    let res;
+    try {
+        res = await page.evaluate(extractInPage, messageId || null, DOWNLOAD_TIMEOUT_MS, sel);
+    } finally {
+        await sel.dispose().catch(() => {});
+    }
 
     if (!res.ok) {
         const cle = String(res.raison || '').split(':')[0];

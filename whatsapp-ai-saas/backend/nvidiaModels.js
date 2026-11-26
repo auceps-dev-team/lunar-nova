@@ -4,7 +4,7 @@
  * Chaque modèle définit :
  *  - id          : identifiant de l'API (model string ou UUID)
  *  - name        : nom affiché dans l'UI
- *  - type        : 'text' | 'vision' | 'image-edit' | 'image-generate' | 'moderation'
+ *  - type        : 'text' | 'vision' | 'moderation'
  *  - badge       : emoji UI affiché dans les sélecteurs
  *  - dbKey       : clé en base de données (configurée par l'utilisateur dans Settings)
  *  - envKey      : variable d'environnement (clé système — fallback)
@@ -633,31 +633,8 @@ const MODELS = [
         topP: 0.95,
     },
 
-    // ─── Modèles Image-Génération ─────────────────────────────────────
-    // qwen/qwen-image est déployé via Together AI (partenaire NVIDIA Build)
-    // Endpoint : https://api.together.xyz/v1/images/generations
-    // Clé      : Together AI key (together_api_key en DB / TOGETHER_API_KEY en .env)
-    {
-        id: 'qwen/qwen-image',
-        name: 'Qwen Image (Together AI)',
-        type: 'image-generate',     // text→image
-        provider: 'together',        // indique le routage Together AI
-        dbKey: 'together_api_key',   // clé primaire : Together AI
-        legacyDbKey: 'nvidia_key_qwen_image',  // fallback : ancienne clé NVIDIA
-        envKey: 'TOGETHER_API_KEY',  // .env fallback
-        legacyEnvKey: 'NVIDIA_KEY_QWEN_IMAGE',
-        thinking: false,
-    },
-
-    {
-        id: 'stabilityai/stable-diffusion-3-medium',
-        name: 'Stable Diffusion 3 Medium (Together AI)',
-        type: 'image-generate',
-        provider: 'together',
-        dbKey: 'together_api_key',
-        envKey: 'TOGETHER_API_KEY',
-        thinking: false,
-    },
+    // Les modèles de génération d'image (Qwen Image, Stable Diffusion 3 via
+    // Together AI) ont été retirés avec la génération d'image.
 ];
 
 /**
@@ -737,7 +714,7 @@ function getModelDef(modelId) {
 
 /**
  * Retourne les modèles filtrés par type pour alimenter les sélecteurs UI.
- * @param {'text'|'vision'|'image-edit'|'moderation'|null} type  null = tous
+ * @param {'text'|'vision'|'moderation'|null} type  null = tous
  */
 function getModelsByType(type = null) {
     if (!type) return MODELS;

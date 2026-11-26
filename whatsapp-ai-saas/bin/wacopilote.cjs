@@ -27,7 +27,6 @@ const { handleStatus } = require('./commands/status.cjs');
 const { handleProspect } = require('./commands/prospect.cjs');
 const { handlePipeline } = require('./commands/pipeline.cjs');
 const { handleDocuments } = require('./commands/documents.cjs');
-const { handlePhoto } = require('./commands/photo.cjs');
 const { handleQuotes } = require('./commands/quotes.cjs');
 const { handleInstances } = require('./commands/instances.cjs');
 const { handleContacts } = require('./commands/contacts.cjs');
@@ -52,7 +51,6 @@ function printHelp() {
                                    Wizard de prospection -> liste -> messages -> planning
   \x1b[36mdocuments list|get|create|update|delete\x1b[0m
                                    Gérer les documents texte générés par l'IA
-  \x1b[36mphoto generate\x1b[0m                  Générer une photo produit/mannequin (persona + image)
   \x1b[36mquotes list|get|create|update|delete|export-pdf\x1b[0m
                                    Gérer les devis (export PDF autonome, via Chromium headless)
   \x1b[36mcontacts list|get|create|update|delete|assign\x1b[0m
@@ -66,7 +64,7 @@ function printHelp() {
   \x1b[36mhelp\x1b[0m, \x1b[36m-h\x1b[0m, \x1b[36m--help\x1b[0m               Afficher cette aide
 
 \x1b[1mOPTIONS POUR 'run' :\x1b[0m
-  \x1b[33m--agent <id>\x1b[0m                     Identifiant de l'agent (ex: copywriter, creative, ella)
+  \x1b[33m--agent <id>\x1b[0m                     Identifiant de l'agent (ex: copywriter, ella, seo_specialist)
   \x1b[33m--prompt <texte>\x1b[0m                 Message ou prompt à envoyer à l'agent
   \x1b[33m--file <chemin>\x1b[0m                  Chemin vers un fichier texte contenant le prompt
   \x1b[33m--provider <nom>\x1b[0m                 Fournisseur IA forcé (gemini, openrouter, nvidia, ollama)
@@ -90,7 +88,6 @@ function printHelp() {
   $ wacopilote pipeline run --brief "10 boutiques de vêtements à Abidjan" --auto --list-name "Prospects Abidjan" --segment-name "Mode"
   $ wacopilote pipeline cards --run-id 3 --json
   $ wacopilote documents create --title "Argumentaire" --content "..." --json
-  $ wacopilote photo generate --agent photoshoot --prompt "Robe d'été rouge" --out ./photo.png
   $ wacopilote quotes create --client-name "Boutique X" --data '{"items":[{"description":"Robe","qty":2,"price":15000}]}'
   $ wacopilote quotes export-pdf 5 --out ./devis-5.pdf
   $ wacopilote instances list --json
@@ -150,11 +147,6 @@ async function main() {
 
     if (command === 'documents') {
         await handleDocuments(rawArgs.slice(1));
-        return;
-    }
-
-    if (command === 'photo') {
-        await handlePhoto(rawArgs.slice(1));
         return;
     }
 

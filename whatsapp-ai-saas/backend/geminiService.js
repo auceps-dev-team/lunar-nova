@@ -7,7 +7,8 @@ const { parseLlmJson } = require('./llmJson');
 
 // Helper function to get Gemini Client dynamically to support runtime API key updates
 async function getGeminiClient(modality = 'none', requestedModel = '') {
-    // modality: 'image' or 'text' or 'none'
+    // modality: 'text' or 'none'. Le mode 'image' (et son quota de 40 images
+    // par mois sur la clé par défaut) a disparu avec la génération d'image.
 
     let key = await db.getSetting('gemini_api_key', '');
     let isDefaultKey = false;
@@ -21,49 +22,11 @@ async function getGeminiClient(modality = 'none', requestedModel = '') {
         throw new Error('API key not valid');
     }
 
-    if (isDefaultKey) {
-        // Enforce Limits
-        if (modality === 'text') {
-            const allowedModels = ['gemini-2.5-flash', 'gemini-3-pro', 'gemini-2.5-flash-latest'];
-            if (!allowedModels.includes(requestedModel) && requestedModel !== '') {
-                throw new Error('MODEL_RESTRICTED');
-            }
-        } else if (modality === 'image') {
-            const limit = 40;
-            // Check current count and reset date
-            let count = parseInt(await db.getSetting('gemini_image_count', '0')) || 0;
-            let lastResetDateStr = await db.getSetting('gemini_quota_reset_date', '');
-            
-            const now = new Date();
-            const yearStr = now.getFullYear().toString();
-            const monthStr = (now.getMonth() + 1).toString().padStart(2, '0');
-            const targetResetDateStr = `${yearStr}-${monthStr}`;
-
-            // Reset condition: If it's the 5th of the month or later, and we haven't reset this month yet
-            if (now.getDate() >= 5) {
-                if (lastResetDateStr !== targetResetDateStr) {
-                    count = 0;
-                    await db.setSetting('gemini_image_count', '0');
-                    await db.setSetting('gemini_quota_reset_date', targetResetDateStr);
-                }
-            } else {
-                // If it's before the 5th, the reset applies to the previous month
-                let prevTarget = '';
-                if (now.getMonth() === 0) {
-                     prevTarget = `${now.getFullYear() - 1}-12`;
-                } else {
-                     prevTarget = `${now.getFullYear()}-${now.getMonth().toString().padStart(2, '0')}`;
-                }
-                if (lastResetDateStr !== prevTarget && lastResetDateStr !== targetResetDateStr) {
-                     count = 0;
-                     await db.setSetting('gemini_image_count', '0');
-                     await db.setSetting('gemini_quota_reset_date', prevTarget);
-                }
-            }
-
-            if (count >= limit) {
-                throw new Error('QUOTA_EXCEEDED');
-            }
+    if (isDefaultKey && modality === 'text') {
+        // Clé par défaut : modèles de conversation limités.
+        const allowedModels = ['gemini-2.5-flash', 'gemini-3-pro', 'gemini-2.5-flash-latest'];
+        if (!allowedModels.includes(requestedModel) && requestedModel !== '') {
+            throw new Error('MODEL_RESTRICTED');
         }
     }
 
@@ -98,37 +61,26 @@ async function syncGeminiModels() {
             throw new Error(data.error.message);
         }
 
+        // Modèles de conversation seulement : les modèles d'image (Imagen,
+        // « flash-image », Veo) ne servent plus depuis le retrait de la
+        // génération d'image, et en sont exclus.
         const chatModels = [];
-        const imageModels = [];
         if (data.models) {
             data.models.forEach(m => {
                 const id = m.name.replace('models/', '');
-                if (id.includes('gemini') && !id.includes('embedding') && !id.includes('aqa')) {
+                const isImageModel = id.includes('imagen') || id.includes('veo') ||
+                    id.includes('flash-image') || id.includes('pro-image');
+                if (id.includes('gemini') && !id.includes('embedding') && !id.includes('aqa') && !isImageModel) {
                     chatModels.push({ id: id, name: m.displayName || id });
-                }
-                if (id.includes('imagen') || id.includes('veo') ||
-                    id.includes('flash-image') || id.includes('pro-image')) {
-                    imageModels.push({ id: id, name: m.displayName || id });
                 }
             });
         }
 
-        // Fallback manuel si l'API ne les retourne pas encore :
-        if (imageModels.length === 0) {
-            imageModels.push(
-                { id: 'gemini-3.1-flash-image-preview', name: ' Nano Banana 2 (Gemini 3.1 Flash Image)' },
-                { id: 'gemini-3-pro-image-preview', name: ' Nano Banana Pro (Gemini 3 Pro Image)' },
-                { id: 'gemini-2.5-flash-image', name: ' Nano Banana (Gemini 2.5 Flash Image)' },
-                { id: 'imagen-4.0-generate-001', name: 'Imagen 4' },
-                { id: 'imagen-4.0-ultra-generate-001', name: 'Imagen 4 Ultra' }
-            );
-        }
-
-        const modelsJson = JSON.stringify({ chat: chatModels, image: imageModels });
+        const modelsJson = JSON.stringify({ chat: chatModels });
 
         if (!cached || modelsJson !== cached) {
             await db.setSetting('gemini_models_cache', modelsJson);
-            console.error(`[Gemini] Cache mis à jour : ${chatModels.length} modèles chat, ${imageModels.length} modèles d'images.`);
+            console.error(`[Gemini] Cache mis à jour : ${chatModels.length} modèles chat.`);
         } else {
             console.error('[Gemini] La liste des modèles est déjà à jour.');
         }
@@ -208,7 +160,9 @@ async function chatWithAgent(personaId, message, imageParams, attachments, promp
         personaInstruction = dbAgent.system_instruction;
         finalPromptFormat = dbAgent.response_format === 'json' ? 'json' : promptFormat;
     } else {
-        const persona = orchestrator.getPersona(personaId) || orchestrator.getPersona('creative');
+        // Agent inconnu : repli sur le copilote (l'ancien repli, « creative »,
+        // était un directeur artistique d'images, retiré avec la génération).
+        const persona = orchestrator.getPersona(personaId) || orchestrator.getPersona('copilot');
         finalPromptFormat = orchestrator.requiresJsonFormat(personaId) ? 'json' : promptFormat;
         personaInstruction = persona.systemInstruction;
     }
@@ -297,222 +251,21 @@ async function chatWithAgent(personaId, message, imageParams, attachments, promp
     }
 }
 
-const PROMPT_TEMPLATES = {
-    product: (prompt, dims) => `Generate a high-end commercial product photograph. The EXACT product shown in the reference image must be center-stage. 
-    
-CRITICAL: The product's identity, labels, logo, and shape must remain 100% IDENTICAL. Do NOT alter the product. 
-
-${prompt}
-
-The output image should be a ${dims.label} aspect ratio. Create a clean, premium visual for a business catalog with professional studio lighting.`,
-
-    fashion: (prompt, dims) => `Generate a high-end fashion photoshoot image. A professional model is wearing the EXACT product shown in the reference image.
-    
-    CRITICAL: The garment/product in the reference image must appear IDENTICALLY on the model — same color, material, texture, pattern, logos, labels, and design details. Do NOT change the product in any way.
-    
-    SAFETY & MODESTY RULES:
-    - The model MUST be wearing a complete, professional, and modest outfit.
-    - If the product is a top (T-shirt, polo, shirt), the model MUST also be wearing matching pants, a long skirt, or professional trousers.
-    - The model MUST look directly at the camera (maintaining eye contact).
-    - Suggestive poses, semi-nude results, swimsuits, or underwear looks are STRICTLY FORBIDDEN.
-    - Ensure the model is fully clothed in a way that is appropriate for a high-end commercial fashion catalogue.
-
-    ${prompt}
-
-    The output image should be a ${dims.label} aspect ratio (approximately ${dims.w}x${dims.h} pixels). Create a photorealistic, magazine-quality editorial photo.`
-};
-
-async function generateImage(prompt, configAspectRatio = '1:1', imageParams = null, editMode = false, mode = 'product', imageModel = '') {
-    // --- STRATEGY --- 
-    // If a reference image is provided: use Gemini Flash Image (image editing/uplifting mode)
-    //   → This PRESERVES the product identity (logo, shape, labels)
-    // If no image: use Nano Banana or Imagen 4 for pure text-to-image
-
-    // Map UI aspect ratios to Gemini accepted format
-    const aspectMap = {
-        '1:1': '1:1',
-        '3:4': '3:4',
-        '4:3': '4:3',
-        '9:16': '9:16',
-        '16:9': '16:9'
-    };
-    const geminiAspectRatio = aspectMap[configAspectRatio] || '1:1';
-
-    // Map aspect ratios to pixel dimensions for prompt guidance
-    const dimensionMap = {
-        '1:1': { w: 1024, h: 1024, label: 'square (1:1)' },
-        '3:4': { w: 768, h: 1024, label: 'vertical/portrait (3:4)' },
-        '4:3': { w: 1024, h: 768, label: 'horizontal/landscape (4:3)' },
-        '16:9': { w: 1280, h: 720, label: 'widescreen (16:9)' }
-    };
-    const dims = dimensionMap[configAspectRatio] || dimensionMap['1:1'];
-
-    if (imageParams && imageParams.data && imageParams.mimeType) {
-        // ---- IMAGE EDITING / PRODUCT UPLIFTING MODE ----
-        try {
-            let finalPrompt = prompt;
-            if (editMode) {
-                console.error(`[generateImage] Pure edit mode active. Using raw prompt: ${prompt}`);
-            } else {
-                const template = PROMPT_TEMPLATES[mode] || PROMPT_TEMPLATES.product;
-                console.error(`[generateImage] Image reference received — using mode: ${mode} (aspect: ${dims.label})`);
-                finalPrompt = template(prompt, dims);
-            }
-
-            const editModel = imageModel && imageModel.includes('gemini') ? imageModel : 'gemini-3.1-flash-image-preview';
-
-            if (imageModel && imageModel.includes('imagen')) {
-                return { error: "Erreur : Vous avez sélectionné un modèle Text-to-Image (Imagen) pour une tâche de retouche d'image (Image-to-Image). Veuillez sélectionner un modèle multimodal (ex: Gemini Flash) dans les paramètres." };
-            }
-
-            const { client, isDefaultKey } = await getGeminiClient('image', editModel);
-
-            const response = await client.models.generateContent({
-                model: editModel,
-                contents: [
-                    {
-                        role: 'user',
-                        parts: [
-                            {
-                                inlineData: {
-                                    data: imageParams.data,
-                                    mimeType: imageParams.mimeType
-                                }
-                            },
-                            { text: finalPrompt }
-                        ]
-                    }
-                ],
-                config: {
-                    responseModalities: ['IMAGE', 'TEXT'],
-                    imageConfig: {
-                        aspectRatio: geminiAspectRatio,
-                    },
-                }
-            });
-
-            // Extract the image from the response
-            if (response.candidates && response.candidates[0]?.content?.parts) {
-                for (const part of response.candidates[0].content.parts) {
-                    if (part.inlineData && part.inlineData.data) {
-                        if (isDefaultKey) {
-                            let count = parseInt(await db.getSetting('gemini_image_count', '0')) || 0;
-                            await db.setSetting('gemini_image_count', (count + 1).toString());
-                        }
-                        return { imageBytes: part.inlineData.data };
-                    }
-                }
-            }
-            return { error: "L'édition d'image n'a pas retourné de résultat visuel." };
-        } catch (error) {
-            console.error("Gemini Image Edit Error:", error);
-            // Fallback to text-image below
-            console.error('[generateImage] Edit mode failed, falling back to text-to-image...');
-        }
-    }
-
-    // ---- TEXT-TO-IMAGE MODE ----
-    // Nano Banana models use generateContent, Imagen uses generateImages
-    const NANO_BANANA_MODELS = [
-        'gemini-3.1-flash-image-preview',
-        'gemini-3-pro-image-preview',
-        'gemini-2.5-flash-image',
-    ];
-    const isNanoBanana = imageModel && NANO_BANANA_MODELS.includes(imageModel);
-    const isImagen = imageModel && imageModel.includes('imagen');
-
-    try {
-        if (isNanoBanana) {
-            // --- Nano Banana path (generateContent) ---
-            const { client, isDefaultKey } = await getGeminiClient('image', imageModel);
-
-            const response = await client.models.generateContent({
-                model: imageModel,
-                contents: [{ role: 'user', parts: [{ text: prompt }] }],
-                config: {
-                    responseModalities: ['IMAGE', 'TEXT'],
-                    imageConfig: {
-                        aspectRatio: geminiAspectRatio,
-                        imageSize: '1K',
-                    },
-                }
-            });
-            if (response.candidates?.[0]?.content?.parts) {
-                for (const part of response.candidates[0].content.parts) {
-                    if (part.inlineData?.data) {
-                        if (isDefaultKey) {
-                            let count = parseInt(await db.getSetting('gemini_image_count', '0')) || 0;
-                            await db.setSetting('gemini_image_count', (count + 1).toString());
-                        }
-                        return { imageBytes: part.inlineData.data };
-                    }
-                }
-            }
-            return { error: "Nano Banana n'a pas retourné d'image." };
-
-        } else {
-            // --- Imagen path (generateImages) ---
-            const genModel = isImagen ? imageModel : 'imagen-4.0-generate-001';
-            const { client, isDefaultKey } = await getGeminiClient('image', genModel);
-
-            const response = await client.models.generateImages({
-                model: genModel,
-                prompt: prompt,
-                config: {
-                    numberOfImages: 1,
-                    outputMimeType: 'image/jpeg',
-                    aspectRatio: geminiAspectRatio
-                }
-            });
-            if (response.generatedImages?.length > 0) {
-                if (isDefaultKey) {
-                    let count = parseInt(await db.getSetting('gemini_image_count', '0')) || 0;
-                    await db.setSetting('gemini_image_count', (count + 1).toString());
-                }
-                return { imageBytes: response.generatedImages[0].image.imageBytes };
-            }
-            return { error: 'No image generated.' };
-        }
-    } catch (error) {
-        console.error("Image Generation Error:", error);
-        const errMessage = error.message || error.toString();
-        let userMessage = errMessage;
-        if (errMessage.includes('QUOTA_EXCEEDED')) {
-            userMessage = "Free Tier Limit Reached. You have used your 40 free images for this month. Please configure your own Gemini API key in Settings.";
-        } else if (errMessage.includes('404') || errMessage.includes('not found')) {
-            userMessage = "Modèle non disponible avec cette clé API.";
-        } else if (errMessage.includes('billing')) {
-            userMessage = "Ce modèle nécessite un compte payant / billing activé.";
-        }
-        return { error: userMessage };
-    }
-}
-
 async function listModels() {
-    const FALLBACK_IMAGE = [
-        { id: 'gemini-3.1-flash-image-preview', name: ' Nano Banana 2 (Gemini 3.1 Flash Image)' },
-        { id: 'gemini-3-pro-image-preview', name: ' Nano Banana Pro (Gemini 3 Pro Image)' },
-        { id: 'gemini-2.5-flash-image', name: ' Nano Banana (Gemini 2.5 Flash Image)' },
-        { id: 'imagen-4.0-generate-001', name: 'Imagen 4' },
-        { id: 'imagen-4.0-ultra-generate-001', name: 'Imagen 4 Ultra' }
-    ];
     const FALLBACK_CHAT = [{ id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash' }];
 
     try {
         const cached = await db.getSetting('gemini_models_cache', null);
         if (cached && cached !== 'null') {
-            return JSON.parse(cached);
+            // Un cache écrit avant le retrait de la génération d'image porte
+            // encore une clé `image` : seule la liste de conversation est rendue.
+            const parsed = JSON.parse(cached);
+            return { chat: Array.isArray(parsed.chat) && parsed.chat.length > 0 ? parsed.chat : FALLBACK_CHAT };
         }
-        return {
-            chat: FALLBACK_CHAT,
-            image: FALLBACK_IMAGE
-        };
+        return { chat: FALLBACK_CHAT };
     } catch (error) {
         console.error("Gemini DB Read Error:", error);
-        return {
-            chat: FALLBACK_CHAT,
-            image: FALLBACK_IMAGE
-        };
+        return { chat: FALLBACK_CHAT };
     }
 }
 
@@ -610,7 +363,6 @@ async function transcribeAudio(audio, mimeType, options = {}) {
 module.exports = {
     generateProposals,
     chatWithAgent,
-    generateImage,
     listModels,
     classifyOrderIntent,
     transcribeAudio

@@ -24,7 +24,11 @@ export default function Prospection() {
     const [duration, setDuration] = useState(5);
     const [quantity, setQuantity] = useState(20);
     const [googleApiKey, setGoogleApiKey] = useState('');
-    
+    // 'loading' | 'ok' | 'error'. Avant le 26/11/2026, un échec de /api/config
+    // (backend pas encore démarré) laissait la clé vide en silence, et la page
+    // affichait « ajoutez votre clé » alors qu'une clé était configurée.
+    const [configStatus, setConfigStatus] = useState('loading');
+
     // GoAfrica State
     const [goAfricaMetadata, setGoAfricaMetadata] = useState({ countries: [], categories: [] });
     const [goAfricaCountry, setGoAfricaCountry] = useState('ci');
@@ -107,14 +111,16 @@ export default function Prospection() {
     }, []);
 
     const fetchConfig = async () => {
+        setConfigStatus('loading');
         try {
             const res = await fetch(API_BASE_URL + '/api/config');
-            if (res.ok) {
-                const data = await res.json();
-                if (data.googleMapsApiKey) setGoogleApiKey(data.googleMapsApiKey);
-            }
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
+            setGoogleApiKey(data.googleMapsApiKey || '');
+            setConfigStatus('ok');
         } catch (error) {
             console.error('Config fetch error:', error);
+            setConfigStatus('error');
         }
     };
 
@@ -549,16 +555,30 @@ export default function Prospection() {
                             loading="lazy"
                             allowFullScreen
                             referrerPolicy="no-referrer-when-downgrade"
-                            src={`https://www.google.com/maps/embed/v1/place?key=${googleApiKey}&q=${encodeURIComponent(query)}`}
+                            src={`https://www.google.com/maps/embed/v1/place?key=${encodeURIComponent(googleApiKey)}&q=${encodeURIComponent(query)}`}
                         ></iframe>
                     </div>
                 )}
-                {source === 'google' && query && !googleApiKey && (
-                    <div className="mt-6 p-4 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg">
+                {source === 'google' && query && !googleApiKey && configStatus === 'error' && (
+                    <div className="mt-6 p-4 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg flex items-center justify-between gap-4">
                         <p className="text-orange-800 dark:text-orange-300 text-sm">
                             <MapPin className="inline h-4 w-4 mr-1 mb-1" />
-                            Pour afficher la carte en temps réel, veuillez ajouter votre clé API Google Maps (GOOGLE_MAPS_API_KEY) dans la configuration du serveur (fichier .env).
+                            Le service local n'a pas répondu : la configuration de la carte n'a pas pu être lue.
                         </p>
+                        <button type="button" onClick={fetchConfig} className="shrink-0 text-sm font-medium text-orange-800 dark:text-orange-200 underline underline-offset-2">
+                            Réessayer
+                        </button>
+                    </div>
+                )}
+                {source === 'google' && query && !googleApiKey && configStatus === 'ok' && (
+                    <div className="mt-6 p-4 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg flex items-center justify-between gap-4">
+                        <p className="text-orange-800 dark:text-orange-300 text-sm">
+                            <MapPin className="inline h-4 w-4 mr-1 mb-1" />
+                            Pour afficher la carte en temps réel, ajoutez votre clé Google Maps dans Paramètres, section Prospection.
+                        </p>
+                        <Link to="/settings" className="shrink-0 text-sm font-medium text-orange-800 dark:text-orange-200 underline underline-offset-2">
+                            Paramètres
+                        </Link>
                     </div>
                 )}
             </div>

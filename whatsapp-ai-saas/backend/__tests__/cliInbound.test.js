@@ -63,24 +63,27 @@ describe('bin/wacopilote.js — Point d\'entrée CLI Inbound', { timeout: 30000 
         // Extension v1.45.0
         expect(stdout).toContain('pipeline');
         expect(stdout).toContain('documents');
-        expect(stdout).toContain('photo');
         expect(stdout).toContain('quotes');
         expect(stdout).toContain('instances');
+        // La génération d'image a été retirée : plus de commande `photo`.
+        expect(stdout).not.toMatch(/photo generate/);
     });
 
-    it('list-agents --json renvoie la liste complète des 26 personas', async () => {
+    it('list-agents --json renvoie la liste complète des 24 personas', async () => {
         const { code, stdout } = await runCli(['list-agents', '--json']);
         expect(code).toBe(0);
         const jsonStart = stdout.indexOf('{');
         const parsed = JSON.parse(stdout.slice(jsonStart));
         expect(parsed.success).toBe(true);
-        expect(parsed.count).toBeGreaterThanOrEqual(25);
+        expect(parsed.count).toBe(24);
         expect(Array.isArray(parsed.personas)).toBe(true);
 
         const ids = parsed.personas.map(p => p.id);
         expect(ids).toContain('copywriter');
-        expect(ids).toContain('creative');
         expect(ids).toContain('outbound_strategist');
+        // Les deux directeurs artistiques d'image sont partis avec la génération.
+        expect(ids).not.toContain('creative');
+        expect(ids).not.toContain('photoshoot');
     });
 
     it('status --json renvoie l\'état de la base de données et des clés', async () => {
@@ -90,7 +93,7 @@ describe('bin/wacopilote.js — Point d\'entrée CLI Inbound', { timeout: 30000 
         const parsed = JSON.parse(stdout.slice(jsonStart));
         expect(parsed.success).toBe(true);
         expect(parsed.database).toContain('SQLite');
-        expect(parsed.personasCount).toBeGreaterThanOrEqual(25);
+        expect(parsed.personasCount).toBe(24);
     });
 
     it('documents create puis list --json font un aller-retour', async () => {

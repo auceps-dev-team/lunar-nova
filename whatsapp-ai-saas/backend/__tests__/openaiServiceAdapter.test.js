@@ -91,13 +91,13 @@ describe('openaiService.classifyOrderIntent', () => {
 
 describe('openaiService.chatWithAgent', () => {
     it('signale l\'absence de clé sans appeler le réseau', async () => {
-        const r = await chatWithAgent('creative', 'Bonjour', null, 'text', '', BASE);
+        const r = await chatWithAgent('copywriter', 'Bonjour', null, 'text', '', BASE);
         expect(r.response).toMatch(/API key not configured/);
         expect(fetchMock).not.toHaveBeenCalled();
     });
 
     it('ne fait rien d\'un message vide sans image', async () => {
-        const r = await chatWithAgent('creative', '', null, 'text', KEY, BASE);
+        const r = await chatWithAgent('copywriter', '', null, 'text', KEY, BASE);
         expect(r.response).toMatch(/didn't catch that/);
         expect(fetchMock).not.toHaveBeenCalled();
     });
@@ -115,11 +115,22 @@ describe('openaiService.chatWithAgent', () => {
         expect(r.response).toBe('Voici une accroche.');
     });
 
+    it('retombe sur la consigne du copilote pour un agent inconnu', async () => {
+        // L'ancien repli, « creative », était un directeur artistique d'images,
+        // retiré avec la génération d'image.
+        fetchMock.mockResolvedValue(jsonResponse(completion('ok')));
+        const orchestrator = require('../agents/orchestrator');
+
+        await chatWithAgent('agent-qui-n-existe-pas', 'Salut', null, 'text', KEY, BASE);
+
+        expect(lastRequest().body.messages[0].content).toBe(orchestrator.getPersona('copilot').systemInstruction);
+    });
+
     it('privilégie la consigne et le modèle de l\'agent en base', async () => {
         fetchMock.mockResolvedValue(jsonResponse(completion('ok')));
         const dbAgent = { system_instruction: 'Tu es un agent maison.', response_format: 'text', model_override: 'mistralai/mistral-large' };
 
-        await chatWithAgent('creative', 'Salut', null, 'text', KEY, BASE, dbAgent);
+        await chatWithAgent('copywriter', 'Salut', null, 'text', KEY, BASE, dbAgent);
 
         const { body } = lastRequest();
         expect(body.model).toBe('mistralai/mistral-large');
@@ -129,7 +140,7 @@ describe('openaiService.chatWithAgent', () => {
     it('joint l\'image en data URL pour les modèles de vision', async () => {
         fetchMock.mockResolvedValue(jsonResponse(completion('Une robe rouge.')));
 
-        await chatWithAgent('creative', 'Décris', { data: 'QUJD', mimeType: 'image/png' }, 'text', KEY, BASE);
+        await chatWithAgent('copywriter', 'Décris', { data: 'QUJD', mimeType: 'image/png' }, 'text', KEY, BASE);
 
         const content = lastRequest().body.messages[1].content;
         expect(content[0]).toEqual({ type: 'text', text: 'Décris' });
@@ -139,7 +150,7 @@ describe('openaiService.chatWithAgent', () => {
     it('exige du JSON et retire les clôtures quand le format est JSON', async () => {
         fetchMock.mockResolvedValue(jsonResponse(completion('```json\n{"a": 1}\n```')));
 
-        const r = await chatWithAgent('creative', 'Donne du JSON', null, 'json', KEY, BASE);
+        const r = await chatWithAgent('copywriter', 'Donne du JSON', null, 'json', KEY, BASE);
 
         const { body } = lastRequest();
         expect(body.response_format).toEqual({ type: 'json_object' });
@@ -149,7 +160,7 @@ describe('openaiService.chatWithAgent', () => {
 
     it('préfixe le raisonnement des modèles « thinking »', async () => {
         fetchMock.mockResolvedValue(jsonResponse(completion('Réponse finale', { reasoning_content: 'Je réfléchis.' })));
-        const r = await chatWithAgent('creative', 'Question', null, 'text', KEY, BASE);
+        const r = await chatWithAgent('copywriter', 'Question', null, 'text', KEY, BASE);
         expect(r.response).toBe('*Thinking:* Je réfléchis.\n\nRéponse finale');
     });
 
@@ -159,7 +170,7 @@ describe('openaiService.chatWithAgent', () => {
         // porte le motif. Ce test fixe ce que l'utilisateur lit réellement.
         fetchMock.mockResolvedValue(jsonResponse({ error: { message: 'Incorrect API key provided', type: 'invalid_request_error' } }, 401));
 
-        const r = await chatWithAgent('creative', 'Bonjour', null, 'text', KEY, BASE);
+        const r = await chatWithAgent('copywriter', 'Bonjour', null, 'text', KEY, BASE);
 
         expect(r.response).toMatch(/^API Error: /);
         expect(r.response).toContain('401');

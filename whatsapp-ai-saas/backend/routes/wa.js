@@ -4,6 +4,7 @@ const { pool } = require('../db');
 const puppeteer = require('puppeteer-core');
 const { isValidPhoneFormat } = require('../services/contactAgent');
 const waInstancesService = require('../services/waInstancesService');
+const { getSelectorRegistry, inPageSelectors } = require('../wa/waSelectors');
 
 // Mutex global pour sécuriser l'accès concurrentiel à l'instance WhatsApp
 
@@ -566,13 +567,16 @@ router.post('/verify-contact', async (req, res) => {
         while (Date.now() < deadline) {
             await new Promise(r => setTimeout(r, 600));
             try {
-                const state = await targetPage.evaluate(() => {
+                // Sélecteurs du registre, préparés à chaque tour : la navigation
+                // vers /send/ détruit le contexte de la page, et la poignée avec.
+                const sel = await targetPage.evaluateHandle(inPageSelectors, getSelectorRegistry().forPage());
+                const state = await targetPage.evaluate((sel) => {
                     // Valid chat: conversation panel visible
-                    if (document.querySelector('#main header, #main footer, [data-testid="conversation-panel-wrapper"], div[title="Type a message"], div[title="Tapez un message"]')) {
+                    if (document.querySelector(sel.S.conversationOpen)) {
                         return 'VALIDE';
                     }
                     // Error modal
-                    const modalBody = document.querySelector('[data-animate-modal-body="true"]');
+                    const modalBody = sel.first(document, 'errorModalBody');
                     if (modalBody) {
                         const text = (modalBody.innerText || modalBody.textContent || '').toLowerCase();
                         if (text.includes("n'est pas sur whatsapp") || text.includes("is not on whatsapp") || text.includes("invalide") || text.includes("phone number")) {
@@ -586,7 +590,8 @@ router.post('/verify-contact', async (req, res) => {
                         }
                     }
                     return 'PENDING';
-                });
+                }, sel);
+                await sel.dispose().catch(() => {});
                 if (state === 'VALIDE' || state === 'INVALIDE') {
                     result = state;
                     break;

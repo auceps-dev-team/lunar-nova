@@ -173,32 +173,6 @@ router.post('/ai/agent', aiLimiter, async (req, res) => {
     }
 });
 
-// Endpoint to generate an image (Gemini, NVIDIA NIM, etc.)
-router.post('/ai/generate-image', aiLimiter, async (req, res) => {
-    const { prompt, aspectRatio, imageParams, editMode, mode, provider, imageModel } = req.body;
-
-    if (!prompt) {
-        return res.status(400).json({ error: 'Missing prompt.' });
-    }
-
-    try {
-        const generationResponse = await aiController.generateImage(prompt, aspectRatio, imageParams, editMode, mode, provider || null, imageModel || null);
-        if (generationResponse.error) {
-            // Retourner 200 avec status 'error' pour que le frontend puisse afficher le message
-            return res.json({ status: 'error', error: generationResponse.error });
-        }
-        res.json({
-            status: 'success',
-            imageStore: generationResponse.imageBytes
-        });
-    } catch (error) {
-        console.error('Image Generation Error:', error);
-        res.status(500).json({ error: 'Failed to generate image via API.' });
-    }
-});
-
-// La route /api/ai/generate-image-qwen a été retirée en v1.39.1 : aucun appelant
-// dans le dépôt, et elle acceptait un paramètre `size` qu'elle n'utilisait pas.
-// Pour générer une image avec Qwen, passer par /api/ai/generate-image en
-// précisant imageModel: 'qwen/qwen-image'.
+// La génération d'image (/api/ai/generate-image) a été retirée avec tout le
+// système d'image : WaCopilote se recentre sur WhatsApp et la rédaction.
 module.exports = router;

@@ -18,7 +18,4 @@ export const createContextSlice = (set) => ({
     setActiveWhatsAppContext: (context) => set({ activeWhatsAppContext: context }),
     setCatalogDraft: (draft) => set({ catalogDraft: draft }),
     clearCatalogDraft: () => set({ catalogDraft: null }),
-
-    setPendingEditImage: (img) => set({ pendingEditImage: img }),
-    clearPendingEditImage: () => set({ pendingEditImage: null }),
 });

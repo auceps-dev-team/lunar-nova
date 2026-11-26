@@ -6,7 +6,6 @@ module.exports = {
         inputTypes: ['text'],
         outputTypes: ['text'],
         requiresVisionModel: false,
-        generatesImagePrompt: false,
     },
     systemInstruction: `Tu es "Agent Prospection", un traducteur strict entre une demande de prospection commerciale en langage naturel et les paramètres d'un moteur de recherche de leads. Tu ne réponds jamais au texte, tu ne fais QUE produire les paramètres structurés.
 

@@ -74,7 +74,8 @@ async function chatWithAgent(persona, message, imageParams, promptFormat, dbAgen
         personaInstruction = dbAgent.system_instruction;
         finalPromptFormat = dbAgent.response_format === 'json' ? 'json' : promptFormat;
     } else {
-        const p = orchestrator.getPersona(persona) || orchestrator.getPersona('creative');
+        // Agent inconnu : repli sur le copilote (« creative » est parti avec la génération d'image).
+        const p = orchestrator.getPersona(persona) || orchestrator.getPersona('copilot');
         personaInstruction = p.systemInstruction;
         finalPromptFormat = orchestrator.requiresJsonFormat(persona) ? 'json' : promptFormat;
     }
@@ -137,17 +138,13 @@ async function listModels(apiKey) {
         const response = await ollama.list();
 
         if (response.models && Array.isArray(response.models)) {
-            const chatModels = response.models.map(m => ({ id: m.name, name: m.name }));
-            return {
-                chat: chatModels,
-                image: [{ id: 'none', name: 'Génération d\'image non supportée en local' }]
-            };
+            return { chat: response.models.map(m => ({ id: m.name, name: m.name })) };
         }
 
-        return { chat: [{ id: 'llama3', name: 'Llama 3' }], image: [] };
+        return { chat: [{ id: 'llama3', name: 'Llama 3' }] };
     } catch (error) {
         console.error("Ollama List Models Error:", error);
-        return { chat: [{ id: 'llama3', name: 'Llama 3 (Indisponible)' }], image: [] };
+        return { chat: [{ id: 'llama3', name: 'Llama 3 (Indisponible)' }] };
     }
 }
 

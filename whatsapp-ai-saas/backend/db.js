@@ -391,6 +391,23 @@ async function runInitDB() {
             "ALTER TABLE detected_orders ADD COLUMN source VARCHAR(20) DEFAULT 'text'"
         ]);
 
+        // Migration v11 : retrait de la génération d'image. Les réglages qui ne
+        // servaient qu'à elle — fournisseur et modèles d'image, compteur du
+        // quota d'images de la clé par défaut, ancienne clé Qwen Image — sont
+        // supprimés : plus rien ne les lit. Les caches des modèles Gemini et
+        // OpenRouter sont vidés pour être reconstruits sans modèles d'image —
+        // et, pour OpenRouter, avec les 322 modèles de vision que l'ancien tri
+        // excluait de la conversation (mesuré le 26/11/2026).
+        await migrateTo(11, [
+            `DELETE FROM app_settings WHERE setting_key IN (
+                'default_image_provider', 'default_image_model',
+                'default_image_generate_model', 'default_image_edit_model',
+                'gemini_image_count', 'gemini_quota_reset_date',
+                'nvidia_key_qwen_image'
+            )`,
+            "DELETE FROM app_settings WHERE setting_key IN ('gemini_models_cache', 'openrouter_models_cache')"
+        ]);
+
         // Doit tourner après la création de toutes les tables, et avant que la
         // moindre route ne lise un secret.
         await encryptLegacySecrets(client);
@@ -432,6 +449,16 @@ function initDB() {
     if (!readyPromise) {
         readyPromise = runInitDB();
     }
+    return readyPromise;
+}
+
+/**
+ * Réservé aux tests : rejoue l'initialisation sur la base déjà ouverte, pour
+ * éprouver une migration sur une base qui ne l'a pas encore reçue (on retire
+ * sa ligne de schema_version, puis on rejoue). initDB, lui, est mémorisé.
+ */
+function __rerunInitDBForTests() {
+    readyPromise = runInitDB();
     return readyPromise;
 }
 
@@ -538,6 +565,7 @@ module.exports = {
     pool,
     initDB,
     __setDbFileForTests,
+    __rerunInitDBForTests,
     logCopilotInteraction,
     getSetting,
     setSetting,

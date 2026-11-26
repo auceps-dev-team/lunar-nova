@@ -11,6 +11,29 @@ const DEFAULT_MODEL = 'anthropic/claude-3.5-sonnet';
 // l'attribution du trafic (politique de fair-use) — il ne doit pas être retiré.
 const OPENROUTER_HTTP_REFERER = 'http://localhost:3000';
 
+/**
+ * Modèles de conversation du catalogue OpenRouter : ceux qui PRODUISENT du
+ * texte, quelles que soient leurs entrées.
+ *
+ * Mesuré le 26/11/2026 sur le catalogue public (477 modèles) : l'ancienne
+ * règle, « la modalité contient image », rangeait 335 modèles parmi les images
+ * alors que 13 seulement en génèrent. Les 322 autres sont des modèles de vision
+ * (« text+image->text » : Gemini, Pixtral…) qui disparaissaient de la liste de
+ * conversation. On lit désormais `output_modalities`, ou à défaut la partie
+ * de `modality` après « -> ». Les générateurs d'image sont écartés : la
+ * génération d'image a été retirée de WaCopilote.
+ */
+function chatModelsFromCatalog(entries) {
+    const produitDuTexte = (m) => {
+        const sorties = m.architecture && m.architecture.output_modalities;
+        if (Array.isArray(sorties)) return sorties.includes('text');
+        const modality = (m.architecture && m.architecture.modality) || '';
+        const sortie = modality.includes('->') ? modality.split('->').pop() : 'text';
+        return sortie.includes('text');
+    };
+    return (entries || []).filter((m) => m && m.id && produitDuTexte(m)).map((m) => ({ id: m.id, name: m.name || m.id }));
+}
+
 // S'exécute au lancement pour cacher les modèles d'OpenRouter dans la DB
 async function syncOpenRouterModels() {
     try {
@@ -32,22 +55,12 @@ async function syncOpenRouterModels() {
         const data = await response.json();
 
         if (data.data && Array.isArray(data.data)) {
-            const chatModels = [];
-            const imageModels = [];
-            data.data.forEach(m => {
-                if (m.architecture && m.architecture.modality && m.architecture.modality.includes('image')) {
-                    imageModels.push({ id: m.id, name: m.name || m.id });
-                } else {
-                    chatModels.push({ id: m.id, name: m.name || m.id });
-                }
-            });
-            if (imageModels.length === 0) imageModels.push({ id: 'none', name: 'Aucun modèle d\'image trouvé sur OpenRouter' });
-
-            const modelsJson = JSON.stringify({ chat: chatModels, image: imageModels });
+            const chatModels = chatModelsFromCatalog(data.data);
+            const modelsJson = JSON.stringify({ chat: chatModels });
 
             if (modelsJson !== cached) {
                 await db.setSetting('openrouter_models_cache', modelsJson);
-                console.error(`[OpenRouter] Base de données mise à jour avec ${chatModels.length} modèles de conversation et ${imageModels.length} modèles d'images.`);
+                console.error(`[OpenRouter] Base de données mise à jour avec ${chatModels.length} modèles de conversation.`);
             } else {
                 console.error('[OpenRouter] La liste des modèles est déjà à jour dans la base de données.');
             }
@@ -136,7 +149,8 @@ async function chatWithAgent(persona, message, imageParams, promptFormat, apiKey
         personaInstruction = dbAgent.system_instruction;
         finalPromptFormat = dbAgent.response_format === 'json' ? 'json' : promptFormat;
     } else {
-        const p = orchestrator.getPersona(persona) || orchestrator.getPersona('creative');
+        // Agent inconnu : repli sur le copilote (« creative » est parti avec la génération d'image).
+        const p = orchestrator.getPersona(persona) || orchestrator.getPersona('copilot');
         personaInstruction = p.systemInstruction;
         finalPromptFormat = orchestrator.requiresJsonFormat(persona) ? 'json' : promptFormat;
     }
@@ -213,12 +227,15 @@ async function listModels(_apiKey) {
     try {
         const cached = await db.getSetting('openrouter_models_cache', null);
         if (cached) {
-            return JSON.parse(cached);
+            // Un cache écrit avant le 26/11/2026 porte encore une clé `image`
+            // (et une liste de conversation amputée des modèles de vision : il
+            // est réécrit à la prochaine synchronisation).
+            return { chat: JSON.parse(cached).chat || [] };
         }
-        return { chat: [{ id: DEFAULT_MODEL, name: 'Claude 3.5 Sonnet (En attente de synchro...)' }], image: [] };
+        return { chat: [{ id: DEFAULT_MODEL, name: 'Claude 3.5 Sonnet (En attente de synchro...)' }] };
     } catch (error) {
         console.error("OpenRouter DB Read Error:", error);
-        return { chat: [{ id: DEFAULT_MODEL, name: 'Claude 3.5 Sonnet (Erreur Base de données)' }], image: [] };
+        return { chat: [{ id: DEFAULT_MODEL, name: 'Claude 3.5 Sonnet (Erreur Base de données)' }] };
     }
 }
 
@@ -268,5 +285,6 @@ module.exports = {
     generateProposals,
     chatWithAgent,
     listModels,
-    classifyOrderIntent
+    classifyOrderIntent,
+    chatModelsFromCatalog
 };

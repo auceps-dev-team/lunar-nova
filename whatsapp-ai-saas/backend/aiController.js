@@ -15,17 +15,6 @@ const getNvidiaModels = () => nvidiaModels;
 const db = require('./db');
 const { resolveProviderCredentials } = require('./services/providerCredentials');
 
-/**
- * Résolution de clé NVIDIA à 3 niveaux :
- *   1. Clé spécifique au modèle en DB (configurée par l'utilisateur)
- *   2. Clé globale openai_api_key en DB
- *   3. Clé système dans .env (fallback silencieux)
- */
-async function resolveNvidiaKey(modelId) {
-    const nvidiaModels = getNvidiaModels();
-    return nvidiaModels.resolveKey(modelId, db.getSetting.bind(db));
-}
-
 async function getProviderConfig(personaId = null) {
     let provider = await db.getSetting('default_ai_provider', 'gemini');
     let dbAgent = null;
@@ -158,69 +147,9 @@ async function chatWithAgent(personaId, message, imageParams, attachments, promp
     });
 }
 
-async function generateImage(prompt, aspectRatio, imageParams, editMode, mode, providerOverride = null, imageModelOverride = null) {
-    // ── Logique principale ──
-    // Si une image source est fournie (image-to-image / édition), c'est TOUJOURS Gemini
-    // Les modèles NVIDIA/Together ne supportent que le text-to-image pur
-    const isEditMode = !!(imageParams && imageParams.data);
-    
-    if (isEditMode) {
-        console.error('[aiController] Image-to-Image mode detected → routing to Gemini');
-        const geminiModel = imageModelOverride || 'gemini-3.1-flash-image-preview';
-        return await geminiService.generateImage(prompt, aspectRatio, imageParams, editMode, mode, geminiModel);
-    }
-    
-    // ── Text-to-Image pur ──
-    // Priorité : providerOverride > default_image_provider > default_ai_provider
-    const imageProviderSetting = await db.getSetting('default_image_provider', '');
-    const globalProvider = await db.getSetting('default_ai_provider', 'gemini');
-    const provider = providerOverride || imageProviderSetting || globalProvider;
-    
-    let imageModel = imageModelOverride;
-    if (!imageModel) {
-        if (provider === 'openai') {
-            imageModel = await db.getSetting('default_image_generate_model', '');
-        }
-        if (!imageModel) {
-            imageModel = await db.getSetting('default_image_model', '');
-        }
-    }
-
-    if (provider === 'openrouter') {
-        return { error: "Erreur : La génération d'images via OpenRouter n'est pas supportée. Utilisez Gemini ou NVIDIA NIM." };
-    } else if (provider === 'ollama') {
-        return { error: "Erreur : Ollama local ne supporte pas la génération d'images dans cette version." };
-    } else if (provider === 'openai') {
-        // Text-to-Image via NVIDIA/Together AI
-        const modelDef = getNvidiaModels().getModelDef(imageModel);
-        console.error('[generateImage] Text-to-Image | imageModel=', imageModel);
-        if (!modelDef || modelDef.type === 'text' || modelDef.type === 'vision') {
-            return { error: `Le modèle sélectionné (${modelDef ? modelDef.name : imageModel}) ne supporte pas la génération d'images.` };
-        }
-
-        // Résolution de clé et baseURL pour Together AI ou NVIDIA
-        let apiKey;
-        let baseURL = await db.getSetting('openai_base_url', getNvidiaModels().NVIDIA_BASE_URL);
-        
-        if (modelDef && modelDef.provider === 'together') {
-            apiKey = await db.getSetting('together_api_key', '');
-            if (!apiKey) apiKey = await resolveNvidiaKey(imageModel);
-            baseURL = 'https://api.together.xyz/v1';
-            console.error('[generateImage] Routed to Together AI | key present:', !!apiKey);
-        } else {
-            apiKey = await resolveNvidiaKey(imageModel);
-        }
-
-        return await openaiService.analyzeOrEditImage(prompt, imageParams, apiKey, baseURL, imageModel);
-    } else {
-        // Gemini text-to-image
-        return await geminiService.generateImage(prompt, aspectRatio, imageParams, editMode, mode, imageModel);
-    }
-}
-
-
-
-
+// La génération d'image (Imagen, NVIDIA, Together) a été retirée : WaCopilote
+// se recentre sur WhatsApp multi-comptes et sur les agents de rédaction.
+// listModels ne renvoie donc plus que des modèles de conversation.
 async function listModels(providerOverride = null, apiKeyOverride = null) {
     const provider = providerOverride || await db.getSetting('default_ai_provider', 'gemini');
 
@@ -236,9 +165,7 @@ async function listModels(providerOverride = null, apiKeyOverride = null) {
         const nm = getNvidiaModels();
         const chatModels = nm.getModelsByType('text').concat(nm.getModelsByType('vision'))
             .map(m => ({ id: m.id, name: m.name, type: m.type }));
-        const imageModels = nm.getModelsByType('image-edit').concat(nm.getModelsByType('image-generate'))
-            .map(m => ({ id: m.id, name: m.name, type: m.type }));
-        return { chat: chatModels, image: imageModels };
+        return { chat: chatModels };
     } else {
         return await geminiService.listModels();
     }
@@ -248,7 +175,6 @@ async function listModels(providerOverride = null, apiKeyOverride = null) {
 module.exports = {
     generateProposals,
     chatWithAgent,
-    generateImage,
     listModels,
     classifyOrderIntent,
     delegateToExternalCli: (options) => require('./services/externalAgentRunner').executeExternalCli(options)

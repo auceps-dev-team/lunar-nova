@@ -11,7 +11,8 @@ export const createAgentsSlice = (set) => ({
 
     aiChatConversations: {},
     aiChatSessions: {},
-    agentHistory: [],
+    // agentHistory (historique des images générées) a disparu avec la
+    // génération d'image : voir OBSOLETE_PERSISTED_KEYS dans src/store.js.
 
     updateAgentChat: (agentId, updatedChat) => set((state) => ({
         agentChats: {
@@ -32,15 +33,5 @@ export const createAgentsSlice = (set) => ({
             ...state.aiChatSessions,
             [agentId]: sessions
         }
-    })),
-
-    addAgentHistory: (historyItem) => set((state) => {
-        const MAX_HISTORY = 20;
-        const updated = [historyItem, ...state.agentHistory];
-        return { agentHistory: updated.slice(0, MAX_HISTORY) };
-    }),
-
-    removeAgentHistory: (historyId) => set((state) => ({
-        agentHistory: state.agentHistory.filter(h => h.id !== historyId)
     })),
 });

@@ -134,8 +134,12 @@ Ces règles s'appliquent à tous les projets Auceps, sans exception :
 
 La version est changée **sur l'ensemble du projet dans le même lot** :
 les deux `package.json` (racine et `backend/`) et leurs lockfiles,
-`build/installer.iss`, `index.html`, les badges des deux README et le gabarit
-de bug — `./bump_version.sh <patch|feature|major>` automatise cette propagation.
+`index.html`, les badges des deux README et le gabarit de bug —
+`./bump_version.sh <patch|feature|major>` automatise cette propagation.
+
+Un seul installeur Windows : le NSIS d'electron-builder (`WaCopilote_Setup.exe`).
+La mise à jour intégrée ne sait installer que lui ; une release ne doit donc
+porter qu'un `.exe`. L'installeur Inno Setup a été abandonné le 26/11/2026.
 
 Chaque version est documentée :
 
@@ -149,6 +153,46 @@ Chaque version est documentée :
 
 Une PR = un sujet. Décrivez le problème résolu avant la solution. Si le
 comportement visible change, dites-le explicitement.
+
+---
+
+## Sélecteurs WhatsApp
+
+Les repères lus dans WhatsApp Web sont dans **un seul registre** :
+`whatsapp-ai-saas/backend/wa/waSelectors.js` (`KEYS`). N'écrivez plus de
+sélecteur WhatsApp en dur dans le code : ajoutez une clé, avec ses valeurs
+livrées et son `mode` (`first` : candidats essayés dans l'ordre ; `any` :
+union). Seuls les ancrages *interprétés* par le code (`[data-id]` et ses
+préfixes `true_`/`false_`, `conv-msg-<id>`) restent écrits en dur.
+
+Quand une refonte de WhatsApp Web casse un repère, il se corrige **sans
+nouvelle version de l'application**, par un fichier de données signé :
+
+1. Écrire `wa-selectors.json` — `schema: 1`, `version` **strictement
+   supérieure** à celle en service, `minApp` facultatif, et pour chaque clé à
+   corriger une liste de 1 à 8 sélecteurs CSS. Les clés absentes gardent leurs
+   valeurs livrées ; les candidats du fichier passent *devant* elles, jamais à
+   leur place.
+2. Le signer : `node scripts/wa-selectors/sign.cjs wa-selectors.json <clé privée .pem>`
+   (depuis `whatsapp-ai-saas/`). Le script valide le fichier avec le module de
+   l'application, signe, relit la signature et dit si la clé est reconnue.
+3. Le publier sur la release **`wa-selectors`** de `wacopilote-releases`, qui
+   doit rester une **pré-version** : l'updater lit `releases/latest`, et une
+   release ordinaire sans installeur y passerait devant la dernière version.
+   `gh release upload wa-selectors wa-selectors.json wa-selectors.json.sig --clobber -R auceps-dev-team/wacopilote-releases`
+
+Les applications vérifient la release 30 s après le démarrage puis toutes les
+6 h (`GET /api/wa/selectors` pour l'état, `POST /api/wa/selectors/check` et
+`/rollback` pour agir). Un retour arrière écarte définitivement la version
+fautive : corrigez-la en publiant une version supérieure.
+
+**Clé de signature.** `node scripts/wa-selectors/keygen.cjs <dossier hors du dépôt>`
+crée la paire ; la clé publique imprimée va dans `TRUSTED_KEYS`. Tant que
+cette liste est vide, rien de distant n'est appliqué. La clé privée ne va
+**jamais** dans le dépôt, un ticket, une conversation ni un secret de CI sans
+décision explicite des mainteneurs. Pour la remplacer : ajouter la nouvelle
+clé publique à `TRUSTED_KEYS`, publier une version de l'application, puis
+seulement retirer l'ancienne.
 
 ---
 

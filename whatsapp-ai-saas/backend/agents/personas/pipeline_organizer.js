@@ -16,7 +16,6 @@ module.exports = {
         inputTypes: ['text'],
         outputTypes: ['text'],
         requiresVisionModel: false,
-        generatesImagePrompt: false,
     },
     systemInstruction: `Tu es Clarisse, Chef de Projet Pipeline. Ton rôle est d'aider à prioriser et organiser des leads commerciaux déjà validés et déjà dotés d'un message d'approche, en vue de leur suivi dans un tableau Kanban.
 
