@@ -60,6 +60,13 @@ replace_colors.cjs
 replace_colors.js
 create_license.cjs
 database.sqlite
+# Fichiers annexes de SQLite : le journal de transaction (et, en mode WAL, le
+# journal d'écriture et la mémoire partagée) contiennent des pages de la base,
+# donc des contacts. Le journal existe pendant chaque écriture et peut rester
+# après un plantage — constaté non ignoré le 01/10/2026 (audit SEC-1).
+database.sqlite-journal
+database.sqlite-wal
+database.sqlite-shm
 api-token
 master-key
 master-key.enc

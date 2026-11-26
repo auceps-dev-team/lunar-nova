@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/auceps-dev-team/lunar-nova"><img src="https://img.shields.io/badge/version-1.49.0-blue.svg" alt="Version 1.49.0" /></a>
+  <a href="https://github.com/auceps-dev-team/lunar-nova"><img src="https://img.shields.io/badge/version-1.51.0-blue.svg" alt="Version 1.51.0" /></a>
   <a href="whatsapp-ai-saas/LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue.svg" alt="License AGPL-3.0" /></a>
   <a href="#-open-source"><img src="https://img.shields.io/badge/open%20source-oui-brightgreen.svg" alt="Open Source" /></a>
   <a href="#-pourquoi-wacopilote-"><img src="https://img.shields.io/badge/Made%20in-%F0%9F%87%A8%F0%9F%87%BE%20C%C3%B4te%20d'Ivoire-orange.svg" alt="Made in Côte d'Ivoire" /></a>
@@ -27,7 +27,7 @@
 - [Architecture Avancée & Performance](#-architecture-avancée--performance)
 - [Routage Multi-LLM & Fournisseurs d'IA](#-routage-multi-llm--fournisseurs-dia)
 - [Automatisation WhatsApp & Engine Playwright](#-automatisation-whatsapp--engine-playwright)
-- [Studio Photo IA & Génération de Catalogue](#-studio-photo-ia--génération-de-catalogue)
+- [Outils de rédaction & Sélecteurs WhatsApp](#️-outils-de-rédaction--sélecteurs-whatsapp)
 - [Prospection & Mining de Leads B2B](#-prospection--mining-de-leads-b2b)
 - [Sécurité & Audit de Protection](#-sécurité--audit-de-protection)
 - [Tests & Analyse Statique](#-tests--analyse-statique)
@@ -63,12 +63,12 @@ Si ce cadre ne convient pas à votre contexte (intégration dans un produit prop
 
 ## 🤖 Pourquoi "WaCopilote" ?
 
-**WaCopilote** est la plateforme desktop de référence conçue pour fusionner la puissance des **agents conversationnels multimodaux d'intelligence artificielle**, l'**automatisation WhatsApp Web**, la **génération de contenu e-commerce (Studio Photo IA)** et la **prospection B2B automatisée**.
+**WaCopilote** est la plateforme desktop de référence conçue pour fusionner la puissance des **agents conversationnels multimodaux d'intelligence artificielle**, l'**automatisation WhatsApp Web**, les **agents d'écriture et de rédaction** et la **prospection B2B automatisée**.
 
 Là où les outils traditionnels se limitent à de simples chatbots rigides ou à du routage de messages basique, WaCopilote apporte une suite logicielle complète :
 - 🤖 **Agents IA Multi-Fournisseurs** : Basculez de manière dynamique entre **Google Gemini 1.5/2.0**, **NVIDIA NIM** (Llama 3, Gemma, Qwen), **OpenRouter**, **Together AI** et des modèles locaux de confidentialité totale via **Ollama**.
 - 📱 **Automation WhatsApp Intelligente** : Détectez les intentions d'achat et traquez les commandes WhatsApp en temps réel grâce à notre moteur headless Playwright/Puppeteer.
-- 📷 **Studio Photo Produit Virtuel** : Générez des visuels de produits haut de gamme, supprimez les arrières-plans, réalisez des "Photo Shoots" virtuels et composez vos catalogues en quelques clics.
+- ✍️ **Rédaction assistée** : Générez un texte avec l'agent de votre choix, réécrivez un passage selon six modes et copiez-le au format WhatsApp (*gras*, _italique_).
 - 🔍 **Prospection & Extraction de Leads** : Extrayez automatiquement des données d'entreprises ciblées depuis **Google Places**, **Annuaire CI** et **GoAfrica** pour alimenter vos campagnes WhatsApp.
 
 ---
@@ -97,8 +97,8 @@ WaCopilote est taillé sur mesure pour répondre aux défis des marchés africai
 ### 2. Hub d'Agents IA & Pipeline Séquentiel
 Configurez des agents spécialisés (Support Client, Rédacteur Web, Analyste Financier, Détective Leads) et enchaînez-les dans des pipelines automatisés.
 
-### 3. Studio Photo IA & Générateur de Visuels Produits
-Téléversez une simple photo de produit brut et générez un visuel studio professionnel avec arrière-plan personnalisé, ombres réalistes et intégration catalogue.
+### 3. Outils de Rédaction
+Générez, réécrivez et copiez vos textes au format WhatsApp, sans jamais perdre le texte existant : génération confirmée et annulable en une fois.
 
 ---
 
@@ -135,7 +135,7 @@ npm run start:all
 - **Stratégies d'exécution IA & repli automatique** *(complété en v1.48.0)* : chaque appel agentique passe par un routeur unique qui sélectionne le canal selon la stratégie choisie — `auto`, `api` (fournisseurs cloud), `cli` (agents locaux Gemini CLI / Claude Code / Ollama) ou `mcp` (serveur MCP local, outil `call_agent`, le même chemin que Cursor / Claude Code). En cas d'échec du canal principal, une cascade de replis ordonnée (API Gemini → CLI locaux → OpenRouter → serveur MCP) prend le relais, désactivable. La disponibilité réelle des 8 canaux est affichée en direct dans Réglages (badges avec versions de CLI détectées) et la stratégie se change depuis la page Réglages comme depuis le panneau Bridge CLI.
 - **Écouteur & Automate WhatsApp** : Analyse des conversations WhatsApp en direct via Playwright (`orderListener.js`), capture des commandes et réponse autonome des agents.
 - **Prospection Lead Mining B2B** : Scrapers intégrés pour Annuaire CI, GoAfrica et recherche Google Places API avec géolocalisation et extraction de coordonnées.
-- **Studio Photo & Retouche IA** : Remplacement de fond produit, inpainting, retouche via IA (Together AI Qwen / Flux), et exportation de fiches produits.
+- **Rédaction & Réécriture IA** *(v1.51.0)* : six modes de réécriture du passage sélectionné, copie au format WhatsApp, génération confirmée et annulable, langue de rédaction suivant l'interface (arabe compris).
 - **Gestionnaire de Contacts & Segmentation** : Importation de contacts CSV/Excel, gestion des listes de diffusion, segmentation et ciblage pour campagnes WhatsApp.
 - **Créateur de Devis & Factures PDF** : Génération instantanée de devis/factures téléchargeables en PDF (`InvoiceBuilder.jsx`) avec calcul de taxes et personnalisation d'entreprise.
 - **Copywriter IA Multilingue** : Génération de posts réseaux sociaux, accroches publicitaires, broadcasts WhatsApp et articles de blog optimisés SEO.
@@ -170,7 +170,7 @@ WaCopilote adopte une architecture monorepo hybride conçue pour la réactivité
 +-----------------------------------------------------------------------+
 ```
 
-- **Execution Asynchrone & Non-Bloquante** : Les tâches lourdes (scraping, génération d'images, inférence LLM) s'exécutent en arrière-plan sans geler l'interface utilisateur React.
+- **Execution Asynchrone & Non-Bloquante** : Les tâches lourdes (scraping, transcription des notes vocales, inférence LLM) s'exécutent en arrière-plan sans geler l'interface utilisateur React.
 - **Gestion Avancée du Cache Redis** : Cache des modèles LLM disponibles, limitation du taux de requêtes (`express-rate-limit`) et mise en mémoire tampon des propositions d'agents.
 - **Base de Données SQLite Persistante** : Schéma relationnel optimisé (`backend/db.js`) gérant les interactions, les contacts, les paramètres et les logs d'observabilité.
 
@@ -188,7 +188,7 @@ WaCopilote intègre une passerelle unifiée (AI Gateway) capable de communiquer 
 | **NVIDIA NIM** | Llama 3.3 70B, Qwen 2.5 72B, Nemotron, Gemma 2 | Raisonnement complexe, pipelines d'agents autonomes | Cloud High-Perf API |
 | **OpenRouter** | Claude 3.5 Sonnet, DeepSeek R1, GPT-4o | Tâches de rédaction experte, code, et raisonnement avancé | Cloud Multi-Provider API |
 | **Ollama** | Llama 3, Mistral 7B, Phi-3, Qwen 2.5 | Confidentialité totale, fonctionnement 100% hors-ligne | Inférence Locale (CPU/GPU) |
-| **Together AI** | Qwen-Image, Flux.1 Schnell / Dev | Génération d'images produits & Studio Photo IA | Cloud Media Generation API |
+| **Together AI** | Llama 3.2 11B Vision | Lecture d'images (vision) dans les conversations | Cloud API |
 
 ---
 
@@ -200,16 +200,36 @@ Le module WhatsApp (`backend/orderListener.js` et `backend/routes/wa.js`) permet
 2. **Écouteur de Commandes (`Order Listener`)** : Analyse syntaxique des messages entrants pour identifier les intentions d'achat (mots-clés, références produits, quantités).
 3. **Réponse Automatisée par Agent IA** : Injection du contexte produit et génération d'une réponse naturelle de conseiller commercial.
 4. **Gestionnaire de Contacts & Listes** : Importation de répertoires d'entreprises, segmentation par tags, et historique des conversations.
+5. **Notes vocales** *(v1.50.0, désactivé par défaut)* : les vocaux entrants sont extraits par le modèle de message de WhatsApp Web plutôt que par un clic sur lecture (qui les marquerait comme écoutés chez l'expéditeur — l'absence de tout accusé côté `downloadMedia()` n'a, elle, pas encore été vérifiée), transcrits, puis passés au même pipeline de détection que les messages tapés. Deux moteurs : `whisper-local` (faster-whisper, 100 % hors ligne, aucune clé, ~2,7 × le temps réel en `small` sur un CPU ordinaire) et `gemini` (API). Les commandes issues d'un vocal sont marquées `source = 'voice'` dans `detected_orders`.
+
+   ```bash
+   # Moteur local : versions épinglées (PyAV 19 casse faster-whisper 1.2.1)
+   pip install -r backend/scripts/requirements-whisper.txt
+   # Interpréteur dédié (facultatif, sinon `python` du PATH) — variable posée au lancement
+   set WACOPILOTE_WHISPER_PYTHON=C:\chemin\vers\venv\Scripts\python.exe
+   # Activation (réglages, via l'API locale authentifiée)
+   #   voice_notes_transcription = on
+   #   transcription_engine      = whisper-local | gemini
+   ```
 
 ---
 
-## 📷 Studio Photo IA & Génération de Catalogue
+## ✍️ Outils de rédaction & Sélecteurs WhatsApp
 
-Transformez des photos de produits amateurs en visuels E-Commerce de classe mondiale :
+**Rédaction** *(v1.51.0)* — l'éditeur (`AiWriter`) génère un texte avec l'agent choisi, puis :
 
-- **Remplacement d'Arrière-Plan** : Détourage automatique du produit et génération d'un décor de studio réaliste (ex: table en marbre, podium en bois, plage, intérieur moderne).
-- **Inpainting & Retouche Produit** : Correction des imperfections et ajout d'éléments décoratifs à la demande via prompts textuels.
-- **Exportation Multi-Formats** : Génération de fiches catalogues structurées, prêtes à partager sur WhatsApp et les réseaux sociaux.
+- **Réécrit le passage sélectionné** selon six modes : améliorer, corriger l'orthographe, raccourcir, développer, ton message WhatsApp, plus formel. Le passage est capturé au clic : la réponse le remplace même si l'utilisateur a cliqué ailleurs pendant les 30 à 60 s d'un agent en ligne de commande. S'il a été modifié entre-temps, rien n'est écrasé et le texte réécrit est copié dans le presse-papiers.
+- **Copie pour WhatsApp** : gras, italique, barré, monospace, listes et titres passent dans la syntaxe de WhatsApp (`*gras*`, `_italique_`, `~barré~`).
+- **Ne perd pas le texte existant** : générer dans un document non vide demande confirmation, et Annuler (Ctrl+Z) rend le texte d'avant en une fois.
+- **Rédige dans la langue de l'interface** par défaut (français, anglais, espagnol, arabe).
+
+**Sélecteurs WhatsApp** *(v1.51.0)* — les repères que WaCopilote lit dans WhatsApp Web (liste des conversations, messages, notes vocales, en-tête, vérification de numéro) sont réunis dans un registre unique (`backend/wa/waSelectors.js`). Une refonte de WhatsApp Web peut y être corrigée par un **fichier de données signé** (Ed25519), publié sur la pré-version `wa-selectors` de wacopilote-releases, sans réinstaller l'application :
+
+- seules des listes de sélecteurs CSS sont acceptées, jamais du code ; un fichier mal signé, malformé ou plus ancien que celui en service est refusé ;
+- les sélecteurs livrés avec l'application restent toujours en repli derrière ceux du fichier ;
+- un retour arrière (manuel, ou automatique quand la page montre qu'un fichier casse ce que les sélecteurs livrés trouvaient) écarte définitivement la version fautive.
+
+Les mises à jour distantes sont **désactivées tant qu'aucune clé publique de confiance n'est embarquée** (`TRUSTED_KEYS`) ; l'état le dit (`GET /api/wa/selectors`). Procédure de publication : [CONTRIBUTING.md](CONTRIBUTING.md#sélecteurs-whatsapp).
 
 ---
 
@@ -242,6 +262,8 @@ Vos conversations, vos contacts et vos clés d'API ne quittent jamais votre mach
 9. **Assainissement DOMPurify sur toutes les surfaces IA** *(complété en v1.47.2)* : chaque HTML produit par un LLM est assaini avant rendu — chat (`AiChat`) et, depuis v1.47.2, l'éditeur de documents (`AiWriter`) au chargement comme à la génération. Une injection de prompt ne peut plus produire de HTML actif dans le renderer. La page d'erreur du callback OAuth Google n'interpole plus la réponse du fournisseur (message générique, détail en journal serveur uniquement) *(v1.47.2)*.
 
 10. **Déchiffrement safeStorage sans écriture dans l'application** *(v1.47.2)* : le helper de déchiffrement de la clé maître (utilisé par le CLI/MCP quand la clé est scellée par le système) est écrit dans le répertoire temporaire du système plutôt que dans le dossier du backend — il reste donc opérationnel en build packagé, où `app.asar` est en lecture seule.
+
+**Renforcé en v1.50.1** — le jeton d'authentification est vérifié avant toute lecture du corps des requêtes (un corps volumineux sans jeton était auparavant lu en entier avant d'être refusé) ; l'interface packagée applique une politique de sécurité du contenu (CSP) qui n'autorise que les scripts de l'application et de la connexion Google — vérifiée sans violation sur les 24 écrans, un script tiers injecté en témoin étant bien bloqué ; une origine web non autorisée reçoit un 403 propre plutôt qu'une erreur 500.
 
 **Limites connues, à corriger**
 
@@ -296,7 +318,6 @@ La configuration ESLint distingue désormais les trois environnements du dépôt
 | **Base de Données & Cache** | SQLite 3 (`sqlite3` / `sqlite`), Redis 5 (`redis`) |
 | **Automation Web** | Playwright, Puppeteer Core |
 | **Moteurs d'IA (LLMs)** | `@google/genai`, NVIDIA NIM API, OpenRouter API, Ollama SDK |
-| **Génération d'Images** | Together AI (Qwen Image / Flux), HTML2Canvas |
 | **Internationalization** | i18next, react-i18next |
 | **Tests & Outillage** | Vitest 4, Testing Library, ESLint 9, Concurrently, Cross-Env |
 
@@ -382,8 +403,10 @@ La configuration ESLint distingue désormais les trois environnements du dépôt
 whatsapp-ai-saas/
 ├── backend/                → Serveur backend Express.js & Services d'IA
 │   ├── agents/             → Moteurs et prompts des agents IA autonomes
-│   │   └── personas/       → Définitions des 27 personas d'agents
-│   ├── routes/             → Routes API Express (AI, WA, Catalog, Prospection, WP)
+│   │   └── personas/       → Définitions des 26 personas d'agents
+│   ├── mcp/                → Serveur MCP stdio (wacopiloteMcpServer.js) et outils par domaine (tools/)
+│   ├── routes/             → Routes API Express (AI, WA, Catalog, Prospection, Pipeline, Documents, Devis, CLI, Système)
+│   ├── services/           → Services métier (pipeline, CRM, devis, transcription, notes vocales…)
 │   ├── __tests__/          → Tests unitaires backend (Vitest)
 │   ├── scrapers/           → Modules de scraping (Annuaire CI, GoAfrica, Google Places)
 │   ├── aiController.js     → Contrôleur centralisé des requêtes IA
@@ -393,19 +416,21 @@ whatsapp-ai-saas/
 │   ├── orderListener.js    → Moteur de détection des commandes WhatsApp
 │   ├── redisClient.js      → Client de mise en cache Redis
 │   └── server.js           → Point d'entrée de l'application Express
+├── bin/                    → CLI wacopilote (commands/ par domaine, lib/ partagée)
 ├── build/                  → Ressources d'empaquetage (licence installeur, script NSIS)
 ├── docs/                   → Documentation d'architecture & notes de conception
 ├── electron/               → Processus principal Electron & IPC (main.cjs, preload.cjs)
 ├── memory-bank/            → Système de mémoire projet & suivi contextuel
 ├── public/                 → Assets statiques (Logos, icônes .ico/.svg/.png, poses, fonds)
 ├── src/                    → Application Frontend React 19 (Vite)
-│   ├── components/         → Composants UI (Sidebar, Topbar, éditeur d'images, kanban)
+│   ├── components/         → Composants UI (Sidebar, Topbar, kanban)
 │   ├── __tests__/          → Tests unitaires frontend (Vitest)
 │   ├── locales/            → Traductions i18next (fr, en, es, ar)
-│   ├── pages/              → Vues principales (Dashboard, AiChat, PhotoShoot, Prospection...)
+│   ├── pages/              → Vues principales (Dashboard, AiChat, AiWriter, Prospection...)
 │   │   └── whatsapp/       → Sous-pages dédiées aux flux WhatsApp (Contacts, Orders, Segments)
 │   ├── services/           → Client API et authentification côté renderer
-│   └── store.js            → State management Zustand (store unique persisté)
+│   ├── state/              → Slices du store Zustand, par domaine
+│   └── store.js            → Store Zustand unique : assemble les slices, porte la persistance
 ├── LICENSE                 → GNU AGPL-3.0
 ├── package.json            → Configuration du workspace racine & scripts npm
 ├── vite.config.js          → Configuration du bundler Vite 7
@@ -421,6 +446,7 @@ whatsapp-ai-saas/
 - [x] **Q3 2026** : **Passage en open source sous AGPL-3.0** (v1.36.0) et durcissement de la sécurité du backend local.
 - [x] **Q3 2026** : Chiffrement au repos des clés d'API et des jetons OAuth (v1.37.0).
 - [x] **Q3 2026** : Recentrage du produit sur la gestion multi-comptes WhatsApp — retrait complet du pont WordPress / WooCommerce (v1.49.0).
+- [x] **Q4 2026** : Recentrage sur WhatsApp multi-comptes et la rédaction — retrait de la génération d'images et de la connexion Google ; sélecteurs WhatsApp mis à jour par fichier signé (v1.51.0).
 - [ ] **Q3 2026** : Couverture de tests sur les scrapers, les adaptateurs LLM et les migrations de schéma.
 - [ ] **Q4 2026** : Support de WhatsApp Multi-Appareils Cloud API & fallback Baileys direct sans navigateur.
 - [ ] **2027** : Assistant IA vocal WhatsApp (transcription & réponse vocale temps réel) et version Web SaaS synchronisée.
@@ -430,7 +456,7 @@ whatsapp-ai-saas/
 ## ❓ Foire Aux Questions
 
 **Q : WaCopilote fonctionne-t-il entièrement hors-ligne ?**  
-R : Oui ! Si vous utilisez un modèle LLM local configuré avec **Ollama** (ex: Llama 3, Mistral), l'application peut fonctionner sans connexion Internet pour les fonctionnalités de chat et d'analyse. La génération d'images cloud et les API distantes nécessitent un accès réseau.
+R : Oui ! Si vous utilisez un modèle LLM local configuré avec **Ollama** (ex: Llama 3, Mistral), l'application peut fonctionner sans connexion Internet pour les fonctionnalités de chat et d'analyse. Les fournisseurs d'IA distants nécessitent un accès réseau.
 
 **Q : Comment configurer mes clés d'API (Gemini, NVIDIA NIM, OpenRouter) ?**  
 R : Vous pouvez renseigner vos clés directement dans l'interface de l'application via la rubrique **Settings** (Paramètres), ou les inscrire dans le fichier `backend/.env`.
@@ -455,7 +481,7 @@ Ces règles s'appliquent à **tous les projets** du dépôt (et aux autres proje
    * `+0.1.0` pour tout changement **majeur ou important** (nouvelle fonctionnalité, changement de contrat ou d'architecture) ;
    * `+0.0.1` pour tout **correctif** ou changement **mineur mais important** ;
    * **aucun changement de version** pour les autres changements (docs internes, commentaires, formatage).
-2. **Propagation intégrale** : la version est changée **sur l'ensemble du projet** en une seule fois — `package.json` (racine + `backend/`), les deux `package-lock.json`, `build/installer.iss`, `index.html`, badges des deux README, gabarit de bug. Le script `./bump_version.sh <patch|feature|major>` automatise cette propagation.
+2. **Propagation intégrale** : la version est changée **sur l'ensemble du projet** en une seule fois — `package.json` (racine + `backend/`), les deux `package-lock.json`, `index.html`, badges des deux README, gabarit de bug. Le script `./bump_version.sh <patch|feature|major>` automatise cette propagation.
 3. **Journal des changements** : chaque version est documentée dans **`whatsapp-ai-saas/src/pages/Support.jsx`** (constante `changelog`, entrée en tête avec version, date et liste des changements) — c'est ce que voit l'utilisateur dans l'application.
 4. **Documentation** : le README (racine + interne) est mis à jour avec les correctifs et la version correspondante.
 5. **Commits** : un message par lot cohérent (`feat:`, `fix:`, `docs:`…), décrivant le *pourquoi* ; la version et ses documents voyagent dans le commit du lot.

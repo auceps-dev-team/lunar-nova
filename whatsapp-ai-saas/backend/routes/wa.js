@@ -4,6 +4,7 @@ const { pool } = require('../db');
 const puppeteer = require('puppeteer-core');
 const { isValidPhoneFormat } = require('../services/contactAgent');
 const waInstancesService = require('../services/waInstancesService');
+const { getSelectorRegistry, inPageSelectors } = require('../wa/waSelectors');
 
 // Mutex global pour sécuriser l'accès concurrentiel à l'instance WhatsApp
 
@@ -410,6 +411,52 @@ router.post('/open-chat', async (req, res) => {
     }
 });
 
+/**
+ * POST /api/wa/voice-notes/transcribe
+ *
+ * Extrait la note vocale affichée (la plus récente par défaut) et la transcrit.
+ *
+ * Existe parce que la clé d'API est chiffrée par la clé maître que seul le
+ * processus Electron détient : aucun script autonome ne peut transcrire, et ce
+ * chemin est le seul qui passe par un secret réellement déchiffrable.
+ *
+ * Le corps de la réponse porte la transcription ; les journaux, eux, restent
+ * expurgés (transcriptionService s'en charge).
+ */
+router.post('/voice-notes/transcribe', async (req, res) => {
+    const { instance_id, message_id, language_hint, engine } = req.body || {};
+    try {
+        const voiceNoteService = require('../services/voiceNoteService');
+        const transcriptionService = require('../services/transcriptionService');
+
+        const note = await voiceNoteService.extractVoiceNote({
+            instanceId: instance_id,
+            messageId: message_id
+        });
+
+        const result = await transcriptionService.transcribe({
+            audio: note.audio,
+            mimeType: note.mimeType,
+            languageHint: language_hint,
+            engine
+        });
+
+        res.json({
+            status: 'success',
+            messageId: note.messageId,
+            bytes: note.bytes,
+            durationSec: note.durationSec,
+            mimeType: note.mimeType,
+            ...result
+        });
+    } catch (err) {
+        // L'échec est nommé : un vocal qu'on n'a pas su lire ne doit jamais
+        // ressembler à un vocal sans parole.
+        console.error('[VoiceNote] Échec de transcription :', err.message);
+        res.status(err.statusCode || 500).json({ error: err.message, reason: err.reason || null });
+    }
+});
+
 router.post('/verify-contact', async (req, res) => {
     const { instance_id, contact_id, phone, country_code } = req.body;
 
@@ -520,13 +567,16 @@ router.post('/verify-contact', async (req, res) => {
         while (Date.now() < deadline) {
             await new Promise(r => setTimeout(r, 600));
             try {
-                const state = await targetPage.evaluate(() => {
+                // Sélecteurs du registre, préparés à chaque tour : la navigation
+                // vers /send/ détruit le contexte de la page, et la poignée avec.
+                const sel = await targetPage.evaluateHandle(inPageSelectors, getSelectorRegistry().forPage());
+                const state = await targetPage.evaluate((sel) => {
                     // Valid chat: conversation panel visible
-                    if (document.querySelector('#main header, #main footer, [data-testid="conversation-panel-wrapper"], div[title="Type a message"], div[title="Tapez un message"]')) {
+                    if (document.querySelector(sel.S.conversationOpen)) {
                         return 'VALIDE';
                     }
                     // Error modal
-                    const modalBody = document.querySelector('[data-animate-modal-body="true"]');
+                    const modalBody = sel.first(document, 'errorModalBody');
                     if (modalBody) {
                         const text = (modalBody.innerText || modalBody.textContent || '').toLowerCase();
                         if (text.includes("n'est pas sur whatsapp") || text.includes("is not on whatsapp") || text.includes("invalide") || text.includes("phone number")) {
@@ -540,7 +590,8 @@ router.post('/verify-contact', async (req, res) => {
                         }
                     }
                     return 'PENDING';
-                });
+                }, sel);
+                await sel.dispose().catch(() => {});
                 if (state === 'VALIDE' || state === 'INVALIDE') {
                     result = state;
                     break;

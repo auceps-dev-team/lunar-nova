@@ -10,14 +10,13 @@ const openrouterService = require('../openrouterService');
 const ollamaService = require('../ollamaService');
 const openaiService = require('../openaiService');
 
-function getNvidiaModels() {
-    try {
-        delete require.cache[require.resolve('../nvidiaModels')];
-    } catch {
-        // ignore
-    }
-    return require('../nvidiaModels');
-}
+// Clés et URL des fournisseurs : résolution commune avec aiController.
+const { resolveProviderCredentials } = require('./providerCredentials');
+
+// Délai laissé à un CLI local (Claude Code, Gemini CLI) pour répondre en tant
+// qu'agent. Le démarrage du CLI et une consigne de persona longue dépassent
+// régulièrement 35 s (mesuré le 26/11/2026, voir l'appel plus bas).
+const CLI_AGENT_TIMEOUT_MS = 120000;
 
 /**
  * Détecte si une chaîne d'erreur correspond à un problème de clé API manquante ou invalide.
@@ -141,7 +140,7 @@ async function invokeSingleProvider({
 }) {
     let effectiveAgent = dbAgent;
     const orchestrator = require('../agents/orchestrator');
-    const persona = orchestrator.getPersona(personaId) || orchestrator.getPersona('copilot') || orchestrator.getPersona('creative');
+    const persona = orchestrator.getPersona(personaId) || orchestrator.getPersona('copilot');
 
     // ── 0. Exécution MCP (serveur local in-process) ──
     // La stratégie « mcp » emprunte exactement le chemin produit des clients
@@ -222,7 +221,11 @@ async function invokeSingleProvider({
                 ...(rawGeminiKey ? { GEMINI_API_KEY: rawGeminiKey } : {}),
                 ...(isGeminiCli ? { GEMINI_CLI_TRUST_WORKSPACE: 'true' } : {})
             },
-            timeout: 35000
+            // Mesuré le 26/11/2026 avec Claude Code 2.1.296 : prospecting_agent
+            // répond en 29,4 s, mais copywriter et outbound_strategist
+            // dépassaient les 35 s alors fixées ici et échouaient à chaque
+            // appel — la stratégie CLI était inutilisable pour ces agents.
+            timeout: CLI_AGENT_TIMEOUT_MS
         });
 
         if (!result.success && !result.stdout) {
@@ -246,11 +249,9 @@ async function invokeSingleProvider({
     }
 
     // ── 2. Exécution OpenRouter ──
+    // Clés et URL : résolution commune avec aiController (providerCredentials).
     if (provider === 'openrouter') {
-        const apiKey = await db.getSetting('openrouter_api_key', '');
-        if (!apiKey && !process.env.OPENROUTER_API_KEY) {
-            throw new Error('OpenRouter API key not configured in settings.');
-        }
+        const { apiKey } = await resolveProviderCredentials('openrouter', model);
         return await openrouterService.chatWithAgent(
             personaId,
             message,
@@ -266,7 +267,7 @@ async function invokeSingleProvider({
 
     // ── 3. Exécution Ollama ──
     if (provider === 'ollama') {
-        const apiKey = await db.getSetting('ollama_api_key', '');
+        const { apiKey } = await resolveProviderCredentials('ollama', model);
         return await ollamaService.chatWithAgent(
             personaId,
             message,
@@ -282,19 +283,8 @@ async function invokeSingleProvider({
 
     // ── 4. Exécution OpenAI / NVIDIA ──
     if (provider === 'openai') {
-        const nvidiaModels = getNvidiaModels();
         const selectedModel = model || dbAgent?.model_override || (await db.getSetting('default_chat_model', ''));
-        const apiKey = await nvidiaModels.resolveKey(selectedModel, db.getSetting.bind(db));
-
-        if (!apiKey) {
-            throw new Error('OpenAI/NVIDIA API key not configured in settings.');
-        }
-
-        let baseURL = await db.getSetting('openai_base_url', nvidiaModels.NVIDIA_BASE_URL);
-        const def = nvidiaModels.getModelDef(selectedModel);
-        if (def && def.provider === 'together') {
-            baseURL = 'https://api.together.xyz/v1';
-        }
+        const { apiKey, baseURL } = await resolveProviderCredentials('openai', selectedModel);
 
         return await openaiService.chatWithAgent(
             personaId,
@@ -396,8 +386,18 @@ async function runFallbackCascade(params) {
     const autoFallback = status.autoFallback;
 
     // Détermination de la cible initiale
-    let targetProvider = providerOverride || (dbAgent && dbAgent.provider_override) || (await db.getSetting('default_ai_provider', 'gemini'));
+    const defaultProvider = await db.getSetting('default_ai_provider', 'gemini');
+    let targetProvider = providerOverride || (dbAgent && dbAgent.provider_override) || defaultProvider;
     let targetModel = modelOverride || (dbAgent && dbAgent.model_override) || null;
+
+    // Modèle choisi dans les Paramètres (default_chat_model, écrit par l'écran
+    // Paramètres). Mesuré le 26/11/2026 : il ne vivait que dans l'interface, et
+    // tout appel sans modèle — Rédaction, prospection, MCP call_agent, CLI —
+    // partait sur le modèle codé en dur de l'adaptateur. Appliqué au seul
+    // fournisseur configuré : un identifiant de modèle n'a de sens que chez lui.
+    if (!targetModel && targetProvider === defaultProvider) {
+        targetModel = (await db.getSetting('default_chat_model', '')) || null;
+    }
 
     if (strategy === 'cli') {
         targetProvider = 'cli';

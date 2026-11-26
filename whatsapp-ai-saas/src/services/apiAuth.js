@@ -12,6 +12,44 @@ import { API_BASE_URL } from '../config';
 
 let apiToken = null;
 
+/**
+ * Attente du backend au démarrage.
+ *
+ * En production, la fenêtre se charge pendant que le backend démarre (fork
+ * Electron, puis initialisation de la base). Mesuré le 26/11/2026 sur la
+ * v1.49.0 installée : les premières requêtes échouaient en
+ * ERR_CONNECTION_REFUSED, et un appel fait une seule fois au montage — la clé
+ * de la carte de prospection, les réglages — restait vide pour toute la
+ * session, sans erreur visible.
+ *
+ * Les requêtes vers le backend sont donc retenues jusqu'à sa première réponse
+ * (n'importe quel statut HTTP prouve qu'il écoute), puis partent normalement.
+ * Rien n'est rejoué : une requête retenue n'a jamais quitté le renderer. Au
+ * bout de `timeoutMs`, on cesse d'attendre et les requêtes échouent comme
+ * avant, plutôt que de rester bloquées.
+ */
+const BACKEND_WAIT_MS = 30000;
+const RETRY_DELAYS_MS = [100, 200, 400, 800, 1000];
+
+export function createBackendGate(fetchImpl, { url, headers = {}, timeoutMs = BACKEND_WAIT_MS, wait } = {}) {
+    const pause = wait || ((ms) => new Promise((r) => setTimeout(r, ms)));
+    const deadline = Date.now() + timeoutMs;
+    return (async () => {
+        for (let attempt = 0; ; attempt++) {
+            try {
+                await fetchImpl(url, { headers, cache: 'no-store' });
+                return true;
+            } catch {
+                // Connexion refusée : le serveur n'écoute pas encore.
+            }
+            if (Date.now() >= deadline) return false;
+            await pause(RETRY_DELAYS_MS[Math.min(attempt, RETRY_DELAYS_MS.length - 1)]);
+        }
+    })();
+}
+
+let backendGate = Promise.resolve(true);
+
 function backendOrigins() {
     const origins = new Set(['http://localhost:3000', 'http://127.0.0.1:3000']);
     try {
@@ -67,12 +105,14 @@ export async function initApiAuth() {
 function patchFetch() {
     const originalFetch = window.fetch.bind(window);
 
-    window.fetch = (input, init) => {
-        const url = typeof input === 'string' ? input : input?.url;
-        if (!apiToken || !isBackendUrl(url)) {
-            return originalFetch(input, init);
-        }
+    if (apiToken) {
+        backendGate = createBackendGate(originalFetch, {
+            url: `${API_BASE_URL}/api/health`,
+            headers: { Authorization: `Bearer ${apiToken}` }
+        });
+    }
 
+    const send = (input, init) => {
         // Un objet Request porte ses en-têtes en interne : on le reconstruit pour
         // pouvoir y ajouter l'Authorization sans muter l'original.
         if (input instanceof Request && !init) {
@@ -84,6 +124,15 @@ function patchFetch() {
         const headers = new Headers(init?.headers || (input instanceof Request ? input.headers : undefined));
         headers.set('Authorization', `Bearer ${apiToken}`);
         return originalFetch(input, { ...init, headers });
+    };
+
+    window.fetch = (input, init) => {
+        const url = typeof input === 'string' ? input : input?.url;
+        if (!apiToken || !isBackendUrl(url)) {
+            return originalFetch(input, init);
+        }
+        // Retenue jusqu'à ce que le backend écoute (voir createBackendGate).
+        return backendGate.then(() => send(input, init));
     };
 }
 

@@ -48,6 +48,53 @@ const Support = () => {
 
     const changelog = [
         {
+            version: 'v1.51.0',
+            date: '2026-11-26',
+            changes: [
+                'Recentrage — La génération et la retouche d\'images (studio photo, création d\'images, quota d\'images Gemini) sont retirées : WaCopilote se concentre sur WhatsApp multi-comptes et les agents de rédaction. Les réglages d\'image sont effacés à la mise à jour',
+                'Recentrage — La connexion avec un compte Google est retirée pour l\'instant : votre nom et votre entreprise se renseignent directement dans le profil',
+                'Rédaction — Réécriture du passage sélectionné en six modes : améliorer, corriger l\'orthographe, raccourcir, développer, ton message WhatsApp, plus formel. Le texte réécrit remplace bien le passage choisi, même si vous avez cliqué ailleurs pendant la réponse ; si ce passage a été modifié entre-temps, rien n\'est écrasé et le résultat est copié dans le presse-papiers',
+                'Rédaction — Nouveau bouton « Copier pour WhatsApp » : le gras, l\'italique, le barré, les listes et les titres passent au format WhatsApp (*gras*, _italique_)',
+                'Rédaction — Générer dans un document qui contient déjà du texte demande confirmation, et Annuler (Ctrl+Z) rend votre texte en une fois : il était auparavant remplacé sans retour possible. La langue de rédaction suit celle de l\'interface, arabe compris',
+                'Agents — Les agents de rédaction utilisent désormais le modèle choisi dans les Réglages, et ceux qui passent par un assistant en ligne de commande disposent de 2 minutes pour répondre (35 secondes auparavant, souvent trop court). Sur OpenRouter, 322 modèles de conversation classés à tort parmi les modèles d\'image sont de nouveau proposés',
+                'Prospection — La carte s\'affiche dès que votre clé Google Maps est saisie dans les Réglages (nouvelle section Prospection) ; sans clé, ou si le service local ne répond pas, un message l\'explique. Au démarrage, l\'interface attend le service local au lieu d\'échouer',
+                'Mises à jour — Seul l\'installeur principal est téléchargé, et sa taille et son empreinte SHA-256 sont vérifiées avant toute installation',
+                'WhatsApp — Les repères que WaCopilote lit dans WhatsApp Web sont réunis en un seul registre, prêt à être corrigé par un fichier signé quand WhatsApp change, sans réinstaller l\'application',
+                'Correctifs — 17 libellés s\'affichaient sous la forme de leur nom de code (par exemple dans les réglages du pont CLI) ; une notification pouvait disparaître au bout d\'une fraction de seconde ; une copie refusée était annoncée comme réussie'
+            ]
+        },
+        {
+            version: 'v1.50.2',
+            date: '2026-10-01',
+            changes: [
+                'Correctif — Modifier un agent personnalisé échouait à chaque fois avec une erreur : vos changements de nom, de consigne ou de modèle sont désormais bien enregistrés. Cause : la traduction des requêtes vers la base locale décalait les paramètres répétés',
+                'Correctif — L\'outil MCP get_orders, qui donne aux assistants IA externes les commandes WhatsApp détectées, échouait à chaque appel. Il renvoie désormais les commandes réellement enregistrées, avec leur origine (texte ou note vocale)',
+                'Maintenance — Le serveur MCP, la ligne de commande et l\'état de l\'interface sont réorganisés par domaine, sans aucun changement de comportement : vérifié outil par outil, commande par commande et réglage par réglage',
+                'Sécurité — Les fichiers temporaires de la base locale, qui peuvent contenir des contacts, ne peuvent plus être ajoutés par erreur au code partagé'
+            ]
+        },
+        {
+            version: 'v1.50.1',
+            date: '2026-10-01',
+            changes: [
+                'Sécurité — Le service local vérifie désormais votre jeton d\'authentification avant de lire le contenu d\'une requête. Auparavant, un envoi volumineux sans jeton était entièrement lu, puis seulement refusé',
+                'Sécurité — L\'interface applique une politique de sécurité du contenu : seuls les scripts de l\'application et de la connexion Google peuvent s\'y exécuter. Vérifié sans aucun blocage sur les 24 écrans',
+                'Une origine web non autorisée reçoit maintenant un refus net, au lieu d\'une erreur interne qui encombrait le journal',
+                'Fiabilité — Les échanges avec Gemini et avec les modèles OpenAI/NVIDIA, ainsi que le choix du fournisseur, sont désormais couverts par des tests automatiques',
+                'Maintenance — Les clés et adresses des fournisseurs d\'IA sont résolues en un seul endroit (elles l\'étaient en trois) ; extraction des fiches Google Maps simplifiée et testée ; retrait d\'une dépendance inutilisée'
+            ]
+        },
+        {
+            version: 'v1.50.0',
+            date: '2026-10-01',
+            changes: [
+                'Nouveauté — Notes vocales : les vocaux reçus sur WhatsApp peuvent désormais être transcrits puis analysés exactement comme un message tapé, pour qu\'une commande passée à la voix ne passe plus inaperçue. Désactivé par défaut (réglage voice_notes_transcription) : chaque vocal coûte du calcul ou des jetons, et cette dépense ne se déclenche pas sans votre accord',
+                'Deux moteurs au choix : whisper-local, entièrement hors ligne et sans clé d\'API (environ 2,7 fois la durée du vocal sur un ordinateur ordinaire, mesuré avec le modèle small), ou Gemini via l\'API. Les vocaux que vous envoyez vous-même ne sont jamais transcrits',
+                'Les commandes détectées dans un vocal sont marquées comme telles : une transcription est une reconstruction, à relire avec la prudence qu\'elle mérite',
+                'Les vocaux sont transcrits un par un, en arrière-plan : la détection des messages tapés n\'attend jamais la fin d\'une transcription'
+            ]
+        },
+        {
             version: 'v1.49.0',
             date: '2026-09-14',
             changes: [

@@ -6,7 +6,6 @@ module.exports = {
         inputTypes: ['text'],
         outputTypes: ['text'],
         requiresVisionModel: false,
-        generatesImagePrompt: false,
     },
     systemInstruction: `You are the Legal & Admin Agent for a SaaS platform.
 Your expertise is in drafting contracts, writing professional invoices, and providing general legal assistance.

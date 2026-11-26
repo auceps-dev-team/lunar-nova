@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import useAppStore from '../store';
 import { useTranslation } from 'react-i18next';
 import { API_BASE_URL } from '../config';
+import { buildContextExtractionScript } from '../utils/whatsappContextScript';
 
 import '../styles/global.css';
 import { Paperclip, X } from 'lucide-react';
@@ -120,130 +121,21 @@ const WorkArea = ({ instances, activeId }) => {
         const activeWebview = document.querySelector(`.webview-container.active webview`);
         if (!activeWebview) return null;
 
-        const contextExtractionScript = `
-            (async function() {
-                try {
-                    const result = { contactName: 'Unknown', messages: [], debug: {} };
+        // Sélecteurs du registre du backend (livrés, ou fichier signé mis à
+        // jour : backend/wa/waSelectors.js). Le paquet est une DONNÉE, inséré
+        // comme littéral JSON ; `helper` est le code de préparation du backend
+        // lui-même, jamais un contenu du fichier distant.
+        let registre;
+        try {
+            registre = await (await fetch(API_BASE_URL + '/api/wa/selectors')).json();
+        } catch {
+            return { error: 'Sélecteurs WhatsApp indisponibles : le service local ne répond pas.' };
+        }
+        if (!registre || !registre.page || typeof registre.helper !== 'string') {
+            return { error: 'Sélecteurs WhatsApp indisponibles : réponse inattendue du service local.' };
+        }
 
-                    const headerTitle = document.querySelector('[data-testid="conversation-info-header-chat-title"]')
-                        || document.querySelector('[data-testid="conversation-header"] span[dir="auto"]')
-                        || document.querySelector('header span[dir="auto"]')
-                        || document.querySelector('[data-testid="conversation-info-header"] span');
-                    if (headerTitle) result.contactName = (headerTitle.getAttribute('title') || headerTitle.textContent || '').trim() || 'Unknown';
-
-                    // WhatsApp renames its atomic CSS classes on every redesign (class.message-in/.message-out,
-                    // .selectable-text, .copyable-text are not guaranteed to exist anymore), but the internal
-                    // message-store id on each row ("true_"/"false_" prefix = outgoing/incoming) is stable across
-                    // UI overhauls, so anchor on that first, then legacy classes, then a generic ARIA-row
-                    // fallback (the chat list in this build uses role="row" grid items; the message list is
-                    // likely rendered with the same virtualization pattern even if we can't confirm it here).
-                    let messageNodes = Array.from(document.querySelectorAll('[data-id]')).filter(el => {
-                        const id = el.getAttribute('data-id');
-                        return id && (id.startsWith('true_') || id.startsWith('false_'));
-                    });
-                    result.debug.dataIdCount = messageNodes.length;
-
-                    if (messageNodes.length === 0) {
-                        messageNodes = Array.from(document.querySelectorAll('div.message-in, div.message-out'));
-                        result.debug.legacyClassCount = messageNodes.length;
-                    }
-
-                    if (messageNodes.length === 0) {
-                        const mainPanel = document.querySelector('#main') || document.body;
-                        messageNodes = Array.from(mainPanel.querySelectorAll('div[role="row"]')).filter(el => !el.closest('#pane-side'));
-                        result.debug.ariaRowCount = messageNodes.length;
-                    }
-
-                    result.debug.strategyUsed = result.debug.dataIdCount > 0 ? 'data-id'
-                        : (result.debug.legacyClassCount > 0 ? 'legacy-class'
-                        : (result.debug.ariaRowCount > 0 ? 'aria-row' : 'none'));
-                    result.debug.hasMainPanel = !!document.querySelector('#main');
-                    result.debug.hasPaneSide = !!document.querySelector('#pane-side');
-
-                    messageNodes = messageNodes.slice(-15);
-                    let imageCount = 0;
-                    let outCount = 0;
-
-                    // Container used for the last-resort alignment heuristic below: WhatsApp right-aligns
-                    // outgoing bubbles and left-aligns incoming ones, regardless of class/testid naming.
-                    const alignContainer = document.querySelector('#main') || document.body;
-                    const containerRect = alignContainer.getBoundingClientRect();
-                    const containerCenter = (containerRect.left + containerRect.right) / 2;
-
-                    for (const node of messageNodes) {
-                        const textNode = node.querySelector('.selectable-text, .copyable-text, span[dir="ltr"]');
-                        const timeNode = node.querySelector('[data-icon="msg-time"], .copyable-text[data-pre-plain-text], [data-pre-plain-text]');
-                        const imgNode = node.querySelector('img[src^="blob:"]');
-
-                        let text = textNode ? textNode.textContent : (node.innerText || '').trim();
-                        let mediaData = null;
-
-                        if (imgNode && imageCount < 2) {
-                            try {
-                                const res = await fetch(imgNode.src);
-                                const blob = await res.blob();
-                                mediaData = await new Promise((resolve, reject) => {
-                                    const reader = new FileReader();
-                                    reader.onloadend = () => resolve(reader.result);
-                                    reader.onerror = reject;
-                                    reader.readAsDataURL(blob);
-                                });
-                                imageCount++;
-                            } catch (e) {
-                                console.error('Error fetching image blob', e);
-                            }
-                        }
-
-                        if ((text && text.length > 0) || mediaData) {
-                            // The matched node (especially via the aria-row fallback) may not itself carry
-                            // the direction signal - it can live on a nested element. Check own node first,
-                            // then descendants, and only fall back to a position heuristic if nothing else
-                            // is found (getting this wrong flips the whole conversation's speaker labels).
-                            let isOut;
-                            if (node.classList?.contains('message-out')) {
-                                isOut = true;
-                            } else if (node.classList?.contains('message-in')) {
-                                isOut = false;
-                            } else if (node.getAttribute('data-id')) {
-                                isOut = node.getAttribute('data-id').startsWith('true_');
-                            } else {
-                                const nestedIdEl = node.querySelector('[data-id]');
-                                const nestedId = nestedIdEl ? nestedIdEl.getAttribute('data-id') : null;
-                                if (nestedId) {
-                                    isOut = nestedId.startsWith('true_');
-                                } else {
-                                    const nestedClassEl = node.querySelector('.message-out, .message-in');
-                                    if (nestedClassEl) {
-                                        isOut = nestedClassEl.classList.contains('message-out');
-                                    } else {
-                                        try {
-                                            const rect = node.getBoundingClientRect();
-                                            isOut = ((rect.left + rect.right) / 2) > containerCenter;
-                                        } catch (e) {
-                                            isOut = false;
-                                        }
-                                    }
-                                }
-                            }
-                            if (isOut) outCount++;
-
-                            result.messages.push({
-                                sender: isOut ? 'You' : result.contactName,
-                                text: text || '[Image]',
-                                media: mediaData,
-                                time: timeNode ? (timeNode.parentElement?.textContent || timeNode.textContent || 'Unknown') : 'Unknown'
-                            });
-                        }
-                    }
-                    result.debug.outCount = outCount;
-                    result.debug.totalCount = result.messages.length;
-                    return result;
-                } catch (e) {
-                    return { error: e.toString() };
-                }
-            })();
-        `;
-        return await activeWebview.executeJavaScript(contextExtractionScript);
+        return await activeWebview.executeJavaScript(buildContextExtractionScript(registre));
     };
 
     const generateProposals = async () => {

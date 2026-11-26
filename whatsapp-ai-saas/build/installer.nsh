@@ -1,3 +1,18 @@
+; Nettoyage de l'ancien installeur Inno Setup (v1.49.0 et avant).
+;
+; Mesuré le 26/11/2026 sur un poste réel : Inno et NSIS installaient tous deux
+; dans %LOCALAPPDATA%\Programs\WaCopilote, et Windows listait deux WaCopilote
+; (1.39.3 en NSIS, 1.49.0 en Inno). Déduit, non essayé : désinstaller
+; l'entrée Inno effacerait les fichiers communs aux deux, donc l'installation
+; NSIS. Inno est abandonné : l'installation NSIS retire son entrée de
+; désinstallation et son désinstalleur. L'AppId Inno était la valeur
+; d'exemple {A1B2C3D4-E5F6-7890-ABCD-EF1234567890}.
+!macro customInstall
+  DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}_is1"
+  Delete "$INSTDIR\unins000.exe"
+  Delete "$INSTDIR\unins000.dat"
+!macroend
+
 ; Custom Uninstall Hook
 ; Only open the uninstall feedback page if it is a REAL uninstall,
 ; NOT a silent background uninstall triggered by an auto-update.
