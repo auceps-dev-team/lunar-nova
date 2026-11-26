@@ -22,9 +22,8 @@ const CliAgentBridgeSettings = () => {
     const [copiedCmd, setCopiedCmd] = useState(null);
 
     // Test console state
-    const [testMode, setTestMode] = useState('cli'); // 'cli' | 'mcp' | 'external'
+    const [testMode, setTestMode] = useState('cli'); // 'cli' | 'mcp'
     const [testAgent, setTestAgent] = useState('copywriter');
-    const [testCliCommand, setTestCliCommand] = useState('claude');
     const [testProvider, setTestProvider] = useState('');
     const [testPrompt, setTestPrompt] = useState('Rédige une phrase d\'accroche percutante pour tester le bridge CLI.');
     const [isRunningTest, setIsRunningTest] = useState(false);
@@ -101,7 +100,6 @@ const CliAgentBridgeSettings = () => {
                 body: JSON.stringify({
                     mode: testMode,
                     agent: testAgent,
-                    cliCommand: testCliCommand,
                     provider: testProvider || undefined,
                     prompt: testPrompt.trim()
                 })
@@ -306,7 +304,7 @@ const CliAgentBridgeSettings = () => {
                     </div>
 
                     <p className="text-xs text-gray-600 dark:text-gray-400 mb-4 leading-relaxed">
-                        Exécutez un test réel via le sous-processus CLI, le serveur MCP, ou un outil CLI installé sur la machine sans transiter par les routes d'API cloud génériques.
+                        Exécutez un test réel via le sous-processus CLI ou le serveur MCP, sans transiter par les routes d'API cloud génériques.
                     </p>
 
                     <div className="bg-gray-50 dark:bg-gray-750 p-4 rounded-xl border border-gray-100 dark:border-gray-700 space-y-4">
@@ -315,8 +313,7 @@ const CliAgentBridgeSettings = () => {
                             <span className="text-xs font-semibold text-gray-600 dark:text-gray-400 mr-1">Mode de Test :</span>
                             {[
                                 { id: 'cli', label: 'CLI WaCopilote (wacopilote run)' },
-                                { id: 'mcp', label: 'Serveur MCP (tools/call)' },
-                                { id: 'external', label: 'Délégation Machine (Claude, Python, Node...)' }
+                                { id: 'mcp', label: 'Serveur MCP (tools/call)' }
                             ].map(m => (
                                 <button
                                     key={m.id}
@@ -334,73 +331,50 @@ const CliAgentBridgeSettings = () => {
                         </div>
 
                         <div className="flex flex-wrap items-center gap-3">
-                            {testMode === 'external' ? (
-                                <div className="w-full sm:w-48">
-                                    <label className="block text-[11px] font-semibold text-gray-600 dark:text-gray-400 mb-1">
-                                        Commande CLI machine :
-                                    </label>
-                                    <select
-                                        value={testCliCommand}
-                                        onChange={(e) => setTestCliCommand(e.target.value)}
-                                        className="w-full text-xs border border-gray-300 dark:border-gray-600 rounded-lg p-2 bg-white dark:bg-gray-700 text-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-primary/50"
-                                    >
-                                        {(statusData?.installedClis?.filter(c => c.installed) || []).map(c => (
-                                            <option key={c.command} value={c.command}>{c.command.toUpperCase()} ({c.version || 'Détecté'})</option>
-                                        ))}
-                                        <option value="node">NODE</option>
-                                        <option value="python">PYTHON</option>
-                                        <option value="claude">CLAUDE (Claude Code)</option>
-                                        <option value="git">GIT</option>
-                                    </select>
-                                </div>
-                            ) : (
-                                <>
-                                    <div className="w-full sm:w-48">
-                                        <label className="block text-[11px] font-semibold text-gray-600 dark:text-gray-400 mb-1">
-                                            {t('selectAgent') || 'Agent à tester :'}
-                                        </label>
-                                        <select
-                                            value={testAgent}
-                                            onChange={(e) => setTestAgent(e.target.value)}
-                                            className="w-full text-xs border border-gray-300 dark:border-gray-600 rounded-lg p-2 bg-white dark:bg-gray-700 text-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-primary/50"
-                                        >
-                                            <option value="copywriter">Jarvis (SDR Senior)</option>
-                                            <option value="outbound_strategist">Antoine (Outbound)</option>
-                                            <option value="seo_specialist">Romain (SEO)</option>
-                                            <option value="growth_hacker">Julien (Growth)</option>
-                                            <option value="ella">Ella (Life Architect)</option>
-                                        </select>
-                                    </div>
+                            <div className="w-full sm:w-48">
+                                <label className="block text-[11px] font-semibold text-gray-600 dark:text-gray-400 mb-1">
+                                    {t('selectAgent') || 'Agent à tester :'}
+                                </label>
+                                <select
+                                    value={testAgent}
+                                    onChange={(e) => setTestAgent(e.target.value)}
+                                    className="w-full text-xs border border-gray-300 dark:border-gray-600 rounded-lg p-2 bg-white dark:bg-gray-700 text-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-primary/50"
+                                >
+                                    <option value="copywriter">Jarvis (SDR Senior)</option>
+                                    <option value="outbound_strategist">Antoine (Outbound)</option>
+                                    <option value="seo_specialist">Romain (SEO)</option>
+                                    <option value="growth_hacker">Julien (Growth)</option>
+                                    <option value="ella">Ella (Life Architect)</option>
+                                </select>
+                            </div>
 
-                                    <div className="w-full sm:w-36">
-                                        <label className="block text-[11px] font-semibold text-gray-600 dark:text-gray-400 mb-1">
-                                            Fournisseur forcé :
-                                        </label>
-                                        <select
-                                            value={testProvider}
-                                            onChange={(e) => setTestProvider(e.target.value)}
-                                            className="w-full text-xs border border-gray-300 dark:border-gray-600 rounded-lg p-2 bg-white dark:bg-gray-700 text-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-primary/50"
-                                        >
-                                            <option value="">Auto (Défaut DB)</option>
-                                            <option value="gemini">Gemini</option>
-                                            <option value="openrouter">OpenRouter</option>
-                                            <option value="ollama">Ollama (Local)</option>
-                                            <option value="openai">OpenAI / NVIDIA</option>
-                                        </select>
-                                    </div>
-                                </>
-                            )}
+                            <div className="w-full sm:w-36">
+                                <label className="block text-[11px] font-semibold text-gray-600 dark:text-gray-400 mb-1">
+                                    Fournisseur forcé :
+                                </label>
+                                <select
+                                    value={testProvider}
+                                    onChange={(e) => setTestProvider(e.target.value)}
+                                    className="w-full text-xs border border-gray-300 dark:border-gray-600 rounded-lg p-2 bg-white dark:bg-gray-700 text-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-primary/50"
+                                >
+                                    <option value="">Auto (Défaut DB)</option>
+                                    <option value="gemini">Gemini</option>
+                                    <option value="openrouter">OpenRouter</option>
+                                    <option value="ollama">Ollama (Local)</option>
+                                    <option value="openai">OpenAI / NVIDIA</option>
+                                </select>
+                            </div>
 
                             <div className="flex-1 min-w-[240px]">
                                 <label className="block text-[11px] font-semibold text-gray-600 dark:text-gray-400 mb-1">
-                                    {testMode === 'external' ? 'Argument / Entrée :' : (t('testPrompt') || 'Prompt d\'essai :')}
+                                    {t('testPrompt') || 'Prompt d\'essai :'}
                                 </label>
                                 <input
                                     type="text"
                                     value={testPrompt}
                                     onChange={(e) => setTestPrompt(e.target.value)}
                                     className="w-full text-xs border border-gray-300 dark:border-gray-600 rounded-lg p-2 bg-white dark:bg-gray-700 text-gray-800 dark:text-white outline-none focus:ring-2 focus:ring-primary/50"
-                                    placeholder={testMode === 'external' ? '--version ou texte' : 'Entrez votre prompt...'}
+                                    placeholder="Entrez votre prompt..."
                                 />
                             </div>
 
