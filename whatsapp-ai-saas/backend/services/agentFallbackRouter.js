@@ -212,13 +212,15 @@ async function invokeSingleProvider({
         // est le dossier contrôlé de l'application, pas un dépôt arbitraire.
         const isGeminiCli = cliCommand === 'gemini' || cliCommand === 'gemini-cli';
 
+        // Seules les variables propres au canal sont passées : executeExternalCli
+        // construit le reste de l'environnement à partir d'une liste fermée
+        // (jamais tout process.env, qui contient la clé maître en production).
         const result = await externalAgentRunner.executeExternalCli({
             command: cliCommand,
             args,
             input: '',
             env: {
-                ...process.env,
-                ...(rawGeminiKey ? { GEMINI_API_KEY: rawGeminiKey } : {}),
+                ...(isGeminiCli && rawGeminiKey ? { GEMINI_API_KEY: rawGeminiKey } : {}),
                 ...(isGeminiCli ? { GEMINI_CLI_TRUST_WORKSPACE: 'true' } : {})
             },
             // Mesuré le 26/11/2026 avec Claude Code 2.1.296 : prospecting_agent
@@ -321,6 +323,22 @@ async function invokeSingleProvider({
 // délègue l'exécution directe au fournisseur par défaut configuré.
 let fallbackInFlight = false;
 
+// Canaux qui confient le message à un agent local : les CLI (Claude Code,
+// Gemini CLI…) lisent le disque, et le serveur MCP peut y mener. Ils sont
+// exclus quand le message contient du contenu tiers (`untrustedInput`) : un
+// client WhatsApp ou une fiche d'annuaire ne doit pas pouvoir dicter des
+// instructions à un outil qui a accès aux fichiers du poste.
+const LOCAL_AGENT_PROVIDERS = new Set(['cli', 'mcp']);
+
+/**
+ * Fournisseur API à utiliser à la place d'un canal local : le fournisseur par
+ * défaut s'il n'est pas lui-même local, sinon Gemini.
+ */
+async function defaultApiProvider() {
+    const configured = await db.getSetting('default_ai_provider', 'gemini');
+    return configured && !LOCAL_AGENT_PROVIDERS.has(configured) ? configured : 'gemini';
+}
+
 async function executeAgentWithFallback(params) {
     const {
         personaId,
@@ -333,7 +351,8 @@ async function executeAgentWithFallback(params) {
         isRealTime = false,
         modelOverride = null,
         providerOverride = null,
-        dbAgent = null
+        dbAgent = null,
+        untrustedInput = false
     } = params;
 
     if (fallbackInFlight) {
@@ -343,9 +362,17 @@ async function executeAgentWithFallback(params) {
         // Ceinture et bretelles : un fournisseur « mcp » résolu en réentrée
         // retomberait dans handleToolCall → boucle. Force un fournisseur API.
         if (directProvider === 'mcp') directProvider = 'gemini';
+        // Le drapeau de réentrée est partagé entre requêtes : une requête
+        // portant du contenu tiers peut arriver ici pendant qu'une autre
+        // parcourt la cascade. Le filtre doit donc s'appliquer aussi.
+        let directModel = modelOverride || (dbAgent && dbAgent.model_override) || null;
+        if (untrustedInput && LOCAL_AGENT_PROVIDERS.has(directProvider)) {
+            directProvider = await defaultApiProvider();
+            directModel = null;
+        }
         return invokeSingleProvider({
             provider: directProvider,
-            model: modelOverride || (dbAgent && dbAgent.model_override) || null,
+            model: directModel,
             personaId,
             message,
             imageParams,
@@ -378,7 +405,8 @@ async function runFallbackCascade(params) {
         isRealTime = false,
         modelOverride = null,
         providerOverride = null,
-        dbAgent = null
+        dbAgent = null,
+        untrustedInput = false
     } = params;
 
     const status = await getExecutionChannelsStatus();
@@ -390,6 +418,16 @@ async function runFallbackCascade(params) {
     let targetProvider = providerOverride || (dbAgent && dbAgent.provider_override) || defaultProvider;
     let targetModel = modelOverride || (dbAgent && dbAgent.model_override) || null;
 
+    // Contenu tiers : une cible locale (fournisseur ou override d'agent) est
+    // remplacée par un fournisseur API. Le modèle demandé est abandonné avec
+    // elle : pour le canal CLI, c'est un nom de binaire (« claude »), pas un
+    // modèle. Fait avant la résolution du modèle par défaut, qui s'applique
+    // alors au fournisseur de remplacement s'il est le fournisseur configuré.
+    if (untrustedInput && LOCAL_AGENT_PROVIDERS.has(targetProvider)) {
+        targetProvider = await defaultApiProvider();
+        targetModel = null;
+    }
+
     // Modèle choisi dans les Paramètres (default_chat_model, écrit par l'écran
     // Paramètres). Mesuré le 26/11/2026 : il ne vivait que dans l'interface, et
     // tout appel sans modèle — Rédaction, prospection, MCP call_agent, CLI —
@@ -399,10 +437,11 @@ async function runFallbackCascade(params) {
         targetModel = (await db.getSetting('default_chat_model', '')) || null;
     }
 
-    if (strategy === 'cli') {
+    // Contenu tiers : les stratégies « cli » et « mcp » ne s'appliquent pas.
+    if (!untrustedInput && strategy === 'cli') {
         targetProvider = 'cli';
         targetModel = status.defaultCliAgent || 'gemini';
-    } else if (strategy === 'mcp') {
+    } else if (!untrustedInput && strategy === 'mcp') {
         // Stratégie « mcp » : passer par le tool call_agent du serveur local,
         // le même chemin que les clients MCP externes.
         targetProvider = 'mcp';
@@ -454,9 +493,16 @@ async function runFallbackCascade(params) {
         }
     }
 
+    const plan = untrustedInput
+        ? attempts.filter((attempt) => !LOCAL_AGENT_PROVIDERS.has(attempt.provider))
+        : attempts;
+    if (plan.length < attempts.length) {
+        console.error(`[SmartFallback] Contenu tiers pour '${personaId}' : canaux CLI et MCP locaux exclus de la cascade.`);
+    }
+
     let lastError = null;
 
-    for (const attempt of attempts) {
+    for (const attempt of plan) {
         try {
             const result = await invokeSingleProvider({
                 provider: attempt.provider,

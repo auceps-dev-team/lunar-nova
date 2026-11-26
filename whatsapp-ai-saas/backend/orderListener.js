@@ -46,7 +46,14 @@ function quickKeywordCheck(text) {
 
 async function transferToAgent(contact, text) {
     try {
-        const response = await aiController.chatWithAgent('copywriter', `Contact ${contact} just sent an order inquiry: "${text}". Generate a short, polite, and persuasive commercial response in French.`);
+        // Le nom et le texte viennent du client WhatsApp : untrustedInput exclut
+        // les agents locaux (Claude Code, Gemini CLI, MCP) qui ont accès au disque.
+        const response = await aiController.chatWithAgent(
+            'copywriter',
+            `Contact ${contact} just sent an order inquiry: "${text}". Generate a short, polite, and persuasive commercial response in French.`,
+            null, null, undefined, null, null, false, null, null,
+            { untrustedInput: true }
+        );
         return response.response;
     } catch (e) {
         console.error('[IOL] Agent transfer error:', e.message);

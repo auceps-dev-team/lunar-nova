@@ -144,11 +144,22 @@ router.post('/test-bridge', async (req, res) => {
             args.push('--model', model);
         }
 
+        // Le CLI WaCopilote est notre propre code : il reçoit, en plus de
+        // l'environnement de base, ce qui lui permet d'ouvrir la même base et
+        // de déchiffrer les mêmes clés que ce backend. Rien d'autre.
+        const { pickProcessEnv } = require('../services/externalAgentRunner');
         const cliResult = await executeExternalCli({
             command: 'node',
             args,
             timeout: 30000,
-            skipAllowanceCheck: true
+            skipAllowanceCheck: true,
+            env: pickProcessEnv([
+                'USER_DATA_PATH',
+                'WACOPILOTE_LOCAL_DB',
+                'WACOPILOTE_MASTER_KEY',
+                'WACOPILOTE_LOG_MESSAGES',
+                'NODE_ENV'
+            ])
         });
 
         let parsedOutput = null;
