@@ -5,9 +5,7 @@ const db = require('../db');
 const {
     detectInstalledClis,
     executeExternalCli,
-    getAllowedCommands,
-    sanitizeCommandName,
-    DEFAULT_ALLOWED_COMMANDS
+    getAllowedCommands
 } = require('../services/externalAgentRunner');
 const pkg = require('../../package.json');
 
@@ -26,7 +24,6 @@ router.get('/status', async (req, res) => {
             version: pkg.version,
             binPath,
             allowedCommands,
-            defaultAllowedCommands: DEFAULT_ALLOWED_COMMANDS,
             installedClis
         });
     } catch (err) {
@@ -62,77 +59,43 @@ router.get('/mcp-config', async (req, res) => {
     }
 });
 
-/**
- * POST /api/cli/run-external
- * Exécute une commande d'un agent CLI externe installé sur la machine.
- */
-router.post('/run-external', async (req, res) => {
-    const { command, args = [], input = '', timeout = 30000 } = req.body || {};
-
-    if (!command || typeof command !== 'string') {
-        return res.status(400).json({ success: false, error: 'Nom de commande requis.' });
-    }
-
-    try {
-        const result = await executeExternalCli({
-            command,
-            args: Array.isArray(args) ? args : [],
-            input: typeof input === 'string' ? input : '',
-            timeout: Math.min(120000, Math.max(1000, Number(timeout) || 30000))
-        });
-
-        res.json(result);
-    } catch (err) {
-        console.error('[CliBridge] Erreur run-external:', err);
-        res.status(500).json({ success: false, error: err.message });
-    }
-});
+// L'ancienne route POST /api/cli/run-external, qui lançait un binaire avec des
+// arguments choisis par l'appelant, a été retirée : avec node ou python dans la
+// liste blanche, elle donnait l'exécution de code arbitraire à quiconque
+// détenait le jeton API. Aucun écran ne l'appelait.
 
 /**
  * POST /api/cli/test-bridge
  * Teste l'exécution du bridge CLI de manière autonome (sans dépendre des routes API cloud génériques).
- * Supporte 3 modes de test :
+ * Deux modes :
  * 1. 'cli' : Exécute le binaire local `bin/wacopilote.cjs run --agent <agent> --prompt <prompt> --json` dans un sous-processus réel.
  * 2. 'mcp' : Exécute l'outil MCP `call_agent` ou `list_agents` via `wacopiloteMcpServer.handleToolCall`.
- * 3. 'external' : Exécute un binaire CLI détecté sur la machine (ex: claude, python, node, git, gemini, etc.) via `executeExternalCli`.
+ *
+ * Le mode 'external' (binaire et arguments libres) a été retiré pour la même
+ * raison que /run-external.
  */
+const TEST_BRIDGE_MODES = ['cli', 'mcp'];
+
 router.post('/test-bridge', async (req, res) => {
     const {
         mode = 'cli',
         agent = 'copywriter',
         prompt = '',
-        cliCommand = 'node',
-        cliArgs = [],
         provider = null,
         model = null
     } = req.body || {};
+
+    if (!TEST_BRIDGE_MODES.includes(mode)) {
+        return res.status(400).json({
+            success: false,
+            error: `Mode de test inconnu : '${mode}'. Modes acceptés : ${TEST_BRIDGE_MODES.join(', ')}.`
+        });
+    }
 
     const startTime = Date.now();
     const binPath = path.resolve(__dirname, '../../bin/wacopilote.cjs');
 
     try {
-        if (mode === 'external') {
-            const cmd = sanitizeCommandName(cliCommand || 'node');
-            const args = Array.isArray(cliArgs) && cliArgs.length > 0
-                ? cliArgs
-                : (prompt ? [prompt.trim()] : ['--version']);
-
-            const result = await executeExternalCli({
-                command: cmd,
-                args,
-                timeout: 30000
-            });
-
-            return res.json({
-                success: result.success,
-                mode: 'external',
-                command: `${cmd} ${args.join(' ')}`,
-                executionTimeMs: Date.now() - startTime,
-                response: (result.stdout || result.stderr || (result.success ? 'Succès (sans sortie)' : result.error || 'Échec d\'exécution')).trim(),
-                details: result
-            });
-        }
-
         if (mode === 'mcp') {
             const { handleToolCall } = require('../mcp/wacopiloteMcpServer');
             let mcpResult;
@@ -222,15 +185,22 @@ router.post('/test-bridge', async (req, res) => {
 
 /**
  * POST /api/cli/settings
- * Met à jour les réglages de sécurité du bridge CLI (commandes autorisées, timeout par défaut).
+ * Met à jour les réglages du bridge CLI (timeout par défaut).
+ *
+ * La liste des commandes autorisées n'est plus modifiable : elle est fixée
+ * dans externalAgentRunner.js (ALLOWED_COMMANDS).
  */
 router.post('/settings', async (req, res) => {
     const { allowed_cli_commands, cli_timeout_seconds } = req.body || {};
 
+    if (allowed_cli_commands !== undefined) {
+        return res.status(400).json({
+            success: false,
+            error: 'La liste des commandes CLI autorisées est fixe et ne peut pas être modifiée.'
+        });
+    }
+
     try {
-        if (allowed_cli_commands !== undefined) {
-            await db.setSetting('allowed_cli_commands', String(allowed_cli_commands));
-        }
         if (cli_timeout_seconds !== undefined) {
             await db.setSetting('cli_timeout_seconds', String(cli_timeout_seconds));
         }

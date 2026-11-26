@@ -7,8 +7,9 @@ import {
     detectInstalledClis,
     classifyGeminiProbeResult,
     probeGeminiReadiness,
-    DEFAULT_ALLOWED_COMMANDS
+    ALLOWED_COMMANDS
 } from '../services/externalAgentRunner';
+import db from '../db';
 
 describe('externalAgentRunner — service d\'exécution CLI externe', { timeout: 15000 }, () => {
     describe('sanitizeCommandName', () => {
@@ -35,19 +36,16 @@ describe('externalAgentRunner — service d\'exécution CLI externe', { timeout:
     });
 
     describe('isCommandAllowed & liste blanche de sécurité', () => {
-        it('autorise les commandes par défaut standard', async () => {
-            for (const cmd of DEFAULT_ALLOWED_COMMANDS) {
+        it('autorise les CLI d\'agents de la liste fermée', async () => {
+            for (const cmd of ALLOWED_COMMANDS) {
                 expect(await isCommandAllowed(cmd)).toBe(true);
             }
         });
 
-        it('renvoie un ensemble contenant les commandes par défaut', async () => {
+        it('renvoie exactement la liste fermée', async () => {
             const allowedSet = await getAllowedCommands();
             expect(allowedSet).toBeInstanceOf(Set);
-            expect(allowedSet.has('node')).toBe(true);
-            expect(allowedSet.has('gemini')).toBe(true);
-            expect(allowedSet.has('gcloud')).toBe(true);
-            expect(allowedSet.has('google-genai')).toBe(true);
+            expect([...allowedSet].sort()).toEqual([...ALLOWED_COMMANDS].sort());
         });
 
         it('bloque les binaires système dangereux ou non autorisés', async () => {
@@ -55,6 +53,23 @@ describe('externalAgentRunner — service d\'exécution CLI externe', { timeout:
             expect(await isCommandAllowed('format')).toBe(false);
             expect(await isCommandAllowed('shutdown')).toBe(false);
             expect(await isCommandAllowed('powershell.exe')).toBe(false);
+        });
+
+        it('bloque les interpréteurs et outils généralistes (exécution de code arbitraire)', async () => {
+            for (const cmd of ['node', 'node.exe', 'python', 'python3', 'npx', 'curl', 'git', 'gh', 'gcloud', 'google-genai']) {
+                expect(await isCommandAllowed(cmd)).toBe(false);
+            }
+        });
+
+        it('ignore le réglage allowed_cli_commands d\'une base existante', async () => {
+            await db.setSetting('allowed_cli_commands', 'powershell,cmd,node');
+            try {
+                expect(await isCommandAllowed('powershell')).toBe(false);
+                expect(await isCommandAllowed('cmd')).toBe(false);
+                expect(await isCommandAllowed('node')).toBe(false);
+            } finally {
+                await db.setSetting('allowed_cli_commands', '');
+            }
         });
     });
 
@@ -68,11 +83,27 @@ describe('externalAgentRunner — service d\'exécution CLI externe', { timeout:
             expect(result.error).toContain('n\'est pas autorisée par la politique de sécurité');
         });
 
-        it('exécute avec succès une commande Node autorisée et capture stdout', async () => {
+        it('refuse node -e sans dérogation interne', async () => {
+            const result = await executeExternalCli({
+                command: 'node',
+                args: ['-e', 'console.log("SHOULD_NOT_RUN")'],
+                timeout: 5000
+            });
+            expect(result.success).toBe(false);
+            expect(result.stdout).not.toContain('SHOULD_NOT_RUN');
+            expect(result.error).toContain('n\'est pas autorisée par la politique de sécurité');
+        });
+
+        // Les tests suivants éprouvent la mécanique de lancement (stdout, stdin,
+        // métacaractères, délai) avec node, désormais hors liste : ils passent
+        // par la dérogation interne `skipAllowanceCheck`, la même que celle
+        // qu'utilisent la détection des CLI et le mode 'cli' de la console.
+        it('exécute avec succès un processus et capture stdout', async () => {
             const result = await executeExternalCli({
                 command: 'node',
                 args: ['-e', 'console.log("HELLO_WACOPILOTE_CLI")'],
-                timeout: 5000
+                timeout: 5000,
+                skipAllowanceCheck: true
             });
             expect(result.success).toBe(true);
             expect(result.exitCode).toBe(0);
@@ -89,7 +120,8 @@ describe('externalAgentRunner — service d\'exécution CLI externe', { timeout:
                 command: 'node',
                 args: ['-e', script],
                 input: 'DATA_FROM_WACOPILOTE',
-                timeout: 5000
+                timeout: 5000,
+                skipAllowanceCheck: true
             });
             expect(result.success).toBe(true);
             expect(result.stdout).toContain('STDIN_RECV:DATA_FROM_WACOPILOTE');
@@ -99,7 +131,8 @@ describe('externalAgentRunner — service d\'exécution CLI externe', { timeout:
             const result = await executeExternalCli({
                 command: 'npx',
                 args: ['--version', '&&', 'echo', 'SHOULD_NOT_BE_EXECUTED'],
-                timeout: 20000
+                timeout: 20000,
+                skipAllowanceCheck: true
             });
             expect(result.stdout).not.toContain('SHOULD_NOT_BE_EXECUTED');
         }, 25000);
@@ -111,7 +144,8 @@ describe('externalAgentRunner — service d\'exécution CLI externe', { timeout:
             const result = await executeExternalCli({
                 command: 'node',
                 args: ['-e', infiniteScript],
-                timeout: 300 // 300ms
+                timeout: 300, // 300ms
+                skipAllowanceCheck: true
             });
             expect(result.success).toBe(false);
             expect(result.error).toContain('Délai d\'exécution dépassé');

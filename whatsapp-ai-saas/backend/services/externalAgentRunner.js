@@ -3,32 +3,27 @@ const crossSpawn = require('cross-spawn');
 const path = require('path');
 const db = require('../db');
 
-/**
- * Liste blanche par défaut des commandes CLI agentiques et utilitaires autorisées.
- * Empêche l'exécution de binaires système dangereux (format, rm, etc.).
- */
 const fs = require('fs');
 
 /**
- * Liste blanche par défaut des commandes CLI agentiques et utilitaires autorisées.
- * Empêche l'exécution de binaires système dangereux (format, rm, etc.).
+ * Commandes que le backend a le droit de lancer : uniquement des CLI
+ * d'agents conversationnels, dont les arguments sont construits par le code
+ * (canal CLI du routeur de repli).
+ *
+ * La liste est fermée. Elle contenait auparavant des interpréteurs et des
+ * outils généralistes (node, python, npx, curl, git, gh, gcloud) : avec des
+ * arguments fournis par l'appelant, `node -e` ou `python -c` suffisaient à
+ * exécuter du code arbitraire. Elle n'est plus extensible par réglage pour la
+ * même raison — un réglage s'écrit par l'API, donc par quiconque détient le
+ * jeton.
  */
-const DEFAULT_ALLOWED_COMMANDS = [
+const ALLOWED_COMMANDS = Object.freeze([
     'gemini',
     'gemini-cli',
-    'gcloud',
-    'google-genai',
     'claude',
     'aider',
-    'ollama',
-    'node',
-    'python',
-    'python3',
-    'git',
-    'gh',
-    'npx',
-    'curl'
-];
+    'ollama'
+]);
 
 /**
  * Nettoie et valide un nom de commande CLI.
@@ -52,24 +47,15 @@ function sanitizeCommandName(command) {
 }
 
 /**
- * Récupère la liste complète des commandes autorisées (défaut + réglages en base).
+ * Renvoie l'ensemble des commandes autorisées.
+ *
+ * Le réglage `allowed_cli_commands`, s'il subsiste dans une base existante,
+ * est volontairement ignoré (voir ALLOWED_COMMANDS).
  *
  * @returns {Promise<Set<string>>}
  */
 async function getAllowedCommands() {
-    const allowed = new Set(DEFAULT_ALLOWED_COMMANDS.map(c => c.toLowerCase()));
-    try {
-        const customSetting = await db.getSetting('allowed_cli_commands', '');
-        if (customSetting) {
-            const list = customSetting.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
-            for (const item of list) {
-                allowed.add(sanitizeCommandName(item));
-            }
-        }
-    } catch {
-        // En cas d'erreur DB, on conserve la liste par défaut sécurisée
-    }
-    return allowed;
+    return new Set(ALLOWED_COMMANDS);
 }
 
 /**
@@ -483,7 +469,7 @@ async function executeExternalCli({
 }
 
 module.exports = {
-    DEFAULT_ALLOWED_COMMANDS,
+    ALLOWED_COMMANDS,
     sanitizeCommandName,
     getAllowedCommands,
     isCommandAllowed,
