@@ -15,8 +15,9 @@ export default function MyDocuments() {
     const [isLoading, setIsLoading] = useState(true);
 
 
+    // L'indicateur de chargement est levé par l'appelant (vrai au montage,
+    // levé par handleDelete avant de recharger), pas ici.
     const fetchDocuments = useCallback(async () => {
-        setIsLoading(true);
         try {
             const res = await fetch(API_BASE_URL + '/api/documents');
             const data = await res.json();
@@ -34,6 +35,7 @@ export default function MyDocuments() {
     }, [showAppNotification, t]);
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- chargement asynchrone : l'état n'est modifié qu'après un await (faux positif, voir eslint.config.js)
         fetchDocuments();
     }, [fetchDocuments]);
 
@@ -47,6 +49,7 @@ export default function MyDocuments() {
             const data = await res.json();
             if (data.status === 'success') {
                 showAppNotification(t('documentDeletedSuccess'), 'success');
+                setIsLoading(true);
                 fetchDocuments();
             } else {
                 showAppNotification(t('errorDelete'), 'error');

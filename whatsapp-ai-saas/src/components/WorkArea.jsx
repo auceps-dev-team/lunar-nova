@@ -23,7 +23,7 @@ const WorkArea = ({ instances, activeId }) => {
     const [attachments, setAttachments] = useState([]);
     // La discussion a déjà joint la conversation WhatsApp : ses réponses
     // peuvent reprendre du texte du contact (voir utils/copilotRequest.js).
-    const contactTextRef = React.useRef(false);
+    const [contactTextRead, setContactTextRead] = useState(false);
     const chatFileInputRef = React.useRef(null);
     const [copilotWidth, setCopilotWidth] = useState(320);
     const [isResizing, setIsResizing] = useState(false);
@@ -65,56 +65,23 @@ const WorkArea = ({ instances, activeId }) => {
 
     // Zustand Global Actions
     const incrementCopilotReplies = useAppStore(state => state.incrementCopilotReplies);
-    const catalogDraft = useAppStore(state => state.catalogDraft);
-    const clearCatalogDraft = useAppStore(state => state.clearCatalogDraft);
-    const copilotNotification = useAppStore(state => state.copilotNotification);
-    const clearCopilotNotification = useAppStore(state => state.clearCopilotNotification);
 
-    // Listen for incoming Catalog Drafts from the Agent Hub
-    useEffect(() => {
-        if (catalogDraft) {
-            // Send a nicely formatted message to Copilot for copy-pasting
-            setChatHistory(prev => [
-                ...prev,
-                {
-                    id: Date.now().toString(),
-                    role: 'agent',
-                    text: t('catalogDraftReadyMsg'),
-                    proposals: [
-                        `${t('catalogName')} ${catalogDraft.name || ''}`,
-                        catalogDraft.price ? `${t('catalogPrice')} ${catalogDraft.price}` : null,
-                        catalogDraft.code ? `${t('catalogCode')} ${catalogDraft.code}` : null,
-                        `${t('catalogDesc')}${catalogDraft.description || ''}`
-                    ].filter(Boolean)
-                }
-            ]);
-            clearCatalogDraft();
-        }
-    }, [catalogDraft, clearCatalogDraft, t]);
+    // Les brouillons de catalogue (catalogDraft) et les notifications système
+    // (copilotNotification) s'affichaient ici. Plus rien ne les produit depuis
+    // le retrait de la page Agents (v1.51.0) : leurs deux effets sont retirés.
 
-    // Listen for incoming system notifications to display in Copilot
-    useEffect(() => {
-        if (copilotNotification) {
-            setChatHistory(prev => [
-                ...prev,
-                {
-                    id: Date.now().toString(),
-                    role: 'agent',
-                    text: copilotNotification
-                }
-            ]);
-            clearCopilotNotification();
-        }
-    }, [copilotNotification, clearCopilotNotification]);
-
-    // Reset proposals when switching tabs
-    useEffect(() => {
+    // Changement de compte (ou de langue) : la discussion repart de zéro.
+    // Fait pendant le rendu plutôt que dans un effet : React relance aussitôt
+    // le rendu, sans afficher d'abord l'ancienne discussion sous le nouveau compte.
+    const [discussionKey, setDiscussionKey] = useState({ activeId, t });
+    if (discussionKey.activeId !== activeId || discussionKey.t !== t) {
+        setDiscussionKey({ activeId, t });
         setCopilotProposals([]);
         setChatHistory([
             { role: 'agent', text: t('copilotWelcomeMsg') }
         ]);
-        contactTextRef.current = false;
-    }, [activeId, t]);
+        setContactTextRead(false);
+    }
 
     const handleCopy = (text, index) => {
         navigator.clipboard.writeText(text);
@@ -222,11 +189,11 @@ const WorkArea = ({ instances, activeId }) => {
                 chatHistory,
                 whatsappContext: ctxDataContext,
                 attachments,
-                contactTextEarlier: contactTextRef.current,
+                contactTextEarlier: contactTextRead,
                 provider: appSettings.provider,
                 model: appSettings.model
             });
-            if (body.untrustedInput) contactTextRef.current = true;
+            if (body.untrustedInput) setContactTextRead(true);
 
             const res = await fetch(API_BASE_URL + '/api/ai/agent', {
                 method: 'POST',

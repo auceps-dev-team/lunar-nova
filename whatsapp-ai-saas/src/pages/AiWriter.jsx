@@ -120,29 +120,6 @@ export default function AiWriter() {
         };
     }, [showRewriteMenu]);
 
-    useEffect(() => {
-        // Parse docId from URL
-        const params = new URLSearchParams(location.search);
-        const docId = params.get('docId');
-
-        if (docId) {
-            setDocumentId(docId);
-            fetchDocument(docId);
-        }
-
-        const fetchCustomAgents = async () => {
-            try {
-                const res = await fetch(API_BASE_URL + '/api/agents');
-                const data = await res.json();
-                const custom = (data.data || []).map(a => ({ ...a, isSystem: false }));
-                setAllAgents([...SYSTEM_AGENTS, ...custom]);
-            } catch {
-                setAllAgents(SYSTEM_AGENTS);
-            }
-        };
-        fetchCustomAgents();
-    }, [location]);
-
     const fetchDocument = async (id) => {
         try {
             const res = await fetch(`${API_BASE_URL}/api/documents/${id}`);
@@ -163,6 +140,35 @@ export default function AiWriter() {
             console.error("Erreur chargement document", err);
         }
     };
+
+    // Document ouvert par l'URL (?docId=) : son identifiant est posé pendant le
+    // rendu, et non dans l'effet ci-dessous, qui ne fait que les chargements.
+    const urlDocId = new URLSearchParams(location.search).get('docId');
+    const [docIdFromUrl, setDocIdFromUrl] = useState(null);
+    if (urlDocId && urlDocId !== docIdFromUrl) {
+        setDocIdFromUrl(urlDocId);
+        setDocumentId(urlDocId);
+    }
+
+    useEffect(() => {
+        const docId = new URLSearchParams(location.search).get('docId');
+        if (docId) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- chargement asynchrone : fetchDocument ne modifie l'état qu'après un await (faux positif, voir eslint.config.js)
+            fetchDocument(docId);
+        }
+
+        const fetchCustomAgents = async () => {
+            try {
+                const res = await fetch(API_BASE_URL + '/api/agents');
+                const data = await res.json();
+                const custom = (data.data || []).map(a => ({ ...a, isSystem: false }));
+                setAllAgents([...SYSTEM_AGENTS, ...custom]);
+            } catch {
+                setAllAgents(SYSTEM_AGENTS);
+            }
+        };
+        fetchCustomAgents();
+    }, [location]);
 
     const handleFormat = (command, value = null) => {
         document.execCommand(command, false, value);

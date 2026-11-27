@@ -12,6 +12,14 @@ export default defineConfig([
   globalIgnores(['dist', 'dist-electron', 'node_modules', 'backend/node_modules', 'coverage']),
 
   // --- Renderer React (navigateur) ---
+  // react-hooks/set-state-in-effect (eslint-plugin-react-hooks 7.1) : mesuré
+  // le 27/11/2026 sur des composants de sonde, la règle signale tout appel,
+  // depuis un effet, à une fonction locale qui modifie l'état, même quand
+  // chaque setState de cette fonction suit un await (chargeur async ordinaire).
+  // Elle accepte le même code écrit dans l'effet (fonction async interne ou
+  // .then(setX)). Les vrais setState synchrones ont été corrigés ; les appels
+  // de chargeurs dont tout setState suit un await portent une exception
+  // ciblée qui renvoie ici.
   {
     files: ['src/**/*.{js,jsx}'],
     extends: [

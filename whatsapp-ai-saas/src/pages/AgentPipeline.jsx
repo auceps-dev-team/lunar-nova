@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Search, Loader2, Users, Sparkles, LayoutGrid, ArrowRight, CheckCircle2, AlertTriangle } from 'lucide-react';
 import useAppStore from '../store';
@@ -50,9 +50,13 @@ export default function AgentPipeline({ activeId }) {
         }
     }, []);
 
-    useEffect(() => {
-        if (activeView === 'kanban') fetchCards();
-    }, [activeView, fetchCards]);
+    // Les cartes sont chargées à l'ouverture du Kanban, par l'action qui
+    // l'ouvre (onglet, fin de l'étape « Organiser ») et non par un effet.
+    const openKanban = () => {
+        if (activeView === 'kanban') return;
+        setActiveView('kanban');
+        fetchCards();
+    };
 
     const resetWizard = () => {
         setWizardStage(STAGES.PROSPECT);
@@ -189,7 +193,7 @@ export default function AgentPipeline({ activeId }) {
             }
             showAppNotification(t('pipelineImportSummary', { count: data.cards.length }) || `${data.cards.length} cartes créées`, 'success');
             resetWizard();
-            setActiveView('kanban');
+            openKanban();
         } catch (err) {
             console.error('[AgentPipeline] organize error', err);
             showAppNotification(t('pipelineErrorOrganize'), 'error');
@@ -274,7 +278,7 @@ export default function AgentPipeline({ activeId }) {
                         {t('pipelineWizardTab')}
                     </button>
                     <button
-                        onClick={() => setActiveView('kanban')}
+                        onClick={openKanban}
                         className={`px-4 py-1.5 text-sm font-medium rounded-md transition flex items-center gap-1.5 ${activeView === 'kanban' ? 'bg-white dark:bg-zinc-700 text-emerald-600 shadow-sm' : 'text-gray-500'}`}
                     >
                         <LayoutGrid className="h-3.5 w-3.5" /> {t('pipelineKanbanTab')}
