@@ -75,6 +75,15 @@ app.use(requireApiToken);
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
+// Express 5 ne pose plus `req.body = {}` quand aucun analyseur ne l'a rempli
+// (requête sans corps, ou d'un autre type). Les routes déstructurent req.body
+// sans garde : mesuré le 27/11/2026, POST /api/wa/open-chat sans corps rendait
+// 500 au lieu du 400 de validation. Le comportement d'Express 4 est rétabli ici,
+// une fois pour toutes (test : expressCorpsAbsent.test.js).
+app.use((req, res, next) => {
+    if (req.body === undefined) req.body = {};
+    next();
+});
 
 // Plafond global. Le service n'écoute que sur la boucle locale et exige un
 // token : il ne s'agit donc pas de se protéger d'un tiers, mais d'empêcher

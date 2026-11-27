@@ -1,7 +1,7 @@
 {
   "name": "wacopilote",
   "private": true,
-  "version": "1.52.0",
+  "version": "1.52.1",
   "license": "AGPL-3.0-only",
   "main": "electron/main.cjs",
   "type": "module",
@@ -38,7 +38,7 @@
     "i18next-resources-to-backend": "^1.2.1",
     "idb-keyval": "^6.2.2",
     "jwt-decode": "^4.0.0",
-    "lucide-react": "^0.577.0",
+    "lucide-react": "^1.76.0",
     "papaparse": "^5.5.3",
     "piexifjs": "^1.0.6",
     "react": "^19.2.0",

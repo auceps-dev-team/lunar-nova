@@ -5,6 +5,22 @@ const { GoogleGenAI } = require('@google/genai');
 const db = require('./db');
 const { parseLlmJson } = require('./llmJson');
 
+/**
+ * Client du SDK, version d'API fixée à `v1beta`.
+ *
+ * @google/genai 3 appelle par défaut `v1` (1.x appelait `v1beta`). Lu dans les
+ * notes de la 3.0.0, non vérifié par un appel réel
+ * (https://github.com/googleapis/js-genai/releases/tag/v3.0.0) : les alias
+ * `gemini-*-latest`, certains modèles `-preview` et la mise en cache de
+ * contexte n'existent pas en `v1`. Or la liste de modèles offerte à
+ * l'utilisateur vient de `v1beta/models` (syncGeminiModels) : sans ce réglage,
+ * un modèle de cette liste pouvait ne plus exister là où le SDK l'appelle.
+ * Test : geminiApiVersion.test.js.
+ */
+function creerClientGemini(apiKey) {
+    return new GoogleGenAI({ apiKey, apiVersion: 'v1beta' });
+}
+
 // Helper function to get Gemini Client dynamically to support runtime API key updates
 async function getGeminiClient(modality = 'none', requestedModel = '') {
     // modality: 'text' or 'none'. Le mode 'image' (et son quota de 40 images
@@ -31,7 +47,7 @@ async function getGeminiClient(modality = 'none', requestedModel = '') {
     }
 
     return {
-        client: new GoogleGenAI({ apiKey: key }),
+        client: creerClientGemini(key),
         isDefaultKey: isDefaultKey
     };
 }
@@ -363,6 +379,7 @@ async function transcribeAudio(audio, mimeType, options = {}) {
 }
 
 module.exports = {
+    creerClientGemini,
     generateProposals,
     chatWithAgent,
     listModels,
