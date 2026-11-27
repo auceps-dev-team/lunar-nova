@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
-const puppeteer = require('puppeteer-core');
 const { isValidPhoneFormat } = require('../services/contactAgent');
 const waInstancesService = require('../services/waInstancesService');
-const { getSelectorRegistry, inPageSelectors } = require('../wa/waSelectors');
+const { getSelectorRegistry } = require('../wa/waSelectors');
+const { getWaDriver } = require('../wa/waDriver');
 
 // Mutex global pour sécuriser l'accès concurrentiel à l'instance WhatsApp
 
@@ -494,38 +494,14 @@ router.post('/verify-contact', async (req, res) => {
     const startTime = Date.now();
     const logTime = (msg) => console.error(`[Verifier] [${((Date.now() - startTime) / 1000).toFixed(1)}s] ${msg}`);
 
-    let browser;
     try {
         logTime(`Waiting for Mutex...`);
         await acquireWaMutex();
-        logTime(`Mutex acquired. Connecting to CDP...`);
-        const cdpUrl = `http://localhost:8315`;
-        browser = await puppeteer.connect({
-            browserURL: cdpUrl,
-            defaultViewport: null
-        });
-
-        const targets = await browser.targets();
-        let targetPage = null;
-
-        for (const target of targets) {
-            if (target.type() === 'webview' && target.url().includes('whatsapp')) {
-                const p = await target.page();
-                if (p) {
-                    try {
-                        const id = await p.evaluate(() => window.__whatsapp_instance_id);
-                        if (id === instance_id) {
-                            targetPage = p;
-                            break;
-                        }
-                    } catch { }
-                    if (!targetPage) targetPage = p;
-                }
-            }
-        }
+        logTime(`Mutex acquired. Recherche de la page par le pilote WhatsApp...`);
+        // Pilote WhatsApp (canal privé en production, wa/waDriver.js) — plus le port 8315.
+        const [targetPage] = await getWaDriver().findPages(instance_id);
 
         if (!targetPage) {
-            browser.disconnect();
             logTime(`Not Found: Could not find WhatsApp Web tab.`);
             return res.status(404).json({ error: `Not Found: Could not find WhatsApp Web tab for instance_id: ${instance_id}` });
         }
@@ -553,7 +529,7 @@ router.post('/verify-contact', async (req, res) => {
 
         try {
             logTime(`Starting targetPage.goto...`);
-            await targetPage.goto(verifyUrl, { waitUntil: 'domcontentloaded', timeout: 10000 });
+            await targetPage.goto(verifyUrl, { timeout: 10000 });
             logTime(`targetPage.goto OK.`);
         } catch (gotoErr) {
             logTime(`Navigation lente ou erreur goto (${gotoErr.message}), mais on continue...`);
@@ -567,10 +543,9 @@ router.post('/verify-contact', async (req, res) => {
         while (Date.now() < deadline) {
             await new Promise(r => setTimeout(r, 600));
             try {
-                // Sélecteurs du registre, préparés à chaque tour : la navigation
-                // vers /send/ détruit le contexte de la page, et la poignée avec.
-                const sel = await targetPage.evaluateHandle(inPageSelectors, getSelectorRegistry().forPage());
-                const state = await targetPage.evaluate((sel) => {
+                // Sélecteurs du registre, préparés dans la page à chaque tour :
+                // la navigation vers /send/ détruit le contexte de la page.
+                const state = await targetPage.evaluateWithSelectors((sel) => {
                     // Valid chat: conversation panel visible
                     if (document.querySelector(sel.S.conversationOpen)) {
                         return 'VALIDE';
@@ -590,8 +565,7 @@ router.post('/verify-contact', async (req, res) => {
                         }
                     }
                     return 'PENDING';
-                }, sel);
-                await sel.dispose().catch(() => {});
+                }, getSelectorRegistry().forPage());
                 if (state === 'VALIDE' || state === 'INVALIDE') {
                     result = state;
                     break;
@@ -622,8 +596,7 @@ router.post('/verify-contact', async (req, res) => {
         logTime(`Erreur globale: ${error.message}`);
         res.status(500).json({ error: 'System error during WhatsApp validation.', details: error.message });
     } finally {
-        logTime(`Cleaning up (browser disconnect, mutex release)...`);
-        if (browser) browser.disconnect();
+        logTime(`Cleaning up (mutex release)...`);
         releaseWaMutex();
         logTime(`Done.`);
     }

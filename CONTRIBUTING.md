@@ -201,12 +201,20 @@ seulement retirer l'ancienne.
 **N'ouvrez pas d'issue publique pour une faille.** La procédure est décrite dans
 [SECURITY.md](SECURITY.md).
 
-Deux points de vigilance propres à ce projet, à garder en tête en contribuant :
+Points de vigilance propres à ce projet, à garder en tête en contribuant :
 
 - **N'augmentez pas la surface d'automatisation de WhatsApp Web sans y réfléchir.**
   Faire saisir du texte par l'automatisation dans les champs de WhatsApp est
   précisément ce qui déclenche les restrictions de compte. Les délais « humains »
   disséminés dans le code ne sont pas décoratifs.
+- **Le port de débogage Chromium ne s'ouvre jamais en production.** Depuis la
+  v1.52.0, le backend pilote WhatsApp Web par le canal privé du processus
+  principal (`electron/waDriverHost.cjs` ↔ `backend/wa/waDriver.js`) ; tout
+  accès aux webviews passe par ce pilote, qui ne connaît que WhatsApp Web et n'y
+  navigue que vers `web.whatsapp.com`. Le port 8315 ne s'ouvre qu'en
+  développement (`npm run electron:dev`, backend lancé à part). Les sondes de
+  test qui en ont besoin lancent l'application avec `--remote-debugging-port`
+  et un profil jetable (`--user-data-dir`) — jamais sur de vraies sessions.
 - **Les données de prospection sont des données personnelles.** Ne commitez
   jamais de dump de page scrapée, même à titre de fixture, sans l'avoir vidé de
   toute coordonnée réelle.

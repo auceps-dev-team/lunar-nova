@@ -1,6 +1,9 @@
 # Project Progress: WaCopilote
 
 ## Completed Milestones
+- [x] **Port de débogage fermé — S2 (v1.52.0, 2026-11-27)** :
+  - WhatsApp Web piloté par le canal privé du processus principal ; plus aucun port réseau de débogage en production. CLI et MCP passent par l'API de l'application.
+  - Restant : valider sur une session WhatsApp connectée (écoute des commandes, vocaux, vérification de numéro) — les sondes n'ont accès qu'à la page de QR code ; Marketplace des fonctionnalités activables (à concevoir).
 - [x] **Carte de la prospection sans clé (v1.51.2, 2026-11-27)** :
   - Google Maps affiché dans une webview isolée, autorisée par une règle étroite du filtre des webviews ; plus aucune clé Google Maps lue ni stockée (migration v12).
   - Restant : comprendre le cadre blanc vu une fois par l'utilisateur (non reproduit ; la garde de 15 s le signalera désormais).

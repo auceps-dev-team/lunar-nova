@@ -3,9 +3,10 @@ const path = require('path');
 const { fileURLToPath } = require('url');
 const fs = require('fs');
 const crypto = require('crypto');
-const { utilityProcess } = require('electron');
+const { utilityProcess, webContents } = require('electron');
 const setupUpdater = require('./updater.cjs');
 const { webviewKind } = require('./webviewPolicy.cjs');
+const { createWaDriverHost } = require('./waDriverHost.cjs');
 
 let store;
 
@@ -83,8 +84,27 @@ if (isDev) {
     process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true';
 }
 
-// Enable Remote Debugging for Playwright Orchestrator (CDP)
-app.commandLine.appendSwitch('remote-debugging-port', '8315');
+// Port de débogage Chromium : DÉVELOPPEMENT SEULEMENT (S2, v1.52.0).
+// Jusqu'à la v1.51.2, il était ouvert en permanence (8315) : le backend
+// pilotait WhatsApp Web par lui, et tout programme de la machine — tout autre
+// compte Windows compris — pouvait s'y connecter et agir dans les sessions.
+// En production, le pilotage passe par le canal privé du backend
+// (waDriverHost.cjs ↔ backend/wa/waDriver.js). En développement, le backend
+// est lancé à part (`npm run start:backend`), sans ce canal : il se replie
+// sur ce port. NB : Chromium accepte aussi --remote-debugging-port en ligne de
+// commande ; c'est ce que font les sondes de test, jamais un lancement normal.
+if (isDev) {
+    app.commandLine.appendSwitch('remote-debugging-port', '8315');
+}
+
+// Pilote des webviews WhatsApp pour le backend (production : canal privé).
+let backendProcess = null;
+const waDriverHost = createWaDriverHost({
+    allWebContents: () => webContents.getAllWebContents(),
+    emit: (ev) => {
+        try { if (backendProcess) backendProcess.postMessage({ type: 'wa-driver-event', ...ev }); } catch { /* backend en redémarrage */ }
+    },
+});
 
 let mainWindow;
 
@@ -224,8 +244,6 @@ function createWindow() {
     }
 }
 
-let backendProcess = null;
-
 app.whenReady().then(async () => {
     // Initialisation de electron-store (ESM require)
     try {
@@ -291,6 +309,15 @@ app.whenReady().then(async () => {
                         ...(masterKey ? { WACOPILOTE_MASTER_KEY: masterKey } : {})
                     },
                     stdio: 'pipe'
+                });
+
+                // Requêtes du pilote WhatsApp : la réponse repart vers le
+                // processus qui a demandé, même si un redémarrage a eu lieu entre-temps.
+                const processusDemandeur = backendProcess;
+                processusDemandeur.on('message', async (msg) => {
+                    if (!msg || msg.type !== 'wa-driver-req') return;
+                    const reponse = await waDriverHost.handle(msg);
+                    try { processusDemandeur.postMessage(reponse); } catch { /* backend arrêté */ }
                 });
 
                 if (backendProcess.stdout) {

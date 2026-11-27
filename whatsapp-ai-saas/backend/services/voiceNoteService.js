@@ -41,10 +41,8 @@
  * CONFIDENTIALITÉ — aucun octet audio ni aucune transcription n'est journalisé.
  */
 
-const puppeteer = require('puppeteer-core');
-const { getSelectorRegistry, inPageSelectors } = require('../wa/waSelectors');
-
-const CDP_URL = process.env.WACOPILOTE_CDP_URL || 'http://localhost:8315';
+const { getSelectorRegistry } = require('../wa/waSelectors');
+const { getWaDriver } = require('../wa/waDriver');
 
 /** Au-delà, on renonce : un « vocal » de cette taille n'en est pas un. */
 const MAX_VOICE_BYTES = 16 * 1024 * 1024;
@@ -58,9 +56,10 @@ const DOWNLOAD_TIMEOUT_MS = 15000;
  * vide ambiguë.
  */
 /* eslint-disable no-undef */
-// `sel` : sélecteurs préparés dans la page par inPageSelectors (wa/waSelectors.js).
+// `sel` : sélecteurs préparés dans la page par inPageSelectors (wa/waSelectors.js),
+// passés en premier par evaluateWithSelectors (wa/waDriver.js).
 // Le préfixe `conv-msg-` reste écrit ici : il est lu, pas seulement cherché.
-async function extractInPage(messageId, timeoutMs, sel) {
+async function extractInPage(sel, messageId, timeoutMs) {
     const rows = Array.from(document.querySelectorAll(sel.S.messageRow))
         .filter((r) => r.querySelector(sel.S.voiceStatus));
 
@@ -133,25 +132,6 @@ async function extractInPage(messageId, timeoutMs, sel) {
 }
 /* eslint-enable no-undef */
 
-/** Retrouve la page de l'instance, comme waInstancesService.openChat. */
-async function resolvePage(browser, instanceId) {
-    const targets = await browser.targets();
-    let fallback = null;
-    for (const target of targets) {
-        if (target.type() !== 'webview' || !target.url().includes('whatsapp')) continue;
-        const p = await target.page();
-        if (!p) continue;
-        if (!instanceId) return p;
-        try {
-            // eslint-disable-next-line no-undef
-            const id = await p.evaluate(() => window.__whatsapp_instance_id);
-            if (id === instanceId) return p;
-        } catch { /* frame détachée */ }
-        if (!fallback) fallback = p;
-    }
-    return fallback;
-}
-
 const RAISONS = {
     AUCUN_VOCAL_VISIBLE: "Aucune note vocale n'est affichée dans la conversation ouverte.",
     VOCAL_INTROUVABLE: "La note vocale demandée n'est pas affichée à l'écran.",
@@ -165,19 +145,13 @@ const RAISONS = {
  * Extrait un vocal depuis une page déjà connue — le cas de l'observateur de
  * commandes, qui détient la page et n'a pas à rouvrir une connexion CDP.
  *
- * @param {import('puppeteer-core').Page} page
+ * @param {import('../wa/waDriver').DriverPage} page page pilotée (wa/waDriver.js)
  * @param {string} [messageId] à défaut, le vocal le plus récent affiché
  * @returns {Promise<{ audio: Buffer, mimeType: string, bytes: number, durationSec: number|null, messageId: string|null }>}
  * @throws  avec un message explicite (propriétés `statusCode` et `reason`)
  */
 async function extractVoiceNoteFromPage(page, messageId) {
-    const sel = await page.evaluateHandle(inPageSelectors, getSelectorRegistry().forPage());
-    let res;
-    try {
-        res = await page.evaluate(extractInPage, messageId || null, DOWNLOAD_TIMEOUT_MS, sel);
-    } finally {
-        await sel.dispose().catch(() => {});
-    }
+    const res = await page.evaluateWithSelectors(extractInPage, getSelectorRegistry().forPage(), messageId || null, DOWNLOAD_TIMEOUT_MS);
 
     if (!res.ok) {
         const cle = String(res.raison || '').split(':')[0];
@@ -212,27 +186,20 @@ async function extractVoiceNoteFromPage(page, messageId) {
  * @throws  avec un message explicite — jamais de retour vide ambigu
  */
 async function extractVoiceNote({ instanceId, messageId } = {}) {
-    let browser;
+    let pages;
     try {
-        browser = await puppeteer.connect({ browserURL: CDP_URL, defaultViewport: null });
+        pages = await getWaDriver().findPages(instanceId);
     } catch (err) {
-        const e = new Error(`Navigateur WhatsApp injoignable sur ${CDP_URL} : ${err.message}`);
+        const e = new Error(`Pilote WhatsApp indisponible : ${err.message}`);
         e.statusCode = 503;
         throw e;
     }
-
-    try {
-        const page = await resolvePage(browser, instanceId);
-        if (!page) {
-            const e = new Error('Aucune instance WhatsApp connectée.');
-            e.statusCode = 404;
-            throw e;
-        }
-
-        return await extractVoiceNoteFromPage(page, messageId);
-    } finally {
-        browser.disconnect();
+    if (!pages.length) {
+        const e = new Error('Aucune instance WhatsApp connectée.');
+        e.statusCode = 404;
+        throw e;
     }
+    return extractVoiceNoteFromPage(pages[0], messageId);
 }
 
 module.exports = { extractVoiceNote, extractVoiceNoteFromPage, MAX_VOICE_BYTES, DOWNLOAD_TIMEOUT_MS };
