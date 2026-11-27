@@ -1,0 +1,37 @@
+# Veille des dépendances.
+# Le 26/11/2026, npm audit remontait 39 alertes (racine 24, backend 15) contre
+# 0 deux mois plus tôt, sans que personne ne le voie. Dependabot ouvre une PR par
+# semaine et par espace, en regroupant les montées mineures et correctives pour
+# limiter le bruit ; les montées majeures restent une PR par paquet.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /whatsapp-ai-saas
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore(deps)
+    groups:
+      application-mineures:
+        update-types: [minor, patch]
+
+  - package-ecosystem: npm
+    directory: /whatsapp-ai-saas/backend
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore(deps-backend)
+    groups:
+      backend-mineures:
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: chore(ci)

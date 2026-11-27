@@ -1,4 +1,4 @@
-// S4 (docs/audit.md) : un binaire lancé par le backend ne reçoit que les
+// Un binaire lancé par le backend ne reçoit que les
 // variables d'une liste fermée, plus celles que l'appelant passe
 // explicitement — jamais tout process.env, qui contient en production la clé
 // maître des secrets.
