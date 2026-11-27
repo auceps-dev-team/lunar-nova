@@ -4,6 +4,7 @@
 // maître des secrets.
 import { describe, it, expect, afterEach } from 'vitest';
 import { buildChildEnv, pickProcessEnv, executeExternalCli } from '../services/externalAgentRunner';
+import { buildWhisperEnv } from '../services/transcriptionService';
 
 const FAKE_MASTER_KEY = 'a'.repeat(64);
 const touched = new Map();
@@ -62,6 +63,32 @@ describe('buildChildEnv — environnement des processus lancés', () => {
         expect(pickProcessEnv(['USER_DATA_PATH', 'VARIABLE_ABSENTE_XYZ'])).toEqual({
             USER_DATA_PATH: '/tmp/wacopilote-test'
         });
+    });
+});
+
+describe('buildWhisperEnv — environnement de la transcription locale (Python)', () => {
+    it('transmet les variables Python et Whisper, jamais la clé maître ni les clés d\'API', () => {
+        setEnv('WACOPILOTE_MASTER_KEY', FAKE_MASTER_KEY);
+        setEnv('GEMINI_API_KEY', 'AIza-secret');
+        setEnv('VIRTUAL_ENV', '/opt/whisper-venv');
+        setEnv('HF_HOME', '/opt/hf-cache');
+        setEnv('WHISPER_DEVICE', 'cpu');
+
+        const env = buildWhisperEnv('small', 'FR');
+
+        expect(env.WHISPER_MODEL).toBe('small');
+        expect(env.WHISPER_LANGUAGE).toBe('fr');
+        expect(env.VIRTUAL_ENV).toBe('/opt/whisper-venv');
+        expect(env.HF_HOME).toBe('/opt/hf-cache');
+        expect(env.WHISPER_DEVICE).toBe('cpu');
+        expect(hasKey(env, 'PATH')).toBe(true);
+        expect(env.WACOPILOTE_MASTER_KEY).toBeUndefined();
+        expect(env.GEMINI_API_KEY).toBeUndefined();
+    });
+
+    it('retombe sur la détection automatique pour une langue mal formée', () => {
+        expect(buildWhisperEnv('small', 'français').WHISPER_LANGUAGE).toBe('auto');
+        expect(buildWhisperEnv('small', undefined).WHISPER_LANGUAGE).toBe('auto');
     });
 });
 

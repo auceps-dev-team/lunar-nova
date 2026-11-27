@@ -365,7 +365,16 @@ const COMMAND_ENV_KEYS = {
     gemini: GEMINI_ENV_KEYS,
     'gemini-cli': GEMINI_ENV_KEYS,
     ollama: ['OLLAMA_HOST', 'OLLAMA_MODELS'],
-    aider: ['OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'GEMINI_API_KEY', 'OPENROUTER_API_KEY']
+    aider: ['OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'GEMINI_API_KEY', 'OPENROUTER_API_KEY'],
+    // Transcription locale des vocaux (transcriptionService, faster-whisper) :
+    // environnement virtuel, cache des modèles Hugging Face, réglages lus par
+    // whisperTranscribe.py. Python n'est pas dans ALLOWED_COMMANDS : cette
+    // entrée ne sert qu'à construire son environnement.
+    python: [
+        'PYTHONPATH', 'PYTHONHOME', 'PYTHONIOENCODING', 'PYTHONUTF8', 'VIRTUAL_ENV', 'CONDA_PREFIX',
+        'HF_HOME', 'HF_HUB_CACHE', 'HUGGINGFACE_HUB_CACHE', 'HF_HUB_OFFLINE', 'HF_ENDPOINT', 'HF_TOKEN',
+        'WHISPER_DEVICE', 'WHISPER_COMPUTE', 'CUDA_VISIBLE_DEVICES', 'OMP_NUM_THREADS'
+    ]
 };
 
 /**
