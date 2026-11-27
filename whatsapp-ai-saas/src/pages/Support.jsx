@@ -48,6 +48,15 @@ const Support = () => {
 
     const changelog = [
         {
+            version: 'v1.52.1',
+            date: '2026-11-27',
+            changes: [
+                'Ligne de commande — Une commande qui interroge un service en ligne (assistants IA, entre autres) ne plante plus en se terminant sous Windows : elle rend son vrai code de sortie',
+                'Gemini — L\'application continue d\'appeler la même version de l\'API Gemini qu\'avant, celle d\'où vient la liste des modèles proposés : un modèle de cette liste reste utilisable',
+                'Maintenance — Mise à jour des bibliothèques du service local (Express 5, OpenAI, Google GenAI, jsdom, limiteur de débit, Ollama) et des icônes. Une requête sans contenu reçoit, comme avant, un refus clair plutôt qu\'une erreur interne'
+            ]
+        },
+        {
             version: 'v1.52.0',
             date: '2026-11-27',
             changes: [

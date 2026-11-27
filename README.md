@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/auceps-dev-team/lunar-nova"><img src="https://img.shields.io/badge/version-1.52.0-blue.svg" alt="Version 1.52.0" /></a>
+  <a href="https://github.com/auceps-dev-team/lunar-nova"><img src="https://img.shields.io/badge/version-1.52.1-blue.svg" alt="Version 1.52.1" /></a>
   <a href="whatsapp-ai-saas/LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue.svg" alt="License AGPL-3.0" /></a>
   <a href="#-open-source"><img src="https://img.shields.io/badge/open%20source-oui-brightgreen.svg" alt="Open Source" /></a>
   <a href="#-pourquoi-wacopilote-"><img src="https://img.shields.io/badge/Made%20in-%F0%9F%87%A8%F0%9F%87%BE%20C%C3%B4te%20d'Ivoire-orange.svg" alt="Made in Côte d'Ivoire" /></a>
@@ -317,7 +317,7 @@ La configuration ESLint distingue désormais les trois environnements du dépôt
 | **Application Desktop** | Electron 45, Electron Builder 26 |
 | **Frontend Framework** | React 19, Vite 7, React Router 7, Zustand 5 |
 | **Styling & UI** | Tailwind CSS 3, Lucide React, Recharts, dnd-kit |
-| **Serveur Backend** | Node.js 22, Express.js 4 |
+| **Serveur Backend** | Node.js 22, Express.js 5 |
 | **Base de Données & Cache** | SQLite 3 (`sqlite3` / `sqlite`), Redis 5 (`redis`) |
 | **Automation Web** | Playwright, Puppeteer Core |
 | **Moteurs d'IA (LLMs)** | `@google/genai`, NVIDIA NIM API, OpenRouter API, Ollama SDK |

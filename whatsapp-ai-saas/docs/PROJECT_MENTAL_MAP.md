@@ -22,7 +22,7 @@ mindmap
         i18n Multi-langues (FR, EN, ES, AR)
         Tailwind CSS 3 & Lucide Icons
     Backend & Orchestration
-      Express 4 Server 127.0.0.1:3000
+      Express 5 Server 127.0.0.1:3000
         API Bearer Token Auth
         Rate Limiters Global & Heavy
         Multi-Provider AI Gateway

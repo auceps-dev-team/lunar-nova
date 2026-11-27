@@ -98,4 +98,34 @@ function printJsonOrError(isJson, payload) {
     }
 }
 
-module.exports = { readStdin, parseNamedArgs, readJsonArrayInput, printJsonOrError };
+const DELAI_SORTIE_FORCEE_MS = 2000;
+
+/**
+ * Fin d'une commande (hors 'mcp', serveur stdio persistant) : sortie
+ * NATURELLE, process.exit() seulement en dernier recours.
+ *
+ * Un process.exit() immédiat après un fetch faisait planter le CLI sous
+ * Windows : « Assertion failed: !(handle->flags & UV_HANDLE_CLOSING), file
+ * src\win\async.c, line 94 », code 3221226505. Mesuré le 27/11/2026 (Node
+ * 24.16.0), fetch vers le backend lancé seul puis sortie : 8 plantages sur 8
+ * avec process.exit, 8 sorties propres sur 8 en sortie naturelle. Cause
+ * probable, non démontrée : une tâche de V8 en arrière-plan achevée pendant la
+ * destruction de l'environnement — la sortie naturelle attend ces tâches,
+ * process.exit() non. Les commandes d'IA passent par fetch (SDK compris).
+ *
+ * Le drain de stdout reste garanti : une sortie naturelle attend la fin des
+ * écritures, et la sortie forcée n'est armée qu'après le drain (écrire une
+ * chaîne vide ordonne le vidage de tous les écrits précédents). Sans ce drain,
+ * `list-agents --json` (≈ 158 Ko) arrivait tronqué chez les consommateurs
+ * programmatiques. La sortie forcée ne sert que si un module garde la boucle
+ * d'événements ouverte ; elle reste différée pour laisser finir ces tâches.
+ */
+function terminerCommande(code) {
+    process.exitCode = code;
+    process.stdout.once('error', () => process.exit(code)); // EPIPE : lecteur parti, quitter sans trace
+    process.stdout.write('', () => {
+        setTimeout(() => process.exit(code), DELAI_SORTIE_FORCEE_MS).unref();
+    });
+}
+
+module.exports = { readStdin, parseNamedArgs, readJsonArrayInput, printJsonOrError, terminerCommande, DELAI_SORTIE_FORCEE_MS };

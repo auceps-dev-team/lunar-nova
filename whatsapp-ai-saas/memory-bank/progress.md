@@ -1,6 +1,9 @@
 # Project Progress: WaCopilote
 
 ## Completed Milestones
+- [x] **Sortie du CLI et dépendances (v1.52.1, 2026-11-27)** :
+  - Le CLI ne plante plus en sortant après un fetch sous Windows ; Express 5, OpenAI 7, Google GenAI 3 (API v1beta conservée), jsdom 31, lucide 1.x.
+  - Restant : fournir le navigateur de Playwright (factures PDF, extracteurs) avant de passer au-delà de 1.58 ; eslint 10 après la PR #22 ; i18next 27 avec react-i18next 18.
 - [x] **Port de débogage fermé — S2 (v1.52.0, 2026-11-27)** :
   - WhatsApp Web piloté par le canal privé du processus principal ; plus aucun port réseau de débogage en production. CLI et MCP passent par l'API de l'application.
   - Restant : valider sur une session WhatsApp connectée (écoute des commandes, vocaux, vérification de numéro) — les sondes n'ont accès qu'à la page de QR code ; Marketplace des fonctionnalités activables (à concevoir).

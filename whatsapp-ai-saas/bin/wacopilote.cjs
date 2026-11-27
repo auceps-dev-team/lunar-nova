@@ -17,6 +17,7 @@ if (fs.existsSync(backendEnvPath)) {
 dotenv.config({ quiet: true });
 
 const pkg = require('../package.json');
+const { terminerCommande } = require('./lib/helpers.cjs');
 
 
 // Commandes (constat R10 de l’audit du 29/09/2026). Chargées ici, après
@@ -174,20 +175,10 @@ async function main() {
     process.exit(1);
 }
 
+// Sortie naturelle, stdout vidé : voir terminerCommande (lib/helpers.cjs).
 main().then(() => {
-    // Si la commande n'est pas 'mcp' (serveur stdio persistant), sortir
-    // proprement — mais seulement APRÈS le vidage effectif de stdout.
-    // Un process.exit() immédiat coupe le tampon du pipe avant que Node
-    // n'ait flushé les écritures volumineuses : `list-agents --json`
-    // (≈ 158 Ko) arrivait ainsi tronqué, de façon non déterministe, chez
-    // les consommateurs programmatiques (scripts, IDE agentiques, tests).
-    // L'écriture d'une chaîne vide ordonne le drain de tous les écrits
-    // précédents (FIFO) ; le callback ne part qu'une fois tout vidé.
-    if (process.argv[2] !== 'mcp') {
-        process.stdout.once('error', () => process.exit(0)); // EPIPE : lecteur parti, quitter sans trace
-        process.stdout.write('', () => process.exit(0));
-    }
+    if (process.argv[2] !== 'mcp') terminerCommande(0);
 }).catch((err) => {
     console.error(`\x1b[31mErreur inattendue : ${err.message}\x1b[0m`);
-    process.exit(1);
+    terminerCommande(1);
 });
