@@ -97,3 +97,44 @@ test("le backend forké répond sur l'API locale (127.0.0.1)", async () => {
         .toBe(200);
     expect(electronApp.process().exitCode, 'le process Electron ne doit pas s\'être arrêté').toBe(null);
 });
+
+// Contenu tiers hors des fenêtres de l'application (electron/main.cjs). Le
+// navigateur du système est remplacé par un enregistreur : le test n'ouvre
+// jamais de vrai navigateur, et l'adresse en .invalid ne se résout pas.
+const EXTERNAL = 'http://wacopilote-e2e.invalid/';
+
+async function interceptOpenExternal() {
+    await electronApp.evaluate(({ shell }) => {
+        globalThis.__e2eOpened = [];
+        shell.openExternal = async (url) => { globalThis.__e2eOpened.push(url); };
+    });
+}
+
+test('un lien target="_blank" part dans le navigateur du système, pas dans une fenêtre Electron', async () => {
+    await interceptOpenExternal();
+    const windowsBefore = electronApp.windows().length;
+    await page.evaluate((url) => {
+        const a = document.createElement('a');
+        a.href = url;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+    }, `${EXTERNAL}lien`);
+    await expect
+        .poll(() => electronApp.evaluate(() => globalThis.__e2eOpened), { timeout: 10_000 })
+        .toContain(`${EXTERNAL}lien`);
+    expect(electronApp.windows().length).toBe(windowsBefore);
+});
+
+test('la fenêtre principale ne quitte pas la page de l\'application', async () => {
+    // Elle porte le preload, donc le jeton de l'API locale : un site tiers
+    // chargé ici l'obtiendrait.
+    await interceptOpenExternal();
+    await page.evaluate((url) => { window.location.href = url; }, `${EXTERNAL}navigation`);
+    await expect
+        .poll(() => electronApp.evaluate(() => globalThis.__e2eOpened), { timeout: 10_000 })
+        .toContain(`${EXTERNAL}navigation`);
+    expect(page.url()).toMatch(/^file:.*index\.html/);
+});
