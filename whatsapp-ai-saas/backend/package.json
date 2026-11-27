@@ -19,7 +19,7 @@
     "jsdom": "^31.0.1",
     "node-fetch": "^3.3.2",
     "ollama": "^0.6.4",
-    "openai": "^7.61.0",
+    "openai": "^7.63.0",
     "pdf-parse": "^2.4.5",
     "playwright": "^1.50.1",
     "puppeteer-core": "^25.11.0",
