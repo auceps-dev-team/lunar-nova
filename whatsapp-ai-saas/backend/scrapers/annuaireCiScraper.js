@@ -1,4 +1,4 @@
-const { chromium } = require('playwright');
+const { lancerNavigateur } = require('../services/navigateur');
 const { isLandline, normalizeDigits } = require('./phoneRules');
 // Parseurs extraits des page.evaluate (P2-3) : testables sous jsdom, et
 // sérialisables par Playwright car auto-portants (aucune portée de module).
@@ -24,7 +24,7 @@ async function search(query, ignoreLandlines, pages) {
         }
 
         console.error(`[AnnuaireCI] Lancement du navigateur. URL de base: ${baseUrl}`);
-        browser = await chromium.launch({ headless: true });
+        browser = await lancerNavigateur({ headless: true });
         const context = await browser.newContext({
             userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         });

@@ -14,7 +14,10 @@ Les échanges se font en français ou en anglais, au choix.
 
 - **Node.js 22.12+** (exigé par Electron 45) et **npm 9+**
 - **Redis** sur le port 6379 (cache et limitation de débit)
-- Un navigateur Chromium, installé automatiquement par Playwright
+- Un navigateur pour les factures PDF et les extracteurs : **Microsoft Edge**
+  (déjà présent sous Windows 10 et 11), à défaut Google Chrome, à défaut le
+  Chromium de Playwright (`npx playwright install chromium` dans `backend/`).
+  Playwright n'installe rien de lui-même (voir `backend/services/navigateur.js`).
 
 ### Installation
 

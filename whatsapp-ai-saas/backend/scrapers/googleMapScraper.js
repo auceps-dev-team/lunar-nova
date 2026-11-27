@@ -1,4 +1,4 @@
-const { chromium } = require('playwright');
+const { lancerNavigateur } = require('../services/navigateur');
 const EventEmitter = require('events');
 const { isLandline, detectCountry } = require('./phoneRules');
 const { extractPlaceDetails } = require('./parsers/googleMaps');
@@ -101,7 +101,7 @@ class GoogleMapScraper extends EventEmitter {
         const leads = [];
         const startTime = Date.now();
         const durationMs = duration * 60 * 1000;
-        const browser = await chromium.launch({ headless: true });
+        const browser = await lancerNavigateur({ headless: true });
 
         try {
             const context = await browser.newContext({

@@ -1,4 +1,4 @@
-const { chromium } = require('playwright');
+const { lancerNavigateur } = require('../services/navigateur');
 const { isLandline, COUNTRY_PHONE_CODES } = require('./phoneRules');
 // Parseurs extraits des page.evaluate (P2-3) : auto-portants, donc sérialisables
 // par Playwright et testables directement sous jsdom.
@@ -20,7 +20,7 @@ async function search(query, ignoreLandlines, pages, country = 'ci', subcategory
     
     try {
         console.error(`[GoAfricaOnline] Lancement du navigateur pour la requête: ${query}`);
-        browser = await chromium.launch({ headless: true });
+        browser = await lancerNavigateur({ headless: true });
         const context = await browser.newContext({
             userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         });

@@ -47,8 +47,8 @@ router.delete('/:id', async (req, res) => {
     }
 });
 
-// POST /api/invoices/:id/export-pdf — rend le PDF côté serveur (Chromium
-// headless autonome, voir invoiceService.renderPdf) et le renvoie en binaire.
+// POST /api/invoices/:id/export-pdf — rend le PDF côté serveur (navigateur
+// headless, Edge d'abord : voir services/navigateur.js) et le renvoie en binaire.
 router.post('/:id/export-pdf', async (req, res) => {
     try {
         const { buffer } = await invoiceService.renderPdf(req.params.id);
