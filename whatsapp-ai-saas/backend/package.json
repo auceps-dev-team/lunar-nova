@@ -16,7 +16,7 @@
     "express": "^4.21.2",
     "express-rate-limit": "^8.3.2",
     "form-data": "^4.0.5",
-    "jsdom": "^29.1.1",
+    "jsdom": "^31.0.1",
     "node-fetch": "^3.3.2",
     "ollama": "^0.6.3",
     "openai": "^6.37.0",
