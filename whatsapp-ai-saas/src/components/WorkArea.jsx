@@ -338,7 +338,7 @@ const WorkArea = ({ instances, activeId }) => {
                                         el.addEventListener('dom-ready', () => {
                                             el.insertCSS('::-webkit-scrollbar { display: none !important; } * { scrollbar-width: none !important; }');
                                             // Inject instance ID into the global window object so Playwright can find the right context
-                                            el.executeJavaScript(`window.__whatsapp_instance_id = '${instance.id}';`);
+                                            el.executeJavaScript(`window.__whatsapp_instance_id = ${JSON.stringify(String(instance.id))};`);
                                         });
                                         el.setAttribute('data-setup-injected', 'true');
                                     }

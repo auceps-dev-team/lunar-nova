@@ -1,5 +1,6 @@
 const { app, BrowserWindow, ipcMain, dialog, shell, safeStorage } = require('electron');
 const path = require('path');
+const { fileURLToPath } = require('url');
 const fs = require('fs');
 const crypto = require('crypto');
 const { utilityProcess } = require('electron');
@@ -86,6 +87,85 @@ app.commandLine.appendSwitch('remote-debugging-port', '8315');
 
 let mainWindow;
 
+// ── Contenu tiers hors des fenêtres de l'application ─────────────────────────
+// La fenêtre principale porte le preload, donc le pont electronAPI et le jeton
+// de l'API locale (getApiToken). Mesuré le 27/11/2026 sous Electron 45 : une
+// navigation de cette fenêtre vers un site tiers — lien du site d'un prospect,
+// lien dans un document généré — donnait au site le pont, le jeton, puis un
+// 200 de l'API via une iframe sandboxée (origine null, acceptée pour le
+// renderer en file://). Les liens target="_blank" ouvraient eux le site dans
+// une fenêtre Electron sans barre d'adresse.
+//
+// Désormais : la fenêtre principale ne quitte jamais la page de l'application,
+// aucune fenêtre n'est créée par window.open ou target="_blank", et les liens
+// web cliqués dans l'application ou dans WhatsApp Web s'ouvrent dans le
+// navigateur du système.
+const APP_PAGE = path.resolve(__dirname, '../dist/index.html');
+const DEV_ORIGIN = 'http://localhost:5173';
+
+function isAppUrl(url) {
+    try {
+        const parsed = new URL(url);
+        if (isDev) return parsed.origin === DEV_ORIGIN;
+        if (parsed.protocol !== 'file:') return false;
+        const page = path.resolve(fileURLToPath(parsed));
+        return process.platform === 'win32'
+            ? page.toLowerCase() === APP_PAGE.toLowerCase()
+            : page === APP_PAGE;
+    } catch {
+        return false;
+    }
+}
+
+function openOutside(url) {
+    try {
+        if (['http:', 'https:', 'mailto:'].includes(new URL(url).protocol)) {
+            shell.openExternal(url);
+        }
+    } catch { /* URL invalide : ignorée */ }
+}
+
+app.on('web-contents-created', (_event, contents) => {
+    const opensLinks = () => contents === mainWindow?.webContents || contents.getType() === 'webview';
+
+    contents.setWindowOpenHandler(({ url }) => {
+        if (opensLinks()) openOutside(url);
+        return { action: 'deny' };
+    });
+
+    // La navigation interne de WhatsApp Web reste libre ; ailleurs, seule la
+    // page de l'application se charge. (Un changement d'ancre du HashRouter
+    // est une navigation dans la page, qui ne passe pas par will-navigate.)
+    contents.on('will-navigate', (event, url) => {
+        if (contents.getType() === 'webview' || isAppUrl(url)) return;
+        event.preventDefault();
+        if (contents === mainWindow?.webContents) openOutside(url);
+    });
+});
+
+/**
+ * Les gestionnaires IPC sensibles ne répondent qu'à la page de l'application,
+ * dans le cadre principal de la fenêtre principale (recommandation « Validate
+ * the sender of all IPC messages » de la checklist de sécurité d'Electron).
+ */
+function fromAppPage(event) {
+    const frame = event.senderFrame;
+    return Boolean(
+        mainWindow && event.sender === mainWindow.webContents
+        && frame && !frame.parent && isAppUrl(frame.url)
+    );
+}
+
+function handleFromApp(channel, handler) {
+    ipcMain.handle(channel, (event, ...args) => {
+        if (!fromAppPage(event)) {
+            console.warn(`[Main] IPC ${channel} refusé : expéditeur hors de la page de l'application (${event.senderFrame?.url || 'inconnu'})`);
+            return null;
+        }
+        return handler(event, ...args);
+    });
+}
+
 function createWindow() {
     mainWindow = new BrowserWindow({
         width: 1200,
@@ -118,8 +198,21 @@ function createWindow() {
         console.log(`[Renderer] ${message} (${sourceId}:${line})`);
     });
 
-    // Optional: Intercept webview creation to enforce User-Agent
-    mainWindow.webContents.on('will-attach-webview', (event, webPreferences) => {
+    // Seul WhatsApp Web s'ouvre dans une webview, sans preload ni Node : un
+    // renderer compromis ne peut pas y attacher une page de son choix munie
+    // d'un preload.
+    mainWindow.webContents.on('will-attach-webview', (event, webPreferences, params) => {
+        let whatsapp = false;
+        try { whatsapp = new URL(params.src).origin === 'https://web.whatsapp.com'; } catch { /* src invalide */ }
+        if (!whatsapp) {
+            console.warn(`[Main] Webview refusée : ${params.src}`);
+            event.preventDefault();
+            return;
+        }
+        delete webPreferences.preload;
+        webPreferences.nodeIntegration = false;
+        webPreferences.nodeIntegrationInSubFrames = false;
+        webPreferences.contextIsolation = true;
         webPreferences.userAgent = USER_AGENT;
     });
 
@@ -248,10 +341,13 @@ app.whenReady().then(async () => {
     setupUpdater(() => mainWindow);
 
     // Le renderer récupère le token ici pour authentifier ses appels au backend.
-    ipcMain.handle('get-api-token', () => apiToken);
+    // Les gestionnaires ci-dessous passent par handleFromApp : seule la page de
+    // l'application obtient une réponse. Ceux de la mise à jour (updater.cjs)
+    // valident déjà leurs arguments contre la dernière offre vérifiée.
+    handleFromApp('get-api-token', () => apiToken);
 
     // IPC pour electron-store
-    ipcMain.handle('store-get', (event, key) => {
+    handleFromApp('store-get', (event, key) => {
         return store ? store.get(key) : null;
     });
     // Le renderer n'y range que l'état de l'interface (pendingUpdateInfo). La
@@ -260,21 +356,21 @@ app.whenReady().then(async () => {
     // poser PATH, NODE_OPTIONS ou WACOPILOTE_WHISPER_PYTHON (l'interpréteur que
     // lance la transcription des vocaux). Aucune clé écrite ici n'est lue par
     // le backend : le relais est supprimé.
-    ipcMain.handle('store-set', (event, key, value) => {
+    handleFromApp('store-set', (event, key, value) => {
         if (store) store.set(key, value);
         return true;
     });
 
-    ipcMain.handle('create-instance', (event, id) => {
+    handleFromApp('create-instance', (event, id) => {
         console.log(`[Main] Create instance requested: ${id}`);
         return true;
     });
-    ipcMain.handle('remove-instance', (event, id) => {
+    handleFromApp('remove-instance', (event, id) => {
         console.log(`[Main] Remove instance requested: ${id}`);
         return true;
     });
 
-    ipcMain.handle('open-external-url', (event, url) => {
+    handleFromApp('open-external-url', (event, url) => {
         try {
             const parsed = new URL(url);
             if (['http:', 'https:', 'mailto:'].includes(parsed.protocol)) {
@@ -290,14 +386,17 @@ app.whenReady().then(async () => {
     });
 
     // ── PDF Export: render HTML in hidden window → printToPDF → save dialog ──
-    ipcMain.handle('print-to-pdf', async (event, htmlContent, defaultFileName) => {
+    handleFromApp('print-to-pdf', async (event, htmlContent, defaultFileName) => {
         try {
             // Create a hidden BrowserWindow to render the invoice HTML
             const pdfWin = new BrowserWindow({
                 width: 794,   // A4 at 96 DPI
                 height: 1123,
                 show: false,
-                webPreferences: { nodeIntegration: false, contextIsolation: true }
+                // Document à imprimer : HTML statique (facture, texte du
+                // rédacteur assaini par DOMPurify). Aucun script n'y est
+                // nécessaire ; on n'en exécute donc aucun.
+                webPreferences: { nodeIntegration: false, contextIsolation: true, sandbox: true, javascript: false }
             });
 
             // Load the HTML content as a data URI
