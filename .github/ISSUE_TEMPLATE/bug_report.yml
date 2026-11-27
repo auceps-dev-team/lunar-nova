@@ -39,7 +39,7 @@ body:
     attributes:
       label: Version de WaCopilote
       description: Visible dans les Réglages, ou en bas de la fenêtre.
-      placeholder: "1.51.2"
+      placeholder: "1.52.0"
     validations:
       required: true
 

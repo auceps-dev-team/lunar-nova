@@ -48,6 +48,16 @@ const Support = () => {
 
     const changelog = [
         {
+            version: 'v1.52.0',
+            date: '2026-11-27',
+            changes: [
+                'Sécurité — Le port de débogage, jusque-là ouvert en permanence, est fermé : aucun autre programme de l\'ordinateur, ni un autre compte Windows de la même machine, ne peut plus s\'y connecter pour agir dans vos sessions WhatsApp. L\'application pilote désormais WhatsApp Web par un canal interne, et seulement WhatsApp Web',
+                'WhatsApp — Arrêter l\'écoute des commandes retire bien la surveillance de la page WhatsApp concernée',
+                'Ligne de commande et MCP — L\'ouverture d\'une conversation WhatsApp passe par l\'application, qui doit donc être ouverte : un message clair le dit sinon',
+                'Maintenance — Deux fonctions internes sans écran, qui passaient par ce port, sont retirées : l\'envoi de catalogue et la lecture d\'une conversation par l\'API'
+            ]
+        },
+        {
             version: 'v1.51.2',
             date: '2026-11-27',
             changes: [

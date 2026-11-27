@@ -12,7 +12,7 @@ mindmap
   root((🚀 WaCopilote v1.45.0))
     Desktop & Runtime
       Electron 45 Main Process
-        Remote Debugging Port 8315 CDP
+        Pilote WhatsApp (canal privé)
         SafeStorage DPAPI / Trousseau / libsecret
         Auto-Updater Electron Updater
         Preload Bridge Context Isolation
@@ -55,7 +55,7 @@ mindmap
         Chiffrement AES-GCM 256 des Clés API
         Tables (copilot_logs, wa_contacts, quotes, etc.)
       Redis 5 Caching & Queues
-      CDP & Puppeteer WhatsApp Web
+      Pilote WhatsApp Web (canal privé)
         MutationObserver & Order Radar
 ```
 
@@ -70,7 +70,7 @@ flowchart TB
         MCP["🔌 Serveur MCP JSON-RPC Stdio"]
     end
 
-    subgraph DESKTOP_ELECTRON["🖥️ Desktop Electron (Port CDP 8315)"]
+    subgraph DESKTOP_ELECTRON["🖥️ Desktop Electron (pilote WhatsApp)"]
         MAIN["main.cjs (Processus Principal)"]
         SAFE["safeStorage (DPAPI / Keychain)"]
         RENDERER["src/ (React 19 UI - Vite 5173)"]
@@ -114,7 +114,7 @@ flowchart TB
     
     MAIN -->|Fork / IPC| BACKEND_EXPRESS
     MAIN --> SAFE
-    WEBVIEW -.->|CDP 8315| SERVICES_LAYER
+    WEBVIEW -.->|canal privé| SERVICES_LAYER
     
     SERVICES_LAYER --> AI_GATEWAY
     SERVICES_LAYER --> SQLITE
@@ -136,6 +136,6 @@ flowchart TB
 | `backend/scrapers/` | Moteurs et parsers de prospection (Google Maps, Annuaire CI, GoAfrica). |
 | `backend/db.js` | Driver SQLite avec interface mockée Postgres Pool, migrations v1->v7 et chiffrement. |
 | `backend/secretStore.js` | Chiffrement AES-256-GCM au repos scellé par la clé maître. |
-| `electron/` | Gestion du cycle de vie de l'application desktop, remote debugging CDP et updater. |
+| `electron/` | Gestion du cycle de vie de l'application desktop, pilote des webviews WhatsApp (waDriverHost) et updater. |
 | `src/` | Interface utilisateur React 19, Zustand store, composants Radix/Tailwind, i18n FR/EN/ES/AR. |
 | `docs/` | Documentation technique, schémas d'architecture et spécifications des ponts. |

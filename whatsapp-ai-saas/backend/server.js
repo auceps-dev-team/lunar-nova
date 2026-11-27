@@ -11,6 +11,11 @@ const rateLimit = require('express-rate-limit');
 const orderListener = require('./orderListener');
 const { requireApiToken } = require('./apiAuth');
 const db = require('./db');
+const waDriver = require('./wa/waDriver');
+
+// Ce processus pilote les webviews WhatsApp lui-même (canal privé en
+// production) : le CLI et le MCP, eux, passent par son API (voir openChat).
+waDriver.markBackendProcess();
 
 const app = express();
 const PORT = process.env.PORT || process.env.BACKEND_PORT || 3000;
@@ -133,8 +138,8 @@ app.use('/api', settingsAgentsRouter);
 const aiRouter = require('./routes/ai');
 app.use('/api', aiRouter);
 
-const catalogRouter = require('./routes/catalog');
-app.use('/api/catalog', heavyLimiter, catalogRouter);
+// /api/catalog/upload retiré le 27/11/2026 avec la fermeture du port de
+// débogage : aucun écran ne l'appelait, et il pilotait WhatsApp Web par ce port.
 
 // Monté AVANT /api/wa : le routeur WhatsApp ne doit pas prendre « selectors »
 // pour un identifiant.
@@ -172,7 +177,7 @@ orderListener.registerRoutes(app);
 
     const server = app.listen(PORT, HOST, () => {
         console.error(`[Orchestrator] Running on http://${HOST}:${PORT}`);
-        console.error(`[Orchestrator] Ready to connect to Electron CDP at port 8315`);
+        console.error(`[Orchestrator] Pilote WhatsApp : ${waDriver.getWaDriver().kind}`);
         // Mise à jour signée des sélecteurs WhatsApp (sans effet sans clé de confiance).
         require('./wa/waSelectors').scheduleSelectorUpdates();
     });

@@ -1,6 +1,8 @@
+const fs = require('fs');
+const path = require('path');
 const { pool } = require('../db');
-const puppeteer = require('puppeteer-core');
 const { isValidPhoneFormat } = require('./contactAgent');
+const { getWaDriver, isBackendProcess } = require('../wa/waDriver');
 
 // Mutex local au process : protège les navigations concurrentes de webview
 // lancées par CE process (Express ou CLI). Un CLI et le serveur Express
@@ -49,11 +51,95 @@ async function removeInstance(id) {
     return { success: true };
 }
 
+/** Jeton de l'API locale de l'application en cours d'exécution, ou null. */
+function lireJetonApi() {
+    const { resolveUserDataDir } = require('../secretStore');
+    const dossiers = [process.env.USER_DATA_PATH, resolveUserDataDir(), path.join(__dirname, '..', '..')].filter(Boolean);
+    for (const dossier of dossiers) {
+        try {
+            const jeton = fs.readFileSync(path.join(dossier, 'api-token'), 'utf8').trim();
+            if (jeton) return jeton;
+        } catch { /* dossier suivant */ }
+    }
+    return null;
+}
+
+const DELAI_API_LOCALE_MS = 60000;
+
 /**
- * Ouvre une conversation WhatsApp sur une instance déjà authentifiée, via le
- * pont CDP partagé (localhost:8315) — extrait de backend/routes/wa.js
- * (POST /open-chat) pour être appelable in-process par le CLI/MCP sans
- * dépendre du serveur Express.
+ * POST JSON vers l'API locale, par node:http et sans agent (aucune connexion
+ * gardée ouverte). Pas `fetch` : le CLI appelle process.exit() juste après, et
+ * sous Windows cette sortie plantait (« Assertion failed: !(handle->flags &
+ * UV_HANDLE_CLOSING), file src\win\async.c, line 94 », code 3221226505).
+ *
+ * Mesuré le 27/11/2026, application v1.52.0 ouverte, Node 24.16.0, 4 essais par
+ * variante : fetch → 4 plantages, base SQLite ouverte ou non ; node:http sans
+ * agent → 4 sorties propres ; fetch sous --liftoff-only → 4 sorties propres.
+ * C'est donc la compilation optimisée du WebAssembly de fetch (l'analyseur HTTP
+ * d'undici) qui se termine pendant la fermeture. Non reproduit contre un faux
+ * serveur minimal : la réponse réelle de l'application y est nécessaire.
+ */
+function posterJson(url, jeton, corps) {
+    const cible = new URL(url);
+    const client = cible.protocol === 'https:' ? require('https') : require('http');
+    const donnees = JSON.stringify(corps);
+    return new Promise((resolve, reject) => {
+        const req = client.request({
+            hostname: cible.hostname.replace(/^\[|\]$/g, ''),
+            port: cible.port || undefined,
+            path: `${cible.pathname}${cible.search}`,
+            method: 'POST',
+            agent: false,
+            headers: {
+                Authorization: `Bearer ${jeton}`,
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(donnees),
+            },
+        }, (res) => {
+            let texte = '';
+            res.setEncoding('utf8');
+            res.on('data', (morceau) => { texte += morceau; });
+            res.on('end', () => resolve({ statut: res.statusCode, texte }));
+            res.on('error', reject);
+        });
+        req.setTimeout(DELAI_API_LOCALE_MS, () => req.destroy(new Error(`pas de réponse en ${DELAI_API_LOCALE_MS / 1000} s`)));
+        req.on('error', reject);
+        req.end(donnees);
+    });
+}
+
+/**
+ * CLI et MCP : ils tournent hors de l'application et n'ont plus d'accès direct
+ * aux webviews (le port de débogage 8315 est fermé depuis la v1.52.0). Ils
+ * demandent l'ouverture au backend de l'application, par son API authentifiée.
+ */
+async function openChatViaBackend({ instanceId, phone, contactId, countryCode, text }) {
+    const jeton = lireJetonApi();
+    const base = process.env.WACOPILOTE_API_URL || `http://127.0.0.1:${process.env.PORT || 3000}`;
+    const echec = (message, statusCode) => Object.assign(new Error(message), { statusCode });
+    if (!jeton) throw echec('Jeton de l\'API locale introuvable : WaCopilote doit être ouvert pour piloter WhatsApp.', 503);
+
+    let reponse;
+    try {
+        reponse = await posterJson(`${base}/api/wa/open-chat`, jeton,
+            { instance_id: instanceId, phone, contact_id: contactId, country_code: countryCode, text });
+    } catch (e) {
+        throw echec(`WaCopilote injoignable sur ${base} (${e.message}) : l'application est-elle ouverte ?`, 503);
+    }
+    let corps = {};
+    try { corps = JSON.parse(reponse.texte); } catch { /* réponse non JSON */ }
+    if (reponse.statut < 200 || reponse.statut >= 300) {
+        throw echec(corps.error || `Réponse HTTP ${reponse.statut} de l'application`, reponse.statut);
+    }
+    return { message: corps.message, formattedMessage: corps.formattedMessage };
+}
+
+/**
+ * Ouvre une conversation WhatsApp sur une instance déjà authentifiée.
+ *
+ * Dans le backend : par le pilote WhatsApp (wa/waDriver.js, canal privé en
+ * production). Ailleurs (CLI, MCP) : par l'API du backend, qui fait tout —
+ * formatage, journal et ouverture — une seule fois.
  */
 async function openChat({ instanceId, phone, contactId, countryCode, text }) {
     if (!instanceId || !phone) {
@@ -65,6 +151,10 @@ async function openChat({ instanceId, phone, contactId, countryCode, text }) {
         const err = new Error('Numéro de téléphone invalide (8 à 15 chiffres attendus).');
         err.statusCode = 400;
         throw err;
+    }
+
+    if (!isBackendProcess()) {
+        return openChatViaBackend({ instanceId, phone, contactId, countryCode, text });
     }
 
     let formattedMessage = text || '';
@@ -99,28 +189,9 @@ async function openChat({ instanceId, phone, contactId, countryCode, text }) {
         }
     }
 
-    let browser;
     try {
         await acquireMutex();
-        browser = await puppeteer.connect({ browserURL: 'http://localhost:8315', defaultViewport: null });
-
-        const targets = await browser.targets();
-        let targetPage = null;
-        for (const target of targets) {
-            if (target.type() === 'webview' && target.url().includes('whatsapp')) {
-                const p = await target.page();
-                if (p) {
-                    try {
-                        const id = await p.evaluate(() => window.__whatsapp_instance_id);
-                        if (id === instanceId) {
-                            targetPage = p;
-                            break;
-                        }
-                    } catch { /* target evaluation failed, skip */ }
-                    if (!targetPage) targetPage = p;
-                }
-            }
-        }
+        const [targetPage] = await getWaDriver().findPages(instanceId);
 
         if (!targetPage) {
             const err = new Error('WhatsApp instance not found or not ready.');
@@ -148,7 +219,6 @@ async function openChat({ instanceId, phone, contactId, countryCode, text }) {
         }
         throw err;
     } finally {
-        if (browser) browser.disconnect();
         releaseMutex();
     }
 }

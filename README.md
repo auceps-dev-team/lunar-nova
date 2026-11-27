@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/auceps-dev-team/lunar-nova"><img src="https://img.shields.io/badge/version-1.51.2-blue.svg" alt="Version 1.51.2" /></a>
+  <a href="https://github.com/auceps-dev-team/lunar-nova"><img src="https://img.shields.io/badge/version-1.52.0-blue.svg" alt="Version 1.52.0" /></a>
   <a href="whatsapp-ai-saas/LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue.svg" alt="License AGPL-3.0" /></a>
   <a href="#-open-source"><img src="https://img.shields.io/badge/open%20source-oui-brightgreen.svg" alt="Open Source" /></a>
   <a href="#-pourquoi-wacopilote-"><img src="https://img.shields.io/badge/Made%20in-%F0%9F%87%A8%F0%9F%87%BE%20C%C3%B4te%20d'Ivoire-orange.svg" alt="Made in Côte d'Ivoire" /></a>
@@ -269,7 +269,7 @@ Vos conversations, vos contacts et vos clés d'API ne quittent jamais votre mach
 
 **Limites connues, à corriger**
 
-- Le port de débogage Chromium `8315` reste ouvert sur la boucle locale : c'est par lui que le service local pilote WhatsApp Web. Un programme qui tourne déjà sur la machine peut s'y connecter et agir dans vos sessions WhatsApp. Le fermer demande de piloter les webviews depuis le processus principal (`webContents.debugger`) : c'est une refonte, pas un correctif ponctuel.
+- **Fermé en v1.52.0** — le port de débogage Chromium `8315`, jusque-là ouvert en permanence sur la boucle locale, ne l'est plus : le service local pilote WhatsApp Web par un canal privé avec l'application (`electron/waDriverHost.cjs`), sans port réseau. Le port ne s'ouvre plus qu'en développement (`npm run electron:dev`).
 - Si le magasin de secrets du système est indisponible (typiquement Linux sans keyring), la clé maître retombe sur un fichier local en permissions `600`. Le chiffrement protège alors les sauvegardes et les dossiers synchronisés, mais plus un attaquant ayant déjà accès au disque sous votre compte.
 - Le dépôt public conserve dans son historique Git deux fichiers de travail retirés en v1.38.1, contenant les coordonnées professionnelles de quelques entreprises issues d'annuaires publics. Le raisonnement et la procédure de retrait sur demande figurent dans [SECURITY.md](SECURITY.md).
 
@@ -357,7 +357,6 @@ La configuration ESLint distingue désormais les trois environnements du dépôt
 4. **Configurer le fichier de variables d'environnement (`backend/.env`)** :
    ```env
    BACKEND_PORT=3000
-   ELECTRON_CDP_PORT=8315
    VITE_DEV_PORT=5173
    REDIS_URL=redis://localhost:6379
 

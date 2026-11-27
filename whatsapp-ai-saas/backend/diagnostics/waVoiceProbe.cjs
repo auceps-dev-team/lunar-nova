@@ -2,6 +2,12 @@
 /**
  * Sonde A1 — les notes vocales sont-elles visibles par l'observateur de commandes ?
  *
+ * Depuis la v1.52.0, l'application n'ouvre plus le port de débogage 8315
+ * (fermé en production, S2) : cet outil de diagnostic ne fonctionne qu'avec
+ * une application lancée en développement (`npm run electron:dev`), ou lancée
+ * explicitement avec `--remote-debugging-port=8315` sur un poste de test. Ne
+ * jamais laisser une application ainsi lancée tourner avec de vraies sessions.
+ *
  * `orderListener.attachObserver` ne remonte que les nœuds portant
  * `.copyable-text[data-pre-plain-text]` (orderListener.js ~l.312). Les messages
  * audio de WhatsApp Web ne portent probablement pas cet attribut — mais c'est

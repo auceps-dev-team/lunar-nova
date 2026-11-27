@@ -1,13 +1,14 @@
-const puppeteer = require('puppeteer-core');
 const db = require('./db');
 const aiController = require('./aiController');
 const { redactMessage, redactContact } = require('./logRedact');
-const { getSelectorRegistry, inPageSelectors, inPageHealth, CRITICAL_KEYS } = require('./wa/waSelectors');
+const { getSelectorRegistry, inPageHealth, CRITICAL_KEYS } = require('./wa/waSelectors');
+const { getWaDriver } = require('./wa/waDriver');
 const { observerInPage } = require('./wa/orderObserverInPage');
 
 const sseClients = new Map();
 const activeObservers = new Set();
-const browserConnections = new Map();
+// Pages observées par instance (pour l'arrêt de l'écoute).
+const observedPages = new Map();
 
 // File des notes vocales : extraction immédiate, transcription à part, puis
 // réinjection dans processMessage. Créée à la demande — les services de
@@ -153,134 +154,113 @@ async function logOrderToDb(instanceId, contact, text, classif, source = 'text')
 
 async function attachObserver(instanceId) {
     if (activeObservers.has(instanceId)) return;
-    
-    const cdpUrl = `http://localhost:8315`;
-    const browser = await puppeteer.connect({ browserURL: cdpUrl, defaultViewport: null });
-    
-    const targets = await browser.targets();
-    let targetPages = [];
 
-    for (const target of targets) {
-        if (target.type() === 'webview' && target.url().includes('whatsapp')) {
-            const p = await target.page();
-            if (p) {
-                try {
-                    const id = await p.evaluate(() => window.__whatsapp_instance_id);
-                    if (id === instanceId) {
-                        targetPages = [p];
-                        break;
-                    }
-                } catch {}
-                targetPages.push(p);
-            }
-        }
-    }
+    // Pages WhatsApp de l'instance, par le pilote (canal privé en production,
+    // voir wa/waDriver.js) — et non plus par le port de débogage 8315.
+    const targetPages = await getWaDriver().findPages(instanceId);
 
     if (targetPages.length === 0) {
         // Erreur levée et non plus retour silencieux : la route
         // /api/orders/listen/start répondait « success » alors qu'aucun
         // écouteur n'était branché — l'interface affichait « écoute active »
         // pendant que rien n'était observé.
-        browser.disconnect();
         throw new Error(
             `Aucune page WhatsApp trouvée pour l'instance ${instanceId}. ` +
             'Vérifiez que l\'instance est connectée (QR code scanné) avant de démarrer l\'écoute.'
         );
     }
 
-    browserConnections.set(instanceId, browser);
+    observedPages.set(instanceId, targetPages);
 
     for (const targetPage of targetPages) {
         // Sélecteurs du registre (livrés, ou fichier signé : wa/waSelectors.js),
         // préparés DANS la page — les candidats que le navigateur refuse y sont écartés.
         const registre = getSelectorRegistry();
-        let sel = await targetPage.evaluateHandle(inPageSelectors, registre.forPage());
+        let paquet = registre.forPage();
 
         // Wait for WhatsApp to be fully loaded
         try {
-            const appReady = await targetPage.evaluate((s) => s.S.appReady, sel);
+            const appReady = await targetPage.evaluateWithSelectors((sel) => sel.S.appReady, paquet);
             await targetPage.waitForSelector(appReady, { timeout: 15000 });
             console.error(`[IOL] ✅ WhatsApp UI loaded. Ready to inject observer.`);
 
             // Contrôle de santé, page chargée seulement : un fichier distant qui
             // casse ce que les sélecteurs livrés trouvaient est écarté sur-le-champ.
-            const verdict = registre.reportHealth(await targetPage.evaluate(inPageHealth, registre.forPage(), CRITICAL_KEYS));
+            const verdict = registre.reportHealth(await targetPage.evaluate(inPageHealth, paquet, CRITICAL_KEYS));
             if (verdict.rolledBack) {
                 console.error(`[IOL] Sélecteurs distants écartés (version ${verdict.rejected} : ${verdict.keys.join(', ')}).`);
-                await sel.dispose().catch(() => {});
-                sel = await targetPage.evaluateHandle(inPageSelectors, registre.forPage());
+                paquet = registre.forPage();
             }
         } catch {
             console.error(`[IOL] ⚠️ Timeout waiting for WhatsApp UI, attempting to inject anyway...`);
         }
 
-        // Inject observer bridge safely (catch if already exposed after server restart)
+        // Liaisons page → backend. Une nouvelle exposition remplace la
+        // précédente (pas de doublon après un arrêt puis une relance).
         try {
             await targetPage.exposeFunction('onNewWaMessage', (contact, text) => {
                 console.error(`\n======================================================\n[IOL DOM Bridge] 📥 Message reçu de l'interface : [${redactContact(contact)}] ${redactMessage(text)}`);
                 processMessage(instanceId, contact, text);
             });
-        } catch {}
-        
-        try {
+
             await targetPage.exposeFunction('onIolDebug', (msg) => {
                 console.error(`[IOL Background] ${msg}`);
             });
-        } catch {}
 
-        // Notes vocales entrantes. Le rappel rend la main tout de suite : la
-        // page n'attend rien, et l'extraction puis la transcription suivent
-        // leur cours dans la file.
-        try {
+            // Notes vocales entrantes. Le rappel rend la main tout de suite : la
+            // page n'attend rien, et l'extraction puis la transcription suivent
+            // leur cours dans la file.
             await targetPage.exposeFunction('onNewWaVoiceNote', (contact, messageId) => {
                 const page = targetPage;
                 void getVoiceQueue().submit({ instanceId, contact, messageId, page });
             });
-        } catch {}
+        } catch (e) {
+            // Sans liaison, l'observateur ne remonterait rien : l'écoute n'est pas
+            // déclarée active (même règle que « aucune page trouvée »).
+            observedPages.delete(instanceId);
+            throw new Error(`Liaison avec la page WhatsApp impossible : ${e.message}`);
+        }
 
-        await targetPage.evaluate(observerInPage, sel);
-        await sel.dispose().catch(() => {});
-    
-    targetPage.once('close', () => {
-        activeObservers.delete(instanceId);
-        browserConnections.delete(instanceId);
-    });
-} // End for targetPages
+        await targetPage.evaluateWithSelectors(observerInPage, paquet);
 
-activeObservers.add(instanceId);
+        targetPage.onClose(() => {
+            activeObservers.delete(instanceId);
+            observedPages.delete(instanceId);
+        });
+    }
+
+    activeObservers.add(instanceId);
 }
 
+/**
+ * Arrête l'écoute : observateur ET poller retirés des pages de l'instance.
+ *
+ * Jusqu'à la v1.51.2, l'arrêt parcourait browser.pages(), qui d'après la
+ * documentation de puppeteer ne liste que les cibles de type « page » — pas
+ * les webviews : l'arrêt ne détachait vraisemblablement rien (déduit, non
+ * mesuré). Il vise désormais les pages retenues au démarrage.
+ */
 async function detachObserver(instanceId) {
     if (!activeObservers.has(instanceId)) return;
-    const browser = browserConnections.get(instanceId);
-    if (browser) {
+    for (const p of observedPages.get(instanceId) || []) {
         try {
-            const pages = await browser.pages();
-            for (const p of pages) {
-                if (p.url().includes('whatsapp')) {
-                    await p.evaluate(() => {
-                        if (window.__iol_observer) {
-                            window.__iol_observer.disconnect();
-                            window.__iol_observer = null;
-                        }
-                        // Le poller survivait à l'arrêt de l'écoute : seul
-                        // l'observateur était détaché, l'intervalle continuait de
-                        // parcourir le panneau toutes les 3 secondes jusqu'à la
-                        // fermeture de l'onglet, et un nouveau démarrage n'en
-                        // recréait pas (garde `if (!window.__iol_poller)`) mais
-                        // laissait l'ancien tourner à vide.
-                        if (window.__iol_poller) {
-                            clearInterval(window.__iol_poller);
-                            window.__iol_poller = null;
-                        }
-                    });
+            await p.evaluate(() => {
+                if (window.__iol_observer) {
+                    window.__iol_observer.disconnect();
+                    window.__iol_observer = null;
                 }
-            }
-        } catch {}
-        browser.disconnect();
+                // Le poller doit s'arrêter avec l'observateur : sinon il
+                // continue de parcourir le panneau toutes les 3 secondes, et un
+                // nouveau démarrage n'en recrée pas (garde `if (!window.__iol_poller)`).
+                if (window.__iol_poller) {
+                    clearInterval(window.__iol_poller);
+                    window.__iol_poller = null;
+                }
+            });
+        } catch { /* page fermée ou en navigation */ }
     }
     activeObservers.delete(instanceId);
-    browserConnections.delete(instanceId);
+    observedPages.delete(instanceId);
 }
 
 function registerRoutes(app) {

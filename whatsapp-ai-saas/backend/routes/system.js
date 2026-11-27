@@ -1,173 +1,42 @@
 const express = require('express');
-const puppeteer = require('puppeteer-core');
+const { getWaDriver } = require('../wa/waDriver');
 
 /**
  * Routes « système » — autrefois déclarées en ligne dans server.js (constat R7
- * de l'audit du 29/09/2026), déplacées ici sans changement de comportement.
- * Monté sur /api : /api/instances et /api/context/:instance_id.
+ * de l'audit du 29/09/2026). Monté sur /api : /api/instances.
  *
- * /api/config est retiré le 27/11/2026 : il ne servait qu'à transmettre la
- * clé Google Maps de la carte de prospection, qui s'affiche désormais sans clé
- * (webview sur google.com/maps, voir src/components/ProspectionMap.jsx).
+ * Retirés :
+ *   - /api/config (27/11/2026) : il ne servait qu'à transmettre la clé Google
+ *     Maps, la carte s'affichant désormais sans clé ;
+ *   - /api/context/:instance_id (27/11/2026, fermeture du port de débogage) :
+ *     aucun appelant, et il lisait la conversation par ce port. Le copilote lit
+ *     la conversation lui-même (src/utils/whatsappContextScript.js).
  */
 const router = express.Router();
 
-// API route to get WhatsApp instances status
+/**
+ * État du pilote WhatsApp et nombre de pages WhatsApp ouvertes. Lu toutes les
+ * quelques secondes par l'espace WhatsApp (WorkArea) : `status: 'success'`
+ * affiche le copilote comme connecté.
+ *
+ * Jusqu'à la v1.51.2, cette route interrogeait le port de débogage 8315 et
+ * injectait au passage un second observateur dans chaque page, qui ne faisait
+ * qu'écrire dans la console de la page : il n'est pas repris.
+ */
 router.get('/instances', async (req, res) => {
-    let browser = null;
     try {
-        // To avoid Protocol error (Browser.getVersion), we MUST connect to the browser root, not a specific page target
-        // L'appel sert de contrôle de disponibilité du point CDP : la réponse
-        // elle-même n'est pas exploitée, seul son aboutissement compte.
-        const fetch = (await import('node-fetch')).default;
-        await fetch('http://127.0.0.1:8315/json/version');
-
-        // Connect to the root browser CDP endpoint
-        browser = await puppeteer.connect({ browserURL: 'http://127.0.0.1:8315', defaultViewport: null });
-        const targets = await browser.targets();
-
-        let activeInstancesCount = 0;
-
-        for (const target of targets) {
-            if (target.url().includes('web.whatsapp.com') && target.type() === 'webview') {
-                const page = await target.page();
-                if (page) {
-                    activeInstancesCount++;
-
-                    try {
-                        // Listen to basic WhatsApp DOM events (incoming messages)
-                        await page.evaluate(() => {
-                            if (window.whatsAppObserverAttached) return;
-                            window.whatsAppObserverAttached = true;
-
-                            console.error('[Orchestrator] Attached DOM Observer for new messages');
-                            const observer = new MutationObserver((mutations) => {
-                                mutations.forEach((mutation) => {
-                                    if (mutation.addedNodes.length) {
-                                        mutation.addedNodes.forEach((node) => {
-                                            if (node.nodeType === Node.ELEMENT_NODE && node.outerHTML.includes('message-in')) {
-                                                console.error('[Orchestrator Event] New incoming message detected!');
-                                            }
-                                        });
-                                    }
-                                });
-                            });
-                            if (document.body) {
-                                observer.observe(document.body, { childList: true, subtree: true });
-                            } else {
-                                console.error('[Orchestrator] document.body not available for observation');
-                            }
-                        }).catch(err => {
-                            if (err && err.message && !err.message.includes('Execution context was destroyed')) {
-                                console.error('Failed to attach observer:', err);
-                            }
-                        });
-                    } catch (err) {
-                        if (err && err.message && !err.message.includes('Execution context was destroyed')) {
-                            console.error('Error attaching observer to page:', err);
-                        }
-                    }
-                }
-            }
-        }
-
-        // Don't close the browser connecting just the contexts, leave it or close the connection properly
-        browser.disconnect();
-
+        const pages = await getWaDriver().listPages();
         res.json({
             status: 'success',
-            active_instances: activeInstancesCount,
-            message: 'Connected to Electron CDP successfully',
+            active_instances: pages.length,
+            message: `Pilote WhatsApp disponible (${getWaDriver().kind})`,
         });
-
     } catch (error) {
-        if (browser) browser.disconnect();
-        console.error('CDP Connection Error:', error);
+        console.error('[Instances] Pilote WhatsApp indisponible :', error.message);
         res.status(500).json({
             status: 'error',
-            message: 'Failed to connect to Orchestrator CDP. Is the Electron app running and is node-fetch installed?'
+            message: 'Pilote WhatsApp indisponible : l\'application WaCopilote est-elle ouverte ?',
         });
-    }
-});
-
-// Endpoint to extract WhatsApp chat context strictly in READ-ONLY mode
-router.get('/context/:instance_id', async (req, res) => {
-    const { instance_id } = req.params;
-
-    let browser = null;
-    try {
-        // Connect Puppeteer directly to the Electron remote debugging port
-        browser = await puppeteer.connect({ browserURL: 'http://127.0.0.1:8315', defaultViewport: null });
-
-        const targets = browser.targets();
-        let targetPage = null;
-
-        // Iterate through all targets to find the exact WhatsApp Web instance
-        for (const target of targets) {
-            if (target.url().includes('web.whatsapp.com') && target.type() === 'webview') {
-                try {
-                    const page = await target.page();
-                    if (page) {
-                        const pageInstanceId = await page.evaluate(() => window.__whatsapp_instance_id).catch(() => null);
-                        if (pageInstanceId === instance_id) {
-                            targetPage = page;
-                            break;
-                        }
-                    }
-                } catch { }
-            }
-        }
-
-        if (!targetPage) {
-            browser.disconnect();
-            return res.status(404).json({ error: 'WhatsApp instance found in targets but not assigned the expected Webview instance_id.' });
-        }
-
-        // Extremely safe DOM Parsing: no clicks, no interactions.
-        // We only extract the text content from the active conversation panel.
-        const chatContext = await targetPage.evaluate(() => {
-            const result = {
-                contactName: 'Unknown',
-                messages: []
-            };
-
-            // WhatsApp structurally keeps the active chat header here
-            const headerTitle = document.querySelector('header span[dir="auto"]');
-            if (headerTitle) {
-                result.contactName = headerTitle.textContent;
-            }
-
-            // Extract the last 15 visible messages
-            const messageNodes = Array.from(document.querySelectorAll('div.message-in, div.message-out')).slice(-15);
-
-            messageNodes.forEach(node => {
-                const textNode = node.querySelector('.selectable-text');
-                const timeNode = node.querySelector('[data-icon="msg-time"]');
-
-                if (textNode) {
-                    result.messages.push({
-                        sender: node.classList.contains('message-in') ? result.contactName : 'You',
-                        text: textNode.textContent,
-                        // Time is usually adjacent to the metadata block
-                        time: timeNode ? timeNode.parentElement.textContent : 'Unknown'
-                    });
-                }
-            });
-
-            return result;
-        });
-
-        res.json({
-            status: 'success',
-            instance_id,
-            context: chatContext
-        });
-
-    } catch (error) {
-        console.error('Context Extraction Error:', error);
-        res.status(500).json({ error: 'Failed to extract chat context safely. Exception: ' + error.message });
-    } finally {
-        if (browser) browser.disconnect();
     }
 });
 
