@@ -12,12 +12,27 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 
-const secretStorePath = path.resolve(__dirname, '..', 'secretStore.js');
 const tempDirs = [];
 
 afterEach(() => {
     for (const dir of tempDirs.splice(0)) fs.rmSync(dir, { recursive: true, force: true });
 });
+
+// Copie du module hors du projet. Sinon, chez tout développeur qui a lancé le
+// backend en local, le `master-key` de développement à la racine du projet
+// (créé par ce lancement, ignoré par git, documenté dans CONTRIBUTING) est
+// trouvé avant la génération en mémoire, et le test échoue sans défaut du
+// code. Relevé le 27/11/2026 : vert sur un clone propre et en CI, rouge sur un
+// poste de développement. Le module ne dépend que de modules Node intégrés
+// (`electron` n'est chargé que si un master-key.enc existe, jamais ici).
+function isolatedSecretStore() {
+    const projet = fs.mkdtempSync(path.join(os.tmpdir(), 'wacopilote-secretstore-'));
+    tempDirs.push(projet);
+    fs.mkdirSync(path.join(projet, 'backend'));
+    const copie = path.join(projet, 'backend', 'secretStore.js');
+    fs.copyFileSync(path.resolve(__dirname, '..', 'secretStore.js'), copie);
+    return copie;
+}
 
 function fakeInstalledApp() {
     const appData = fs.mkdtempSync(path.join(os.tmpdir(), 'wacopilote-appdata-'));
@@ -33,7 +48,7 @@ function loadSecretStore(appData) {
     for (const key of ['USER_DATA_PATH', 'WACOPILOTE_MASTER_KEY', 'WACOPILOTE_LOCAL_DB', 'VITEST', 'VITEST_POOL_ID', 'VITEST_WORKER_ID']) {
         delete env[key];
     }
-    const script = `const s = require(${JSON.stringify(secretStorePath)});
+    const script = `const s = require(${JSON.stringify(isolatedSecretStore())});
 const v = s.decrypt(s.encrypt('secret'));
 process.stdout.write(JSON.stringify({ roundTrip: v, status: s.getDecryptionStatus() }));`;
     const result = spawnSync(process.execPath, ['-e', script], { env, encoding: 'utf8', timeout: 20000 });

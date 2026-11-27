@@ -38,28 +38,30 @@ describe('createBackendGate', () => {
 describe('fetch instrumenté — requête retenue pendant le démarrage', () => {
     afterEach(() => { delete window.electronAPI; });
 
-    it('n\'envoie /api/config qu\'une fois le backend joignable, avec le jeton', async () => {
+    // Route d'exemple : /api/wa/contact-lists, appelée au chargement de la
+    // prospection (jusqu'au 27/11/2026, l'exemple était /api/config, retiré).
+    it('n\'envoie une requête qu\'une fois le backend joignable, avec le jeton', async () => {
         let backendPret = false;
         const appels = [];
         window.fetch = vi.fn(async (input, init) => {
             const url = typeof input === 'string' ? input : input.url;
             appels.push({ url, pret: backendPret, auth: new Headers(init?.headers).get('Authorization') });
             if (!backendPret) throw new TypeError('Failed to fetch');
-            return new Response('{"googleMapsApiKey":"abc"}', { status: 200 });
+            return new Response('{"status":"success","data":[]}', { status: 200 });
         });
         window.electronAPI = { getApiToken: async () => 'jeton-test' };
 
         await initApiAuth();
-        const reponse = window.fetch('http://127.0.0.1:3000/api/config');
+        const reponse = window.fetch('http://127.0.0.1:3000/api/wa/contact-lists');
 
         // Le backend « démarre » un peu plus tard.
         await new Promise((r) => setTimeout(r, 250));
         backendPret = true;
 
         const corps = await (await reponse).json();
-        expect(corps.googleMapsApiKey).toBe('abc');
+        expect(corps.status).toBe('success');
 
-        const config = appels.filter((a) => a.url.endsWith('/api/config'));
+        const config = appels.filter((a) => a.url.endsWith('/api/wa/contact-lists'));
         expect(config).toHaveLength(1);
         expect(config[0].pret).toBe(true);
         expect(config[0].auth).toBe('Bearer jeton-test');

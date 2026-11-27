@@ -1,5 +1,10 @@
 # Active Context: WaCopilote
 
+- **v1.51.2** — Carte de la prospection sans clé (+0.0.1), 27/11/2026 :
+  - **Carte** : webview sur `google.com/maps/search/…` (même composition que l'extracteur, qui n'a jamais eu besoin de clé), partition dédiée `persist:google-maps`, sans preload ni `allowpopups`, rechargée 800 ms après la frappe (`ProspectionMap.jsx`, `utils/mapsSearchUrl.js`). Garde de chargement : rien de chargé en 15 s → message et « Réessayer ».
+  - **Filtre des webviews** (S7, v1.51.1) élargi de façon étroite : `electron/webviewPolicy.cjs` autorise WhatsApp Web comme avant, et la carte seulement si origine `https://www.google.com`, chemin `/maps` ET partition `persist:google-maps` (tests : origines voisines, autre partition, autre page Google refusées).
+  - **Clé retirée** : `GET /api/config` supprimé (il ne servait que la clé), champ des Réglages retiré, migration v12 qui efface `google_maps_api_key`, CSP `frame-src 'none'` (plus aucun cadre). La clé reste valide chez Google tant qu'elle n'y est pas supprimée.
+  - **Défaut relevé** : un utilisateur a vu un cadre blanc sans message ; non reproduit (saisie, recherche en cours, défilement, recherche mémorisée au retour comme au rechargement — captures vérifiées). D'où la garde de 15 s.
 - **v1.51.1** — Correctifs de sécurité (+0.0.1), 27/11/2026 :
   - **S1 — exécution de commandes** : `POST /api/cli/run-external` retiré ; `ALLOWED_COMMANDS` fermé (gemini, gemini-cli, claude, aider, ollama), le réglage `allowed_cli_commands` est ignoré et protégé en écriture ; le pont de test n'accepte plus de binaire libre.
   - **S3 — contenu tiers** : `transferToAgent` (messages WhatsApp, vocaux transcrits compris), le pipeline de prospection et le copilote de l'espace WhatsApp passent `untrustedInput` ; le routeur n'envoie alors jamais vers les canaux `cli`/`mcp` (agents qui agissent sur le poste) et retombe sur le fournisseur API.

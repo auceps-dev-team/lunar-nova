@@ -29,8 +29,9 @@ describe('db.js — migrations de schéma (SQLite en mémoire)', () => {
         expect(ok).toBe(true);
 
         const v = await db.pool.query('SELECT MAX(version) as v FROM schema_version');
-        // v11 : retrait des réglages de la génération d'image (26/11/2026).
-        expect(v.rows[0].v).toBe(11);
+        // v11 : retrait des réglages de la génération d'image (26/11/2026) ;
+        // v12 : effacement de la clé Google Maps, carte sans clé (27/11/2026).
+        expect(v.rows[0].v).toBe(12);
     });
 
     it.runIf(sqlite3Available)('detected_orders porte l\'origine de la commande, « text » par défaut (v10)', async () => {

@@ -30,7 +30,10 @@ describe('db — migration v11 : réglages de la génération d\'image', () => {
         }
         // Inséré par initDB à chaque démarrage : on le modifie, on ne l'ajoute pas.
         await db.pool.query('UPDATE app_settings SET setting_value = $1 WHERE setting_key = $2', ['openrouter', 'default_ai_provider']);
-        await db.pool.query('DELETE FROM schema_version WHERE version = 11');
+        // Toutes les versions ≥ 11 : une base d'avant la v11 n'a pas non plus
+        // les suivantes, et migrateTo saute toute cible ≤ la version maximale
+        // (relevé le 27/11/2026 à l'ajout de la v12, qui rendait ce test faux).
+        await db.pool.query('DELETE FROM schema_version WHERE version >= 11');
 
         // initDB est mémorisé : on rejoue explicitement l'initialisation.
         await db.__rerunInitDBForTests();

@@ -5,6 +5,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 const { utilityProcess } = require('electron');
 const setupUpdater = require('./updater.cjs');
+const { webviewKind } = require('./webviewPolicy.cjs');
 
 let store;
 
@@ -198,14 +199,13 @@ function createWindow() {
         console.log(`[Renderer] ${message} (${sourceId}:${line})`);
     });
 
-    // Seul WhatsApp Web s'ouvre dans une webview, sans preload ni Node : un
-    // renderer compromis ne peut pas y attacher une page de son choix munie
-    // d'un preload.
+    // Seuls WhatsApp Web et, depuis la v1.51.2, la carte Google Maps de la
+    // prospection (partition dédiée) s'ouvrent dans une webview, sans preload
+    // ni Node : un renderer compromis ne peut pas y attacher une page de son
+    // choix munie d'un preload. Règle et tests : webviewPolicy.cjs.
     mainWindow.webContents.on('will-attach-webview', (event, webPreferences, params) => {
-        let whatsapp = false;
-        try { whatsapp = new URL(params.src).origin === 'https://web.whatsapp.com'; } catch { /* src invalide */ }
-        if (!whatsapp) {
-            console.warn(`[Main] Webview refusée : ${params.src}`);
+        if (!webviewKind(params.src, params.partition)) {
+            console.warn(`[Main] Webview refusée : ${params.src} (partition ${params.partition || 'aucune'})`);
             event.preventDefault();
             return;
         }

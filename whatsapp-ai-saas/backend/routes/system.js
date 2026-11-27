@@ -1,43 +1,16 @@
 const express = require('express');
-const rateLimit = require('express-rate-limit');
 const puppeteer = require('puppeteer-core');
 
 /**
  * Routes « système » — autrefois déclarées en ligne dans server.js (constat R7
  * de l'audit du 29/09/2026), déplacées ici sans changement de comportement.
- * Monté sur /api : les chemins restent /api/config, /api/instances et
- * /api/context/:instance_id.
+ * Monté sur /api : /api/instances et /api/context/:instance_id.
  *
- * Équivalence vérifiée le 1er octobre 2026 sur un serveur isolé : mêmes codes,
- * mêmes corps et mêmes en-têtes de limitation qu'avant le déplacement, avec et
- * sans jeton.
+ * /api/config est retiré le 27/11/2026 : il ne servait qu'à transmettre la
+ * clé Google Maps de la carte de prospection, qui s'affiche désormais sans clé
+ * (webview sur google.com/maps, voir src/components/ProspectionMap.jsx).
  */
 const router = express.Router();
-
-const configLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 100,
-    message: { error: 'Too many requests' }
-});
-
-// Configuration du frontend : la clé Google Maps de la carte de prospection.
-//
-// Lue d'abord dans les réglages (saisie dans Paramètres, chiffrée au repos
-// comme toute clé `*_api_key`), puis dans GOOGLE_MAPS_API_KEY. Jusqu'au
-// 26/11/2026 seule la variable d'environnement existait : elle venait de
-// backend/.env, que l'installeur embarquait — mesuré ce jour-là, la clé
-// était lisible dans app.asar d'une version publiée. Le .env n'est plus
-// empaqueté ; la variable reste pour le développement.
-router.get('/config', configLimiter, async (req, res) => {
-    const { getSetting } = require('../db');
-    let key = '';
-    try {
-        key = await getSetting('google_maps_api_key', '');
-    } catch { /* base indisponible : repli sur l'environnement */ }
-    res.json({
-        googleMapsApiKey: key || process.env.GOOGLE_MAPS_API_KEY || ''
-    });
-});
 
 // API route to get WhatsApp instances status
 router.get('/instances', async (req, res) => {

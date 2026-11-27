@@ -889,9 +889,6 @@
   "testResult": "Agent response:",
   "profileToComplete": "Profile to complete",
   "profileToCompleteHint": "Add your name and your company",
-  "prospectionSettingsTitle": "Prospecting",
-  "googleMapsApiKey": "Google Maps API key",
-  "googleMapsApiKeyDesc": "Shows the live map in prospecting. Restrict it to the Maps Embed API in the Google Cloud console.",
   "rewriteImprove": "Improve",
   "rewriteFix": "Fix spelling and grammar",
   "rewriteShorten": "Shorten",
@@ -923,5 +920,8 @@
   "topProvider": "Top provider",
   "mostUsedAI": "Most used provider",
   "topModel": "Top model",
-  "mostUsedModel": "Most used model"
+  "mostUsedModel": "Most used model",
+  "prospectionMapLoadFailed": "Google Maps could not be loaded. Check your Internet connection.",
+  "prospectionMapRetry": "Retry",
+  "prospectionMapTimeout": "The map has not loaded after 15 seconds. Check your Internet connection, then try again."
 }

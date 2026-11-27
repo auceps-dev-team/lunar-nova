@@ -1,12 +1,11 @@
 // @vitest-environment node
 //
-// GET /api/config — clé Google Maps de la carte de prospection.
+// Carte de la prospection sans clé (27/11/2026).
 //
-// Jusqu'au 26/11/2026, elle ne venait que de GOOGLE_MAPS_API_KEY, lue dans
-// backend/.env — que l'installeur embarquait (mesuré ce jour-là : la clé était
-// lisible dans app.asar d'une version publiée). Le .env n'est plus empaqueté :
-// la clé se saisit dans les Paramètres. Ce fichier prouve l'ordre de
-// résolution (réglage, puis environnement) et le chiffrement au repos.
+// Jusque-là, GET /api/config transmettait une clé Google Maps à l'interface
+// pour l'iframe Maps Embed. La carte s'affiche désormais dans une webview sur
+// google.com/maps, sans clé : la route est retirée, et la migration v12 efface
+// la clé qu'un utilisateur aurait saisie dans les Réglages en v1.51.0.
 //
 // Convention du projet : require, jamais import (cf. agentFallbackStrategies).
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
@@ -16,14 +15,18 @@ const db = require('../db');
 
 let server;
 let base;
-const envAvant = process.env.GOOGLE_MAPS_API_KEY;
 
-const lireConfig = async () => (await (await fetch(`${base}/api/config`)).json()).googleMapsApiKey;
-
-describe('GET /api/config — clé Google Maps', () => {
+describe('carte de la prospection sans clé', () => {
     beforeAll(async () => {
         db.__setDbFileForTests(':memory:');
         await db.initDB();
+
+        // Base « d'avant » : une clé saisie en v1.51.0 (chiffrée au repos), v12 pas encore appliquée.
+        await db.setSetting('google_maps_api_key', 'cle-saisie-en-v1-51-0');
+        await db.setSetting('gemini_api_key', 'cle-gemini-a-garder');
+        await db.pool.query('DELETE FROM schema_version WHERE version = 12');
+        await db.__rerunInitDBForTests();
+
         const app = express();
         app.use('/api', require('../routes/system'));
         await new Promise((r) => { server = app.listen(0, '127.0.0.1', r); });
@@ -31,31 +34,19 @@ describe('GET /api/config — clé Google Maps', () => {
     }, 30000);
 
     afterAll(async () => {
-        if (envAvant === undefined) delete process.env.GOOGLE_MAPS_API_KEY;
-        else process.env.GOOGLE_MAPS_API_KEY = envAvant;
         await new Promise((r) => server.close(r));
     });
 
-    it('sans réglage, rend la variable d\'environnement (développement)', async () => {
-        process.env.GOOGLE_MAPS_API_KEY = 'cle-environnement';
-        expect(await lireConfig()).toBe('cle-environnement');
+    it('GET /api/config n\'existe plus : aucune clé n\'est servie à l\'interface', async () => {
+        const r = await fetch(`${base}/api/config`);
+        expect(r.status).toBe(404);
     });
 
-    it('le réglage saisi dans les Paramètres passe avant l\'environnement', async () => {
-        process.env.GOOGLE_MAPS_API_KEY = 'cle-environnement';
-        await db.setSetting('google_maps_api_key', 'cle-parametres');
-        expect(await lireConfig()).toBe('cle-parametres');
-    });
-
-    it('le réglage est chiffré au repos, comme toute clé *_api_key', async () => {
-        const brut = (await db.pool.query('SELECT setting_value FROM app_settings WHERE setting_key = $1', ['google_maps_api_key'])).rows[0].setting_value;
-        expect(brut).not.toBe('cle-parametres');
-        expect(brut).not.toContain('cle-parametres');
-    });
-
-    it('ni réglage ni environnement : chaîne vide, jamais undefined', async () => {
-        await db.pool.query('DELETE FROM app_settings WHERE setting_key = $1', ['google_maps_api_key']);
-        delete process.env.GOOGLE_MAPS_API_KEY;
-        expect(await lireConfig()).toBe('');
+    it('la migration v12 efface la clé Google Maps enregistrée, et seulement elle', async () => {
+        const brut = await db.pool.query('SELECT setting_key FROM app_settings WHERE setting_key = $1', ['google_maps_api_key']);
+        expect(brut.rows).toEqual([]);
+        expect(await db.getSetting('gemini_api_key')).toBe('cle-gemini-a-garder');
+        const v = await db.pool.query('SELECT version FROM schema_version WHERE version = 12');
+        expect(v.rows).toHaveLength(1);
     });
 });
