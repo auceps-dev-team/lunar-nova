@@ -49,7 +49,9 @@ function contentSecurityPolicy(apiUrl) {
     'img-src': ["'self'", 'data:', 'blob:', 'https:'],
     'media-src': ["'self'", 'data:', 'blob:'],
     'connect-src': ["'self'", api, 'data:', 'blob:'],
-    'frame-src': ['https://www.google.com'],
+    // Plus aucun cadre depuis le 27/11/2026 : la carte de la prospection est
+    // une webview (non régie par cette politique), et non plus un iframe Maps Embed.
+    'frame-src': ["'none'"],
     'worker-src': ["'self'", 'blob:'],
     'object-src': ["'none'"],
     'base-uri': ["'self'"],

@@ -629,32 +629,6 @@ const Settings = () => {
                     </div>
                 </div>
 
-                {/* Prospection — clé de la carte Google Maps. Avant le 26/11/2026,
-                    elle ne venait que de backend/.env, embarqué par l'installeur. */}
-                <div className="p-6 border-t border-gray-100 dark:border-gray-700">
-                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider mb-4">{t('prospectionSettingsTitle')}</h3>
-                    <div className="flex items-center justify-between">
-                        <div className="w-1/2">
-                            <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">{t('googleMapsApiKey')}</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('googleMapsApiKeyDesc')}</p>
-                        </div>
-                        <div className="w-1/2 flex justify-end items-center gap-2">
-                            <input
-                                type="password"
-                                placeholder={secretPlaceholder('google_maps_api_key')}
-                                value={backendSettings.google_maps_api_key || ''}
-                                onChange={(e) => setBackendSettings(prev => ({ ...prev, google_maps_api_key: e.target.value }))}
-                                className="border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none bg-white dark:bg-gray-700 dark:text-white w-full max-w-[300px]"
-                            />
-                            {secretsSet['google_maps_api_key'] && (
-                                <button type="button" onClick={() => handleDeleteApiKey('google_maps_api_key')} title={t('deleteApiKey')} className="text-gray-400 hover:text-red-500 transition-colors p-1 shrink-0">
-                                    <Trash2 size={16} />
-                                </button>
-                            )}
-                        </div>
-                    </div>
-                </div>
-
             </div>
 
             {/* ── Onglets visibles dans la barre latérale ── */}

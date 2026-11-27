@@ -889,9 +889,6 @@
   "testResult": "رد الوكيل:",
   "profileToComplete": "ملف شخصي يجب إكماله",
   "profileToCompleteHint": "أضف اسمك واسم شركتك",
-  "prospectionSettingsTitle": "التنقيب عن العملاء",
-  "googleMapsApiKey": "مفتاح Google Maps API",
-  "googleMapsApiKeyDesc": "يعرض الخريطة المباشرة في التنقيب. قيّده بواجهة Maps Embed API في وحدة تحكم Google Cloud.",
   "rewriteImprove": "تحسين",
   "rewriteFix": "تصحيح الأخطاء",
   "rewriteShorten": "اختصار",
@@ -923,5 +920,8 @@
   "topProvider": "المزوّد الأول",
   "mostUsedAI": "المزوّد الأكثر استخدامًا",
   "topModel": "النموذج الأول",
-  "mostUsedModel": "النموذج الأكثر استخدامًا"
+  "mostUsedModel": "النموذج الأكثر استخدامًا",
+  "prospectionMapLoadFailed": "تعذّر تحميل خرائط Google. تحقّق من الاتصال بالإنترنت.",
+  "prospectionMapRetry": "إعادة المحاولة",
+  "prospectionMapTimeout": "لم تُعرض الخريطة بعد 15 ثانية. تحقّق من الاتصال بالإنترنت ثم أعد المحاولة."
 }

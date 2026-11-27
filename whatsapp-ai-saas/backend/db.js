@@ -408,6 +408,14 @@ async function runInitDB() {
             "DELETE FROM app_settings WHERE setting_key IN ('gemini_models_cache', 'openrouter_models_cache')"
         ]);
 
+        // v12 (27/11/2026) : la carte de la prospection s'affiche sans clé
+        // (webview sur google.com/maps). La clé Google Maps qu'un utilisateur
+        // aurait saisie dans les Réglages en v1.51.0 est effacée : un secret
+        // que plus rien ne lit n'a pas à rester dans la base.
+        await migrateTo(12, [
+            "DELETE FROM app_settings WHERE setting_key = 'google_maps_api_key'"
+        ]);
+
         // Doit tourner après la création de toutes les tables, et avant que la
         // moindre route ne lise un secret.
         await encryptLegacySecrets(client);

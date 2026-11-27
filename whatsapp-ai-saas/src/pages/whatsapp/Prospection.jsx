@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, MapPin, Phone, Globe, Download, Database, CheckSquare, Square, Loader2, Building2, Map as MapIcon, Globe2, Trash2, Clock, Target, RefreshCw } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import ProspectionMap from '../../components/ProspectionMap';
 import { useTranslation } from 'react-i18next';
 import useAppStore from '../../store';
 import CustomSelect from '../../components/CustomSelect';
@@ -23,11 +23,6 @@ export default function Prospection() {
     const [zone, setZone] = useState('');
     const [duration, setDuration] = useState(5);
     const [quantity, setQuantity] = useState(20);
-    const [googleApiKey, setGoogleApiKey] = useState('');
-    // 'loading' | 'ok' | 'error'. Avant le 26/11/2026, un échec de /api/config
-    // (backend pas encore démarré) laissait la clé vide en silence, et la page
-    // affichait « ajoutez votre clé » alors qu'une clé était configurée.
-    const [configStatus, setConfigStatus] = useState('loading');
 
     // GoAfrica State
     const [goAfricaMetadata, setGoAfricaMetadata] = useState({ countries: [], categories: [] });
@@ -107,22 +102,7 @@ export default function Prospection() {
 
     useEffect(() => {
         fetchMetadata();
-        fetchConfig();
     }, []);
-
-    const fetchConfig = async () => {
-        setConfigStatus('loading');
-        try {
-            const res = await fetch(API_BASE_URL + '/api/config');
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const data = await res.json();
-            setGoogleApiKey(data.googleMapsApiKey || '');
-            setConfigStatus('ok');
-        } catch (error) {
-            console.error('Config fetch error:', error);
-            setConfigStatus('error');
-        }
-    };
 
     const fetchMetadata = async () => {
         try {
@@ -545,42 +525,8 @@ export default function Prospection() {
                     </div>
                 </form>
 
-                {/* Map en temps réel pour Google Maps */}
-                {source === 'google' && query && googleApiKey && (
-                    <div className="mt-6 rounded-xl overflow-hidden border border-gray-200 dark:border-zinc-700 shadow-sm h-[350px] relative">
-                        <iframe
-                            width="100%"
-                            height="100%"
-                            style={{ border: 0 }}
-                            loading="lazy"
-                            allowFullScreen
-                            referrerPolicy="no-referrer-when-downgrade"
-                            src={`https://www.google.com/maps/embed/v1/place?key=${encodeURIComponent(googleApiKey)}&q=${encodeURIComponent(query)}`}
-                        ></iframe>
-                    </div>
-                )}
-                {source === 'google' && query && !googleApiKey && configStatus === 'error' && (
-                    <div className="mt-6 p-4 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg flex items-center justify-between gap-4">
-                        <p className="text-orange-800 dark:text-orange-300 text-sm">
-                            <MapPin className="inline h-4 w-4 mr-1 mb-1" />
-                            Le service local n'a pas répondu : la configuration de la carte n'a pas pu être lue.
-                        </p>
-                        <button type="button" onClick={fetchConfig} className="shrink-0 text-sm font-medium text-orange-800 dark:text-orange-200 underline underline-offset-2">
-                            Réessayer
-                        </button>
-                    </div>
-                )}
-                {source === 'google' && query && !googleApiKey && configStatus === 'ok' && (
-                    <div className="mt-6 p-4 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg flex items-center justify-between gap-4">
-                        <p className="text-orange-800 dark:text-orange-300 text-sm">
-                            <MapPin className="inline h-4 w-4 mr-1 mb-1" />
-                            Pour afficher la carte en temps réel, ajoutez votre clé Google Maps dans Paramètres, section Prospection.
-                        </p>
-                        <Link to="/settings" className="shrink-0 text-sm font-medium text-orange-800 dark:text-orange-200 underline underline-offset-2">
-                            Paramètres
-                        </Link>
-                    </div>
-                )}
+                {/* Carte Google Maps, sans clé (webview) */}
+                {source === 'google' && <ProspectionMap query={query} zone={zone} />}
             </div>
 
             {/* Live Progress Panel */}

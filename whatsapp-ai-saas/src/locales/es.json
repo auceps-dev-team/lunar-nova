@@ -889,9 +889,6 @@
   "testResult": "Respuesta del agente:",
   "profileToComplete": "Perfil por completar",
   "profileToCompleteHint": "Añada su nombre y su empresa",
-  "prospectionSettingsTitle": "Prospección",
-  "googleMapsApiKey": "Clave API de Google Maps",
-  "googleMapsApiKeyDesc": "Muestra el mapa en tiempo real en la prospección. Restrínjala a la API Maps Embed en la consola de Google Cloud.",
   "rewriteImprove": "Mejorar",
   "rewriteFix": "Corregir la ortografía",
   "rewriteShorten": "Acortar",
@@ -923,5 +920,8 @@
   "topProvider": "Proveedor principal",
   "mostUsedAI": "Proveedor más usado",
   "topModel": "Modelo principal",
-  "mostUsedModel": "Modelo más usado"
+  "mostUsedModel": "Modelo más usado",
+  "prospectionMapLoadFailed": "No se pudo cargar Google Maps. Compruebe la conexión a Internet.",
+  "prospectionMapRetry": "Reintentar",
+  "prospectionMapTimeout": "El mapa no se ha cargado después de 15 segundos. Compruebe la conexión a Internet y vuelva a intentarlo."
 }

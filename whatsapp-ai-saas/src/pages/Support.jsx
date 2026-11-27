@@ -48,6 +48,14 @@ const Support = () => {
 
     const changelog = [
         {
+            version: 'v1.51.2',
+            date: '2026-11-27',
+            changes: [
+                'Prospection — La carte Google Maps s\'affiche désormais sans clé : elle ouvre directement Google Maps dans une vue isolée de l\'application, sur la même recherche que l\'extraction des fiches. Elle se met à jour quand vous avez fini de taper ; si elle ne peut pas être chargée, ou reste vide plus de 15 secondes, un message le dit et propose de réessayer',
+                'Sécurité — Moins de secrets à garder : la clé Google Maps disparaît des Réglages, l\'application n\'en lit ni n\'en conserve plus aucune, et celle que vous y auriez saisie est effacée à la mise à jour'
+            ]
+        },
+        {
             version: 'v1.51.1',
             date: '2026-11-27',
             changes: [

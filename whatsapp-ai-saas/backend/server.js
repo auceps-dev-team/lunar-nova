@@ -147,8 +147,9 @@ app.use('/api/wa', waRouter);
 const cliBridgeRouter = require('./routes/cliBridge');
 app.use('/api/cli', cliBridgeRouter);
 
-// /api/config, /api/instances et /api/context/:instance_id : autrefois déclarées
-// en ligne ici (constat R7 de l’audit du 29/09/2026), déplacées sans changement.
+// /api/instances et /api/context/:instance_id : autrefois déclarées en ligne ici
+// (constat R7 de l’audit du 29/09/2026), déplacées sans changement. /api/config
+// est retiré le 27/11/2026 (il ne servait que la clé Google Maps).
 const systemRouter = require('./routes/system');
 app.use('/api', systemRouter);
 

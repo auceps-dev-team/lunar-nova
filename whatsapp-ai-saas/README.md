@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/auceps-dev-team/lunar-nova"><img src="https://img.shields.io/badge/version-1.51.1-blue.svg" alt="Version 1.51.1" /></a>
+  <a href="https://github.com/auceps-dev-team/lunar-nova"><img src="https://img.shields.io/badge/version-1.51.2-blue.svg" alt="Version 1.51.2" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue.svg" alt="License AGPL-3.0" /></a>
   <a href="#-open-source"><img src="https://img.shields.io/badge/open%20source-oui-brightgreen.svg" alt="Open Source" /></a>
   <a href="#-pourquoi-wacopilote-"><img src="https://img.shields.io/badge/Made%20in-%F0%9F%87%A8%F0%9F%87%BE%20C%C3%B4te%20d'Ivoire-orange.svg" alt="Made in Côte d'Ivoire" /></a>
@@ -70,7 +70,7 @@ Là où les outils traditionnels se limitent à de simples chatbots rigides ou �
 - 🤖 **Agents IA Multi-Fournisseurs** : Basculez de manière dynamique entre **Google Gemini 1.5/2.0**, **NVIDIA NIM** (Llama 3, Gemma, Qwen), **OpenRouter**, **Together AI** et des modèles locaux de confidentialité totale via **Ollama**.
 - 📱 **Automation WhatsApp Intelligente** : Détectez les intentions d'achat et traquez les commandes WhatsApp en temps réel grâce à notre moteur headless Playwright/Puppeteer.
 - ✍️ **Rédaction assistée** : Générez un texte avec l'agent de votre choix, réécrivez un passage selon six modes et copiez-le au format WhatsApp (*gras*, _italique_).
-- 🔍 **Prospection & Extraction de Leads** : Extrayez automatiquement des données d'entreprises ciblées depuis **Google Places**, **Annuaire CI** et **GoAfrica** pour alimenter vos campagnes WhatsApp.
+- 🔍 **Prospection & Extraction de Leads** : Extrayez automatiquement des données d'entreprises ciblées depuis **Google Maps** (sans clé d'API), **Annuaire CI** et **GoAfrica** pour alimenter vos campagnes WhatsApp.
 
 ---
 
@@ -134,7 +134,7 @@ npm run start:all
 - **Environnement Desktop Natif** : Application Electron multiplateforme (Windows, macOS, Linux) intégrée avec stockage sécurisé et processus backend managé.
 - **Routage Multi-LLM Dynamique** : Support natif de Google Gemini (Flash, Pro, Vision), NVIDIA NIM API (Llama 3.3 70B, Qwen 2.5, Gemma 2), OpenRouter, Together AI et Ollama (Llama 3 local, Mistral).
 - **Écouteur & Automate WhatsApp** : Analyse des conversations WhatsApp en direct via Playwright (`orderListener.js`), capture des commandes et réponse autonome des agents.
-- **Prospection Lead Mining B2B** : Scrapers intégrés pour Annuaire CI, GoAfrica et recherche Google Places API avec géolocalisation et extraction de coordonnées.
+- **Prospection Lead Mining B2B** : Scrapers intégrés pour Annuaire CI, GoAfrica et Google Maps (navigateur sans interface, aucune clé d'API), avec la carte de la recherche affichée dans l'application.
 - **Rédaction & Réécriture IA** *(v1.51.0)* : six modes de réécriture du passage sélectionné, copie au format WhatsApp, génération confirmée et annulable, langue de rédaction suivant l'interface (arabe compris).
 - **Gestionnaire de Contacts & Segmentation** : Importation de contacts CSV/Excel, gestion des listes de diffusion, segmentation et ciblage pour campagnes WhatsApp.
 - **Créateur de Devis & Factures PDF** : Génération instantanée de devis/factures téléchargeables en PDF (`InvoiceBuilder.jsx`) avec calcul de taxes et personnalisation d'entreprise.
@@ -338,7 +338,7 @@ Les mises à jour distantes sont **désactivées tant qu'aucune clé publique de
 Alimentez votre canal commercial grâce au module de prospection intégré (`backend/routes/prospection.js` & `backend/scrapers/`) :
 
 - **Scraper Annuaire CI & GoAfrica** : Extraction automatisée des entreprises par secteur d'activité (nom, téléphone WhatsApp, email, adresse, site web).
-- **Intégration Google Places API** : Recherche géolocalisée d'établissements commerciaux avec récupération des notes, avis et numéros de téléphone.
+- **Extraction Google Maps, sans clé** : recherche d'établissements par activité et zone sur Google Maps (navigateur sans interface), avec récupération des notes, avis et numéros de téléphone. Depuis la v1.51.2, la carte de la recherche s'affiche elle aussi sans clé Google Cloud, dans une vue isolée de l'application.
 - **Conversion Instantanée en Contacts** : Injection en 1 clic des leads extraits vers le gestionnaire de contacts WaCopilote pour campagne de prospection.
 
 ---
@@ -497,7 +497,7 @@ whatsapp-ai-saas/
 │   ├── routes/             → Routes API Express (AI, WA, Catalog, Prospection, Pipeline, Documents, Devis, CLI, Système)
 │   ├── services/           → Services métier (pipeline, CRM, devis, transcription, notes vocales…)
 │   ├── __tests__/          → Tests unitaires backend (Vitest)
-│   ├── scrapers/           → Modules de scraping (Annuaire CI, GoAfrica, Google Places)
+│   ├── scrapers/           → Modules de scraping (Annuaire CI, GoAfrica, Google Maps)
 │   ├── aiController.js     → Contrôleur centralisé des requêtes IA
 │   ├── apiAuth.js          → Token d'authentification de l'API locale
 │   ├── db.js               → Connexion & schéma de base de données SQLite3
