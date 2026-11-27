@@ -1,7 +1,7 @@
 # 🧠 Carte Mentale & Architecture Globale : WaCopilote (v1.45.0)
 
 ## 📌 Vue d'Ensemble
-**WaCopilote** est une suite logicielle SaaS Desktop & Agentique d'entreprise (Electron 45 + React 19 + Node.js 20 Express) conçue pour automatiser les flux de vente et de prospection WhatsApp, la génération d'images/catalogue IA, la facturation/devis, la gestion multi-comptes WhatsApp et le pilotage bidirectionnel par agents IA externes (Claude Code, Cursor, Antigravity) via CLI et MCP (Model Context Protocol).
+**WaCopilote** est une suite logicielle SaaS Desktop & Agentique d'entreprise (Electron 45 + React 19 + Node.js 22 Express) conçue pour automatiser les flux de vente et de prospection WhatsApp, la génération d'images/catalogue IA, la facturation/devis, la gestion multi-comptes WhatsApp et le pilotage bidirectionnel par agents IA externes (Claude Code, Cursor, Antigravity) via CLI et MCP (Model Context Protocol).
 
 ---
 
