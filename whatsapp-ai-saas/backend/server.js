@@ -18,17 +18,10 @@ const PORT = process.env.PORT || process.env.BACKEND_PORT || 3000;
 // expose toute l'API (clés LLM, contacts, historiques WhatsApp) au réseau local.
 const HOST = process.env.BACKEND_HOST || '127.0.0.1';
 
-// Update process.env if main process sends new secrets (electron-store)
-function handleMessage(msg) {
-    if (msg && msg.type === 'UPDATE_ENV' && msg.key) {
-        process.env[msg.key] = msg.value;
-        console.error(`[Backend] Updated environment variable: ${msg.key}`);
-    }
-}
-process.on('message', handleMessage);
-if (process.parentPort) {
-    process.parentPort.on('message', (e) => handleMessage(e.data));
-}
+// L'ancien gestionnaire de messages UPDATE_ENV, qui écrivait dans process.env
+// toute clé reçue du processus principal (elle-même choisie par le renderer
+// via l'IPC store-set), a été retiré : l'environnement du service est fixé à
+// son lancement et ne se modifie plus à distance.
 
 // Security: Restrict CORS to specific origins.
 // `!origin` couvre les clients non-navigateur ; ceux-là restent filtrés par le token.

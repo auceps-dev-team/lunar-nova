@@ -249,11 +249,14 @@ app.whenReady().then(async () => {
     ipcMain.handle('store-get', (event, key) => {
         return store ? store.get(key) : null;
     });
+    // Le renderer n'y range que l'état de l'interface (pendingUpdateInfo). La
+    // valeur était aussi relayée au backend comme variable d'environnement,
+    // sous la clé choisie par le renderer : un renderer compromis pouvait ainsi
+    // poser PATH, NODE_OPTIONS ou WACOPILOTE_WHISPER_PYTHON (l'interpréteur que
+    // lance la transcription des vocaux). Aucune clé écrite ici n'est lue par
+    // le backend : le relais est supprimé.
     ipcMain.handle('store-set', (event, key, value) => {
         if (store) store.set(key, value);
-        if (backendProcess) {
-            backendProcess.postMessage({ type: 'UPDATE_ENV', key, value });
-        }
         return true;
     });
 
