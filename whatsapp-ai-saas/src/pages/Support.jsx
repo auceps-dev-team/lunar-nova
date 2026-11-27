@@ -48,6 +48,14 @@ const Support = () => {
 
     const changelog = [
         {
+            version: 'v1.52.2',
+            date: '2026-11-27',
+            changes: [
+                'Devis et factures — L\'export PDF et l\'extraction des fiches de prospection utilisent désormais Microsoft Edge, déjà présent sous Windows : plus besoin du navigateur que l\'outil d\'automatisation devait télécharger, et dont l\'absence faisait échouer ces fonctions. À défaut d\'Edge, Google Chrome est utilisé',
+                'Maintenance — Mise à jour de l\'outil d\'automatisation du navigateur (Playwright 1.65)'
+            ]
+        },
+        {
             version: 'v1.52.1',
             date: '2026-11-27',
             changes: [

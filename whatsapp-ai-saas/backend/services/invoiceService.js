@@ -80,13 +80,12 @@ async function deleteInvoice(id) {
  * (src/components/invoice/buildInvoiceHTML.js, module ESM chargé dynamiquement
  * — aucune duplication de template).
  *
- * Rendu via un Chromium headless indépendant (playwright, déjà utilisé par
- * backend/scrapers/googleMapScraper.js) plutôt que via le pont CDP partagé de
- * l'app Electron (localhost:8315) : ce dernier ne supporte pas la création de
- * nouvelles pages (`Target.createTarget` → "Not supported"), seulement le
- * pilotage de webviews déjà ouvertes (voir backend/routes/wa.js). Avantage
- * secondaire : l'export PDF fonctionne même sans l'app Electron lancée,
- * cohérent avec le reste du CLI (standalone, in-process).
+ * Rendu par un navigateur headless indépendant, piloté par Playwright : Edge
+ * d'abord, comme les extracteurs (services/navigateur.js). Pas par
+ * l'application Electron : son port de débogage est fermé depuis la v1.52.0,
+ * et il ne savait de toute façon pas créer de page (`Target.createTarget` →
+ * "Not supported"). L'export PDF fonctionne ainsi sans l'application lancée,
+ * comme le reste du CLI.
  */
 async function renderPdf(id, outPath = null) {
     const invoice = await getInvoice(id);
@@ -97,8 +96,8 @@ async function renderPdf(id, outPath = null) {
     const t = (key) => locale[key] || key;
     const html = buildInvoiceHTML(invoice, t);
 
-    const { chromium } = require('playwright');
-    const browser = await chromium.launch({ headless: true });
+    const { lancerNavigateur } = require('./navigateur');
+    const browser = await lancerNavigateur({ headless: true });
     try {
         const page = await browser.newPage();
         await page.setContent(html, { waitUntil: 'networkidle' });

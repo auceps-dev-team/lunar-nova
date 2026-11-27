@@ -1,9 +1,11 @@
 # Project Progress: WaCopilote
 
 ## Completed Milestones
+- [x] **Navigateur des automatisations : Edge (v1.52.2, 2026-11-27)** :
+  - Factures PDF et extracteurs par Microsoft Edge (puis Chrome, puis Chromium de Playwright) ; Playwright 1.65.1.
 - [x] **Sortie du CLI et dépendances (v1.52.1, 2026-11-27)** :
   - Le CLI ne plante plus en sortant après un fetch sous Windows ; Express 5, OpenAI 7, Google GenAI 3 (API v1beta conservée), jsdom 31, lucide 1.x.
-  - Restant : fournir le navigateur de Playwright (factures PDF, extracteurs) avant de passer au-delà de 1.58 ; eslint 10 après la PR #22 ; i18next 27 avec react-i18next 18.
+  - Restant : eslint 10 après la PR #22 ; i18next 27 avec react-i18next 18 ; jest-dom 8 avec Vitest 5.
 - [x] **Port de débogage fermé — S2 (v1.52.0, 2026-11-27)** :
   - WhatsApp Web piloté par le canal privé du processus principal ; plus aucun port réseau de débogage en production. CLI et MCP passent par l'API de l'application.
   - Restant : valider sur une session WhatsApp connectée (écoute des commandes, vocaux, vérification de numéro) — les sondes n'ont accès qu'à la page de QR code ; Marketplace des fonctionnalités activables (à concevoir).
