@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/auceps-dev-team/lunar-nova"><img src="https://img.shields.io/badge/version-1.51.0-blue.svg" alt="Version 1.51.0" /></a>
+  <a href="https://github.com/auceps-dev-team/lunar-nova"><img src="https://img.shields.io/badge/version-1.51.1-blue.svg" alt="Version 1.51.1" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue.svg" alt="License AGPL-3.0" /></a>
   <a href="#-open-source"><img src="https://img.shields.io/badge/open%20source-oui-brightgreen.svg" alt="Open Source" /></a>
   <a href="#-pourquoi-wacopilote-"><img src="https://img.shields.io/badge/Made%20in-%F0%9F%87%A8%F0%9F%87%BE%20C%C3%B4te%20d'Ivoire-orange.svg" alt="Made in Côte d'Ivoire" /></a>
@@ -361,8 +361,11 @@ Vos conversations, vos contacts et vos clés d'API ne quittent jamais votre mach
 
 **Renforcé en v1.50.1** — le jeton d'authentification est vérifié avant toute lecture du corps des requêtes (un corps volumineux sans jeton était auparavant lu en entier avant d'être refusé) ; l'interface packagée applique une politique de sécurité du contenu (CSP) qui n'autorise que les scripts de l'application et de la connexion Google — vérifiée sans violation sur les 24 écrans, un script tiers injecté en témoin étant bien bloqué ; une origine web non autorisée reçoit un 403 propre plutôt qu'une erreur 500.
 
+**Renforcé en v1.51.1** — l'API locale ne lance plus que les assistants en ligne de commande connus (Gemini CLI, Claude Code, Aider, Ollama), jamais un programme désigné par la requête ; les messages de vos contacts et les fiches de prospects ne sont jamais confiés aux assistants qui agissent sur votre ordinateur ; les programmes lancés par l'application (assistants, transcription locale des vocaux) ne reçoivent ni la clé maître ni les clés d'API des autres fournisseurs ; aucun site extérieur ne s'ouvre dans une fenêtre de l'application (les liens partent dans votre navigateur), et seule la page de l'application peut obtenir le jeton de l'API locale ; Electron 45, version maintenue.
+
 **Limites connues, à corriger**
 
+- Le port de débogage Chromium `8315` reste ouvert sur la boucle locale : c'est par lui que le service local pilote WhatsApp Web. Un programme qui tourne déjà sur la machine peut s'y connecter et agir dans vos sessions WhatsApp. Le fermer demande de piloter les webviews depuis le processus principal (`webContents.debugger`) : c'est une refonte, pas un correctif ponctuel.
 - Si le magasin de secrets du système est indisponible (typiquement Linux sans keyring), la clé maître retombe sur un fichier local en permissions `600`. Le chiffrement protège alors les sauvegardes et les dossiers synchronisés, mais plus un attaquant ayant déjà accès au disque sous votre compte.
 - Le dépôt public conserve dans son historique Git deux fichiers de travail retirés en v1.38.1, contenant les coordonnées professionnelles de quelques entreprises issues d'annuaires publics. Le raisonnement et la procédure de retrait sur demande figurent dans [SECURITY.md](../SECURITY.md).
 
