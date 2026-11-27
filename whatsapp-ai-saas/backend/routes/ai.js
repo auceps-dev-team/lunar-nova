@@ -143,7 +143,10 @@ const agentSchema = z.object({
     isRealTime: z.boolean().nullish(),
     modelOverride: z.string().nullish(),
     provider: z.string().nullish(),
-    model: z.string().nullish()
+    model: z.string().nullish(),
+    // Le message contient du texte d'un tiers (conversation WhatsApp jointe
+    // par le copilote) : le routeur écarte alors les agents locaux (S3).
+    untrustedInput: z.boolean().nullish()
 }).refine(data => data.message || (data.messages && data.messages.length > 0), {
     message: "Missing message.",
 });
@@ -153,13 +156,16 @@ router.post('/ai/agent', aiLimiter, async (req, res) => {
     try {
         // Validation des inputs avec Zod
         const validatedData = agentSchema.parse(req.body);
-        const { persona, message, messages, imageParams, attachments, promptFormat, currentTasks, isRealTime, modelOverride, provider, model } = validatedData;
+        const { persona, message, messages, imageParams, attachments, promptFormat, currentTasks, isRealTime, modelOverride, provider, model, untrustedInput } = validatedData;
 
         // Use provider and model from frontend as overrides
         const finalProvider = provider || null;
         const finalModel = modelOverride || model || null;
 
-        const aiResponse = await aiController.chatWithAgent(persona, message, imageParams, attachments, promptFormat, messages, currentTasks, isRealTime, finalModel, finalProvider);
+        const aiResponse = await aiController.chatWithAgent(
+            persona, message, imageParams, attachments, promptFormat, messages, currentTasks, isRealTime, finalModel, finalProvider,
+            { untrustedInput: untrustedInput === true }
+        );
         res.json({
             status: 'success',
             response: aiResponse.response
