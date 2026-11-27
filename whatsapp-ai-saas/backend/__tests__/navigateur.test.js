@@ -40,6 +40,24 @@ describe('lancerNavigateur', () => {
         expect(seulChromium.appels.map((o) => o.channel)).toEqual(['msedge', 'chrome', undefined]);
     });
 
+    it('close() rend la main au plus tard après le délai, même si le navigateur traîne', async () => {
+        let fermetureDemandee = false;
+        const chromium = { launch: async () => ({ close: () => { fermetureDemandee = true; return new Promise(() => {}); } }) };
+        const n = await lancerNavigateur({ headless: true }, { chromium, delaiFermetureMs: 50 });
+        const t = Date.now();
+        await n.close();
+        expect(fermetureDemandee).toBe(true);
+        expect(Date.now() - t).toBeLessThan(1000);
+    });
+
+    it('close() rapide : rend la main dès la fermeture, sans attendre le délai', async () => {
+        const chromium = { launch: async () => ({ close: async () => {} }) };
+        const n = await lancerNavigateur({ headless: true }, { chromium, delaiFermetureMs: 5000 });
+        const t = Date.now();
+        await n.close();
+        expect(Date.now() - t).toBeLessThan(500);
+    });
+
     it('aucun navigateur : une erreur 503 qui nomme les trois échecs', async () => {
         await expect(lancerNavigateur({ headless: true }, { chromium: fauxChromium([]) })).rejects.toMatchObject({
             statusCode: 503,

@@ -48,6 +48,13 @@ const Support = () => {
 
     const changelog = [
         {
+            version: 'v1.52.3',
+            date: '2026-11-28',
+            changes: [
+                'Devis et factures — L\'export PDF et l\'extraction des fiches ne restent plus bloqués une trentaine de secondes après avoir terminé : Edge pouvait mettre ce temps à se fermer. Le résultat est rendu dès qu\'il est prêt'
+            ]
+        },
+        {
             version: 'v1.52.2',
             date: '2026-11-27',
             changes: [
