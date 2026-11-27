@@ -1,8 +1,8 @@
 # Project Progress: WaCopilote
 
 ## Completed Milestones
-- [x] **Navigateur des automatisations : Edge (v1.52.2, 2026-11-27)** :
-  - Factures PDF et extracteurs par Microsoft Edge (puis Chrome, puis Chromium de Playwright) ; Playwright 1.65.1.
+- [x] **Navigateur des automatisations : Edge (v1.52.2 et v1.52.3, 2026-11-27/28)** :
+  - Factures PDF et extracteurs par Microsoft Edge (puis Chrome, puis Chromium de Playwright) ; Playwright 1.65.1 ; fermeture d'Edge bornée à 3 s (elle pouvait prendre 30 s).
 - [x] **Sortie du CLI et dépendances (v1.52.1, 2026-11-27)** :
   - Le CLI ne plante plus en sortant après un fetch sous Windows ; Express 5, OpenAI 7, Google GenAI 3 (API v1beta conservée), jsdom 31, lucide 1.x.
   - Restant : eslint 10 après la PR #22 ; i18next 27 avec react-i18next 18 ; jest-dom 8 avec Vitest 5.

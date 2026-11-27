@@ -1,5 +1,8 @@
 # Active Context: WaCopilote
 
+- **v1.52.3** — Fermeture d'Edge bornée (+0.0.1), 28/11/2026 :
+  - Mesuré le 27/11 au soir (Edge 158, processeur à 100 %) : PDF prêt en 3,2 s, mais `browser.close()` rendait la main après 16 à 48 s ; Chrome, dans les mêmes conditions, en moins d'une seconde. Pendant la fermeture, ce sont le processus principal d'Edge et son `StorageService` (écriture du profil jetable) qui restent.
+  - `lancerNavigateur` borne `close()` à 3 s (`DELAI_FERMETURE_MS`) ; la fermeture continue en arrière-plan. CLI `quotes export-pdf` : code 0 en 8,9 s, aucun Edge restant 30 s après, aucun profil temporaire laissé. Tests : fermeture qui traîne → rend la main ; fermeture rapide → sans attendre le délai.
 - **v1.52.2** — Navigateur des automatisations : Edge (+0.0.1), 27/11/2026 :
   - `backend/services/navigateur.js` (`lancerNavigateur`) : canal `msedge`, puis `chrome`, puis le Chromium de Playwright ; s'ils échouent tous, une erreur 503 nomme les trois. Employé par `invoiceService.renderPdf` et les trois extracteurs (Google Maps, annuaire CI, GoAfrica).
   - Playwright 1.58 → **1.65.1**. Mesuré le 27/11 : avec la 1.65.1, Edge et Chrome produisent le PDF, le Chromium de Playwright échoue (« Executable doesn't exist … chromium_headless_shell-1255 ») ; le projet n'installe jamais ce navigateur. CLI `quotes export-pdf` : code 0, PDF de 42 912 octets. Extracteur Google Maps : 3 fiches en 24 s. Build : le Node d'Electron (24.22.3) lance Edge 158 depuis app.asar et produit le PDF.
