@@ -74,10 +74,12 @@ const DELAI_API_LOCALE_MS = 60000;
  *
  * Mesuré le 27/11/2026, application v1.52.0 ouverte, Node 24.16.0, 4 essais par
  * variante : fetch → 4 plantages, base SQLite ouverte ou non ; node:http sans
- * agent → 4 sorties propres ; fetch sous --liftoff-only → 4 sorties propres.
- * C'est donc la compilation optimisée du WebAssembly de fetch (l'analyseur HTTP
- * d'undici) qui se termine pendant la fermeture. Non reproduit contre un faux
- * serveur minimal : la réponse réelle de l'application y est nécessaire.
+ * agent → 4 sorties propres ; fetch sous --liftoff-only (ligne de commande) →
+ * 4 sorties propres. Cause probable, non démontrée : une tâche de V8 en
+ * arrière-plan achevée pendant la destruction de l'environnement. Non reproduit
+ * contre un faux serveur minimal, reproduit contre le backend lancé seul. La
+ * sortie du CLI est désormais naturelle (bin/wacopilote.cjs, terminer) ; ce
+ * client reste en node:http, sans connexion gardée ouverte.
  */
 function posterJson(url, jeton, corps) {
     const cible = new URL(url);
