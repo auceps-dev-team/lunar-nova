@@ -12,7 +12,7 @@ Les échanges se font en français ou en anglais, au choix.
 
 ### Prérequis
 
-- **Node.js 20+** et **npm 9+**
+- **Node.js 22.12+** (exigé par Electron 45) et **npm 9+**
 - **Redis** sur le port 6379 (cache et limitation de débit)
 - Un navigateur Chromium, installé automatiquement par Playwright
 

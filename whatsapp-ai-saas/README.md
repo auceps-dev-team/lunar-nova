@@ -403,7 +403,7 @@ La configuration ESLint distingue désormais les trois environnements du dépôt
 | **Application Desktop** | Electron 45, Electron Builder 26 |
 | **Frontend Framework** | React 19, Vite 7, React Router 7, Zustand 5 |
 | **Styling & UI** | Tailwind CSS 3, Lucide React, Recharts, dnd-kit |
-| **Serveur Backend** | Node.js 20, Express.js 4 |
+| **Serveur Backend** | Node.js 22, Express.js 4 |
 | **Base de Données & Cache** | SQLite 3 (`sqlite3` / `sqlite`), Redis 5 (`redis`) |
 | **Automation Web** | Playwright, Puppeteer Core |
 | **Moteurs d'IA (LLMs)** | `@google/genai`, NVIDIA NIM API, OpenRouter API, Ollama SDK |
