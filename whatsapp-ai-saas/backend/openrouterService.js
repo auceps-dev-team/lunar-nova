@@ -70,8 +70,14 @@ async function syncOpenRouterModels() {
     }
 }
 
-// Retarder de 3 secondes pour s'assurer que la connexion SQLite est prête
-setTimeout(syncOpenRouterModels, 3000);
+// Retarder de 3 secondes pour s'assurer que la connexion SQLite est prête.
+// Jamais sous Vitest : la synchronisation partait 3 s après le chargement du
+// module, quel que soit le test qui l'avait chargé, interrogeait openrouter.ai
+// puis écrivait le catalogue en base. Un fichier de test qui se terminait
+// pendant cette écriture arrêtait son fil de travail sous une requête SQLite
+// en cours, et tout Vitest s'arrêtait (FATAL ERROR napi_throw, code 134).
+// Observé le 27/11/2026 à la fin de mcpServer.test.js.
+if (!process.env.VITEST) setTimeout(syncOpenRouterModels, 3000);
 
 
 async function generateProposals(chatContext, modelParam, apiKey) {

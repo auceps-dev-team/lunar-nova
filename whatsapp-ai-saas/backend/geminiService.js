@@ -89,8 +89,10 @@ async function syncGeminiModels() {
     }
 }
 
-// Retarder de 3 secondes pour s'assurer que la connexion SQLite est prête
-setTimeout(syncGeminiModels, 3000);
+// Retarder de 3 secondes pour s'assurer que la connexion SQLite est prête.
+// Jamais sous Vitest : même raison que dans openrouterService.js (écriture
+// SQLite en cours à la fin d'un fichier de test → arrêt natif de Vitest).
+if (!process.env.VITEST) setTimeout(syncGeminiModels, 3000);
 
 async function generateProposals(chatContext, modelParam) {
     if (!chatContext || !chatContext.messages || chatContext.messages.length === 0) {
