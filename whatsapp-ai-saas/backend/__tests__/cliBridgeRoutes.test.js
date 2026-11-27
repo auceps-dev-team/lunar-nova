@@ -2,6 +2,8 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import express from 'express';
 import http from 'http';
 import cliBridgeRouter from '../routes/cliBridge';
+import settingsAgentsRouter from '../routes/settings_and_agents';
+import db from '../db';
 
 describe('routes/cliBridge.js — Endpoints REST pour le Bridge CLI', { timeout: 30000 }, () => {
     let server;
@@ -11,6 +13,7 @@ describe('routes/cliBridge.js — Endpoints REST pour le Bridge CLI', { timeout:
         const app = express();
         app.use(express.json());
         app.use('/api/cli', cliBridgeRouter);
+        app.use('/api', settingsAgentsRouter);
 
         await new Promise((resolve) => {
             server = http.createServer(app);
@@ -36,7 +39,8 @@ describe('routes/cliBridge.js — Endpoints REST pour le Bridge CLI', { timeout:
         expect(body.success).toBe(true);
         expect(body.version).toBeDefined();
         expect(Array.isArray(body.allowedCommands)).toBe(true);
-        expect(body.allowedCommands).toContain('node');
+        expect(body.allowedCommands).toContain('claude');
+        expect(body.allowedCommands).not.toContain('node');
         expect(body.binPath).toContain('wacopilote.cjs');
     });
 
@@ -52,27 +56,21 @@ describe('routes/cliBridge.js — Endpoints REST pour le Bridge CLI', { timeout:
         expect(body.formattedString).toContain('wacopilote');
     });
 
-    it('POST /api/cli/run-external rejette une requête sans nom de commande', async () => {
+    it('POST /api/cli/run-external n\'existe plus (exécution de commande libre retirée)', async () => {
         const res = await fetch(`${baseUrl}/api/cli/run-external`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({})
+            body: JSON.stringify({ command: 'node', args: ['-e', 'console.log(1)'] })
         });
 
-        expect(res.status).toBe(400);
-        const body = await res.json();
-        expect(body.success).toBe(false);
-        expect(body.error).toContain('Nom de commande requis');
+        expect(res.status).toBe(404);
     });
 
-    it('POST /api/cli/settings enregistre les nouveaux réglages', async () => {
+    it('POST /api/cli/settings enregistre le timeout', async () => {
         const res = await fetch(`${baseUrl}/api/cli/settings`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                allowed_cli_commands: 'gemini,claude,custom_cli',
-                cli_timeout_seconds: 45
-            })
+            body: JSON.stringify({ cli_timeout_seconds: 45 })
         });
 
         expect(res.status).toBe(200);
@@ -81,23 +79,49 @@ describe('routes/cliBridge.js — Endpoints REST pour le Bridge CLI', { timeout:
         expect(body.message).toContain('avec succès');
     });
 
-    it('POST /api/cli/test-bridge en mode external exécute un binaire machine autorisé', async () => {
+    it('POST /api/cli/settings refuse de modifier la liste des commandes autorisées', async () => {
+        const res = await fetch(`${baseUrl}/api/cli/settings`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ allowed_cli_commands: 'powershell,cmd' })
+        });
+
+        expect(res.status).toBe(400);
+        const body = await res.json();
+        expect(body.success).toBe(false);
+        expect(await db.getSetting('allowed_cli_commands', '')).not.toContain('powershell');
+    });
+
+    it('PUT /api/settings ignore allowed_cli_commands sans faire échouer le reste de l\'enregistrement', async () => {
+        const res = await fetch(`${baseUrl}/api/settings`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                allowed_cli_commands: 'powershell,cmd',
+                default_cli_agent: 'claude'
+            })
+        });
+
+        expect(res.status).toBe(200);
+        expect(await db.getSetting('allowed_cli_commands', '')).not.toContain('powershell');
+        expect(await db.getSetting('default_cli_agent', '')).toBe('claude');
+    });
+
+    it('POST /api/cli/test-bridge refuse le mode external (binaire et arguments libres)', async () => {
         const res = await fetch(`${baseUrl}/api/cli/test-bridge`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 mode: 'external',
                 cliCommand: 'node',
-                cliArgs: ['--version']
+                cliArgs: ['-e', 'console.log("SHOULD_NOT_RUN")']
             })
         });
 
-        expect(res.status).toBe(200);
+        expect(res.status).toBe(400);
         const body = await res.json();
-        expect(body.success).toBe(true);
-        expect(body.mode).toBe('external');
-        expect(body.response).toMatch(/^v\d+/);
-        expect(body.executionTimeMs).toBeGreaterThanOrEqual(0);
+        expect(body.success).toBe(false);
+        expect(body.error).toContain('Mode de test inconnu');
     });
 
     it('POST /api/cli/test-bridge en mode mcp invoque un outil MCP directement', async () => {

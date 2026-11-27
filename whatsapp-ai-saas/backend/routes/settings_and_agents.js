@@ -18,6 +18,14 @@ const { pool, setSetting } = require('../db');
 // « Supprimer la clé » dédié le jour où le besoin se pose.
 const isSecretKey = (key) => key.endsWith('_api_key');
 
+// Réglages que l'API générique ne doit jamais écrire. `allowed_cli_commands`
+// étendait la liste des binaires exécutables par le backend : l'écrire
+// revenait à autoriser n'importe quelle commande. La clé est ignorée plutôt que
+// refusée, parce que la page Réglages renvoie l'objet complet lu par le GET —
+// une base qui contient encore cette clé ferait sinon échouer chaque
+// enregistrement.
+const PROTECTED_SETTINGS = new Set(['allowed_cli_commands']);
+
 // --- Phase 15: Modularity APIs ---
 router.get('/settings', async (req, res) => {
     try {
@@ -41,6 +49,9 @@ router.get('/settings', async (req, res) => {
 router.put('/settings', async (req, res) => {
     try {
         for (const [key, value] of Object.entries(req.body)) {
+            if (PROTECTED_SETTINGS.has(key)) {
+                continue;
+            }
             if (isSecretKey(key) && (value === '' || value === null || value === undefined)) {
                 continue; // Champ laissé tel quel par l'utilisateur.
             }

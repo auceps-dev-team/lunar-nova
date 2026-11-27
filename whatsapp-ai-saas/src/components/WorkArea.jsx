@@ -3,6 +3,7 @@ import useAppStore from '../store';
 import { useTranslation } from 'react-i18next';
 import { API_BASE_URL } from '../config';
 import { buildContextExtractionScript } from '../utils/whatsappContextScript';
+import { buildCopilotAgentRequest } from '../utils/copilotRequest';
 
 import '../styles/global.css';
 import { Paperclip, X } from 'lucide-react';
@@ -20,6 +21,9 @@ const WorkArea = ({ instances, activeId }) => {
         { role: 'agent', text: t('copilotWelcomeMsg') }
     ]);
     const [attachments, setAttachments] = useState([]);
+    // La discussion a déjà joint la conversation WhatsApp : ses réponses
+    // peuvent reprendre du texte du contact (voir utils/copilotRequest.js).
+    const contactTextRef = React.useRef(false);
     const chatFileInputRef = React.useRef(null);
     const [copilotWidth, setCopilotWidth] = useState(320);
     const [isResizing, setIsResizing] = useState(false);
@@ -109,6 +113,7 @@ const WorkArea = ({ instances, activeId }) => {
         setChatHistory([
             { role: 'agent', text: t('copilotWelcomeMsg') }
         ]);
+        contactTextRef.current = false;
     }, [activeId, t]);
 
     const handleCopy = (text, index) => {
@@ -209,42 +214,24 @@ const WorkArea = ({ instances, activeId }) => {
                 ctxDataContext = await getWhatsAppContext();
             }
 
-            // Build conversation history for the agent, plus inject WhatsApp context into the final prompt
-            let historyForAgent = chatHistory.filter(msg => !msg.proposals).map(msg => ({
-                role: msg.role === 'agent' ? 'model' : 'user',
-                text: msg.text
-            }));
-
-            let finalMessage = userMsg;
-            let finalAttachments = [...attachments];
-
-            if (ctxDataContext && ctxDataContext.messages && ctxDataContext.messages.length > 0) {
-                let formattedChat = `[Contexte Whatsapp Actuel: Chat with ${ctxDataContext.contactName}]\n`;
-                ctxDataContext.messages.slice(-8).forEach(msg => {
-                    formattedChat += `[${msg.time}] ${msg.sender}: ${msg.text}\n`;
-                    if (msg.media) {
-                        finalAttachments.push({
-                            name: 'whatsapp_image.jpg',
-                            data: msg.media,
-                            mimeType: 'image/jpeg'
-                        });
-                    }
-                });
-                finalMessage = `${formattedChat}\n\n[USER]: ${userMsg}`;
-            }
+            // Conversation WhatsApp jointe au message : la requête porte
+            // alors untrustedInput, et le backend n'envoie pas ce texte à un
+            // agent local (Claude Code, Gemini CLI) — constat S3.
+            const body = buildCopilotAgentRequest({
+                userMsg,
+                chatHistory,
+                whatsappContext: ctxDataContext,
+                attachments,
+                contactTextEarlier: contactTextRef.current,
+                provider: appSettings.provider,
+                model: appSettings.model
+            });
+            if (body.untrustedInput) contactTextRef.current = true;
 
             const res = await fetch(API_BASE_URL + '/api/ai/agent', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    persona: 'copilot',
-                    message: finalMessage,
-                    attachments: finalAttachments,
-                    messages: historyForAgent,
-                    promptFormat: 'text',
-                    provider: appSettings.provider,
-                    model: appSettings.model
-                })
+                body: JSON.stringify(body)
             });
 
             const data = await res.json();
@@ -338,7 +325,7 @@ const WorkArea = ({ instances, activeId }) => {
                                         el.addEventListener('dom-ready', () => {
                                             el.insertCSS('::-webkit-scrollbar { display: none !important; } * { scrollbar-width: none !important; }');
                                             // Inject instance ID into the global window object so Playwright can find the right context
-                                            el.executeJavaScript(`window.__whatsapp_instance_id = '${instance.id}';`);
+                                            el.executeJavaScript(`window.__whatsapp_instance_id = ${JSON.stringify(String(instance.id))};`);
                                         });
                                         el.setAttribute('data-setup-injected', 'true');
                                     }

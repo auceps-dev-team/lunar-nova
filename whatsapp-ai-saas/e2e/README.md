@@ -8,9 +8,11 @@ complet `Electron → main.cjs → backend Express` tel que vécu par l'utilisat
 
 Prérequis :
 
-1. Dépendances **avec scripts postinstall** (télécharge le binaire Electron) :
+1. Dépendances, puis binaire Electron. Depuis Electron 42, `npm install` ne
+   télécharge plus le binaire ; la commande `install-electron` du paquet le fait :
    ```bash
-   npm install          # PAS --ignore-scripts
+   npm install
+   npx install-electron
    ```
 2. Renderer de production :
    ```bash

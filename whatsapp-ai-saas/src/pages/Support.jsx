@@ -48,6 +48,18 @@ const Support = () => {
 
     const changelog = [
         {
+            version: 'v1.51.1',
+            date: '2026-11-27',
+            changes: [
+                'Sécurité — Un lien vers un site extérieur (site d\'un prospect, lien reçu dans WhatsApp, lien d\'un document généré) s\'ouvre désormais dans votre navigateur habituel. Ouvert dans une fenêtre de l\'application, un site malveillant pouvait obtenir l\'accès au service local, donc à vos contacts et à vos conversations',
+                'Sécurité — Le service local ne lance plus que les assistants en ligne de commande connus (Gemini CLI, Claude Code, Aider, Ollama) : le mode « commande externe », qui exécutait le programme indiqué dans la requête, est retiré',
+                'Sécurité — Les messages de vos contacts et les fiches de prospects ne sont plus confiés aux assistants qui agissent sur votre ordinateur (Claude Code, Gemini CLI) : ils passent par le fournisseur d\'IA en ligne configuré. Cela vaut aussi pour le copilote, dès qu\'il lit la conversation ouverte pour vous répondre',
+                'Sécurité — Les assistants en ligne de commande et la transcription locale des vocaux ne reçoivent plus la clé qui protège vos secrets, ni les clés d\'API des autres fournisseurs',
+                'Sécurité — La ligne de commande wacopilote et le serveur MCP n\'écrivent plus de clé dans le dossier de l\'application installée',
+                'Sécurité — Electron 45 (Chromium 156), version maintenue : Electron 41 ne recevait plus de correctifs de sécurité. Dépendances mises à jour : 33 des 39 alertes corrigées ; les 6 restantes, de sévérité moyenne, concernent l\'outil qui fabrique l\'installeur, pas l\'application. Elles sont désormais surveillées chaque semaine'
+            ]
+        },
+        {
             version: 'v1.51.0',
             date: '2026-11-26',
             changes: [

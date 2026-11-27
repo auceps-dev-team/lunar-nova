@@ -77,6 +77,23 @@ function toUnpackedPath(p) {
     return String(p).replace(/app\.asar([\\/])/, 'app.asar.unpacked$1');
 }
 
+/**
+ * Environnement du processus Python : variables système et propres à Python
+ * (liste fermée de buildChildEnv), plus le modèle et la langue. Il recevait
+ * auparavant tout process.env, y compris WACOPILOTE_MASTER_KEY — la clé qui
+ * déchiffre tous les secrets — et les clés d'API de tous les fournisseurs,
+ * transmises à un interpréteur qui charge des bibliothèques tierces.
+ */
+function buildWhisperEnv(model, languageHint) {
+    const { buildChildEnv } = require('./externalAgentRunner');
+    return buildChildEnv('python', {
+        WHISPER_MODEL: model,
+        WHISPER_LANGUAGE: languageHint && /^[a-z]{2}$/i.test(languageHint)
+            ? languageHint.toLowerCase()
+            : 'auto'
+    });
+}
+
 async function transcribeWithLocalWhisper(audio, options = {}) {
     const { spawn } = require('child_process');
     const path = require('path');
@@ -95,13 +112,7 @@ async function transcribeWithLocalWhisper(audio, options = {}) {
     return new Promise((resolve, reject) => {
         const child = spawn(python, [script], {
             stdio: ['pipe', 'pipe', 'pipe'],
-            env: {
-                ...process.env,
-                WHISPER_MODEL: model,
-                WHISPER_LANGUAGE: options.languageHint && /^[a-z]{2}$/i.test(options.languageHint)
-                    ? options.languageHint.toLowerCase()
-                    : 'auto'
-            }
+            env: buildWhisperEnv(model, options.languageHint)
         });
 
         let stdout = '';
@@ -243,6 +254,7 @@ async function transcribe({ audio, mimeType, languageHint, engine, model } = {})
 module.exports = {
     transcribe,
     toUnpackedPath,
+    buildWhisperEnv,
     registerEngine,
     listEngines,
     MAX_AUDIO_BYTES

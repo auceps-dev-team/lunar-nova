@@ -5,6 +5,7 @@
 1. **Hybrid Desktop / Server Architecture**:
    - Electron wrapper launches both the React renderer interface and an embedded/managed Express.js Node server.
    - IPC communication between renderer and main process for file operations, store updates, and desktop native capabilities.
+   - **Frontière du preload** (v1.51.1) : la fenêtre principale porte le pont `electronAPI` et le jeton de l'API locale. Elle ne charge que `dist/index.html` (`will-navigate`), aucune fenêtre ne naît de `window.open` / `target="_blank"` (`setWindowOpenHandler` → navigateur du système), et les IPC sensibles passent par `handleFromApp` (cadre principal de la page de l'application seulement). Les webviews ne chargent que `https://web.whatsapp.com`, sans preload. Le store electron ne remonte jamais dans l'environnement du backend.
 
 2. **Multi-Model AI Gateway & Strategy Pattern**:
    - Standardized provider adapters (`geminiService.js`, `nvidiaModels.js`, `openrouterService.js`, `ollamaService.js`, `openaiService.js`).
@@ -33,7 +34,7 @@
 8. **Bidirectional CLI & Model Context Protocol (MCP) Pattern**:
    - **Inbound CLI Control** : Point d'entrée exécutable autonome (`bin/wacopilote.cjs`) permettant le pilotage direct de tous les agents (`list-agents`, `run`, `pipeline run`, `status`) avec support des flux Unix pipés (`stdin`) et des sorties JSON structurées.
    - **Serveur MCP Standardisé** : Passerelle JSON-RPC 2.0 sur flux `stdio` (`backend/mcp/wacopiloteMcpServer.js`) exposant les outils d'agents, de commandes et de propositions produits HITL (`wp_pending_actions`) directement aux IDEs agentiques (Claude Code, Cursor, Antigravity).
-   - **Outbound Execution & Security Sandboxing** : Exécuteur de sous-processus sécurisé (`backend/services/externalAgentRunner.js`) avec validation par liste blanche stricte (`DEFAULT_ALLOWED_COMMANDS`), assainissement des arguments pour prévenir les injections shell, et plafonnement des temps d'exécution (timeout).
+   - **Outbound Execution & Security Sandboxing** : Exécuteur de sous-processus sécurisé (`backend/services/externalAgentRunner.js`) avec liste fermée de CLI d'agents (`ALLOWED_COMMANDS` : gemini, gemini-cli, claude, aider, ollama — non extensible par réglage, aucune route n'accepte de binaire ni d'arguments libres), assainissement des arguments pour prévenir les injections shell, et plafonnement des temps d'exécution (timeout).
 
 9. **Mandatory Versioning & Commit Protocol (Universal Rule across all projects)**:
    - **Semantic Version Bump**:

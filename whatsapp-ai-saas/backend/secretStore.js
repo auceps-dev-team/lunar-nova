@@ -146,6 +146,22 @@ app.whenReady().then(() => {
 
     // 4. Génération d'une nouvelle clé si rien n'existe
     const generated = crypto.randomBytes(32).toString('hex');
+
+    // Le dossier de l'application installée n'est jamais modifié par un
+    // processus qui l'a seulement DÉTECTÉ (CLI, serveur MCP ou backend de
+    // développement lancés sans USER_DATA_PATH, voir resolveUserDataDir).
+    // Mesuré le 26/11/2026 : un simple `wacopilote help` y écrivait une clé
+    // maître en clair, que l'application adopte et scelle à son lancement
+    // suivant. La clé est alors gardée en mémoire seulement : les secrets
+    // déjà enregistrés restent illisibles pour ce processus, comme avant,
+    // mais rien n'est écrit chez l'utilisateur.
+    if (!process.env.USER_DATA_PATH && path.resolve(baseDir) !== path.resolve(__dirname, '..')) {
+        masterKeyGeneratedAt = new Date().toISOString();
+        masterKeyGeneratedReason = `clé maître de l'application installée (${baseDir}) introuvable ou indéchiffrable : clé temporaire en mémoire, rien n'est écrit dans ce dossier`;
+        console.error(`[SecretStore] ${masterKeyGeneratedAt} — ${masterKeyGeneratedReason}. Les secrets enregistrés par l'application sont illisibles pour ce processus.`);
+        return Buffer.from(generated, 'hex');
+    }
+
     // C7 : trace horodatée + motif — une régénération rend illisibles tous les
     // secrets chiffrés existants ; sans cette trace, la cause (clé .enc perdue,
     // helper safeStorage trop lent, répertoire de données changé) était

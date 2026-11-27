@@ -310,7 +310,13 @@ async function generateMessagesStage({ contactIds } = {}) {
 
         let draftMessage = '';
         try {
-            const aiResult = await aiController.chatWithAgent('outbound_strategist', prompt, null, null, 'text');
+            // Nom et adresse proviennent des scrapers (Google Maps, annuaires) :
+            // contenu tiers, donc pas d'agent local (voir untrustedInput).
+            const aiResult = await aiController.chatWithAgent(
+                'outbound_strategist', prompt, null, null, 'text',
+                null, null, false, null, null,
+                { untrustedInput: true }
+            );
             draftMessage = (aiResult && aiResult.response) || '';
         } catch (aiErr) {
             console.error('[PipelineService] Antoine draft error for contact', contact.id, aiErr);
