@@ -311,7 +311,7 @@ La configuration ESLint distingue désormais les trois environnements du dépôt
 
 | Domaine | Technologies Utilisées |
 | --- | --- |
-| **Application Desktop** | Electron 40, Electron Builder 26 |
+| **Application Desktop** | Electron 45, Electron Builder 26 |
 | **Frontend Framework** | React 19, Vite 7, React Router 7, Zustand 5 |
 | **Styling & UI** | Tailwind CSS 3, Lucide React, Recharts, dnd-kit |
 | **Serveur Backend** | Node.js 20, Express.js 4 |

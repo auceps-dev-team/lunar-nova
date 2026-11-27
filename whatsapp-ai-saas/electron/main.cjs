@@ -108,7 +108,12 @@ function createWindow() {
     app.userAgentFallback = USER_AGENT;
     mainWindow.webContents.userAgent = USER_AGENT;
 
-    mainWindow.webContents.on('console-message', (event, level, message, line, sourceId) => {
+    // Depuis Electron 35, les détails du message sont des propriétés de
+    // l'événement ({ level, message, lineNumber, sourceId }) ; les arguments
+    // positionnels sont dépréciés, et Electron signale tout gestionnaire qui en
+    // déclare plus d'un. Un seul paramètre, donc.
+    mainWindow.webContents.on('console-message', (event) => {
+        const { message, lineNumber: line, sourceId } = event;
         fs.appendFileSync(path.join(app.getPath('userData'), 'app_error.log'), `[Renderer] ${message} (${sourceId}:${line})\n`);
         console.log(`[Renderer] ${message} (${sourceId}:${line})`);
     });
