@@ -44,3 +44,19 @@ export function freshInvoice(userProfile = {}) {
         createdAt: today.toISOString(),
     };
 }
+
+/**
+ * Facture pré-remplie depuis une commande détectée (Orders.jsx pose ce brouillon
+ * dans le store, puis ouvre l'éditeur) : profil de l'émetteur, client, notes, et
+ * le message WhatsApp en première ligne, à chiffrer.
+ */
+export function invoiceFromOrderDraft(orderDraft, userProfile = {}) {
+    return {
+        ...freshInvoice(userProfile),
+        clientName: orderDraft.clientName || '',
+        notes: orderDraft.notes || '',
+        items: [
+            { id: `li-${Date.now()}`, description: `WhatsApp Request: ${orderDraft.rawMessage?.substring(0, 100)}...`, qty: 1, price: 0 }
+        ]
+    };
+}

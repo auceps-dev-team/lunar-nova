@@ -14,7 +14,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import CustomSelect from '../components/CustomSelect';
 import { API_BASE_URL } from '../config';
-import { calc, fmt, monthlyRevenue, freshInvoice } from '../components/invoice/helpers';
+import { calc, fmt, monthlyRevenue, freshInvoice, invoiceFromOrderDraft } from '../components/invoice/helpers';
 import LogoPicker from '../components/invoice/LogoPicker';
 import SortableLine from '../components/invoice/SortableLine';
 import { buildInvoiceHTML } from '../components/invoice/buildInvoiceHTML';
@@ -40,11 +40,13 @@ export default function InvoiceBuilder({ activeId }) {
     const deleteInvoice = useAppStore(s => s.deleteInvoice);
     const userProfile = useAppStore(s => s.userProfile) || EMPTY_OBJECT;
     const invoiceDraft = useAppStore(s => s.invoiceDraft);
-    const setInvoiceDraft = useAppStore(s => s.setInvoiceDraft);
+    const clearInvoiceDraft = useAppStore(s => s.clearInvoiceDraft);
 
     const navigate = useNavigate();
-    const [view, setView] = useState('dashboard');
-    const [draft, setDraft] = useState(null);
+    // Commande détectée (Orders.jsx pose invoiceDraft puis navigue ici) :
+    // l'éditeur s'ouvre directement sur la facture pré-remplie.
+    const [view, setView] = useState(() => (invoiceDraft ? 'editor' : 'dashboard'));
+    const [draft, setDraft] = useState(() => (invoiceDraft ? invoiceFromOrderDraft(invoiceDraft, userProfile) : null));
     const [filterStatus, setFilterStatus] = useState('all');
     const [saved, setSaved] = useState(false);
     const [showSaveToast, setShowSaveToast] = useState(false);
@@ -52,42 +54,13 @@ export default function InvoiceBuilder({ activeId }) {
     // Devis persistés côté backend (table `quotes`) depuis cette version — chargés
     // une fois au démarrage de l'app (App.jsx, comme fetchAiQuota/fetchGlobalModels).
 
-    // Consume cross-app invoiceDraft coming from Orders.jsx
+    // Brouillon consommé à l'ouverture : retiré du store, pour ne pas rouvrir
+    // l'éditeur à la prochaine visite. Deux effets le consommaient jusqu'ici ;
+    // le second écrasait le premier dans le même rendu, et la facture perdait le
+    // profil de l'émetteur et la ligne du message.
     useEffect(() => {
-        if (invoiceDraft) {
-            setDraft({
-                ...freshInvoice(userProfile),
-                clientName: invoiceDraft.clientName || '',
-                notes: invoiceDraft.notes || '',
-                // Add the WhatsApp message text as a line item optionally (defaulting to 0)
-                items: [
-                    { id: `li-${Date.now()}`, description: `WhatsApp Request: ${invoiceDraft.rawMessage?.substring(0, 100)}...`, qty: 1, price: 0 }
-                ]
-            });
-            setView('editor');
-            setSaved(false);
-            setInvoiceDraft(null); // Clear draft once consumed
-        }
-    }, [invoiceDraft, userProfile, setInvoiceDraft]);
-
-    // Phase 21: Auto-fill from Intelligent Order Listener (IOL)
-    const invoiceDraftGlobal = useAppStore(s => s.invoiceDraft);
-    const clearInvoiceDraft = useAppStore(s => s.clearInvoiceDraft);
-
-    useEffect(() => {
-        if (invoiceDraftGlobal) {
-            const newInv = freshInvoice();
-            newInv.clientName = invoiceDraftGlobal.clientName || '';
-            newInv.notes = invoiceDraftGlobal.notes || '';
-            
-            setDraft(newInv);
-            setView('editor');
-            setSaved(false);
-            
-            // Clear the global state so it processes once
-            clearInvoiceDraft();
-        }
-    }, [invoiceDraftGlobal, clearInvoiceDraft]);
+        if (invoiceDraft) clearInvoiceDraft();
+    }, [invoiceDraft, clearInvoiceDraft]);
 
     // Contact search state
     const [showContactSearch, setShowContactSearch] = useState(false);
