@@ -5,6 +5,7 @@
 1. **Hybrid Desktop / Server Architecture**:
    - Electron wrapper launches both the React renderer interface and an embedded/managed Express.js Node server.
    - IPC communication between renderer and main process for file operations, store updates, and desktop native capabilities.
+   - **Frontière du preload** (v1.51.1) : la fenêtre principale porte le pont `electronAPI` et le jeton de l'API locale. Elle ne charge que `dist/index.html` (`will-navigate`), aucune fenêtre ne naît de `window.open` / `target="_blank"` (`setWindowOpenHandler` → navigateur du système), et les IPC sensibles passent par `handleFromApp` (cadre principal de la page de l'application seulement). Les webviews ne chargent que `https://web.whatsapp.com`, sans preload. Le store electron ne remonte jamais dans l'environnement du backend.
 
 2. **Multi-Model AI Gateway & Strategy Pattern**:
    - Standardized provider adapters (`geminiService.js`, `nvidiaModels.js`, `openrouterService.js`, `ollamaService.js`, `openaiService.js`).

@@ -1,6 +1,9 @@
 # Project Progress: WaCopilote
 
 ## Completed Milestones
+- [x] **Correctifs de sécurité (v1.51.1, 2026-11-27)** :
+  - Exécution de commandes par l'API fermée (S1) ; contenu tiers tenu à l'écart des agents locaux (S3) ; environnement minimal des processus lancés, transcription Whisper comprise (S4) ; relais store-set → environnement du backend retiré ; clé maître plus jamais écrite dans le dossier de l'application installée par la CLI ou le MCP (D8) ; aucun site tiers dans une fenêtre de l'application et IPC sensibles limités à la page de l'application (S7) ; Electron 45.4.1 (S6) ; 39 → 6 alertes npm et Dependabot (S9).
+  - Restant : S2 (port CDP 8315, refonte vers `webContents.debugger`) ; migration safeStorage asynchrone avant Electron 46 ; verrou d'instance unique ; chaîne electron-builder (6 alertes moyennes).
 - [x] **Recentrage WhatsApp + rédaction (v1.51.0, 2026-11-26)** :
   - Génération d’image et connexion Google retirées ; carte de prospection réparée (clé dans les Réglages, barrière de démarrage) ; updater NSIS seul avec vérification taille + SHA-256 ; modèle par défaut réellement transmis aux agents ; outils de rédaction (six réécritures, copie WhatsApp, génération annulable) ; registre des sélecteurs WhatsApp avec mise à jour signée.
   - Restant : décider la garde de la clé de signature des sélecteurs, puis renseigner `TRUSTED_KEYS` et créer la pré-version `wa-selectors` ; mesurer les sélecteurs sur une instance WhatsApp connectée ; essayer la macro `customInstall` sur une machine portant une double installation.
