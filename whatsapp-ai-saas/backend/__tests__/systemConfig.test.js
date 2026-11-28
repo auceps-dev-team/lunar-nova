@@ -24,7 +24,9 @@ describe('carte de la prospection sans clé', () => {
         // Base « d'avant » : une clé saisie en v1.51.0 (chiffrée au repos), v12 pas encore appliquée.
         await db.setSetting('google_maps_api_key', 'cle-saisie-en-v1-51-0');
         await db.setSetting('gemini_api_key', 'cle-gemini-a-garder');
-        await db.pool.query('DELETE FROM schema_version WHERE version = 12');
+        // La version courante est MAX(version) : retirer aussi les migrations
+        // postérieures (v13…), sinon la v12 n'est pas rejouée.
+        await db.pool.query('DELETE FROM schema_version WHERE version >= 12');
         await db.__rerunInitDBForTests();
 
         const app = express();

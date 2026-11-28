@@ -1,0 +1,318 @@
+{
+  "version": 1,
+  "fonctionnalites": [
+    {
+      "id": "noyau",
+      "labelKey": "featureNoyau",
+      "descriptionKey": "featureNoyauDesc",
+      "categorie": "noyau",
+      "defaut": true,
+      "noyau": true,
+      "dependances": [],
+      "risques": [],
+      "surfaces": {
+        "routes": ["/dashboard", "/profile", "/settings", "/support"],
+        "menu": ["dashboard", "whatsapp-hub", "support"],
+        "api": [
+          "GET /api/health",
+          "GET /api/settings",
+          "PUT /api/settings",
+          "DELETE /api/settings/:key",
+          "GET /api/settings/channels-status",
+          "POST /api/ai/models",
+          "POST /api/test-model",
+          "GET /api/debug/nvidia-model",
+          "GET /api/instances",
+          "GET /api/wa/instances",
+          "POST /api/wa/instances",
+          "DELETE /api/wa/instances/:id",
+          "POST /api/wa/open-chat",
+          "GET /api/wa/selectors",
+          "POST /api/wa/selectors/check",
+          "POST /api/wa/selectors/rollback",
+          "GET /api/features",
+          "PUT /api/features/:id"
+        ],
+        "mcp": ["list_instances", "open_whatsapp_chat"],
+        "cli": ["help", "-h", "--help", "version", "-v", "--version", "status", "instances"]
+      }
+    },
+    {
+      "id": "crm",
+      "labelKey": "featureCrm",
+      "descriptionKey": "featureCrmDesc",
+      "categorie": "whatsapp",
+      "defaut": true,
+      "noyau": false,
+      "dependances": [],
+      "risques": [],
+      "surfaces": {
+        "routes": ["/wa/contacts", "/wa/contacts/add", "/wa/contacts/edit/:id", "/wa/contacts/import", "/wa/contact-lists", "/wa/segments"],
+        "menu": ["wa-contacts", "wa-contacts-lists", "wa-segments"],
+        "api": [
+          "GET /api/wa/contact-lists",
+          "POST /api/wa/contact-lists",
+          "PUT /api/wa/contact-lists/:id",
+          "DELETE /api/wa/contact-lists/:id",
+          "GET /api/wa/segments",
+          "POST /api/wa/segments",
+          "PUT /api/wa/segments/:id",
+          "DELETE /api/wa/segments/:id",
+          "GET /api/wa/contacts",
+          "POST /api/wa/contacts/bulk",
+          "POST /api/wa/contacts",
+          "GET /api/wa/contacts/:id",
+          "PUT /api/wa/contacts/bulk-update",
+          "PUT /api/wa/contacts/bulk-update-list",
+          "PUT /api/wa/contacts/:id",
+          "DELETE /api/wa/contacts/bulk-delete",
+          "DELETE /api/wa/contacts/:id",
+          "POST /api/wa/verify-contact"
+        ],
+        "mcp": [
+          "list_segments", "create_segment", "delete_segment",
+          "list_contacts", "get_contact", "create_contact", "update_contact", "delete_contact",
+          "assign_contacts_to_segment"
+        ],
+        "cli": ["contacts", "segments"]
+      }
+    },
+    {
+      "id": "commandes",
+      "labelKey": "featureCommandes",
+      "descriptionKey": "featureCommandesDesc",
+      "categorie": "whatsapp",
+      "defaut": true,
+      "noyau": false,
+      "dependances": [],
+      "risques": ["automatisation-whatsapp"],
+      "surfaces": {
+        "routes": ["/wa/orders"],
+        "menu": ["wa-orders"],
+        "api": [
+          "POST /api/orders/listen/start",
+          "POST /api/orders/listen/stop",
+          "GET /api/orders/stream/:instance_id",
+          "GET /api/orders/listen/status",
+          "GET /api/orders",
+          "DELETE /api/orders/bulk-delete",
+          "DELETE /api/orders/:id"
+        ],
+        "mcp": ["get_orders"],
+        "cli": []
+      }
+    },
+    {
+      "id": "notes-vocales",
+      "labelKey": "featureNotesVocales",
+      "descriptionKey": "featureNotesVocalesDesc",
+      "categorie": "whatsapp",
+      "defaut": false,
+      "noyau": false,
+      "dependances": ["commandes"],
+      "risques": [],
+      "surfaces": {
+        "routes": [],
+        "menu": [],
+        "api": ["POST /api/wa/voice-notes/transcribe"],
+        "mcp": [],
+        "cli": []
+      }
+    },
+    {
+      "id": "prospection",
+      "labelKey": "featureProspection",
+      "descriptionKey": "featureProspectionDesc",
+      "categorie": "ventes",
+      "defaut": true,
+      "noyau": false,
+      "dependances": [],
+      "risques": [],
+      "surfaces": {
+        "routes": ["/wa/prospection"],
+        "menu": ["wa-prospection"],
+        "api": [
+          "GET /api/prospection/goafrica-metadata",
+          "POST /api/prospection/goafrica-update-metadata",
+          "POST /api/prospection/search",
+          "POST /api/prospection/search-stream",
+          "POST /api/prospection/google",
+          "POST /api/prospection/clear-cache"
+        ],
+        "mcp": ["prospect_leads"],
+        "cli": ["prospect"]
+      }
+    },
+    {
+      "id": "pipeline",
+      "labelKey": "featurePipeline",
+      "descriptionKey": "featurePipelineDesc",
+      "categorie": "ventes",
+      "defaut": true,
+      "noyau": false,
+      "dependances": ["prospection", "crm", "agents"],
+      "risques": [],
+      "surfaces": {
+        "routes": ["/agent-pipeline"],
+        "menu": ["agent-pipeline"],
+        "api": [
+          "POST /api/pipeline/runs",
+          "GET /api/pipeline/runs",
+          "GET /api/pipeline/runs/:id",
+          "POST /api/pipeline/runs/:id/prospect",
+          "POST /api/pipeline/runs/:id/save-contacts",
+          "POST /api/pipeline/runs/:id/generate-messages",
+          "POST /api/pipeline/runs/:id/organize",
+          "GET /api/pipeline/cards",
+          "PUT /api/pipeline/cards/:id/stage",
+          "PUT /api/pipeline/cards/:id",
+          "DELETE /api/pipeline/cards/:id"
+        ],
+        "mcp": [
+          "run_pipeline", "create_pipeline_run", "save_pipeline_contacts",
+          "generate_pipeline_messages", "organize_pipeline",
+          "list_pipeline_cards", "update_pipeline_card_stage"
+        ],
+        "cli": ["pipeline"]
+      }
+    },
+    {
+      "id": "agents",
+      "labelKey": "featureAgents",
+      "descriptionKey": "featureAgentsDesc",
+      "categorie": "ia",
+      "defaut": true,
+      "noyau": false,
+      "dependances": [],
+      "risques": [],
+      "surfaces": {
+        "routes": ["/agents-manager", "/ai-chat"],
+        "menu": ["ai-chat"],
+        "api": [
+          "GET /api/agents",
+          "POST /api/agents",
+          "DELETE /api/agents/:id",
+          "POST /api/ai/agent",
+          "POST /api/ai/copilot"
+        ],
+        "mcp": ["list_agents", "call_agent"],
+        "cli": ["list-agents", "list", "run", "chat"]
+      }
+    },
+    {
+      "id": "redaction",
+      "labelKey": "featureRedaction",
+      "descriptionKey": "featureRedactionDesc",
+      "categorie": "ia",
+      "defaut": true,
+      "noyau": false,
+      "dependances": ["agents"],
+      "risques": [],
+      "surfaces": {
+        "routes": ["/ai-writer", "/my-documents"],
+        "menu": ["ai-writer"],
+        "api": [
+          "GET /api/documents",
+          "GET /api/documents/:id",
+          "POST /api/documents",
+          "PUT /api/documents/:id",
+          "DELETE /api/documents/:id"
+        ],
+        "mcp": ["list_documents", "get_document", "create_document", "update_document", "delete_document"],
+        "cli": ["documents"]
+      }
+    },
+    {
+      "id": "devis-factures",
+      "labelKey": "featureDevisFactures",
+      "descriptionKey": "featureDevisFacturesDesc",
+      "categorie": "ventes",
+      "defaut": true,
+      "noyau": false,
+      "dependances": [],
+      "risques": [],
+      "surfaces": {
+        "routes": ["/invoice-builder"],
+        "menu": ["invoice-builder"],
+        "api": [
+          "GET /api/invoices",
+          "GET /api/invoices/:id",
+          "POST /api/invoices",
+          "PUT /api/invoices/:id",
+          "DELETE /api/invoices/:id",
+          "POST /api/invoices/:id/export-pdf"
+        ],
+        "mcp": ["list_quotes", "get_quote", "create_quote", "update_quote", "export_quote_pdf"],
+        "cli": ["quotes"]
+      }
+    },
+    {
+      "id": "analyses",
+      "labelKey": "featureAnalyses",
+      "descriptionKey": "featureAnalysesDesc",
+      "categorie": "outils",
+      "defaut": true,
+      "noyau": false,
+      "dependances": [],
+      "risques": [],
+      "surfaces": {
+        "routes": ["/analytics"],
+        "menu": ["analytics"],
+        "api": ["GET /api/wa/analytics"],
+        "mcp": [],
+        "cli": []
+      }
+    },
+    {
+      "id": "taches",
+      "labelKey": "featureTaches",
+      "descriptionKey": "featureTachesDesc",
+      "categorie": "outils",
+      "defaut": true,
+      "noyau": false,
+      "dependances": [],
+      "risques": [],
+      "surfaces": {
+        "routes": ["/tasks"],
+        "menu": ["tasks"],
+        "api": [],
+        "mcp": [],
+        "cli": []
+      }
+    },
+    {
+      "id": "mcp-externe",
+      "labelKey": "featureMcpExterne",
+      "descriptionKey": "featureMcpExterneDesc",
+      "categorie": "acces-externes",
+      "defaut": true,
+      "noyau": false,
+      "dependances": [],
+      "risques": ["acces-externe"],
+      "surfaces": {
+        "routes": [],
+        "menu": [],
+        "api": ["GET /api/cli/mcp-config"],
+        "mcp": [],
+        "cli": ["mcp"]
+      }
+    },
+    {
+      "id": "agents-cli-locaux",
+      "labelKey": "featureAgentsCliLocaux",
+      "descriptionKey": "featureAgentsCliLocauxDesc",
+      "categorie": "acces-externes",
+      "defaut": true,
+      "noyau": false,
+      "dependances": ["agents"],
+      "risques": ["execution-locale"],
+      "surfaces": {
+        "routes": [],
+        "menu": [],
+        "api": ["GET /api/cli/status", "POST /api/cli/test-bridge", "POST /api/cli/settings"],
+        "mcp": [],
+        "cli": []
+      }
+    }
+  ]
+}

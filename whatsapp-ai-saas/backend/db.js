@@ -132,6 +132,9 @@ async function runInitDB() {
         `);
         const versionResult = await client.query('SELECT MAX(version) as v FROM schema_version');
         let currentVersion = versionResult.rows[0].v || 0;
+        // 0 : base neuve, toutes les migrations vont s'appliquer. Sert à la v13,
+        // qui ne traite pas de la même façon une installation existante.
+        const versionAuDemarrage = currentVersion;
 
         /**
          * Applique une migration, puis n'enregistre sa version qu'en cas de succès.
@@ -416,6 +419,23 @@ async function runInitDB() {
             "DELETE FROM app_settings WHERE setting_key = 'google_maps_api_key'"
         ]);
 
+        // v13 (28/11/2026) : état des fonctionnalités activables (Marketplace,
+        // ticket #30). Règle : une mise à jour ne retire rien à un utilisateur
+        // existant. Sur une base qui existait déjà, chaque fonctionnalité de la
+        // liste figée ci-dessous est enregistrée comme active, sauf
+        // notes-vocales, qui reprend le réglage voice_notes_transcription.
+        // Sur une base neuve, rien n'est inséré ici : la synchronisation qui
+        // suit pose les valeurs par défaut du catalogue.
+        await migrateTo(13, [
+            `CREATE TABLE IF NOT EXISTS features (
+                id TEXT PRIMARY KEY,
+                enabled INTEGER NOT NULL,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )`,
+            ...(versionAuDemarrage > 0 ? requetesFonctionnalitesInstallationExistante() : [])
+        ]);
+        await synchroniserFonctionnalites(client);
+
         // Doit tourner après la création de toutes les tables, et avant que la
         // moindre route ne lise un secret.
         await encryptLegacySecrets(client);
@@ -433,6 +453,48 @@ async function runInitDB() {
         // (isDbConnected reste faux, mode dégradé des accesseurs).
         console.error('[CRITICAL] DB Init Failed:', err.message);
         return false;
+    }
+}
+
+// Fonctionnalités du catalogue au moment de la migration v13. Liste figée :
+// une fonctionnalité ajoutée plus tard au catalogue n'existait pas pour
+// l'utilisateur qui met à jour, et reçoit donc sa valeur par défaut (voir
+// synchroniserFonctionnalites), pas une activation forcée.
+const FONCTIONNALITES_V13 = [
+    'noyau', 'crm', 'commandes', 'notes-vocales', 'prospection', 'pipeline', 'agents',
+    'redaction', 'devis-factures', 'analyses', 'taches',
+    'mcp-externe', 'agents-cli-locaux'
+];
+
+/**
+ * Requêtes de la v13 pour une installation existante : tout ce qui marchait
+ * reste actif ; notes-vocales reprend le réglage qu'elle remplace ('on' ou,
+ * par défaut, 'off').
+ */
+function requetesFonctionnalitesInstallationExistante() {
+    return FONCTIONNALITES_V13.map((id) => (id === 'notes-vocales'
+        ? `INSERT OR IGNORE INTO features (id, enabled)
+           SELECT 'notes-vocales', CASE WHEN EXISTS (
+               SELECT 1 FROM app_settings
+               WHERE setting_key = 'voice_notes_transcription' AND setting_value = 'on'
+           ) THEN 1 ELSE 0 END`
+        : `INSERT OR IGNORE INTO features (id, enabled) VALUES ('${id}', 1)`));
+}
+
+/**
+ * À chaque démarrage : toute fonctionnalité du catalogue absente de la table
+ * reçoit sa valeur par défaut (une base neuve, ou une fonctionnalité ajoutée
+ * par une mise à jour). Une ligne existante n'est jamais modifiée : changer
+ * une valeur par défaut dans le catalogue ne touche que les nouvelles
+ * installations.
+ */
+async function synchroniserFonctionnalites(client) {
+    const { fonctionnalites } = require('./featuresCatalogue');
+    for (const f of fonctionnalites) {
+        await client.query(
+            'INSERT OR IGNORE INTO features (id, enabled) VALUES ($1, $2)',
+            [f.id, f.noyau || f.defaut ? 1 : 0]
+        );
     }
 }
 
