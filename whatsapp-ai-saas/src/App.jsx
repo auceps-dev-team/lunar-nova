@@ -14,7 +14,6 @@ const TasksMap = React.lazy(() => import('./pages/TasksMap'));
 
 const InvoiceBuilder = React.lazy(() => import('./pages/InvoiceBuilder'));
 const Profile = React.lazy(() => import('./pages/Profile'));
-const ToolsBox = React.lazy(() => import('./pages/ToolsBox'));
 const Settings = React.lazy(() => import('./pages/Settings'));
 const AgentManager = React.lazy(() => import('./pages/AgentManager'));
 const Support = React.lazy(() => import('./pages/Support'));
@@ -270,7 +269,6 @@ function AppContent() {
                   <Route path="/my-documents" element={<MyDocuments />} />
                   <Route path="/tasks" element={<TasksMap />} />
                   <Route path="/invoice-builder" element={<InvoiceBuilder activeId={activeId} />} />
-                  <Route path="/tools" element={<ToolsBox />} />
                   <Route path="/settings" element={<Settings />} />
 
                   {/* WhatsApp Pages */}
