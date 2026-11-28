@@ -39,11 +39,18 @@ const AgentManager = () => {
         e.preventDefault();
         setIsLoading(true);
         try {
-            await fetch(API_BASE_URL + '/api/agents', {
+            const res = await fetch(API_BASE_URL + '/api/agents', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(currentAgent)
             });
+            // Un refus du serveur doit garder l'éditeur ouvert et prévenir
+            // l'utilisateur : la réponse n'était pas vérifiée, et un échec
+            // passait pour un enregistrement réussi.
+            if (!res.ok) {
+                const body = await res.json().catch(() => ({}));
+                throw new Error(body.error || `HTTP ${res.status}`);
+            }
             await fetchAgents();
             setIsEditing(false);
             setCurrentAgent(null);

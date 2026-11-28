@@ -109,11 +109,19 @@ router.get('/agents', async (req, res) => {
 });
 
 router.post('/agents', async (req, res) => {
-    const { id, name, system_instruction, response_format, provider_override, model_override } = req.body;
+    const { id, name, system_instruction, response_format, provider_override, model_override } = req.body || {};
+    if (!name || !system_instruction) {
+        return res.status(400).json({ error: 'Le nom et les instructions système de l\'agent sont obligatoires.' });
+    }
     try {
         const agentId = id || `agent_${Date.now()}`;
+        // `excluded.<colonne>` désigne la valeur proposée par l'INSERT. La
+        // version précédente réutilisait $2…$6 dans la clause DO UPDATE : la
+        // couche pg -> SQLite de db.js convertit chaque $n en « ? » positionnel,
+        // donc 11 marqueurs pour 6 valeurs, et la mise à jour d'un agent
+        // existant échouait sur `NOT NULL constraint failed: ai_agents.name`.
         await pool.query(
-            'INSERT INTO ai_agents (id, name, system_instruction, response_format, provider_override, model_override) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT(id) DO UPDATE SET name = $2, system_instruction = $3, response_format = $4, provider_override = $5, model_override = $6',
+            'INSERT INTO ai_agents (id, name, system_instruction, response_format, provider_override, model_override) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT(id) DO UPDATE SET name = excluded.name, system_instruction = excluded.system_instruction, response_format = excluded.response_format, provider_override = excluded.provider_override, model_override = excluded.model_override',
             [agentId, name, system_instruction, response_format || 'text', provider_override || null, model_override || null]
         );
         res.json({ status: 'success', id: agentId });
