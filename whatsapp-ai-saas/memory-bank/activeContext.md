@@ -1,5 +1,8 @@
 # Active Context: WaCopilote
 
+- **v1.52.4** — Gabarit des devis livré dans l'application (+0.0.1), 28/11/2026 :
+  - Mesuré sur le build 1.52.3 : `POST /api/invoices/:id/export-pdf` → 500 « Cannot find module …app.asar\src\components\invoice\buildInvoiceHTML.js ». `renderPdf` lit le gabarit et `src/locales/fr.json` dans `src/`, que `build.files` n'embarquait pas : l'export côté service (route, outil MCP `export_quote_pdf` depuis le build) n'a jamais pu marcher dans l'application installée. Le CLI de développement, qui lit les sources, marchait.
+  - `build.files` ajoute `buildInvoiceHTML.js`, `helpers.js` (son import) et `fr.json`. Garde-fou : `buildFichiersSrc.test.js` suit les références `../src/` du backend et leurs imports ; il échoue sans la correction en nommant les trois fichiers.
 - **v1.52.3** — Fermeture d'Edge bornée (+0.0.1), 28/11/2026 :
   - Mesuré le 27/11 au soir (Edge 158, processeur à 100 %) : PDF prêt en 3,2 s, mais `browser.close()` rendait la main après 16 à 48 s ; Chrome, dans les mêmes conditions, en moins d'une seconde. Pendant la fermeture, ce sont le processus principal d'Edge et son `StorageService` (écriture du profil jetable) qui restent.
   - `lancerNavigateur` borne `close()` à 3 s (`DELAI_FERMETURE_MS`) ; la fermeture continue en arrière-plan. CLI `quotes export-pdf` : code 0 en 8,9 s, aucun Edge restant 30 s après, aucun profil temporaire laissé. Tests : fermeture qui traîne → rend la main ; fermeture rapide → sans attendre le délai.

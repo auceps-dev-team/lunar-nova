@@ -1,7 +1,7 @@
 {
   "name": "wacopilote",
   "private": true,
-  "version": "1.52.3",
+  "version": "1.52.4",
   "license": "AGPL-3.0-only",
   "main": "electron/main.cjs",
   "type": "module",
@@ -86,6 +86,9 @@
       "dist/**/*",
       "electron/**/*",
       "backend/**/*",
+      "src/components/invoice/buildInvoiceHTML.js",
+      "src/components/invoice/helpers.js",
+      "src/locales/fr.json",
       "!backend/__tests__/**/*",
       "!**/*.test.js",
       "!**/.env",
