@@ -48,6 +48,13 @@ const Support = () => {
 
     const changelog = [
         {
+            version: 'v1.52.4',
+            date: '2026-11-28',
+            changes: [
+                'Devis et factures — L\'export PDF demandé au service local (outil MCP « export_quote_pdf », par exemple) fonctionne dans l\'application installée : le modèle de devis n\'y était pas livré, et l\'export échouait'
+            ]
+        },
+        {
             version: 'v1.52.3',
             date: '2026-11-28',
             changes: [
