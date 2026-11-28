@@ -40,6 +40,7 @@ export default function Segments() {
     }, [showAppNotification]);
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- chargement asynchrone : l'état n'est modifié qu'après un await (faux positif, voir eslint.config.js)
         fetchSegments();
     }, [fetchSegments]);
 

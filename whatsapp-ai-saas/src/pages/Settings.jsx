@@ -67,6 +67,31 @@ const Settings = () => {
             .catch(() => {});
     };
 
+    const handleChange = (key, value) => {
+        updateSettings({ [key]: value });
+    };
+
+    // Pousse les réglages courants (y compris les changements pas encore sauvegardés)
+    // dans le store Zustand, puis relance fetchGlobalModels().
+    const refreshModels = (overrides = {}) => {
+        setIsLoadingModels(true);
+        const merged = { ...backendSettings, ...overrides };
+        setZustandBackendSettings(merged);
+        fetchGlobalModels()
+            .then(() => {
+                const { chat } = useAppStore.getState().availableModels;
+                // Auto-sélectionne un modèle valide si celui en cours n'existe plus pour ce provider
+                if (chat.length > 0 && !chat.some(m => m.id === settings.model)) {
+                    handleChange('model', chat[0].id);
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                showAppNotification(t('noModelAvailable'), 'error');
+            })
+            .finally(() => setIsLoadingModels(false));
+    };
+
     useEffect(() => {
         fetch(API_BASE_URL + '/api/settings')
             .then(res => res.json())
@@ -91,27 +116,6 @@ const Settings = () => {
     // les actions explicites de l'utilisateur.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
-
-    // Pousse les réglages courants (y compris les changements pas encore sauvegardés)
-    // dans le store Zustand, puis relance fetchGlobalModels().
-    const refreshModels = (overrides = {}) => {
-        setIsLoadingModels(true);
-        const merged = { ...backendSettings, ...overrides };
-        setZustandBackendSettings(merged);
-        fetchGlobalModels()
-            .then(() => {
-                const { chat } = useAppStore.getState().availableModels;
-                // Auto-sélectionne un modèle valide si celui en cours n'existe plus pour ce provider
-                if (chat.length > 0 && !chat.some(m => m.id === settings.model)) {
-                    handleChange('model', chat[0].id);
-                }
-            })
-            .catch(err => {
-                console.error(err);
-                showAppNotification(t('noModelAvailable'), 'error');
-            })
-            .finally(() => setIsLoadingModels(false));
-    };
 
     const handleBackendChange = (key, value) => {
         setBackendSettings(prev => ({ ...prev, [key]: value }));
@@ -167,10 +171,6 @@ const Settings = () => {
 
     const handleToggle = (key) => {
         updateSettings({ [key]: !settings[key] });
-    };
-
-    const handleChange = (key, value) => {
-        updateSettings({ [key]: value });
     };
 
 

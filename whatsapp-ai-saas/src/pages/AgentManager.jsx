@@ -19,10 +19,6 @@ const AgentManager = () => {
         model_override: ''
     };
 
-    useEffect(() => {
-        fetchAgents();
-    }, []);
-
     const fetchAgents = async () => {
         try {
             const res = await fetch(API_BASE_URL + '/api/agents');
@@ -34,6 +30,11 @@ const AgentManager = () => {
             console.error("Failed to fetch agents", err);
         }
     };
+
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- chargement asynchrone : l'état n'est modifié qu'après un await (faux positif, voir eslint.config.js)
+        fetchAgents();
+    }, []);
 
     const handleSave = async (e) => {
         e.preventDefault();

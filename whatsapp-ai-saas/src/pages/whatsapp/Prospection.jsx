@@ -31,6 +31,29 @@ export default function Prospection() {
     const [goAfricaSubcategory, setGoAfricaSubcategory] = useState('');
     const [isRefreshingMetadata, setIsRefreshingMetadata] = useState(false);
 
+    const fetchMetadata = async () => {
+        try {
+            const [listsRes, segmentsRes, goAfricaRes] = await Promise.all([
+                fetch(API_BASE_URL + '/api/wa/contact-lists'),
+                fetch(API_BASE_URL + '/api/wa/segments'),
+                fetch(API_BASE_URL + '/api/prospection/goafrica-metadata').catch(() => null)
+            ]);
+            const listsData = await listsRes.json();
+            const segmentsData = await segmentsRes.json();
+            if (listsData.status === 'success') setAllLists(listsData.data);
+            if (segmentsData.status === 'success') setAllSegments(segmentsData.data);
+            
+            if (goAfricaRes && goAfricaRes.ok) {
+                const gaData = await goAfricaRes.json();
+                if (gaData.success && gaData.data) {
+                    setGoAfricaMetadata(gaData.data);
+                }
+            }
+        } catch (error) {
+            console.error('Fetch metadata error:', error);
+        }
+    };
+
     const handleRefreshGoAfricaMetadata = async () => {
         setIsRefreshingMetadata(true);
         try {
@@ -101,31 +124,9 @@ export default function Prospection() {
     };
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- chargement asynchrone : l'état n'est modifié qu'après un await (faux positif, voir eslint.config.js)
         fetchMetadata();
     }, []);
-
-    const fetchMetadata = async () => {
-        try {
-            const [listsRes, segmentsRes, goAfricaRes] = await Promise.all([
-                fetch(API_BASE_URL + '/api/wa/contact-lists'),
-                fetch(API_BASE_URL + '/api/wa/segments'),
-                fetch(API_BASE_URL + '/api/prospection/goafrica-metadata').catch(() => null)
-            ]);
-            const listsData = await listsRes.json();
-            const segmentsData = await segmentsRes.json();
-            if (listsData.status === 'success') setAllLists(listsData.data);
-            if (segmentsData.status === 'success') setAllSegments(segmentsData.data);
-            
-            if (goAfricaRes && goAfricaRes.ok) {
-                const gaData = await goAfricaRes.json();
-                if (gaData.success && gaData.data) {
-                    setGoAfricaMetadata(gaData.data);
-                }
-            }
-        } catch (error) {
-            console.error('Fetch metadata error:', error);
-        }
-    };
 
     const handleSearch = async (e) => {
         e.preventDefault();

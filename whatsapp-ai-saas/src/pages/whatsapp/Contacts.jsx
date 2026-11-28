@@ -137,17 +137,6 @@ export default function Contacts({ activeId }) {
         }
     };
 
-    useEffect(() => {
-        fetchContacts();
-        fetchSettings();
-        fetchMetadata();
-    // Chargement initial, volontairement limité au montage : ces trois fonctions
-    // sont redéfinies à chaque rendu, les déclarer en dépendances relancerait les
-    // requêtes en boucle. Les listes sont rechargées explicitement après chaque
-    // création, modification ou suppression.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
     const fetchMetadata = async () => {
         try {
             const [listsRes, segmentsRes] = await Promise.all([
@@ -162,6 +151,18 @@ export default function Contacts({ activeId }) {
             console.error('Fetch metadata error:', error);
         }
     };
+
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- chargement asynchrone : l'état n'est modifié qu'après un await (faux positif, voir eslint.config.js)
+        fetchContacts();
+        fetchSettings();
+        fetchMetadata();
+    // Chargement initial, volontairement limité au montage : ces trois fonctions
+    // sont redéfinies à chaque rendu, les déclarer en dépendances relancerait les
+    // requêtes en boucle. Les listes sont rechargées explicitement après chaque
+    // création, modification ou suppression.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const handleDelete = async (id) => {
         if (!window.confirm("Are you sure you want to delete this contact?")) return;

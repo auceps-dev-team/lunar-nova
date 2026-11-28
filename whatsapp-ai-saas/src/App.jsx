@@ -67,12 +67,13 @@ function AppContent() {
     }
   }, [appSettings?.language, i18n]);
 
-  // On mount, if instances exist from persist but no active tab is selected, select the first
-  React.useEffect(() => {
-    if (instances.length > 0 && !activeId) {
-      setActiveId(instances[0].id);
-    }
-  }, [instances, activeId]);
+  // Comptes restaurés (store persisté, réhydraté de façon asynchrone) mais aucun
+  // onglet actif : le premier est sélectionné pendant le rendu. React relance
+  // aussitôt le rendu avec la nouvelle valeur, sans afficher d'abord un écran
+  // sans onglet comme le faisait l'effet précédent.
+  if (instances.length > 0 && !activeId) {
+    setActiveId(instances[0].id);
+  }
 
   // Update UX Initialization
   React.useEffect(() => {
