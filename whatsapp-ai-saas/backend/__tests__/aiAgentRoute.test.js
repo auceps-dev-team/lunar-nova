@@ -56,7 +56,12 @@ describe('S3 — POST /api/ai/agent : la conversation WhatsApp ne va pas aux age
                 resolve();
             });
         });
-    });
+    // Charger la route tire toute la chaîne contrôleur → routeur → services
+    // (SDK Gemini, OpenAI…), transformée par Vite. Mesuré le 28/11/2026 sous
+    // Vitest 4.1.12, juste après `npm ci` : plus de 20 s (délai par défaut) au
+    // premier passage complet, avec 60 s d'imports ; au passage suivant, 15,7 s
+    // d'imports, et le test passe. Une CI démarre toujours à froid.
+    }, 60_000);
 
     afterEach(() => {
         externalAgentRunner.executeExternalCli.mockClear();
