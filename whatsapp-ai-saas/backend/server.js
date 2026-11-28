@@ -144,6 +144,12 @@ app.use('/api/invoices', invoicesRouter);
 const settingsAgentsRouter = require('./routes/settings_and_agents');
 app.use('/api', settingsAgentsRouter);
 
+// Marketplace des fonctionnalités (ticket #30) : catalogue et état. Le
+// contrôle sur les autres voies (API, MCP, CLI, interface) arrive avec les
+// PR suivantes ; cette route n'a encore aucun effet sur elles.
+const featuresRouter = require('./routes/features');
+app.use('/api/features', featuresRouter);
+
 const aiRouter = require('./routes/ai');
 app.use('/api', aiRouter);
 
