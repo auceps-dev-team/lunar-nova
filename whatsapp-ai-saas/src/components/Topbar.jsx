@@ -25,7 +25,6 @@ const Topbar = ({ activeInstance, currentTitle }) => {
         if (currentTitle === '/agent-pipeline') return t('agentPipeline');
         if (currentTitle === '/tasks') return t('tasks');
         if (currentTitle === '/invoice-builder') return t('invoiceBuilder');
-        if (currentTitle === '/tools') return t('tools');
         if (currentTitle === '/profile') return t('accountStrategy');
         if (currentTitle === '/settings') return t('appSettings');
         return t('workspace');
