@@ -18,7 +18,7 @@ Chaque fait indique s'il est **mesuré** (avec sa date) ou **lu** (avec le fichi
 - **`mcp-externe`** : actif par défaut.
 - **`taches`** : gardée, et c'est elle que le §6-A propose de faire grandir.
 - **`boite-a-outils`** : **supprimée**. Elle ne devient pas une entrée du Marketplace : la page `/tools` (`ToolsBox.jsx`) et son entrée de menu disparaissent. Comme cette suppression touche `App.jsx`, elle est à faire **après** la reconstruction de #22.
-- **Reste ouvert** : l'état par défaut de `agents-cli-locaux`.
+- **`agents-cli-locaux`** : **désactivé par défaut** (décision du 28/11). L'utilisateur l'active depuis le Marketplace, avec la confirmation prévue pour le risque `execution-locale`. La fonctionnalité H du §6 en dépend.
 
 ## 2. Ce qu'on a le droit de reprendre
 
