@@ -48,6 +48,14 @@ const Support = () => {
 
     const changelog = [
         {
+            version: 'v1.52.5',
+            date: '2026-11-28',
+            changes: [
+                'Correctif — Une facture créée depuis une commande WhatsApp reprend de nouveau le nom de votre entreprise, vos coordonnées et le message du client en première ligne. Ils étaient effacés à l\'ouverture de l\'éditeur',
+                'Mises à jour — Dépendances de l\'interface et de l\'outillage (React 19.3, i18next 27, react-i18next 18, Vitest 5, jest-dom 8, ESLint 10 et règles react-hooks 7.1)'
+            ]
+        },
+        {
             version: 'v1.52.4',
             date: '2026-11-28',
             changes: [

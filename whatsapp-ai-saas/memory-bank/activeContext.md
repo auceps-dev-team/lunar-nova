@@ -1,5 +1,10 @@
 # Active Context: WaCopilote
 
+- **v1.52.5** — Facture ouverte depuis une commande, dépendances de l'interface et outillage (+0.0.1), 28/11/2026 :
+  - **PR #22 (avec #26)** : une facture ouverte depuis une commande (`Orders.jsx` → `invoiceDraft` → `InvoiceBuilder.jsx`) garde le profil de l'émetteur, le client et le message WhatsApp en première ligne (`invoiceFromOrderDraft` lu une fois à l'initialisation, test `invoiceFromOrder.test.jsx`). Mise en conformité `eslint-plugin-react-hooks` 7.1.1 (`set-state-in-effect`, `immutability`) sur 13 fichiers et groupe Dependabot `application-mineures` (21 mises à jour dont React 19.3, Zustand 5.1, Recharts 3.11).
+  - **PR #33 (remplace #19 et #20)** : `i18next` 27.2.2, `react-i18next` 18.0.3, `vitest` 5.1.1, `@vitest/coverage-v8` 5.1.1, `@testing-library/jest-dom` 8.0.0 — CI verte sans adaptation de code.
+  - **PR #18** : `eslint` 10.15.0 (compatible avec `eslint-plugin-react-hooks` 7.1.1 et `eslint-plugin-react-refresh` 0.5.8) — CI verte, 0 avertissement.
+  - **En attente** : `openai` 7.64 (#28) reste en attente (publication trop récente).
 - **v1.52.4** — Gabarit des devis livré dans l'application (+0.0.1), 28/11/2026 :
   - Mesuré sur le build 1.52.3 : `POST /api/invoices/:id/export-pdf` → 500 « Cannot find module …app.asar\src\components\invoice\buildInvoiceHTML.js ». `renderPdf` lit le gabarit et `src/locales/fr.json` dans `src/`, que `build.files` n'embarquait pas : l'export côté service (route, outil MCP `export_quote_pdf` depuis le build) n'a jamais pu marcher dans l'application installée. Le CLI de développement, qui lit les sources, marchait.
   - `build.files` ajoute `buildInvoiceHTML.js`, `helpers.js` (son import) et `fr.json`. Garde-fou : `buildFichiersSrc.test.js` suit les références `../src/` du backend et leurs imports ; il échoue sans la correction en nommant les trois fichiers.

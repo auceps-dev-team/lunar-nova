@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/auceps-dev-team/lunar-nova"><img src="https://img.shields.io/badge/version-1.52.4-blue.svg" alt="Version 1.52.4" /></a>
+  <a href="https://github.com/auceps-dev-team/lunar-nova"><img src="https://img.shields.io/badge/version-1.52.5-blue.svg" alt="Version 1.52.5" /></a>
   <a href="whatsapp-ai-saas/LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue.svg" alt="License AGPL-3.0" /></a>
   <a href="#-open-source"><img src="https://img.shields.io/badge/open%20source-oui-brightgreen.svg" alt="Open Source" /></a>
   <a href="#-pourquoi-wacopilote-"><img src="https://img.shields.io/badge/Made%20in-%F0%9F%87%A8%F0%9F%87%BE%20C%C3%B4te%20d'Ivoire-orange.svg" alt="Made in Côte d'Ivoire" /></a>
@@ -137,7 +137,7 @@ npm run start:all
 - **Prospection Lead Mining B2B** : Scrapers intégrés pour Annuaire CI, GoAfrica et Google Maps (navigateur sans interface, aucune clé d'API), avec la carte de la recherche affichée dans l'application.
 - **Rédaction & Réécriture IA** *(v1.51.0)* : six modes de réécriture du passage sélectionné, copie au format WhatsApp, génération confirmée et annulable, langue de rédaction suivant l'interface (arabe compris).
 - **Gestionnaire de Contacts & Segmentation** : Importation de contacts CSV/Excel, gestion des listes de diffusion, segmentation et ciblage pour campagnes WhatsApp.
-- **Créateur de Devis & Factures PDF** : Génération instantanée de devis/factures téléchargeables en PDF (`InvoiceBuilder.jsx`) avec calcul de taxes et personnalisation d'entreprise.
+- **Créateur de Devis & Factures PDF** : Génération instantanée de devis/factures téléchargeables en PDF (`InvoiceBuilder.jsx`) avec calcul de taxes et personnalisation d'entreprise. Une commande détectée dans WhatsApp ouvre une facture pré-remplie : profil de l'émetteur, client, message en première ligne *(corrigé en v1.52.5)*.
 - **Copywriter IA Multilingue** : Génération de posts réseaux sociaux, accroches publicitaires, broadcasts WhatsApp et articles de blog optimisés SEO.
 - **Analytique & Suivi des Coûts** : Suivi granulaire des tokens consommés, calcul des coûts par requête, logs d'erreurs et tableaux Recharts interactifs.
 

@@ -1,11 +1,13 @@
 # Project Progress: WaCopilote
 
 ## Completed Milestones
+- [x] **Facture depuis une commande & dépendances interface/outillage (v1.52.5, 2026-11-28)** :
+  - Fusion de la PR #22 (avec #26 : React 19.3, règles react-hooks 7.1, correctif facture ouverte depuis une commande WhatsApp), de la PR #33 (i18next 27, react-i18next 18, Vitest 5, jest-dom 8 ; clôture de #19 et #20) et de la PR #18 (ESLint 10.15.0).
+  - Restant : openai 7.64 (#28, trop récente pour l'instant).
 - [x] **Navigateur des automatisations : Edge (v1.52.2 et v1.52.3, 2026-11-27/28)** :
-  - Factures PDF et extracteurs par Microsoft Edge (puis Chrome, puis Chromium de Playwright) ; Playwright 1.65.1 ; fermeture d'Edge bornée à 3 s (elle pouvait prendre 30 s).
+  - Factures PDF et extracteurs par Microsoft Edge (puis Chrome, puis Chromium de Playwright) ; Playwright 1.65.1 ; fermeture d'Edge bornée à 3 s (elle pouvait prendre 30 s) ; gabarit des devis livré dans `build.files` (v1.52.4).
 - [x] **Sortie du CLI et dépendances (v1.52.1, 2026-11-27)** :
   - Le CLI ne plante plus en sortant après un fetch sous Windows ; Express 5, OpenAI 7, Google GenAI 3 (API v1beta conservée), jsdom 31, lucide 1.x.
-  - Restant : eslint 10 après la PR #22 ; i18next 27 avec react-i18next 18 ; jest-dom 8 avec Vitest 5.
 - [x] **Port de débogage fermé — S2 (v1.52.0, 2026-11-27)** :
   - WhatsApp Web piloté par le canal privé du processus principal ; plus aucun port réseau de débogage en production. CLI et MCP passent par l'API de l'application.
   - Restant : valider sur une session WhatsApp connectée (écoute des commandes, vocaux, vérification de numéro) — les sondes n'ont accès qu'à la page de QR code ; Marketplace des fonctionnalités activables (à concevoir).

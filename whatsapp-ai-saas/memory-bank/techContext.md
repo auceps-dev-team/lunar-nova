@@ -12,8 +12,8 @@
   - OpenRouter API
   - Ollama (Local LLM inference)
   - Together AI (Qwen Image Generation)
-- **Internationalization**: i18next & react-i18next
-- **Testing & Quality Assurance**: Vitest 4, Testing Library, ESLint 9
+- **Internationalization**: i18next 27 & react-i18next 18
+- **Testing & Quality Assurance**: Vitest 5, Testing Library (jest-dom 8), ESLint 10
 
 ## Project Topology
 ```text
